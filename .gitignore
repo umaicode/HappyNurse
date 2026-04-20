@@ -1,0 +1,5 @@
+# 모든 폴더의 build 폴더와 자동 생성 파일 제외
+**/build/
+**/generated/
+**/bin/
+**/out/
