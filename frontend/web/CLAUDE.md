@@ -2,18 +2,18 @@
 
 ## 기술 스택
 
-| 분류 | 기술 |
-| --- | --- |
-| 프레임워크 | Next.js 16 (App Router) |
-| 언어 | TypeScript 5 |
-| 스타일링 | Tailwind CSS 4 |
-| 상태 관리 | Zustand |
-| 서버 상태 관리 | TanStack Query |
-| 인증 | NextAuth v4 |
-| HTTP 클라이언트 | Axios |
-| UI 컴포넌트 | shadcn/ui, Radix UI |
-| 아이콘 | Lucide React |
-| 유틸리티 | clsx, tailwind-merge, class-variance-authority |
+| 분류            | 기술                                           |
+| --------------- | ---------------------------------------------- |
+| 프레임워크      | Next.js 16 (App Router)                        |
+| 언어            | TypeScript 5                                   |
+| 스타일링        | Tailwind CSS 4                                 |
+| 상태 관리       | Zustand                                        |
+| 서버 상태 관리  | TanStack Query                                 |
+| 인증            | NextAuth v4                                    |
+| HTTP 클라이언트 | Axios                                          |
+| UI 컴포넌트     | shadcn/ui, Radix UI                            |
+| 아이콘          | Lucide React                                   |
+| 유틸리티        | clsx, tailwind-merge, class-variance-authority |
 
 ---
 
@@ -38,10 +38,10 @@ src/
 │   ├── common/                 # 범용 공통 컴포넌트
 │   │   ├── Button.tsx
 │   │   ├── Modal.tsx
-│   │   └── Spinner.tsx
+│   │   ├── Spinner.tsx
+│   │   └── ImageWithFallback.tsx
 │   ├── layout/                 # 레이아웃 컴포넌트
-│   │   ├── Header.tsx
-│   │   └── Sidebar.tsx
+│   │   └── DashboardLayout.tsx # Header.tsx, Sidebar.tsx 는 사용하지 않으므로 생성 금지
 │   └── ui/                     # shadcn/ui 자동 생성 컴포넌트
 │       └── button.tsx
 ├── features/                   # 도메인별 기능 모듈
@@ -89,7 +89,6 @@ src/
 - UI 상태, 전역 클라이언트 상태는 **Zustand**를 사용한다.
 - 스토어는 도메인별로 분리하여 `features/{도메인}/stores/` 또는 `lib/stores/`에 위치한다.
 
-
 ### 재사용성 기준
 
 - **3회 이상** 사용되거나 여러 도메인에서 공유되는 코드는 공통으로 분리한다.
@@ -100,3 +99,7 @@ src/
 - 목업 데이터를 화면에 표시할 때 해당 **텍스트 앞에 🛠️ 아이콘을 붙여** 실제 데이터와 구분한다.
   - 예시: `'병동 선택'` → `'🛠️ 병동 선택'`
   - 예시: `'환자 목록'` → `'🛠️ 환자 목록'`
+
+### 코드 작성 시 금지 사항
+
+- 코드 및 주석에 이모지를 사용하지 않는다.
