@@ -18,6 +18,18 @@ public enum ErrorCode implements ResponseCode {
     // Auth (401, 403)
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "사원번호 또는 비밀번호가 올바르지 않습니다."),
+    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "인증 토큰이 만료되었습니다."),
+    TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 인증 토큰입니다."),
+
+    // Organization / Ward
+    ORGANIZATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 기관입니다."),
+    WARD_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 병동입니다."),
+    WARD_NOT_IN_ORGANIZATION(HttpStatus.BAD_REQUEST, "해당 기관에 속하지 않는 병동입니다."),
+
+    // Account
+    ACCOUNT_DISABLED(HttpStatus.FORBIDDEN, "퇴사 처리된 계정입니다."),
+    ROLE_NOT_FOUND(HttpStatus.FORBIDDEN, "해당 병동에 대한 권한이 없습니다."),
 
     // Business (409)
     DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "이미 존재하는 리소스입니다.");
