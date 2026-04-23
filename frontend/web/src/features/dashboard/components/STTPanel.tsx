@@ -27,13 +27,6 @@ interface DoctorOrder {
   isChanged?: boolean;
 }
 
-const STATUS_TEXT_COLOR: Record<OrderStatus, string> = {
-  접수: "text-slate-500",
-  진행: "text-[var(--color-brand-primary)]",
-  검사중: "text-amber-600",
-  완료: "text-emerald-600",
-};
-
 // Mock Orders
 // 처방 코드 체계 (원내 코드: 2-letter prefix + 4자리 숫자)
 //  - MD: 경구/투약(Medication)
@@ -140,7 +133,7 @@ export function STTPanel() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted group-focus-within:text-[var(--color-brand-primary)] transition-colors z-10" />
           <Input
             type="text"
-            placeholder="🛠️ 오더 검색..."
+            placeholder="오더 검색..."
             className="pl-9 bg-[var(--color-surface-base)] border-border-base h-10 text-[13px] focus-visible:ring-1 focus-visible:ring-[var(--color-brand-primary)] rounded-md"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -204,17 +197,6 @@ export function STTPanel() {
                     <span className="text-[12px] font-bold text-content-muted shrink-0">용법</span>
                     <span className="text-[15px] font-semibold text-[var(--color-brand-primary)] leading-none">
                       {order.method}
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-[12px] font-bold text-content-muted shrink-0">진행 상태</span>
-                    <span
-                      className={cn(
-                        "text-[15px] font-semibold leading-none",
-                        STATUS_TEXT_COLOR[order.status],
-                      )}
-                    >
-                      {order.status}
                     </span>
                   </div>
                 </div>

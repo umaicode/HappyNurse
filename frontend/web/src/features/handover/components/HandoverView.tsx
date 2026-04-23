@@ -122,7 +122,7 @@ export function HandoverView() {
           <div className="relative w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted" />
             <Input
-              placeholder="🛠️ 환자명, 병실 검색..."
+              placeholder="환자명, 병실 검색..."
               className="pl-9 bg-slate-50 border-border-base h-10 text-[14px] focus-visible:ring-1 focus-visible:ring-[var(--color-brand-primary)]"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -140,7 +140,7 @@ export function HandoverView() {
         <aside className="w-72 shrink-0 bg-white border-r border-border-base flex flex-col">
           <div className="px-5 py-4 border-b border-border-base shrink-0">
             <div className="flex items-center justify-between">
-              <span className="text-[15px] font-bold text-slate-800">🛠️ 담당 환자</span>
+              <span className="text-[15px] font-bold text-slate-800">담당 환자</span>
               <span className="text-[13px] font-semibold text-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 px-2.5 py-0.5 rounded-full">
                 {myPatients.length}명
               </span>

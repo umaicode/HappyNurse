@@ -417,6 +417,131 @@ export const INITIAL_ORDERS = [
   },
 ];
 
+export interface PatientAlert {
+  id: number;
+  patientId: string;
+  patientName: string;
+  room: string;
+  time: string;
+  severity: "critical" | "warning" | "info";
+  category: string;
+  message: string;
+  status: "unread" | "acknowledged" | "resolved";
+}
+
+export const INITIAL_PATIENT_ALERTS: PatientAlert[] = [
+  {
+    id: 1,
+    patientId: "PT0001",
+    patientName: "김가민",
+    room: "7101호",
+    time: "22:10",
+    severity: "critical",
+    category: "바이탈",
+    message: "SpO2 92% 로 하강. 산소 포화도 경고 임계치 도달.",
+    status: "unread",
+  },
+  {
+    id: 2,
+    patientId: "PT0001",
+    patientName: "김가민",
+    room: "7101호",
+    time: "21:45",
+    severity: "warning",
+    category: "투약",
+    message: "Tridol 1amp IV 투여 후 30분 경과. 통증 재평가 필요.",
+    status: "unread",
+  },
+  {
+    id: 3,
+    patientId: "PT0001",
+    patientName: "김가민",
+    room: "7101호",
+    time: "20:30",
+    severity: "info",
+    category: "간호",
+    message: "수액 잔량 200cc. 1시간 내 교체 예정.",
+    status: "acknowledged",
+  },
+  {
+    id: 4,
+    patientId: "PT0001",
+    patientName: "김가민",
+    room: "7101호",
+    time: "19:15",
+    severity: "warning",
+    category: "낙상",
+    message: "낙상 고위험군. 야간 보행 시 간호사 동행 권고.",
+    status: "acknowledged",
+  },
+  {
+    id: 5,
+    patientId: "PT0001",
+    patientName: "김가민",
+    room: "7101호",
+    time: "18:00",
+    severity: "info",
+    category: "식이",
+    message: "NPO 유지 중. 수술 전 금식 지시 재확인.",
+    status: "resolved",
+  },
+  {
+    id: 6,
+    patientId: "PT0002",
+    patientName: "박영희",
+    room: "7101호",
+    time: "14:20",
+    severity: "warning",
+    category: "배액",
+    message: "JP bag 배액량 증가(50→120cc). 담당의 노티 필요.",
+    status: "unread",
+  },
+  {
+    id: 7,
+    patientId: "PT0003",
+    patientName: "최민호",
+    room: "7101호",
+    time: "11:05",
+    severity: "critical",
+    category: "호흡",
+    message: "SpO2 91% (RA). Nasal Prong 적용 검토.",
+    status: "resolved",
+  },
+  {
+    id: 8,
+    patientId: "PT0003",
+    patientName: "최민호",
+    room: "7101호",
+    time: "10:30",
+    severity: "warning",
+    category: "투약",
+    message: "Levofloxacin IV 투여 예정 시각 지연(30분).",
+    status: "unread",
+  },
+  {
+    id: 9,
+    patientId: "PT0004",
+    patientName: "한지민",
+    room: "7102호",
+    time: "09:45",
+    severity: "info",
+    category: "검사",
+    message: "아침 채혈(CBC) 완료. 결과 대기 중.",
+    status: "acknowledged",
+  },
+  {
+    id: 10,
+    patientId: "PT0004",
+    patientName: "한지민",
+    room: "7102호",
+    time: "08:20",
+    severity: "critical",
+    category: "바이탈",
+    message: "HR 115 로 상승. 빈맥 경보 발생.",
+    status: "unread",
+  },
+];
+
 export const DEFAULT_PATIENT_INFO = {
   name: "김가민",
   genderAge: "F/25",

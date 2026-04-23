@@ -4,6 +4,7 @@ import {
   Calendar as CalendarIcon,
   ChevronDown,
   Edit2,
+  Trash2,
   ChevronLeft,
   ChevronRight,
   Check,
@@ -17,6 +18,7 @@ import {
   HOURS,
   INITIAL_RECORDS,
   INITIAL_ORDERS,
+  INITIAL_PATIENT_ALERTS,
   DEFAULT_PATIENT_INFO,
 } from "@/mockup/emr-data";
 import { Calendar } from "@/components/ui/calendar";
@@ -34,10 +36,12 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { NursingRecord } from "../types/record";
 import { NursingTab } from "./NursingTab";
 import { OrderTab } from "./OrderTab";
+import { AlertsTab } from "./AlertsTab";
 
 function SearchableSelect({
   value,
@@ -239,7 +243,7 @@ function EditableCell({
 
 export function EMRGrid() {
   const currentUser = typeof window !== 'undefined' ? localStorage.getItem("currentUser") || "김영희" : "김영희";
-  const [activeTab, setActiveTab] = useState<"nursing" | "order" | "handover">("nursing");
+  const [activeTab, setActiveTab] = useState<"nursing" | "order" | "alerts" | "handover">("nursing");
   // EMRGrid는 현재 p1(김가민) 단일 환자 화면. patientId가 없거나 "p1"인 기록만 표시.
   const [records, setRecords] = useState<NursingRecord[]>(
     INITIAL_RECORDS.filter((r) => {
@@ -439,8 +443,8 @@ export function EMRGrid() {
                 className="h-9 px-3 py-2 rounded-md gap-2 text-sm font-bold shadow-sm"
                 onClick={startGlobalEdit}
               >
-                <Edit2 className="w-4 h-4" />
-                편집
+                <Trash2 className="w-4 h-4" />
+                삭제
               </Button>
             )}
           </div>
@@ -563,17 +567,32 @@ export function EMRGrid() {
           >
             의사 오더
           </button>
+          <button
+            onClick={() => setActiveTab("alerts")}
+            className={cn(
+              "px-4 py-2 text-body-base font-bold transition-all border-b-2",
+              activeTab === "alerts"
+                ? "text-[var(--color-brand-primary)] border-[var(--color-brand-primary)]"
+                : "text-[var(--color-content-muted)] border-transparent hover:text-[var(--color-content-primary)]"
+            )}
+          >
+            알림
+          </button>
 
           {activeTab === "nursing" && (
-            <label className="ml-auto flex items-center gap-2 cursor-pointer select-none text-body-sm font-semibold text-[var(--color-content-tertiary)] hover:text-[var(--color-content-primary)] transition-colors">
-              <input
-                type="checkbox"
+            <div className="ml-auto flex items-center gap-2">
+              <Checkbox
+                id="my-records-only"
                 checked={myRecordsOnly}
-                onChange={(e) => setMyRecordsOnly(e.target.checked)}
-                className="size-3.5 rounded border-[var(--color-border-base)] accent-[var(--color-brand-primary)] cursor-pointer"
+                onCheckedChange={(checked) => setMyRecordsOnly(checked === true)}
               />
-              내 기록만 보기
-            </label>
+              <label
+                htmlFor="my-records-only"
+                className="cursor-pointer select-none text-body-sm font-semibold text-[var(--color-content-tertiary)] hover:text-[var(--color-content-primary)] transition-colors"
+              >
+                내 기록만 보기
+              </label>
+            </div>
           )}
         </div>
 
@@ -592,6 +611,8 @@ export function EMRGrid() {
             />
           ) : activeTab === "order" ? (
             <OrderTab orders={orders} />
+          ) : activeTab === "alerts" ? (
+            <AlertsTab alerts={INITIAL_PATIENT_ALERTS} patientId={patientInfo.id} />
           ) : (
             /* AI Handover Placeholder */
             <div className="flex-1 flex flex-col items-center justify-center bg-[var(--color-surface-base)]/30 space-y-4">
