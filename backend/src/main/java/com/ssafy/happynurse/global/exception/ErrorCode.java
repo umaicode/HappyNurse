@@ -18,6 +18,9 @@ public enum ErrorCode implements ResponseCode {
     // Auth (401, 403)
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "사원번호 또는 비밀번호가 올바르지 않습니다."),
+    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "인증 토큰이 만료되었습니다."),
+    TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 인증 토큰입니다."),
 
     // Business (409)
     DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "이미 존재하는 리소스입니다.");
