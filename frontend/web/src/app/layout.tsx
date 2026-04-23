@@ -1,4 +1,3 @@
-// 루트 레이아웃. html · body · 전역 Provider.
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
