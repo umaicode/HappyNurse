@@ -105,7 +105,7 @@ COLOR="$NEW" docker compose -f "$COMPOSE_FILE" up -d --no-deps "${SERVICE}-${ENV
 # ──────────────────────────────────────────────
 log "▶ Health check on $NEW_CONTAINER (port $PORT)"
 
-MAX_RETRIES=30
+MAX_RETRIES=40
 RETRY_INTERVAL=3
 
 for i in $(seq 1 $MAX_RETRIES); do
@@ -117,8 +117,8 @@ for i in $(seq 1 $MAX_RETRIES); do
     fi
 
     # TCP 포트 열림 체크 (컨테이너 안에서)
-    if docker exec "$NEW_CONTAINER" sh -c "exec 3<>/dev/tcp/localhost/$PORT" 2>/dev/null; then
-        log "   ✓ Port $PORT is open. Health check passed."
+    if docker exec nginx sh -c "nc -z ${NEW_CONTAINER} ${PORT}" 2>/dev/null; then
+        log "Health check passed (via nginx)"
         break
     fi
 
