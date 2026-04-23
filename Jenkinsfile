@@ -27,7 +27,7 @@ pipeline {
                 script {
                     echo "============================================"
                     echo " Build #${env.BUILD_NUMBER}"
-                    echo " Branch       : ${env.BRANCH_NAME ?: 'N/A'}"
+                    echo " Job Name     : ${env.JOB_NAME}"
                     echo " Deploy Env   : ${env.DEPLOY_ENV}"
                     echo " Build Time   : ${env.BUILD_TIME} (KST)"
                     echo " Commit       : ${env.GIT_COMMIT ?: 'unknown'}"
