@@ -1,23 +1,28 @@
-'use client'
+"use client";
 
-import { useRouter } from 'next/navigation'
-import { Check } from 'lucide-react'
-import { nurseMock, patientMock, sendMock } from '@/mockup/patient'
+import { useRouter, useSearchParams } from "next/navigation";
+import { Check } from "lucide-react";
+import { nurseMock, patientMock } from "@/mockup/patient";
 
 export default function Complete() {
-  const router = useRouter()
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const patientName = searchParams.get("name") ?? "환자이름";
+  const requestContent = searchParams.get("request") ?? "";
+  const sentAt = searchParams.get("sentAt") ?? "";
 
   const rows = [
-    { label: '환자', value: `${patientMock.name} · ${patientMock.room}` },
-    { label: '담당 간호사', value: nurseMock.name },
-    { label: '요청 내용', value: sendMock.requestedSymptomLabel },
-    { label: '전송 시각', value: sendMock.sentAt },
-  ]
+    { label: "환자", value: `${patientName} · ${patientMock.room}` },
+    { label: "담당 간호사", value: nurseMock.name },
+    { label: "요청 내용", value: requestContent },
+    { label: "전송 시각", value: sentAt },
+  ];
 
   return (
-    <div className="flex flex-1 flex-col px-5 pt-12 pb-6">
+    <div className="flex flex-1 flex-col px-5 pt-10">
       <div className="flex flex-col items-center gap-10">
-        <div className="flex size-[88px] items-center justify-center rounded-full bg-patient-success">
+        <div className="flex size-[88px] items-center justify-center rounded-full bg-[#58ab8f]">
           <Check className="size-12 text-white" strokeWidth={3} />
         </div>
 
@@ -32,23 +37,27 @@ export default function Complete() {
         {rows.map((row, index) => (
           <div
             key={row.label}
-            className={`flex items-center justify-between py-4 ${
-              index < rows.length - 1 ? 'border-b border-[#f3f4f6]' : ''
+            className={`flex items-start justify-between gap-4 py-4 ${
+              index < rows.length - 1 ? "border-b border-[#f3f4f6]" : ""
             }`}
           >
-            <span className="text-xl font-medium text-content-quaternary">{row.label}</span>
-            <span className="text-xl font-bold text-content-primary">{row.value}</span>
+            <span className="text-xl font-medium text-content-quaternary">
+              {row.label}
+            </span>
+            <span className="whitespace-pre-line text-right text-xl font-bold text-content-primary">
+              {row.value}
+            </span>
           </div>
         ))}
       </div>
 
       <button
         type="button"
-        onClick={() => router.push('/patient/help')}
+        onClick={() => router.push("/patient/help")}
         className="mt-auto w-full max-w-[300px] self-center rounded-2xl bg-[#1428a0] py-[18px] text-2xl font-bold text-white transition-colors hover:bg-[#101E7A]"
       >
         확인
       </button>
     </div>
-  )
+  );
 }
