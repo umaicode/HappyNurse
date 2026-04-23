@@ -15,8 +15,8 @@ pipeline {
     }
 
     environment {
-        // 브랜치별 환경 식별자
-        DEPLOY_ENV = "${env.BRANCH_NAME == 'master' ? 'prod' : 'dev'}"
+        // 잡 이름으로 환경 분기 (dev-deploy → dev, prod-deploy → prod)
+        DEPLOY_ENV = "${env.JOB_NAME == 'prod-deploy' ? 'prod' : 'dev'}"
         // 빌드 시작 시각 (한국 시간)
         BUILD_TIME = sh(script: "TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S'", returnStdout: true).trim()
     }
