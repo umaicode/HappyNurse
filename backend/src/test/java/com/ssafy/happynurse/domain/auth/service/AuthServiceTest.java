@@ -8,6 +8,9 @@ import com.ssafy.happynurse.domain.common.entity.PractitionerRole;
 import com.ssafy.happynurse.domain.common.entity.RoleCode;
 import com.ssafy.happynurse.domain.common.repository.PractitionerRepository;
 import com.ssafy.happynurse.domain.common.repository.PractitionerRoleRepository;
+import com.ssafy.happynurse.domain.patient.entity.Ward;
+import com.ssafy.happynurse.domain.patient.repository.OrganizationRepository;
+import com.ssafy.happynurse.domain.patient.repository.WardRepository;
 import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
 import com.ssafy.happynurse.global.security.JwtTokenProvider;
@@ -20,6 +23,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,130 +38,163 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-    @Mock
-    PractitionerRepository practitionerRepository;
-    @Mock
-    PractitionerRoleRepository practitionerRoleRepository;
-    @Mock
-    SessionLogRepository sessionLogRepository;
-    @Mock
-    PasswordEncoder passwordEncoder;
-    @Mock
-    JwtTokenProvider jwtTokenProvider;
-    @InjectMocks
-    AuthService authService;
+    @Mock PractitionerRepository practitionerRepository;
+    @Mock PractitionerRoleRepository practitionerRoleRepository;
+    @Mock SessionLogRepository sessionLogRepository;
+    @Mock OrganizationRepository organizationRepository;
+    @Mock WardRepository wardRepository;
+    @Mock PasswordEncoder passwordEncoder;
+    @Mock JwtTokenProvider jwtTokenProvider;
+    @InjectMocks AuthService authService;
+
+    // ──── 로그인 성공 ────
 
     @Test
     @DisplayName("로그인 성공 시 AuthResult를 반환한다")
     void login_성공() {
-        // given
         Practitioner practitioner = createPractitioner(1L, "EMP001", "hashedPw", "홍길동");
         PractitionerRole role = createPractitionerRole(practitioner, RoleCode.nurse);
+        Ward ward = createWard(3L);
 
-        given(practitionerRepository.findByEmployeeNumber("EMP001"))
-                .willReturn(Optional.of(practitioner));
-        given(passwordEncoder.matches("password", "hashedPw"))
-                .willReturn(true);
-        given(practitionerRoleRepository.findByPractitionerAndWard_WardIdAndPeriodEndIsNull(practitioner, 3L))
-                .willReturn(Optional.of(role));
-        given(sessionLogRepository.save(any(SessionLog.class)))
-                .willAnswer(invocation -> invocation.getArgument(0));
-        given(jwtTokenProvider.createAccessToken(anyLong(), anyString(), anyString(), anyString(), anyString(), anyLong(), anyLong()))
-                .willReturn("mock-jwt-token");
+        given(organizationRepository.existsById(1L)).willReturn(true);
+        given(wardRepository.existsById(3L)).willReturn(true);
+        given(wardRepository.findByWardIdAndOrganization_OrganizationId(3L, 1L)).willReturn(Optional.of(ward));
+        given(practitionerRepository.findByEmployeeNumber("EMP001")).willReturn(Optional.of(practitioner));
+        given(passwordEncoder.matches("password", "hashedPw")).willReturn(true);
+        given(practitionerRoleRepository.findByPractitionerAndPeriodEndIsNull(practitioner)).willReturn(List.of(role));
+        given(practitionerRoleRepository.findByPractitionerAndWard_WardIdAndPeriodEndIsNull(practitioner, 3L)).willReturn(Optional.of(role));
+        given(sessionLogRepository.save(any(SessionLog.class))).willAnswer(inv -> inv.getArgument(0));
+        given(jwtTokenProvider.createAccessToken(anyLong(), anyString(), anyString(), anyString(), anyString(), anyLong(), anyLong())).willReturn("mock-jwt-token");
 
-        // when
         AuthResult result = authService.login("EMP001", "password", "127.0.0.1", 1L, 3L);
 
-        // then
         assertThat(result).isNotNull();
         assertThat(result.accessToken()).isEqualTo("mock-jwt-token");
         assertThat(result.loginResponse().practitionerId()).isEqualTo(1L);
         assertThat(result.loginResponse().name()).isEqualTo("홍길동");
-        assertThat(result.loginResponse().employeeNumber()).isEqualTo("EMP001");
         assertThat(result.loginResponse().roleCode()).isEqualTo("nurse");
         assertThat(result.loginResponse().organizationId()).isEqualTo(1L);
         assertThat(result.loginResponse().wardId()).isEqualTo(3L);
         verify(sessionLogRepository).save(any(SessionLog.class));
     }
 
+    // ──── 기관/병동 검증 실패 ────
+
     @Test
-    @DisplayName("존재하지 않는 사원번호로 로그인 시 INVALID_CREDENTIALS 예외가 발생한다")
+    @DisplayName("존재하지 않는 기관 → ORGANIZATION_NOT_FOUND")
+    void login_실패_존재하지_않는_기관() {
+        given(organizationRepository.existsById(99L)).willReturn(false);
+
+        assertLoginThrows("EMP001", "password", 99L, 3L, ErrorCode.ORGANIZATION_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 병동 → WARD_NOT_FOUND")
+    void login_실패_존재하지_않는_병동() {
+        given(organizationRepository.existsById(1L)).willReturn(true);
+        given(wardRepository.existsById(99L)).willReturn(false);
+
+        assertLoginThrows("EMP001", "password", 1L, 99L, ErrorCode.WARD_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("기관에 속하지 않는 병동 → WARD_NOT_IN_ORGANIZATION")
+    void login_실패_기관에_속하지_않는_병동() {
+        given(organizationRepository.existsById(1L)).willReturn(true);
+        given(wardRepository.existsById(3L)).willReturn(true);
+        given(wardRepository.findByWardIdAndOrganization_OrganizationId(3L, 1L)).willReturn(Optional.empty());
+
+        assertLoginThrows("EMP001", "password", 1L, 3L, ErrorCode.WARD_NOT_IN_ORGANIZATION);
+    }
+
+    // ──── 인증 실패 ────
+
+    @Test
+    @DisplayName("존재하지 않는 사원번호 → INVALID_CREDENTIALS")
     void login_실패_존재하지_않는_사원번호() {
-        // given
-        given(practitionerRepository.findByEmployeeNumber("WRONG"))
-                .willReturn(Optional.empty());
+        stubOrgAndWard();
+        given(practitionerRepository.findByEmployeeNumber("WRONG")).willReturn(Optional.empty());
 
-        // when & then
-        assertThatThrownBy(() -> authService.login("WRONG", "password", "127.0.0.1", 1L, 3L))
-                .isInstanceOf(CustomException.class)
-                .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode())
-                        .isEqualTo(ErrorCode.INVALID_CREDENTIALS));
+        assertLoginThrows("WRONG", "password", 1L, 3L, ErrorCode.INVALID_CREDENTIALS);
     }
 
     @Test
-    @DisplayName("잘못된 비밀번호로 로그인 시 INVALID_CREDENTIALS 예외가 발생한다")
+    @DisplayName("잘못된 비밀번호 → INVALID_CREDENTIALS")
     void login_실패_잘못된_비밀번호() {
-        // given
         Practitioner practitioner = createPractitioner(1L, "EMP001", "hashedPw", "홍길동");
-        given(practitionerRepository.findByEmployeeNumber("EMP001"))
-                .willReturn(Optional.of(practitioner));
-        given(passwordEncoder.matches("wrongPw", "hashedPw"))
-                .willReturn(false);
+        stubOrgAndWard();
+        given(practitionerRepository.findByEmployeeNumber("EMP001")).willReturn(Optional.of(practitioner));
+        given(passwordEncoder.matches("wrongPw", "hashedPw")).willReturn(false);
 
-        // when & then
-        assertThatThrownBy(() -> authService.login("EMP001", "wrongPw", "127.0.0.1", 1L, 3L))
-                .isInstanceOf(CustomException.class)
-                .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode())
-                        .isEqualTo(ErrorCode.INVALID_CREDENTIALS));
+        assertLoginThrows("EMP001", "wrongPw", 1L, 3L, ErrorCode.INVALID_CREDENTIALS);
+    }
+
+    // ──── 권한 실패 ────
+
+    @Test
+    @DisplayName("퇴사한 직원(활성 역할 없음) → ACCOUNT_DISABLED")
+    void login_실패_퇴사한_직원() {
+        Practitioner practitioner = createPractitioner(1L, "EMP001", "hashedPw", "홍길동");
+        stubOrgAndWard();
+        given(practitionerRepository.findByEmployeeNumber("EMP001")).willReturn(Optional.of(practitioner));
+        given(passwordEncoder.matches("password", "hashedPw")).willReturn(true);
+        given(practitionerRoleRepository.findByPractitionerAndPeriodEndIsNull(practitioner)).willReturn(Collections.emptyList());
+
+        assertLoginThrows("EMP001", "password", 1L, 3L, ErrorCode.ACCOUNT_DISABLED);
     }
 
     @Test
-    @DisplayName("해당 병동 권한이 없으면 FORBIDDEN 예외가 발생한다")
+    @DisplayName("해당 병동 권한 없음 → ROLE_NOT_FOUND")
     void login_실패_병동_권한없음() {
-        // given
         Practitioner practitioner = createPractitioner(1L, "EMP001", "hashedPw", "홍길동");
-        given(practitionerRepository.findByEmployeeNumber("EMP001"))
-                .willReturn(Optional.of(practitioner));
-        given(passwordEncoder.matches("password", "hashedPw"))
-                .willReturn(true);
-        given(practitionerRoleRepository.findByPractitionerAndWard_WardIdAndPeriodEndIsNull(practitioner, 99L))
-                .willReturn(Optional.empty());
+        PractitionerRole otherRole = createPractitionerRole(practitioner, RoleCode.nurse);
+        stubOrgAndWard();
+        given(practitionerRepository.findByEmployeeNumber("EMP001")).willReturn(Optional.of(practitioner));
+        given(passwordEncoder.matches("password", "hashedPw")).willReturn(true);
+        given(practitionerRoleRepository.findByPractitionerAndPeriodEndIsNull(practitioner)).willReturn(List.of(otherRole));
+        given(practitionerRoleRepository.findByPractitionerAndWard_WardIdAndPeriodEndIsNull(practitioner, 3L)).willReturn(Optional.empty());
 
-        // when & then
-        assertThatThrownBy(() -> authService.login("EMP001", "password", "127.0.0.1", 1L, 99L))
-                .isInstanceOf(CustomException.class)
-                .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode())
-                        .isEqualTo(ErrorCode.FORBIDDEN));
+        assertLoginThrows("EMP001", "password", 1L, 3L, ErrorCode.ROLE_NOT_FOUND);
     }
+
+    // ──── 로그아웃 ────
 
     @Test
     @DisplayName("로그아웃 성공 시 SessionLog의 logoutAt이 설정된다")
     void logout_성공() {
-        // given
         Practitioner practitioner = createPractitioner(1L, "EMP001", "hashedPw", "홍길동");
         SessionLog sessionLog = SessionLog.create(practitioner, "127.0.0.1");
-        given(sessionLogRepository.findById(sessionLog.getSessionId()))
-                .willReturn(Optional.of(sessionLog));
+        given(sessionLogRepository.findById(sessionLog.getSessionId())).willReturn(Optional.of(sessionLog));
 
-        // when
         authService.logout(sessionLog.getSessionId());
 
-        // then
         assertThat(sessionLog.getLogoutAt()).isNotNull();
     }
 
     @Test
-    @DisplayName("존재하지 않는 세션으로 로그아웃 시 RESOURCE_NOT_FOUND 예외가 발생한다")
+    @DisplayName("존재하지 않는 세션 로그아웃 → RESOURCE_NOT_FOUND")
     void logout_실패_세션없음() {
-        // given
-        given(sessionLogRepository.findById("non-existent"))
-                .willReturn(Optional.empty());
+        given(sessionLogRepository.findById("non-existent")).willReturn(Optional.empty());
 
-        // when & then
         assertThatThrownBy(() -> authService.logout("non-existent"))
                 .isInstanceOf(CustomException.class)
                 .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode())
                         .isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
+    }
+
+    // ──── 헬퍼 ────
+
+    private void stubOrgAndWard() {
+        Ward ward = createWard(3L);
+        given(organizationRepository.existsById(1L)).willReturn(true);
+        given(wardRepository.existsById(3L)).willReturn(true);
+        given(wardRepository.findByWardIdAndOrganization_OrganizationId(3L, 1L)).willReturn(Optional.of(ward));
+    }
+
+    private void assertLoginThrows(String empNo, String password, Long orgId, Long wardId, ErrorCode expected) {
+        assertThatThrownBy(() -> authService.login(empNo, password, "127.0.0.1", orgId, wardId))
+                .isInstanceOf(CustomException.class)
+                .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode()).isEqualTo(expected));
     }
 
     private Practitioner createPractitioner(Long id, String empNo, String passwordHash, String name) {
@@ -182,6 +220,18 @@ class AuthServiceTest {
             setField(role, "practitioner", practitioner);
             setField(role, "roleCode", roleCode);
             return role;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Ward createWard(Long wardId) {
+        try {
+            var constructor = Ward.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            Ward ward = constructor.newInstance();
+            setField(ward, "wardId", wardId);
+            return ward;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
