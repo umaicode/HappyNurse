@@ -30,7 +30,8 @@ public class JwtTokenProvider {
     }
 
     public String createAccessToken(Long practitionerId, String employeeNumber,
-                                     String name, String roleCode, String sessionId) {
+                                     String name, String roleCode, String sessionId,
+                                     Long organizationId, Long wardId) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(String.valueOf(practitionerId))
@@ -38,6 +39,8 @@ public class JwtTokenProvider {
                 .claim("name", name)
                 .claim("role", roleCode)
                 .claim("sessionId", sessionId)
+                .claim("organizationId", organizationId)
+                .claim("wardId", wardId)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expirationMs))
                 .signWith(key)

@@ -20,12 +20,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.lang.reflect.Field;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -57,15 +57,15 @@ class AuthServiceTest {
                 .willReturn(Optional.of(practitioner));
         given(passwordEncoder.matches("password", "hashedPw"))
                 .willReturn(true);
-        given(practitionerRoleRepository.findByPractitionerAndPeriodEndIsNull(practitioner))
-                .willReturn(List.of(role));
+        given(practitionerRoleRepository.findByPractitionerAndWard_WardIdAndPeriodEndIsNull(practitioner, 3L))
+                .willReturn(Optional.of(role));
         given(sessionLogRepository.save(any(SessionLog.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
-        given(jwtTokenProvider.createAccessToken(any(), anyString(), anyString(), anyString(), anyString()))
+        given(jwtTokenProvider.createAccessToken(anyLong(), anyString(), anyString(), anyString(), anyString(), anyLong(), anyLong()))
                 .willReturn("mock-jwt-token");
 
         // when
-        AuthResult result = authService.login("EMP001", "password", "127.0.0.1");
+        AuthResult result = authService.login("EMP001", "password", "127.0.0.1", 1L, 3L);
 
         // then
         assertThat(result).isNotNull();
@@ -74,6 +74,8 @@ class AuthServiceTest {
         assertThat(result.loginResponse().name()).isEqualTo("홍길동");
         assertThat(result.loginResponse().employeeNumber()).isEqualTo("EMP001");
         assertThat(result.loginResponse().roleCode()).isEqualTo("nurse");
+        assertThat(result.loginResponse().organizationId()).isEqualTo(1L);
+        assertThat(result.loginResponse().wardId()).isEqualTo(3L);
         verify(sessionLogRepository).save(any(SessionLog.class));
     }
 
@@ -85,7 +87,7 @@ class AuthServiceTest {
                 .willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> authService.login("WRONG", "password", "127.0.0.1"))
+        assertThatThrownBy(() -> authService.login("WRONG", "password", "127.0.0.1", 1L, 3L))
                 .isInstanceOf(CustomException.class)
                 .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode())
                         .isEqualTo(ErrorCode.INVALID_CREDENTIALS));
@@ -102,10 +104,29 @@ class AuthServiceTest {
                 .willReturn(false);
 
         // when & then
-        assertThatThrownBy(() -> authService.login("EMP001", "wrongPw", "127.0.0.1"))
+        assertThatThrownBy(() -> authService.login("EMP001", "wrongPw", "127.0.0.1", 1L, 3L))
                 .isInstanceOf(CustomException.class)
                 .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode())
                         .isEqualTo(ErrorCode.INVALID_CREDENTIALS));
+    }
+
+    @Test
+    @DisplayName("해당 병동 권한이 없으면 FORBIDDEN 예외가 발생한다")
+    void login_실패_병동_권한없음() {
+        // given
+        Practitioner practitioner = createPractitioner(1L, "EMP001", "hashedPw", "홍길동");
+        given(practitionerRepository.findByEmployeeNumber("EMP001"))
+                .willReturn(Optional.of(practitioner));
+        given(passwordEncoder.matches("password", "hashedPw"))
+                .willReturn(true);
+        given(practitionerRoleRepository.findByPractitionerAndWard_WardIdAndPeriodEndIsNull(practitioner, 99L))
+                .willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> authService.login("EMP001", "password", "127.0.0.1", 1L, 99L))
+                .isInstanceOf(CustomException.class)
+                .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.FORBIDDEN));
     }
 
     @Test

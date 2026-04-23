@@ -4,6 +4,8 @@ public record LoginResponse(
         Long practitionerId,
         String name,
         String employeeNumber,
-        String roleCode
+        String roleCode,
+        Long organizationId,
+        Long wardId
 ) {
 }

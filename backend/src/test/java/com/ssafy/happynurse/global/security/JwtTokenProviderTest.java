@@ -29,7 +29,7 @@ class JwtTokenProviderTest {
     @Test
     @DisplayName("토큰 생성 시 null이 아닌 문자열을 반환한다")
     void createAccessToken_정상_토큰_생성() {
-        String token = jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123");
+        String token = jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123", 1L, 3L);
 
         assertThat(token).isNotNull().isNotEmpty();
     }
@@ -37,7 +37,7 @@ class JwtTokenProviderTest {
     @Test
     @DisplayName("유효한 토큰 검증 시 true를 반환한다")
     void validateToken_유효한_토큰_true() {
-        String token = jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123");
+        String token = jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123", 1L, 3L);
 
         assertThat(jwtTokenProvider.validateToken(token)).isTrue();
     }
@@ -56,7 +56,7 @@ class JwtTokenProviderTest {
         setField(expiredProvider, "expirationMs", 0L);
         expiredProvider.init();
 
-        String token = expiredProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123");
+        String token = expiredProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123", 1L, 3L);
 
         assertThat(jwtTokenProvider.validateToken(token)).isFalse();
     }
@@ -64,7 +64,7 @@ class JwtTokenProviderTest {
     @Test
     @DisplayName("토큰에서 Claims를 정상적으로 추출한다")
     void getClaims_정상_추출() {
-        String token = jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123");
+        String token = jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123", 1L, 3L);
 
         Claims claims = jwtTokenProvider.getClaims(token);
 
@@ -78,7 +78,7 @@ class JwtTokenProviderTest {
     @Test
     @DisplayName("토큰에서 practitionerId를 추출한다")
     void getPractitionerId_정상_추출() {
-        String token = jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123");
+        String token = jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123", 1L, 3L);
 
         assertThat(jwtTokenProvider.getPractitionerId(token)).isEqualTo(1L);
     }
@@ -86,7 +86,7 @@ class JwtTokenProviderTest {
     @Test
     @DisplayName("토큰에서 role을 추출한다")
     void getRole_정상_추출() {
-        String token = jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123");
+        String token = jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123", 1L, 3L);
 
         assertThat(jwtTokenProvider.getRole(token)).isEqualTo("nurse");
     }
@@ -94,7 +94,7 @@ class JwtTokenProviderTest {
     @Test
     @DisplayName("토큰에서 sessionId를 추출한다")
     void getSessionId_정상_추출() {
-        String token = jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123");
+        String token = jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123", 1L, 3L);
 
         assertThat(jwtTokenProvider.getSessionId(token)).isEqualTo("session-123");
     }

@@ -18,6 +18,8 @@ public class CustomUserDetails implements UserDetails {
     private final String name;
     private final String role;
     private final String sessionId;
+    private final Long organizationId;
+    private final Long wardId;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
