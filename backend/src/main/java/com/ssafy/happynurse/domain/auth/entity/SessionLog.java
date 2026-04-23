@@ -40,4 +40,8 @@ public class SessionLog {
         log.loginAt = LocalDateTime.now();
         return log;
     }
+
+    public void markLogout() {
+        this.logoutAt = LocalDateTime.now();
+    }
 }
