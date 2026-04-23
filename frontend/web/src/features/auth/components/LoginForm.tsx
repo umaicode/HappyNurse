@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import {
   ArrowRight,
   Lock,
@@ -14,7 +13,6 @@ import {
 } from "lucide-react";
 import { Text } from "@/components/ui/text";
 import { Heading } from "@/components/ui/heading";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -128,12 +126,6 @@ export function LoginForm() {
               </Text>
             </motion.div>
           </div>
-
-          <div className="absolute bottom-16 lg:bottom-20 left-16 lg:left-24 z-10">
-            <p className="text-[13px] text-content-muted font-medium bg-white/40 inline-block px-3 py-1 rounded-md backdrop-blur-sm border border-white/20">
-              © 2026 Happynurse. All rights reserved.
-            </p>
-          </div>
         </div>
 
         {/* Right Panel: Login Form (50%) */}
@@ -147,189 +139,140 @@ export function LoginForm() {
           </div>
 
           <div className="w-full max-w-[420px] px-4">
-            {/* Step Indicator */}
-            <div className="flex items-center gap-2 mb-12">
-              <div
-                className={cn(
-                  "h-1.5 flex-1 rounded-full transition-all duration-500",
-                  step === 1
-                    ? "bg-[var(--color-brand-primary)]"
-                    : "bg-slate-300",
-                )}
-              />
-              <div
-                className={cn(
-                  "h-1.5 flex-1 rounded-full transition-all duration-500",
-                  step === 2
-                    ? "bg-[var(--color-brand-primary)]"
-                    : "bg-slate-100",
-                )}
-              />
+            {/* 상단 영역: 뒤로가기 버튼 (step 1에서도 높이 유지) */}
+            <div className="mb-6">
+              <button
+                onClick={() => setStep(1)}
+                aria-hidden={step !== 2}
+                tabIndex={step === 2 ? 0 : -1}
+                className={`flex items-center gap-1.5 text-sm font-bold text-content-muted hover:text-[var(--color-brand-primary)] transition-opacity group ${
+                  step === 2 ? "opacity-100" : "opacity-0 pointer-events-none"
+                }`}
+              >
+                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                병원/병동 다시 선택
+              </button>
             </div>
 
-            <AnimatePresence mode="wait">
-              {step === 1 ? (
-                <motion.div
-                  key="step1"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.4, ease: "easeInOut" }}
-                  className="space-y-8"
-                >
-                  <div>
-                    <Heading
-                      level="h2"
-                      className="text-3xl font-bold text-[var(--color-sub-primary)] mb-3"
-                    >
-                      접속 정보 선택
-                    </Heading>
-                    <p className="text-content-tertiary font-medium">
-                      소속된 병원과 현재 근무 병동을 선택해 주세요.
-                    </p>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-bold text-content-secondary ml-1">
-                        소속 병원
-                      </Label>
-                      <div className="relative">
-                        <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
-                        <Input
-                          placeholder="병원을 검색하세요"
-                          value={hospital}
-                          onChange={(e) => setHospital(e.target.value)}
-                          className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-bold text-content-secondary ml-1">
-                        근무 병동
-                      </Label>
-                      <div className="relative">
-                        <LayoutGrid className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted z-10 pointer-events-none" />
-                        <Select value={ward} onValueChange={setWard}>
-                          <SelectTrigger className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus:border-[var(--color-brand-primary)] focus:ring-4 focus:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-bold text-content-primary transition-all">
-                            <SelectValue placeholder="접속할 병동을 선택하세요" />
-                          </SelectTrigger>
-                          <SelectContent className="z-[100] rounded-xl border-[var(--color-border-base)] shadow-xl">
-                            <SelectItem value="71">
-                              🛠️ 71병동 (일반내과)
-                            </SelectItem>
-                            <SelectItem value="72">
-                              🛠️ 72병동 (소화기내과)
-                            </SelectItem>
-                            <SelectItem value="icu">
-                              🛠️ ICU (중환자실)
-                            </SelectItem>
-                            <SelectItem value="er">🛠️ ER (응급실)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={() => setStep(2)}
-                    className="w-full h-15 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--color-brand-primary)]/20 transition-all flex items-center justify-center gap-2 group"
+            {/* 하단 영역: 폼 내용 */}
+            {step === 1 ? (
+              <div className="space-y-8">
+                <div>
+                  <Heading
+                    level="h2"
+                    className="text-3xl font-bold text-[var(--color-sub-primary)] mb-3"
                   >
-                    다음 단계
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="step2"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.4, ease: "easeInOut" }}
-                  className="space-y-8"
-                >
-                  <div>
-                    <button
-                      onClick={() => setStep(1)}
-                      className="flex items-center gap-1.5 text-sm font-bold text-content-muted hover:text-[var(--color-brand-primary)] mb-6 transition-colors group"
-                    >
-                      <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                      병원/병동 다시 선택
-                    </button>
-                    <Heading
-                      level="h2"
-                      className="text-3xl font-bold text-[var(--color-sub-primary)] mb-3"
-                    >
-                      환영합니다!
-                    </Heading>
-                    <div className="flex items-center gap-2 text-content-tertiary font-medium">
-                      <span className="text-[var(--color-brand-primary)] font-bold">
-                        {hospital}
-                      </span>
-                      <span>{ward}병동으로 로그인합니다.</span>
-                    </div>
-                  </div>
+                    접속 정보 선택
+                  </Heading>
+                  <p className="text-content-tertiary font-medium">
+                    소속된 병원과 현재 근무 병동을 선택해 주세요.
+                  </p>
+                </div>
 
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-bold text-content-secondary ml-1">
-                        사원 아이디
-                      </Label>
-                      <div className="relative">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
-                        <Input
-                          placeholder="🛠️ 아이디를 입력하세요"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-bold text-content-secondary ml-1">
-                        비밀번호
-                      </Label>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
-                        <Input
-                          type="password"
-                          placeholder="🛠️ 비밀번호를 입력하세요"
-                          className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2.5 cursor-pointer group select-none">
-                      <Checkbox
-                        id="save-id"
-                        className="rounded-md border-slate-300"
-                        defaultChecked
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold text-content-secondary ml-1">
+                      소속 병원
+                    </Label>
+                    <div className="relative">
+                      <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
+                      <Input
+                        placeholder="병원을 검색하세요"
+                        value={hospital}
+                        onChange={(e) => setHospital(e.target.value)}
+                        className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
                       />
-                      <span className="text-sm text-content-tertiary font-semibold group-hover:text-content-primary transition-colors">
-                        기록 저장
-                      </span>
-                    </label>
-                    <button
-                      onClick={() => router.push("/find-password")}
-                      className="text-sm text-content-muted font-bold hover:underline hover:text-[var(--color-brand-primary)] transition-colors"
-                    >
-                      비밀번호 찾기
-                    </button>
+                    </div>
                   </div>
 
-                  <Button
-                    onClick={handleLogin}
-                    className="w-full h-15 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--color-brand-primary)]/20 transition-all flex items-center justify-center gap-2"
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold text-content-secondary ml-1">
+                      근무 병동
+                    </Label>
+                    <div className="relative">
+                      <LayoutGrid className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted z-10 pointer-events-none" />
+                      <Select value={ward} onValueChange={setWard}>
+                        <SelectTrigger className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus:border-[var(--color-brand-primary)] focus:ring-4 focus:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-bold text-content-primary transition-all">
+                          <SelectValue placeholder="접속할 병동을 선택하세요" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[100] rounded-xl border-[var(--color-border-base)] shadow-xl">
+                          <SelectItem value="71">
+                            🛠️ 71병동 (일반내과)
+                          </SelectItem>
+                          <SelectItem value="72">
+                            🛠️ 72병동 (소화기내과)
+                          </SelectItem>
+                          <SelectItem value="icu">
+                            🛠️ ICU (중환자실)
+                          </SelectItem>
+                          <SelectItem value="er">🛠️ ER (응급실)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => setStep(2)}
+                  className="w-full h-15 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--color-brand-primary)]/20 transition-all flex items-center justify-center gap-2 group"
+                >
+                  다음 단계
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                <div>
+                  <Heading
+                    level="h2"
+                    className="text-3xl font-bold text-[var(--color-sub-primary)] mb-3"
                   >
-                    로그인 완료
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    환영합니다!
+                  </Heading>
+                  <p className="text-content-tertiary font-medium">
+                    아이디와 비밀번호를 입력해 주세요.
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold text-content-secondary ml-1">
+                      사원 아이디
+                    </Label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
+                      <Input
+                        placeholder="🛠️ 아이디를 입력하세요"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold text-content-secondary ml-1">
+                      비밀번호
+                    </Label>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
+                      <Input
+                        type="password"
+                        placeholder="🛠️ 비밀번호를 입력하세요"
+                        className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleLogin}
+                  className="w-full h-15 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--color-brand-primary)]/20 transition-all flex items-center justify-center gap-2"
+                >
+                  로그인
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
