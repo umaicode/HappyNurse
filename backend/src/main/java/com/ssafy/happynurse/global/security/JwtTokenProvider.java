@@ -1,11 +1,16 @@
 package com.ssafy.happynurse.global.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.util.Date;
 
 @Component
 public class JwtTokenProvider {
@@ -20,32 +25,49 @@ public class JwtTokenProvider {
 
     @PostConstruct
     public void init() {
-        throw new UnsupportedOperationException("미구현");
+        byte[] decoded = Decoders.BASE64.decode(secretBase64);
+        this.key = Keys.hmacShaKeyFor(decoded);
     }
 
     public String createAccessToken(Long practitionerId, String employeeNumber,
                                      String name, String roleCode, String sessionId) {
-        throw new UnsupportedOperationException("미구현");
+        Date now = new Date();
+        return Jwts.builder()
+                .subject(String.valueOf(practitionerId))
+                .claim("employeeNumber", employeeNumber)
+                .claim("name", name)
+                .claim("role", roleCode)
+                .claim("sessionId", sessionId)
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + expirationMs))
+                .signWith(key)
+                .compact();
     }
 
     public boolean validateToken(String token) {
-        throw new UnsupportedOperationException("미구현");
+        try {
+            Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
     }
 
     public Claims getClaims(String token) {
-        throw new UnsupportedOperationException("미구현");
+        return Jwts.parser().verifyWith(key).build()
+                .parseSignedClaims(token).getPayload();
     }
 
     public Long getPractitionerId(String token) {
-        throw new UnsupportedOperationException("미구현");
+        return Long.parseLong(getClaims(token).getSubject());
     }
 
     public String getRole(String token) {
-        throw new UnsupportedOperationException("미구현");
+        return getClaims(token).get("role", String.class);
     }
 
     public String getSessionId(String token) {
-        throw new UnsupportedOperationException("미구현");
+        return getClaims(token).get("sessionId", String.class);
     }
 
     public long getExpirationMs() {
