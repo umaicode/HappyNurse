@@ -1,43 +1,9 @@
 // EMR 관련 목업 데이터
+import type { NursingRecord } from "@/features/dashboard/types/record";
+import type { DoctorOrder } from "@/features/dashboard/types/order";
+import type { PatientAlert } from "@/features/dashboard/types/alert";
 
-export const NURSES = [
-  "김영희",
-  "이수진",
-  "박민지",
-  "최지원",
-  "김의사",
-];
-
-export const HOURS = [
-  "전체 시간",
-  ...Array.from({ length: 24 }).map(
-    (_, i) => `${i.toString().padStart(2, "0")}시`,
-  ),
-];
-
-export interface EmrRecord {
-  id: number;
-  time: string;
-  category: string;
-  content: string;
-  status: string;
-  writer: string;
-  isConfirmed: boolean;
-  isHandover?: boolean;
-  isAISuggested?: boolean;
-  source?: string;
-  drug?: {
-    code: string;
-    name: string;
-    dose: string;
-    unit: string;
-    frequency: string;
-    method: string;
-  };
-  patientId?: string;
-}
-
-export const INITIAL_RECORDS: EmrRecord[] = [
+export const INITIAL_RECORDS: NursingRecord[] = [
   {
     id: 1,
     time: "09:30",
@@ -186,8 +152,8 @@ export const INITIAL_RECORDS: EmrRecord[] = [
     category: "간호기록",
     content: "환자 자가 배뇨 후 잔뇨감 없다고 함. 하복부 팽만감 감소됨.",
     status: "completed",
-    writer: "이수진", // Another nurse
-    isConfirmed: false, // Unconfirmed
+    writer: "이수진",
+    isConfirmed: false,
   },
   // --- 본인(김영희) 미확정 기록 : 퀵 수정(AI 제안) 시연용 ---
   {
@@ -198,7 +164,7 @@ export const INITIAL_RECORDS: EmrRecord[] = [
       "환자 우하복부 압통 지속됨. 충우염 의심되어 담당의 노티함. McBurney point 양성 소견 관찰됨.",
     status: "pending",
     writer: "김영희",
-    isConfirmed: false, // → '충우염' 단어에 퀵 수정 팝오버 노출 (→ 충수염)
+    isConfirmed: false,
   },
   {
     id: 101,
@@ -208,7 +174,7 @@ export const INITIAL_RECORDS: EmrRecord[] = [
       "두통 호소하여 타이래놀 1정 PO 투여함. 투여 후 30분 뒤 통증 재평가 예정.",
     status: "pending",
     writer: "김영희",
-    isConfirmed: false, // → '타이래놀' 단어에 퀵 수정 팝오버 노출 (→ 타이레놀)
+    isConfirmed: false,
   },
   {
     id: 102,
@@ -218,7 +184,7 @@ export const INITIAL_RECORDS: EmrRecord[] = [
       "바이탈 재측정 결과 안정적임. 도뇨관 유지 중이며 배액 양상 정상임. 수액 잔량 200cc 확인됨.",
     status: "pending",
     writer: "김영희",
-    isConfirmed: false, // → '바이탈/도뇨관/수액' 모두 퀵 수정 제안 (표준 약어 변환 예시)
+    isConfirmed: false,
   },
   // --- NFC 태깅 기록 샘플 (약물) ---
   {
@@ -354,9 +320,24 @@ export const INITIAL_RECORDS: EmrRecord[] = [
 // - LB: 검체검사(Laboratory)
 // - RD: 영상검사(Radiology)
 // - OR: 일반지시(Order)
-export const INITIAL_ORDERS = [
+export const INITIAL_ORDERS: DoctorOrder[] = [
   {
-    id: 1,
+    id: "o-new",
+    category: "투약",
+    code: "MD1000",
+    name: "Acetaminophen 1000mg Tab.",
+    dose: "1",
+    frequency: "2",
+    unit: "tab",
+    method: "PO",
+    status: "진행",
+    time: "15:30",
+    remarks: "기존 500mg QD에서 1000mg BID로 변경됨 (통증 조절 목적)",
+    patientName: "박민수",
+    isChanged: true,
+  },
+  {
+    id: "o1",
     category: "수액",
     code: "IV0901",
     name: "0.9% Sodium Chloride Inj. 1000ml",
@@ -365,10 +346,12 @@ export const INITIAL_ORDERS = [
     unit: "bag",
     method: "IV",
     status: "진행",
-    remarks: "80cc/hr 유지",
+    time: "14:15",
+    remarks: "80cc/hr 유지 및 I/O Check 시작 요망.",
+    patientName: "김가민",
   },
   {
-    id: 2,
+    id: "o2",
     category: "지시",
     code: "OR0001",
     name: "금식 (수술 전)",
@@ -377,10 +360,12 @@ export const INITIAL_ORDERS = [
     unit: "-",
     method: "-",
     status: "접수",
-    remarks: "자정부터 금식 유지",
+    time: "14:30",
+    remarks: "자정부터 금식 유지. 보호자 안내 완료.",
+    patientName: "이영희",
   },
   {
-    id: 3,
+    id: "o3",
     category: "투약",
     code: "MD0500",
     name: "Acetaminophen 500mg Tab.",
@@ -389,10 +374,12 @@ export const INITIAL_ORDERS = [
     unit: "tab",
     method: "PO",
     status: "완료",
-    remarks: "식후 30분",
+    time: "13:00",
+    remarks: "식후 30분 투여 완료.",
+    patientName: "박민수",
   },
   {
-    id: 4,
+    id: "o-lb",
     category: "LIS",
     code: "LB2501",
     name: "Complete Blood Count (CBC)",
@@ -401,10 +388,12 @@ export const INITIAL_ORDERS = [
     unit: "-",
     method: "-",
     status: "검사중",
+    time: "06:00",
     remarks: "오전 6시 채혈",
+    patientName: "김가민",
   },
   {
-    id: 5,
+    id: "o4",
     category: "영상",
     code: "RD0449",
     name: "Abdomen CT (with contrast)",
@@ -413,11 +402,126 @@ export const INITIAL_ORDERS = [
     unit: "-",
     method: "-",
     status: "검사중",
-    remarks: "동의서 확인 요망",
+    time: "12:30",
+    remarks: "영상의학과 연락 대기 중. 동의서 확인 요망.",
+    patientName: "최지윤",
   },
 ];
 
-export const DEFAULT_PATIENT_INFO = {
+export const INITIAL_PATIENT_ALERTS: PatientAlert[] = [
+  {
+    id: 1,
+    patientId: "PT0001",
+    patientName: "김가민",
+    room: "7101호",
+    time: "22:10",
+    severity: "critical",
+    category: "바이탈",
+    message: "SpO2 92% 로 하강. 산소 포화도 경고 임계치 도달.",
+    status: "unread",
+  },
+  {
+    id: 2,
+    patientId: "PT0001",
+    patientName: "김가민",
+    room: "7101호",
+    time: "21:45",
+    severity: "warning",
+    category: "투약",
+    message: "Tridol 1amp IV 투여 후 30분 경과. 통증 재평가 필요.",
+    status: "unread",
+  },
+  {
+    id: 3,
+    patientId: "PT0001",
+    patientName: "김가민",
+    room: "7101호",
+    time: "20:30",
+    severity: "info",
+    category: "간호",
+    message: "수액 잔량 200cc. 1시간 내 교체 예정.",
+    status: "acknowledged",
+  },
+  {
+    id: 4,
+    patientId: "PT0001",
+    patientName: "김가민",
+    room: "7101호",
+    time: "19:15",
+    severity: "warning",
+    category: "낙상",
+    message: "낙상 고위험군. 야간 보행 시 간호사 동행 권고.",
+    status: "acknowledged",
+  },
+  {
+    id: 5,
+    patientId: "PT0001",
+    patientName: "김가민",
+    room: "7101호",
+    time: "18:00",
+    severity: "info",
+    category: "식이",
+    message: "NPO 유지 중. 수술 전 금식 지시 재확인.",
+    status: "resolved",
+  },
+  {
+    id: 6,
+    patientId: "PT0002",
+    patientName: "박영희",
+    room: "7101호",
+    time: "14:20",
+    severity: "warning",
+    category: "배액",
+    message: "JP bag 배액량 증가(50→120cc). 담당의 노티 필요.",
+    status: "unread",
+  },
+  {
+    id: 7,
+    patientId: "PT0003",
+    patientName: "최민호",
+    room: "7101호",
+    time: "11:05",
+    severity: "critical",
+    category: "호흡",
+    message: "SpO2 91% (RA). Nasal Prong 적용 검토.",
+    status: "resolved",
+  },
+  {
+    id: 8,
+    patientId: "PT0003",
+    patientName: "최민호",
+    room: "7101호",
+    time: "10:30",
+    severity: "warning",
+    category: "투약",
+    message: "Levofloxacin IV 투여 예정 시각 지연(30분).",
+    status: "unread",
+  },
+  {
+    id: 9,
+    patientId: "PT0004",
+    patientName: "한지민",
+    room: "7102호",
+    time: "09:45",
+    severity: "info",
+    category: "검사",
+    message: "아침 채혈(CBC) 완료. 결과 대기 중.",
+    status: "acknowledged",
+  },
+  {
+    id: 10,
+    patientId: "PT0004",
+    patientName: "한지민",
+    room: "7102호",
+    time: "08:20",
+    severity: "critical",
+    category: "바이탈",
+    message: "HR 115 로 상승. 빈맥 경보 발생.",
+    status: "unread",
+  },
+];
+
+export const INITIAL_PATIENT_INFO = {
   name: "김가민",
   genderAge: "F/25",
   id: "PT0001",
