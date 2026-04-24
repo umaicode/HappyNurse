@@ -35,3 +35,10 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Secrets ###
+src/main/resources/
+
+### docs ###
+/docs/superpowers
+/sc
