@@ -96,7 +96,7 @@ public class AuthService {
                 wardId
         );
 
-        return new AuthResult(token, loginResponse);
+        return new AuthResult(token, null, loginResponse);
     }
 
     @Transactional
