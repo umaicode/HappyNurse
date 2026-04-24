@@ -9,6 +9,7 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   reactCompiler: true, // React Compiler 활성화 (선택)
 }
 
