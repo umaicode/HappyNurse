@@ -16,7 +16,7 @@ export default function Help() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const patientName = searchParams.get("name") ?? patientMock.name;
-  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [selectedSymptom, setSelectedSymptom] = useState<string | null>(null);
   const [directInput, setDirectInput] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("form");
   const [openFaqId, setOpenFaqId] = useState<string | null>(null);
@@ -32,14 +32,12 @@ export default function Help() {
   );
 
   const toggleSymptom = (id: string) => {
-    setSelectedSymptoms((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
+    setSelectedSymptom((prev) => (prev === id ? null : id));
   };
 
   const handleSubmit = () => {
     const trimmedInput = directInput.trim();
-    if (selectedSymptoms.length === 0 && !trimmedInput) return;
+    if (!selectedSymptom && !trimmedInput) return;
 
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, "0");
@@ -48,14 +46,14 @@ export default function Help() {
 
     const params = new URLSearchParams({
       name: patientName,
-      symptoms: selectedSymptoms.join(","),
+      symptoms: selectedSymptom ?? "",
       sentAt,
     });
     if (trimmedInput) params.set("direct", trimmedInput);
     router.push(`/patient/complete?${params.toString()}`);
   };
 
-  const requestCount = selectedSymptoms.length + (directInput.trim() ? 1 : 0);
+  const hasRequest = !!selectedSymptom || !!directInput.trim();
 
   return (
     <div className="flex flex-1 flex-col gap-5 px-[22px] pt-5 pb-[50px]">
@@ -73,13 +71,22 @@ export default function Help() {
         </h1>
       </div>
 
-      <div className="flex flex-col gap-2 rounded-2xl bg-[#F9FAFB] px-4 py-2 shadow-[0_1px_6px_rgba(0,0,0,0.08)]">
-        <div className="flex flex-wrap items-baseline gap-2">
-          <span className="text-[20px] font-extrabold tracking-tight text-patient-ink">
+      <div className="flex flex-col gap-1 rounded-2xl bg-[#F9FAFB] px-4 py-2 shadow-[0_1px_6px_rgba(0,0,0,0.08)]">
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="text-[22px] font-extrabold tracking-tight text-patient-ink">
             {patientName}
           </span>
-          <span className="rounded-full bg-patient-slate-surface px-2.5 py-[3px] text-[16px] font-bold text-patient-slate">
+          <span className="rounded-full mx-1 bg-patient-slate-surface px-2 py-[2px] text-[16px] font-bold text-patient-slate">
             {patientMock.room}
+          </span>
+          <span
+            className={`rounded-full px-3 py-[2px] text-[14px] font-extrabold ${
+              patientMock.gender === "F"
+                ? "bg-[#b78b9c] text-white"
+                : "bg-[#91a9c0] text-white"
+            }`}
+          >
+            {patientMock.gender}
           </span>
           <span className="text-lg font-bold text-patient-sub">
             {patientMock.ward} · {patientMock.surgeryType}
@@ -96,7 +103,7 @@ export default function Help() {
         </div>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex border-b border-patient-hairline">
         {(
           [
             { key: "form", label: "요청하기" },
@@ -109,13 +116,14 @@ export default function Help() {
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex h-10 flex-1 items-center justify-center rounded-[10px] text-lg font-bold tracking-tight transition-colors ${
-                isActive
-                  ? "bg-patient-primary text-white"
-                  : "bg-[#EFEFF0] text-[#2C3870]"
+              className={`relative flex flex-1 items-center justify-center pb-3 text-lg font-bold tracking-tight transition-colors duration-200 ${
+                isActive ? "text-patient-primary" : "text-patient-muted"
               }`}
             >
               {tab.label}
+              {isActive && (
+                <span className="absolute bottom-0 left-0 right-0 h-[2.5px] rounded-full bg-patient-primary" />
+              )}
             </button>
           );
         })}
@@ -123,18 +131,9 @@ export default function Help() {
 
       {activeTab === "form" ? (
         <div className="flex flex-1 flex-col gap-[15px] overflow-hidden">
-          <div className="flex items-baseline justify-between">
-            <span className="text-lg font-extrabold tracking-tight text-patient-ink">
-              요청할 항목을 선택하세요
-            </span>
-            <span className="text-sm font-semibold text-[#616774]">
-              중복 선택 가능
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-5 mx-2">
+          <div className="grid grid-cols-2 gap-5 mx-2 mt-2">
             {symptomsMock.map((symptom) => {
-              const isSelected = selectedSymptoms.includes(symptom.id);
+              const isSelected = selectedSymptom === symptom.id;
               return (
                 <button
                   key={symptom.id}
@@ -169,28 +168,32 @@ export default function Help() {
 
           <div className="mt-4 flex flex-col gap-3">
             <label className="text-lg font-bold text-patient-sub">
-              직접 입력
+              그 외 증상
             </label>
             <textarea
-              value={directInput}
+              value={selectedSymptom ? "" : directInput}
               onChange={(event) => setDirectInput(event.target.value)}
               placeholder="증상이나 필요한 도움을 입력해주세요"
-              className="min-h-[72px] w-full resize-none rounded-xl border border-[#cdcfd7] bg-white px-3 py-2.5 text-lg font-medium leading-relaxed text-patient-ink outline-none placeholder:text-patient-fade focus:border-patient-primary"
+              disabled={!!selectedSymptom}
+              className={`min-h-[72px] w-full resize-none rounded-xl border px-3 py-2.5 text-lg font-medium leading-relaxed outline-none transition-colors ${
+                selectedSymptom
+                  ? "border-[#e0e2e6] bg-[#f3f4f6] text-patient-muted placeholder:text-patient-fade cursor-not-allowed"
+                  : "border-[#cdcfd7] bg-white text-patient-ink placeholder:text-patient-fade focus:border-patient-primary"
+              }`}
             />
           </div>
 
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={requestCount === 0}
+            disabled={!hasRequest}
             className="mt-auto h-14 w-full rounded-[14px] bg-patient-primary text-[20px] font-bold tracking-tight text-white transition-colors hover:bg-[#0F1F7A] disabled:cursor-default disabled:bg-[#C8CBD4]"
           >
             간호사에게 전송
-            {requestCount > 0 ? ` · ${requestCount}건` : ""}
           </button>
         </div>
       ) : (
-        <div className="flex flex-1 flex-col gap-[17px] overflow-auto">
+        <div className="flex flex-1 mt-2 flex-col gap-[17px] overflow-auto">
           {faqs.length === 0 ? (
             <p className="py-10 text-center text-lg font-bold text-patient-muted">
               등록된 FAQ가 없습니다.
