@@ -14,13 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { AssignPatientModal } from "@/features/dashboard/components/AssignPatientModal";
 import type { Ward } from "@/features/patient/types/ward";
 
 interface DashboardLayoutProps {
@@ -32,7 +26,8 @@ interface DashboardLayoutProps {
   onOpenLeft: () => void;
   onOpenRight: () => void;
   wards: Ward[];
-  onAssignPatient: (patientId: string) => void;
+  currentUser: string;
+  onAssignPatients: (patientIds: string[]) => void;
 }
 
 type QuickActionId = "handover" | "assign-patient";
@@ -48,7 +43,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   {
     id: "handover",
     icon: Share2,
-    label: "환자 인수인계",
+    label: "AI 인수인계 리포트",
     color: "text-emerald-500",
   },
   {
@@ -68,7 +63,8 @@ export function DashboardLayout({
   onOpenLeft,
   onOpenRight,
   wards,
-  onAssignPatient,
+  currentUser,
+  onAssignPatients,
 }: DashboardLayoutProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
@@ -81,11 +77,6 @@ export function DashboardLayout({
     } else if (actionId === "assign-patient") {
       setIsAssignOpen(true);
     }
-  };
-
-  const handleSelectPatient = (patientId: string) => {
-    onAssignPatient(patientId);
-    setIsAssignOpen(false);
   };
 
   return (
@@ -177,57 +168,13 @@ export function DashboardLayout({
         </Popover>
       </div>
 
-      {/* 담당 환자 설정 Modal */}
-      <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
-        <DialogContent className="max-w-[480px] max-h-[80vh] overflow-hidden flex flex-col rounded-2xl p-0 border border-border-base bg-white shadow-2xl">
-          <DialogHeader className="px-6 pt-6 pb-3 border-b border-border-subtle">
-            <DialogTitle className="text-xl font-bold text-[var(--color-sub-primary)]">
-              담당 환자 설정
-            </DialogTitle>
-            <DialogDescription className="text-body-sm text-content-tertiary">
-              선택한 환자가 내 담당으로 배정됩니다.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto px-4 py-3">
-            {wards.map((ward) => (
-              <div key={ward.id} className="flex flex-col gap-2 pb-3 last:pb-0">
-                <div className="px-2 text-[12px] font-bold text-content-tertiary tracking-wider uppercase">
-                  {ward.name}
-                </div>
-                {ward.rooms.map((room) => (
-                  <div key={room.id} className="flex flex-col">
-                    <div className="px-2 py-1 text-[11px] font-bold text-content-muted border-b border-border-subtle mb-1">
-                      {room.name}
-                    </div>
-                    <div className="flex flex-col">
-                      {room.patients.map((patient) => (
-                        <button
-                          key={patient.id}
-                          onClick={() => handleSelectPatient(patient.id)}
-                          className="flex items-center justify-between w-full px-3 py-2 rounded-md hover:bg-[var(--color-surface-hover)] transition-all text-left group/patient"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <span className="text-[14px] font-bold text-content-primary truncate">
-                              {patient.name}
-                            </span>
-                            <span className="text-[12px] font-mono font-bold text-content-muted shrink-0">
-                              {patient.gender}/{patient.birthday ? patient.birthday.substring(2) : "00.01.01"}
-                            </span>
-                          </div>
-                          <span className="text-[11px] font-semibold text-content-tertiary shrink-0">
-                            담당 {patient.assignedNurse}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AssignPatientModal
+        wards={wards}
+        currentUser={currentUser}
+        isOpen={isAssignOpen}
+        onClose={() => setIsAssignOpen(false)}
+        onAssignPatients={onAssignPatients}
+      />
     </div>
   );
 }
