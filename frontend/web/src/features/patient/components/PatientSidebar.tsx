@@ -6,49 +6,20 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { INITIAL_RECORDS } from "@/mockup/emr-data";
+import { MOCK_WARDS } from "@/mockup/wards";
+import type { Patient, Ward } from "@/features/patient/types/ward";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-// Mock Data updated with assignedNurse
-const MOCK_WARDS = [
-  {
-    id: "71",
-    name: "🛠️ 71병동 (내과)",
-    rooms: [
-      {
-        id: "7101",
-        name: "7101호",
-        capacity: 6,
-        patients: [
-          { id: "p1", name: "김가민", age: 25, gender: "F", birthday: "1999.05.20", assignedNurse: "김영희", unconfirmedCount: 0 },
-          { id: "p2", name: "이철수", age: 42, gender: "M", birthday: "1982.11.03", assignedNurse: "이수진", unconfirmedCount: 1 },
-          { id: "p3", name: "박영희", age: 68, gender: "F", birthday: "1956.07.15", assignedNurse: "김영희", unconfirmedCount: 0 },
-          { id: "p4", name: "최민호", age: 31, gender: "M", birthday: "1993.02.28", assignedNurse: "김영희", unconfirmedCount: 0 },
-          { id: "p5", name: "정수연", age: 54, gender: "F", birthday: "1970.09.12", assignedNurse: "이수진", unconfirmedCount: 0 },
-          { id: "p6", name: "강태우", age: 47, gender: "M", birthday: "1977.04.05", assignedNurse: "박민지", unconfirmedCount: 0 },
-        ],
-      },
-      {
-        id: "7102",
-        name: "7102호",
-        capacity: 6,
-        patients: [
-          { id: "p11", name: "한지민", age: 29, gender: "F", birthday: "1995.12.25", assignedNurse: "김영희", unconfirmedCount: 0 },
-          { id: "p12", name: "윤도현", age: 52, gender: "M", birthday: "1972.03.14", assignedNurse: "최지원", unconfirmedCount: 2 },
-        ],
-      },
-    ],
-  },
-];
-
 interface PatientSidebarProps {
+  wards?: Ward[];
   onCollapse?: () => void;
 }
 
-export function PatientSidebar({ onCollapse }: PatientSidebarProps = {}) {
+export function PatientSidebar({ wards = MOCK_WARDS, onCollapse }: PatientSidebarProps = {}) {
   const router = useRouter();
   const currentUser = typeof window !== 'undefined' ? localStorage.getItem("currentUser") || "김영희" : "김영희";
   const [activePatientId, setActivePatientId] = useState("p1");
@@ -56,8 +27,16 @@ export function PatientSidebar({ onCollapse }: PatientSidebarProps = {}) {
   const [isMyPatientsOpen, setIsMyPatientsOpen] = useState(true);
   const [isAllPatientsOpen, setIsAllPatientsOpen] = useState(true);
 
-  // Flatten and separate patients
-  const allPatients = useMemo(() => MOCK_WARDS.flatMap(ward => ward.rooms.flatMap(room => room.patients)), []);
+  // Flatten, inject room name into each patient
+  const allPatients = useMemo<Patient[]>(
+    () =>
+      wards.flatMap((ward) =>
+        ward.rooms.flatMap((room) =>
+          room.patients.map((patient) => ({ ...patient, room: room.name })),
+        ),
+      ),
+    [wards],
+  );
 
   const myPatients = useMemo(() =>
     allPatients.filter(p => p.assignedNurse === currentUser),
@@ -86,6 +65,25 @@ export function PatientSidebar({ onCollapse }: PatientSidebarProps = {}) {
   const filteredMyPatients = myPatients.filter(p => p.name.includes(searchQuery));
   const filteredOtherPatients = otherPatients.filter(p => p.name.includes(searchQuery));
 
+  // 전체 환자 섹션을 호수(room) 단위로 그룹핑. 호수 순서는 원본 wards 정의 순서를 따름.
+  const otherPatientsByRoom = useMemo(() => {
+    const order: string[] = [];
+    wards.forEach((ward) =>
+      ward.rooms.forEach((room) => {
+        if (!order.includes(room.name)) order.push(room.name);
+      }),
+    );
+    const groups = new Map<string, Patient[]>();
+    filteredOtherPatients.forEach((patient) => {
+      const roomName = patient.room || "미지정";
+      if (!groups.has(roomName)) groups.set(roomName, []);
+      groups.get(roomName)!.push(patient);
+    });
+    return order
+      .filter((roomName) => groups.has(roomName))
+      .map((roomName) => ({ roomName, patients: groups.get(roomName)! }));
+  }, [filteredOtherPatients, wards]);
+
   return (
     <div className="flex flex-col h-full bg-[var(--color-surface-base)]">
       {/* Brand & Search Header */}
@@ -108,7 +106,7 @@ export function PatientSidebar({ onCollapse }: PatientSidebarProps = {}) {
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-muted z-10" />
           <Input
             type="text"
-            placeholder="🛠️ 환자명 검색..."
+            placeholder="환자명 검색..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-8 bg-white border-border-subtle shadow-sm h-8 text-body-sm focus-visible:ring-1 focus-visible:ring-[var(--color-brand-primary)]"
@@ -123,23 +121,29 @@ export function PatientSidebar({ onCollapse }: PatientSidebarProps = {}) {
         <Collapsible open={isMyPatientsOpen} onOpenChange={setIsMyPatientsOpen} className="w-full">
           <CollapsibleTrigger className="w-full px-4 py-2.5 flex items-center justify-between bg-white border-b border-border-subtle group hover:bg-slate-50 transition-colors">
             <div className="flex items-center gap-2">
-              <span className="text-[14px] font-black text-[var(--color-brand-primary)]">🛠️ 내 담당 환자</span>
+              <span className="text-[14px] font-black text-[var(--color-brand-primary)]">내 담당 환자</span>
               <span className="text-[11px] font-bold bg-[var(--color-brand-surface)] text-[var(--color-brand-primary)] px-2 py-0.5 rounded-full">{filteredMyPatients.length}</span>
             </div>
             <ChevronRight className={cn("w-4 h-4 text-content-muted transition-transform duration-200", isMyPatientsOpen && "rotate-90")} />
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="flex flex-col bg-white">
-              {filteredMyPatients.map(patient => (
-                <PatientItem
-                  key={patient.id}
-                  patient={patient}
-                  isActive={activePatientId === patient.id}
-                  isDuplicate={duplicateNames[patient.name] > 1}
-                  unconfirmedCount={unconfirmedCounts[patient.id] || 0}
-                  onClick={() => setActivePatientId(patient.id)}
-                />
-              ))}
+              {filteredMyPatients.length === 0 ? (
+                <div className="px-4 py-6 text-center text-[12px] font-medium text-content-muted">
+                  담당 환자가 없습니다
+                </div>
+              ) : (
+                filteredMyPatients.map(patient => (
+                  <PatientItem
+                    key={patient.id}
+                    patient={patient}
+                    isActive={activePatientId === patient.id}
+                    isDuplicate={duplicateNames[patient.name] > 1}
+                    unconfirmedCount={unconfirmedCounts[patient.id] || 0}
+                    onClick={() => setActivePatientId(patient.id)}
+                  />
+                ))
+              )}
             </div>
           </CollapsibleContent>
         </Collapsible>
@@ -148,22 +152,29 @@ export function PatientSidebar({ onCollapse }: PatientSidebarProps = {}) {
         <Collapsible open={isAllPatientsOpen} onOpenChange={setIsAllPatientsOpen} className="w-full">
           <CollapsibleTrigger className="w-full px-4 py-2.5 flex items-center justify-between bg-slate-50/50 border-b border-border-subtle group hover:bg-slate-50 transition-colors">
             <div className="flex items-center gap-2">
-              <span className="text-[14px] font-black text-content-secondary">🛠️ 전체 환자</span>
+              <span className="text-[14px] font-black text-content-secondary">전체 환자</span>
               <span className="text-[11px] font-bold bg-slate-200 text-content-muted px-2 py-0.5 rounded-full">{filteredOtherPatients.length}</span>
             </div>
             <ChevronRight className={cn("w-4 h-4 text-content-muted transition-transform duration-200", isAllPatientsOpen && "rotate-90")} />
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="flex flex-col bg-white">
-              {filteredOtherPatients.map(patient => (
-                <PatientItem
-                  key={patient.id}
-                  patient={patient}
-                  isActive={activePatientId === patient.id}
-                  isDuplicate={duplicateNames[patient.name] > 1}
-                  unconfirmedCount={unconfirmedCounts[patient.id] || 0}
-                  onClick={() => setActivePatientId(patient.id)}
-                />
+              {otherPatientsByRoom.map(({ roomName, patients }) => (
+                <div key={roomName} className="flex flex-col">
+                  <div className="px-4 py-1.5 bg-slate-100/70 border-b border-border-subtle text-[11px] font-bold text-content-tertiary tracking-wider uppercase">
+                    {roomName}
+                  </div>
+                  {patients.map(patient => (
+                    <PatientItem
+                      key={patient.id}
+                      patient={patient}
+                      isActive={activePatientId === patient.id}
+                      isDuplicate={duplicateNames[patient.name] > 1}
+                      unconfirmedCount={unconfirmedCounts[patient.id] || 0}
+                      onClick={() => setActivePatientId(patient.id)}
+                    />
+                  ))}
+                </div>
               ))}
             </div>
           </CollapsibleContent>
@@ -192,16 +203,6 @@ export function PatientSidebar({ onCollapse }: PatientSidebarProps = {}) {
       </div>
     </div>
   );
-}
-
-interface Patient {
-  id: string;
-  name: string;
-  age: number;
-  gender: string;
-  birthday: string;
-  assignedNurse: string;
-  unconfirmedCount: number;
 }
 
 interface PatientItemProps {

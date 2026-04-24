@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MOCK_WARDS } from "@/mockup/wards";
 
 export function LoginForm() {
   const router = useRouter();
@@ -204,14 +205,11 @@ export function LoginForm() {
                           <SelectValue placeholder="접속할 병동을 선택하세요" />
                         </SelectTrigger>
                         <SelectContent className="z-[100] rounded-xl border-[var(--color-border-base)] shadow-xl">
-                          <SelectItem value="71">
-                            🛠️ 71병동 (일반내과)
-                          </SelectItem>
-                          <SelectItem value="72">
-                            🛠️ 72병동 (소화기내과)
-                          </SelectItem>
-                          <SelectItem value="icu">🛠️ ICU (중환자실)</SelectItem>
-                          <SelectItem value="er">🛠️ ER (응급실)</SelectItem>
+                          {MOCK_WARDS.map((ward) => (
+                            <SelectItem key={ward.id} value={ward.id}>
+                              {ward.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -243,12 +241,12 @@ export function LoginForm() {
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <Label className="text-sm font-bold text-content-secondary ml-1">
-                      사원 아이디
+                      사원 번호
                     </Label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
                       <Input
-                        placeholder="🛠️ 아이디를 입력하세요"
+                        placeholder="아이디를 입력하세요"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
@@ -264,7 +262,7 @@ export function LoginForm() {
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
                       <Input
                         type="password"
-                        placeholder="🛠️ 비밀번호를 입력하세요"
+                        placeholder="비밀번호를 입력하세요"
                         className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
                       />
                     </div>

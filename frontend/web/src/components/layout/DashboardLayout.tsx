@@ -4,9 +4,8 @@ import { ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
-  HeartPulse,
-  Pill,
   Share2,
+  UserPlus,
   PanelLeftOpen,
   PanelRightOpen,
 } from "lucide-react";
@@ -16,15 +15,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import type { Ward } from "@/features/patient/types/ward";
 
 interface DashboardLayoutProps {
   sidebar: ReactNode;
@@ -34,26 +31,31 @@ interface DashboardLayoutProps {
   isRightOpen: boolean;
   onOpenLeft: () => void;
   onOpenRight: () => void;
+  wards: Ward[];
+  onAssignPatient: (patientId: string) => void;
 }
 
-const QUICK_ACTIONS = [
+type QuickActionId = "handover" | "assign-patient";
+
+interface QuickAction {
+  id: QuickActionId;
+  icon: typeof Share2;
+  label: string;
+  color: string;
+}
+
+const QUICK_ACTIONS: QuickAction[] = [
   {
-    icon: HeartPulse,
-    label: "바이탈 측정",
-    color: "text-red-500",
-    path: "/vitals",
-  },
-  {
-    icon: Pill,
-    label: "투약 기록",
-    color: "text-orange-500",
-    path: "/medication",
-  },
-  {
+    id: "handover",
     icon: Share2,
     label: "환자 인수인계",
     color: "text-emerald-500",
-    path: "/handover",
+  },
+  {
+    id: "assign-patient",
+    icon: UserPlus,
+    label: "담당 환자 설정",
+    color: "text-[var(--color-brand-primary)]",
   },
 ];
 
@@ -65,20 +67,25 @@ export function DashboardLayout({
   isRightOpen,
   onOpenLeft,
   onOpenRight,
+  wards,
+  onAssignPatient,
 }: DashboardLayoutProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState("");
+  const [isAssignOpen, setIsAssignOpen] = useState(false);
   const router = useRouter();
 
-  const handleActionClick = (action: typeof QUICK_ACTIONS[0]) => {
+  const handleActionClick = (actionId: QuickActionId) => {
     setIsOpen(false);
-    if (action.label === "환자 인수인계") {
-      router.push(action.path || "/handover");
-    } else {
-      setPendingAction(action.label);
-      setIsAlertOpen(true);
+    if (actionId === "handover") {
+      router.push("/handover");
+    } else if (actionId === "assign-patient") {
+      setIsAssignOpen(true);
     }
+  };
+
+  const handleSelectPatient = (patientId: string) => {
+    onAssignPatient(patientId);
+    setIsAssignOpen(false);
   };
 
   return (
@@ -149,10 +156,10 @@ export function DashboardLayout({
               <div className="px-3 py-2 text-[11px] font-bold text-content-muted uppercase tracking-wider border-b border-border-subtle mb-1">
                 Quick Actions
               </div>
-              {QUICK_ACTIONS.map((action, index) => (
+              {QUICK_ACTIONS.map((action) => (
                 <button
-                  key={index}
-                  onClick={() => handleActionClick(action)}
+                  key={action.id}
+                  onClick={() => handleActionClick(action.id)}
                   className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-[var(--color-surface-hover)] transition-all text-left group/action active:scale-95"
                 >
                   <div
@@ -170,30 +177,57 @@ export function DashboardLayout({
         </Popover>
       </div>
 
-      {/* Coming Soon Alert Dialog */}
-      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-        <AlertDialogContent className="max-w-[340px] rounded-2xl p-6 border border-border-base bg-white shadow-2xl">
-          <AlertDialogHeader className="flex flex-col items-center justify-center gap-3">
-            <div className="size-12 rounded-full bg-[var(--color-brand-surface)] flex items-center justify-center text-[var(--color-brand-primary)] mb-1">
-              {pendingAction === "바이탈 측정" ? <HeartPulse className="size-6" /> : <Pill className="size-6" />}
-            </div>
-            <AlertDialogTitle className="text-xl font-bold text-[var(--color-sub-primary)] text-center">
-              준비 중입니다
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-body-sm font-medium text-content-tertiary text-center leading-relaxed">
-              <span className="text-[var(--color-brand-primary)] font-bold">{pendingAction}</span> 기능은 현재 개발 중입니다.<br />
-              더 나은 서비스를 위해 조금만 기다려 주세요!
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-6">
-            <AlertDialogAction asChild>
-              <Button className="w-full h-11 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white font-bold rounded-xl shadow-lg shadow-[var(--color-brand-primary)]/10 transition-all">
-                확인
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* 담당 환자 설정 Modal */}
+      <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
+        <DialogContent className="max-w-[480px] max-h-[80vh] overflow-hidden flex flex-col rounded-2xl p-0 border border-border-base bg-white shadow-2xl">
+          <DialogHeader className="px-6 pt-6 pb-3 border-b border-border-subtle">
+            <DialogTitle className="text-xl font-bold text-[var(--color-sub-primary)]">
+              담당 환자 설정
+            </DialogTitle>
+            <DialogDescription className="text-body-sm text-content-tertiary">
+              선택한 환자가 내 담당으로 배정됩니다.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto px-4 py-3">
+            {wards.map((ward) => (
+              <div key={ward.id} className="flex flex-col gap-2 pb-3 last:pb-0">
+                <div className="px-2 text-[12px] font-bold text-content-tertiary tracking-wider uppercase">
+                  {ward.name}
+                </div>
+                {ward.rooms.map((room) => (
+                  <div key={room.id} className="flex flex-col">
+                    <div className="px-2 py-1 text-[11px] font-bold text-content-muted border-b border-border-subtle mb-1">
+                      {room.name}
+                    </div>
+                    <div className="flex flex-col">
+                      {room.patients.map((patient) => (
+                        <button
+                          key={patient.id}
+                          onClick={() => handleSelectPatient(patient.id)}
+                          className="flex items-center justify-between w-full px-3 py-2 rounded-md hover:bg-[var(--color-surface-hover)] transition-all text-left group/patient"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="text-[14px] font-bold text-content-primary truncate">
+                              {patient.name}
+                            </span>
+                            <span className="text-[12px] font-mono font-bold text-content-muted shrink-0">
+                              {patient.gender}/{patient.birthday ? patient.birthday.substring(2) : "00.01.01"}
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-semibold text-content-tertiary shrink-0">
+                            담당 {patient.assignedNurse}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

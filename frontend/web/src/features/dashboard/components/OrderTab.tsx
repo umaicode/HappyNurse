@@ -1,22 +1,10 @@
 'use client'
 
 import { cn } from "@/lib/utils";
-
-type Order = {
-  id: number;
-  category: string;
-  code: string;
-  name: string;
-  dose: string;
-  frequency: string;
-  unit: string;
-  method: string;
-  status: string;
-  remarks: string;
-};
+import type { DoctorOrder } from "@/features/dashboard/types/order";
 
 type OrderTabProps = {
-  orders: Order[];
+  orders: DoctorOrder[];
 };
 
 export function OrderTab({ orders }: OrderTabProps) {

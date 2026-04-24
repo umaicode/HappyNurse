@@ -54,7 +54,7 @@ export function RightPanel({ onCollapse }: RightPanelProps = {}) {
             )}
           >
             <Bell className="w-4 h-4" />
-            환자 알림
+            알림
           </button>
         </div>
       </div>

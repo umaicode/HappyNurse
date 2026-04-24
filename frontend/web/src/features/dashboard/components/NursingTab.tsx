@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { DrugInfo, NursingRecord } from "../types/record";
+import { MEDICAL_SUGGESTIONS } from "@/mockup/medical-dictionary";
 
 function NfcDrugContent({
   drug,
@@ -124,16 +125,6 @@ function NfcDrugContent({
   );
 }
 
-// Mock Medical Dictionary for Quick Edit
-const MEDICAL_SUGGESTIONS: Record<string, string[]> = {
-  충우염: ["충수염"],
-  타이래놀: ["타이레놀"],
-  바이탈: ["V/S", "활력징후"],
-  도뇨관: ["Foley", "폴리"],
-  수액: ["N/S", "D/W", "Fluid"],
-  충수염: ["급성 충수염", "Appendicitis"],
-};
-
 function WordWithSuggestion({
   word,
   onReplace,
@@ -234,7 +225,7 @@ function TimePicker({
   };
 
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
+    <Popover open={open} onOpenChange={handleOpenChange} modal={true}>
       <PopoverTrigger asChild>
         <div
           onClick={(e) => e.stopPropagation()}
