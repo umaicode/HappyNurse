@@ -91,6 +91,14 @@ export function LoginForm() {
       {/* Layer 6: Soft white veil */}
       <div className="absolute inset-0 z-2 bg-gradient-to-b from-white/15 via-transparent to-white/10" />
 
+      {/* 개발용 환자 로그인 버튼 */}
+      <button 
+        onClick={() => router.push("/patient")}
+        className="absolute top-4 left-4 z-50 rounded-2xl border border-action-blue-hover bg-white px-3 py-1.5 text-[26px] font-bold text-black hover:bg-[#a0afec] transition-colors"
+      >
+        🛠️ 환자 로그인
+      </button>
+
       {/* Content Layer */}
       <div className="relative z-10 flex w-full h-full">
         {/* Left Panel: Brand Visuals (50%) */}

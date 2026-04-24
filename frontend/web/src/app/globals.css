@@ -3,8 +3,8 @@
 @import "shadcn/tailwind.css";
 
 @font-face {
-  font-family: 'Pretendard';
-  src: url('/fonts/PretendardVariable.ttf') format('truetype');
+  font-family: "Pretendard";
+  src: url("/fonts/PretendardVariable.ttf") format("truetype");
   font-weight: 100 900;
   font-display: swap;
 }
@@ -27,7 +27,7 @@
   --muted-foreground: #717182;
   --accent: #e9ebef;
   --accent-foreground: #030213;
-  --destructive: #C00000;
+  --destructive: #c00000;
   --destructive-foreground: #ffffff;
   --border: rgba(0, 0, 0, 0.1);
   --input: transparent;
@@ -36,11 +36,11 @@
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --ring: oklch(0.708 0 0);
-  --chart-1: #15289F;
-  --chart-2: #3060FF;
-  --chart-3: #1E293B;
-  --chart-4: #60A5FA;
-  --chart-5: #94A3B8;
+  --chart-1: #15289f;
+  --chart-2: #3060ff;
+  --chart-3: #1e293b;
+  --chart-4: #60a5fa;
+  --chart-5: #94a3b8;
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -67,7 +67,7 @@
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: #EF4444;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --border: oklch(0.269 0 0);
   --input: oklch(0.269 0 0);
@@ -91,18 +91,22 @@
 
 @theme inline {
   /* Fonts */
-  --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans:
+    "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
   --font-heading: var(--font-sans);
 
   /* Emr Brand Colors */
-  --color-brand-primary: #15289F;
-  --color-brand-hover: #101E7A;
-  --color-brand-surface: #E7E9F5;
-  --color-brand-text: #FFFFFF;
+  --color-brand-primary: #15289f;
+  --color-brand-hover: #101e7a;
+  --color-brand-surface: #e7e9f5;
+  --color-brand-text: #ffffff;
 
   /* Emr Sub Colors (Navy) */
-  --color-sub-primary: #1E293B;
+  --color-sub-primary: #1e293b;
   --color-sub-alpha-100: rgba(30, 41, 59, 1);
   --color-sub-alpha-80: rgba(30, 41, 59, 0.8);
   --color-sub-alpha-60: rgba(30, 41, 59, 0.6);
@@ -111,22 +115,22 @@
   --color-sub-alpha-10: rgba(30, 41, 59, 0.1);
 
   /* Emr Action Colors */
-  --color-action-blue: #3060FF;
-  --color-action-blue-hover: #264CCC;
-  --color-action-blue-surface: #EAF0FF;
+  --color-action-blue: #3060ff;
+  --color-action-blue-hover: #264ccc;
+  --color-action-blue-surface: #eaf0ff;
 
   /* Emr Semantic Colors */
-  --color-surface-base: #FAFAFA;
-  --color-surface-card: #FFFFFF;
-  --color-surface-hover: #F3F4F6;
-  --color-border-base: #E5E5E5;
-  --color-border-subtle: #E5E7EB;
-  --color-border-hover: #D1D5DB;
+  --color-surface-base: #fafafa;
+  --color-surface-card: #ffffff;
+  --color-surface-hover: #f3f4f6;
+  --color-border-base: #e5e5e5;
+  --color-border-subtle: #e5e7eb;
+  --color-border-hover: #d1d5db;
   --color-content-primary: #111111;
   --color-content-secondary: #374151;
-  --color-content-tertiary: #4B5563;
-  --color-content-quaternary: #6B7280;
-  --color-content-muted: #9CA3AF;
+  --color-content-tertiary: #4b5563;
+  --color-content-quaternary: #6b7280;
+  --color-content-muted: #9ca3af;
 
   /* Emr Typography */
   --text-title-lg: 1.5rem;
@@ -179,8 +183,33 @@
      Patient (환자용 웹) 전용 토큰
      Scope: src/app/patient/**
   ============================================================ */
-  --color-patient-accent-surface: #F0F2FE;
-  --color-patient-success: #3C9C7C;
+  --color-patient-accent-surface: #f0f2fe;
+  --color-patient-primary: #1428a0;
+  --color-patient-success: #497461;
+  --color-patient-success-surface: #e7f4ed;
+  --color-patient-slate: #37404a;
+  --color-patient-slate-surface: #eef0f3;
+  --color-patient-ink: #14181e;
+  --color-patient-sub: #4c5360;
+  --color-patient-muted: #8a8f99;
+  --color-patient-fade: #b9bdc5;
+  --color-patient-hairline: #ededef;
+  --color-patient-line: #dddfe3;
+  --color-patient-bg: #f5f6f8;
+}
+
+@keyframes pt-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(55, 64, 74, 0.45),
+      0 0 0 4px var(--color-patient-slate-surface);
+  }
+  50% {
+    box-shadow:
+      0 0 0 7px rgba(55, 64, 74, 0),
+      0 0 0 4px var(--color-patient-slate-surface);
+  }
 }
 
 @layer base {
@@ -190,7 +219,11 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family:
+      "Pretendard",
+      -apple-system,
+      BlinkMacSystemFont,
+      sans-serif;
   }
 
   html {
