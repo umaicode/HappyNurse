@@ -5,7 +5,8 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PatientSidebar } from "@/features/patient/components/PatientSidebar";
 import { EMRGrid } from "./EMRGrid";
 import { RightPanel } from "./RightPanel";
-import { MOCK_WARDS, type Ward } from "@/mockup/wards";
+import { MOCK_WARDS } from "@/mockup/wards";
+import type { Ward } from "@/features/patient/types/ward";
 
 export function DashboardView() {
   const [isLeftOpen, setIsLeftOpen] = useState(true);

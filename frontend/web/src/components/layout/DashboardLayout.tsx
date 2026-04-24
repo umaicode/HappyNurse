@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { Ward } from "@/mockup/wards";
+import type { Ward } from "@/features/patient/types/ward";
 
 interface DashboardLayoutProps {
   sidebar: ReactNode;

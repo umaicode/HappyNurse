@@ -15,12 +15,18 @@ import { useState, useEffect } from "react";
 import { format, addDays, subDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import {
-  HOURS,
   INITIAL_RECORDS,
   INITIAL_ORDERS,
   INITIAL_PATIENT_ALERTS,
-  DEFAULT_PATIENT_INFO,
+  INITIAL_PATIENT_INFO,
 } from "@/mockup/emr-data";
+
+const HOURS = [
+  "전체 시간",
+  ...Array.from({ length: 24 }).map(
+    (_, i) => `${i.toString().padStart(2, "0")}시`,
+  ),
+];
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -262,7 +268,7 @@ export function EMRGrid() {
   const [isGlobalEditing, setIsGlobalEditing] = useState(false);
   const [recordsSnapshot, setRecordsSnapshot] = useState<NursingRecord[] | null>(null);
 
-  const [patientInfo, setPatientInfo] = useState(DEFAULT_PATIENT_INFO);
+  const [patientInfo, setPatientInfo] = useState(INITIAL_PATIENT_INFO);
 
   const handleUpdatePatient = (
     field: keyof typeof patientInfo,

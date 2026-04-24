@@ -16,63 +16,14 @@ import { Heading } from "@/components/ui/heading";
 import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
 import { INITIAL_RECORDS } from "@/mockup/emr-data";
-
-type NursingRecord = {
-  id: number;
-  time: string;
-  content: string;
-  isHandover?: boolean;
-  isAISuggested?: boolean;
-};
-
-// Nurse-Centric Mock Data (기록은 INITIAL_RECORDS에서 patientId로 조회)
-const HANDOVER_PATIENTS = [
-  {
-    id: "p1",
-    name: "김가민",
-    patientNo: "2026-00125",
-    birthDate: "1999.05.20 (25세/F)",
-    room: "7101-01",
-    mainSymptom: "Acute Appendicitis (급성 충수염)",
-    assignedNurse: "김영희",
-    recentVitals: { status: "abnormal", detail: "BT 38.2℃ (14:30)" },
-  },
-  {
-    id: "p2",
-    name: "이철수",
-    patientNo: "2026-00342",
-    birthDate: "1982.11.03 (42세/M)",
-    room: "7101-02",
-    mainSymptom: "Post-op Gastrectomy (위절제술 후)",
-    assignedNurse: "김영희",
-    recentVitals: { status: "normal", detail: "안정적" },
-  },
-  {
-    id: "p3",
-    name: "박영희",
-    patientNo: "2026-00088",
-    birthDate: "1956.07.15 (68세/F)",
-    room: "7101-03",
-    mainSymptom: "Pneumonia (폐렴)",
-    assignedNurse: "김영희",
-    recentVitals: { status: "abnormal", detail: "SpO2 91% (RA, 13:00)" },
-  }
-];
+import { HANDOVER_PATIENTS } from "@/mockup/handover-data";
+import type { NursingRecord } from "@/features/dashboard/types/record";
 
 // 환자별 간호 기록을 조회 (patientId 미지정 레코드는 p1 소속)
 function getRecordsForPatient(patientId: string): NursingRecord[] {
   return INITIAL_RECORDS
-    .filter((record) => {
-      const pid = (record as { patientId?: string }).patientId;
-      return (pid || "p1") === patientId;
-    })
-    .map((record) => ({
-      id: record.id,
-      time: record.time,
-      content: record.content,
-      isHandover: (record as { isHandover?: boolean }).isHandover,
-      isAISuggested: (record as { isAISuggested?: boolean }).isAISuggested,
-    }))
+    .filter((record) => (record.patientId || "p1") === patientId)
+    .slice()
     .sort((a, b) => a.time.localeCompare(b.time));
 }
 

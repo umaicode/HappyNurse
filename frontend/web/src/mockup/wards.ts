@@ -1,31 +1,9 @@
-export interface Patient {
-  id: string;
-  name: string;
-  age: number;
-  gender: string;
-  birthday: string;
-  assignedNurse: string;
-  unconfirmedCount: number;
-  room?: string;
-}
-
-export interface Room {
-  id: string;
-  name: string;
-  capacity: number;
-  patients: Patient[];
-}
-
-export interface Ward {
-  id: string;
-  name: string;
-  rooms: Room[];
-}
+import type { Ward } from "@/features/patient/types/ward";
 
 export const MOCK_WARDS: Ward[] = [
   {
     id: "71",
-    name: "🛠️ 71병동 (내과)",
+    name: "🛠️ 71병동 (일반내과)",
     rooms: [
       {
         id: "7101",
@@ -50,5 +28,20 @@ export const MOCK_WARDS: Ward[] = [
         ],
       },
     ],
+  },
+  {
+    id: "72",
+    name: "🛠️ 72병동 (소화기내과)",
+    rooms: [],
+  },
+  {
+    id: "icu",
+    name: "🛠️ ICU (중환자실)",
+    rooms: [],
+  },
+  {
+    id: "er",
+    name: "🛠️ ER (응급실)",
+    rooms: [],
   },
 ];

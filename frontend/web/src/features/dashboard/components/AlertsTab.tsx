@@ -2,23 +2,15 @@
 
 import { AlertCircle, AlertTriangle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { PatientAlert } from "@/mockup/emr-data";
+import {
+  SEVERITY_LABEL,
+  STATUS_LABEL,
+  type PatientAlert,
+} from "@/features/dashboard/types/alert";
 
 type AlertsTabProps = {
   alerts: PatientAlert[];
   patientId: string;
-};
-
-const SEVERITY_LABEL: Record<PatientAlert["severity"], string> = {
-  critical: "긴급",
-  warning: "경고",
-  info: "안내",
-};
-
-const STATUS_LABEL: Record<PatientAlert["status"], string> = {
-  unread: "미확인",
-  acknowledged: "확인",
-  resolved: "해결",
 };
 
 function SeverityIcon({ severity }: { severity: PatientAlert["severity"] }) {

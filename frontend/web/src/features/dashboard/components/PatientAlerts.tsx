@@ -4,22 +4,12 @@ import { useMemo, useState } from "react";
 import { Search, Info, AlertCircle, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { INITIAL_PATIENT_ALERTS } from "@/mockup/emr-data";
 import {
-  INITIAL_PATIENT_ALERTS,
+  SEVERITY_LABEL,
+  STATUS_LABEL,
   type PatientAlert,
-} from "@/mockup/emr-data";
-
-const SEVERITY_LABEL: Record<PatientAlert["severity"], string> = {
-  critical: "긴급",
-  warning: "경고",
-  info: "안내",
-};
-
-const STATUS_LABEL: Record<PatientAlert["status"], string> = {
-  unread: "미확인",
-  acknowledged: "확인",
-  resolved: "해결",
-};
+} from "@/features/dashboard/types/alert";
 
 function SeverityIcon({ severity }: { severity: PatientAlert["severity"] }) {
   if (severity === "critical") {

@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { INITIAL_RECORDS } from "@/mockup/emr-data";
-import { MOCK_WARDS, type Patient, type Ward } from "@/mockup/wards";
+import { MOCK_WARDS } from "@/mockup/wards";
+import type { Patient, Ward } from "@/features/patient/types/ward";
 import {
   Collapsible,
   CollapsibleContent,
