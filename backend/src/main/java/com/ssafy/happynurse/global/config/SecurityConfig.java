@@ -46,9 +46,16 @@ public class SecurityConfig {
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
+<<<<<<< HEAD
                         .requestMatchers("/auth/login", "/auth/refresh").permitAll()
                         .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**",
                                 "/api/swagger-ui/**", "/api/v3/api-docs/**", "/swagger-ui.html").permitAll()
+=======
+                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/nfc/patients/**").permitAll()    // 환자 NFC 진입
+                        .requestMatchers("/api/patients/verify").permitAll()    // 환자 본인 확인
+>>>>>>> b07017c8331652074b8aa0c2c539659457f894af
                         .anyRequest().authenticated())
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, cookieName),
                         UsernamePasswordAuthenticationFilter.class);
@@ -64,7 +71,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000", "https://j14e101.p.ssafy.io"));
+        config.setAllowedOrigins(List.of("http://localhost:3000", "https://K14e101.p.ssafy.io"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

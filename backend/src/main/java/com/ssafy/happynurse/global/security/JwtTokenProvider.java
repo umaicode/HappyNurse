@@ -50,6 +50,19 @@ public class JwtTokenProvider {
                 .compact();
     }
 
+    public String createPatientToken(Long patientId, String patientName) {
+
+        Date now = new Date();
+        return Jwts.builder()
+                .subject(String.valueOf(patientId))
+                .claim("name", patientName)
+                .claim("role", "PATIENT")
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + expirationMs))
+                .signWith(key)
+                .compact();
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
