@@ -3,7 +3,7 @@
 
 export const patientMock = {
   id: "P-0301",
-  name: "🛠️김가민",
+  name: "김가민",
   room: "301호실",
   birthDate: "010429",
   surgeryType: "🛠️무릎 인공관절 치환술",
@@ -12,18 +12,20 @@ export const patientMock = {
 
 export const nurseMock = {
   id: "N-017",
-  name: "🛠️문현지",
+  name: "문현지",
   role: "담당 간호사",
 };
 
 export const symptomsMock = [
-  { id: "pain", label: "통증 및 약물요청" },
-  { id: "toilet", label: "화장실 도움" },
-  { id: "dressing", label: "드레싱 교체" },
-  { id: "iv", label: "수액 확인" },
-  { id: "position", label: "체위 변경" },
-  { id: "breathing", label: "호흡 불편" },
+  { id: "pain", label: "통증", sub: "약물 요청" },
+  { id: "toilet", label: "화장실", sub: "이동 도움" },
+  { id: "dressing", label: "드레싱", sub: "상처 교체" },
+  { id: "iv", label: "수액", sub: "라인 확인" },
+  { id: "position", label: "체위 변경", sub: "자세 도움" },
+  { id: "breathing", label: "호흡 불편", sub: "긴급 확인" },
 ] as const;
+
+export type SymptomId = (typeof symptomsMock)[number]["id"];
 
 export type FaqItem = {
   id: string;
