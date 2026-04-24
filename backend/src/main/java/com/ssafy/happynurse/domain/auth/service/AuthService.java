@@ -99,12 +99,61 @@ public class AuthService {
                 wardId
         );
 
-        return new AuthResult(token, null, loginResponse);
+        RefreshToken refreshToken = RefreshToken.create(
+                sessionLog.getSessionId(), practitioner,
+                jwtTokenProvider.getRefreshTokenExpirationMs(),
+                organizationId, wardId, roleCode);
+        refreshTokenRepository.save(refreshToken);
+
+        return new AuthResult(token, refreshToken.getTokenValue(), loginResponse);
     }
 
     @Transactional
     public AuthResult refresh(String refreshTokenValue) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        RefreshToken refreshToken = refreshTokenRepository.findByTokenValue(refreshTokenValue)
+                .orElseThrow(() -> new CustomException(ErrorCode.REFRESH_TOKEN_INVALID));
+
+        if (refreshToken.isRevoked()) {
+            refreshTokenRepository.revokeAllBySessionId(refreshToken.getSessionId());
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_REUSE_DETECTED);
+        }
+
+        if (!refreshToken.isUsable()) {
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_INVALID);
+        }
+
+        refreshToken.revoke();
+
+        Practitioner practitioner = refreshToken.getPractitioner();
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(
+                practitioner.getPractitionerId(),
+                practitioner.getEmployeeNumber(),
+                practitioner.getName(),
+                refreshToken.getRoleCode(),
+                refreshToken.getSessionId(),
+                refreshToken.getOrganizationId(),
+                refreshToken.getWardId()
+        );
+
+        RefreshToken newRefreshToken = RefreshToken.create(
+                refreshToken.getSessionId(), practitioner,
+                jwtTokenProvider.getRefreshTokenExpirationMs(),
+                refreshToken.getOrganizationId(),
+                refreshToken.getWardId(),
+                refreshToken.getRoleCode());
+        refreshTokenRepository.save(newRefreshToken);
+
+        LoginResponse loginResponse = new LoginResponse(
+                practitioner.getPractitionerId(),
+                practitioner.getName(),
+                practitioner.getEmployeeNumber(),
+                refreshToken.getRoleCode(),
+                refreshToken.getOrganizationId(),
+                refreshToken.getWardId()
+        );
+
+        return new AuthResult(newAccessToken, newRefreshToken.getTokenValue(), loginResponse);
     }
 
     @Transactional
@@ -112,5 +161,6 @@ public class AuthService {
         SessionLog sessionLog = sessionLogRepository.findById(sessionId)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
         sessionLog.markLogout();
+        refreshTokenRepository.revokeAllBySessionId(sessionId);
     }
 }
