@@ -1,6 +1,7 @@
 package com.ssafy.happynurse.domain.webapp.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,6 +11,9 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class PatientVerifyRequest {
+
+    @NotNull(message = "환자 ID를 입력해주세요.")
+    private Long patientId;
 
     @NotBlank(message = "이름을 입력해주세요.")
     private String name;

@@ -48,6 +48,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/nfc/patients/**").permitAll()    // 환자 NFC 진입
+                        .requestMatchers("/api/patients/verify").permitAll()    // 환자 본인 확인
                         .anyRequest().authenticated())
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, cookieName),
                         UsernamePasswordAuthenticationFilter.class);
