@@ -30,7 +30,10 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(AuthController.class)
+@WebMvcTest(value = AuthController.class, excludeAutoConfiguration = {
+        org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration.class,
+        org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration.class
+})
 @AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 @TestPropertySource(properties = {
@@ -61,14 +64,14 @@ class AuthControllerTest {
     // ──── 로그인 ────
 
     @Test
-    @DisplayName("POST /api/auth/login 성공 시 200 + 쿠키 2개 + JSON body")
+    @DisplayName("POST /auth/login 성공 시 200 + 쿠키 2개 + JSON body")
     void login_성공_쿠키2개_설정() throws Exception {
         given(authService.login(anyString(), anyString(), anyString(), anyLong(), anyLong()))
                 .willReturn(AUTH_RESULT);
 
         LoginRequest request = new LoginRequest(1L, 3L, "EMP001", "password");
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -84,11 +87,11 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/auth/login 실패 - 필수 필드 누락 시 400")
+    @DisplayName("POST /auth/login 실패 - 필수 필드 누락 시 400")
     void login_실패_잘못된_입력() throws Exception {
         LoginRequest request = new LoginRequest(null, null, "", "");
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -96,14 +99,14 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/auth/login 실패 - 잘못된 자격증명 시 401")
+    @DisplayName("POST /auth/login 실패 - 잘못된 자격증명 시 401")
     void login_실패_잘못된_자격증명() throws Exception {
         given(authService.login(anyString(), anyString(), anyString(), anyLong(), anyLong()))
                 .willThrow(new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
         LoginRequest request = new LoginRequest(1L, 3L, "EMP001", "wrong");
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
@@ -114,11 +117,11 @@ class AuthControllerTest {
     // ──── 리프레시 ────
 
     @Test
-    @DisplayName("POST /api/auth/refresh 성공 시 200 + 쿠키 2개 갱신")
+    @DisplayName("POST /auth/refresh 성공 시 200 + 쿠키 2개 갱신")
     void refresh_성공_쿠키2개_갱신() throws Exception {
         given(authService.refresh("old-refresh-token")).willReturn(AUTH_RESULT);
 
-        mockMvc.perform(post("/api/auth/refresh")
+        mockMvc.perform(post("/auth/refresh")
                         .cookie(new Cookie("REFRESH_TOKEN", "old-refresh-token")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -128,9 +131,9 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/auth/refresh 실패 - 쿠키 없음 시 401")
+    @DisplayName("POST /auth/refresh 실패 - 쿠키 없음 시 401")
     void refresh_실패_쿠키_없음() throws Exception {
-        mockMvc.perform(post("/api/auth/refresh"))
+        mockMvc.perform(post("/auth/refresh"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").value("REFRESH_TOKEN_INVALID"));
@@ -139,7 +142,7 @@ class AuthControllerTest {
     // ──── 로그아웃 ────
 
     @Test
-    @DisplayName("POST /api/auth/logout 성공 시 200 + 쿠키 2개 삭제")
+    @DisplayName("POST /auth/logout 성공 시 200 + 쿠키 2개 삭제")
     void logout_성공_쿠키2개_삭제() throws Exception {
         CustomUserDetails userDetails = new CustomUserDetails(
                 1L, "EMP001", "홍길동", "nurse", "session-123", 1L, 3L);
@@ -147,7 +150,7 @@ class AuthControllerTest {
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(auth);
 
-        mockMvc.perform(post("/api/auth/logout"))
+        mockMvc.perform(post("/auth/logout"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(cookie().maxAge("ACCESS_TOKEN", 0))
