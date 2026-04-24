@@ -1,4 +1,4 @@
-package com.ssafy.happynurse.domain.auth.repository;
+package com.ssafy.happynurse.domain.auth.repository.redis;
 
 import com.ssafy.happynurse.domain.auth.entity.RefreshToken;
 import org.springframework.data.repository.CrudRepository;

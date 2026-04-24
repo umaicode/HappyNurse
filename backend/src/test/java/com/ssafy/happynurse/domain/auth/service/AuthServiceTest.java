@@ -3,7 +3,7 @@ package com.ssafy.happynurse.domain.auth.service;
 import com.ssafy.happynurse.domain.auth.dto.AuthResult;
 import com.ssafy.happynurse.domain.auth.entity.RefreshToken;
 import com.ssafy.happynurse.domain.auth.entity.SessionLog;
-import com.ssafy.happynurse.domain.auth.repository.RefreshTokenRepository;
+import com.ssafy.happynurse.domain.auth.repository.redis.RefreshTokenRepository;
 import com.ssafy.happynurse.domain.auth.repository.SessionLogRepository;
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.common.entity.PractitionerRole;
