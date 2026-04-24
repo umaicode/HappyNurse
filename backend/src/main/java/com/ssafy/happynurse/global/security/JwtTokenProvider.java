@@ -21,6 +21,9 @@ public class JwtTokenProvider {
     @Value("${jwt.access-token-expiration-ms}")
     private long expirationMs;
 
+    @Value("${jwt.refresh-token-expiration-ms}")
+    private long refreshTokenExpirationMs;
+
     private SecretKey key;
 
     @PostConstruct
@@ -75,5 +78,9 @@ public class JwtTokenProvider {
 
     public long getExpirationMs() {
         return expirationMs;
+    }
+
+    public long getRefreshTokenExpirationMs() {
+        return refreshTokenExpirationMs;
     }
 }

@@ -1,7 +1,9 @@
 package com.ssafy.happynurse.domain.auth.service;
 
 import com.ssafy.happynurse.domain.auth.dto.AuthResult;
+import com.ssafy.happynurse.domain.auth.entity.RefreshToken;
 import com.ssafy.happynurse.domain.auth.entity.SessionLog;
+import com.ssafy.happynurse.domain.auth.repository.RefreshTokenRepository;
 import com.ssafy.happynurse.domain.auth.repository.SessionLogRepository;
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.common.entity.PractitionerRole;
@@ -41,6 +43,7 @@ class AuthServiceTest {
     @Mock PractitionerRepository practitionerRepository;
     @Mock PractitionerRoleRepository practitionerRoleRepository;
     @Mock SessionLogRepository sessionLogRepository;
+    @Mock RefreshTokenRepository refreshTokenRepository;
     @Mock OrganizationRepository organizationRepository;
     @Mock WardRepository wardRepository;
     @Mock PasswordEncoder passwordEncoder;
@@ -155,6 +158,111 @@ class AuthServiceTest {
         given(practitionerRoleRepository.findByPractitionerAndWard_WardIdAndPeriodEndIsNull(practitioner, 3L)).willReturn(Optional.empty());
 
         assertLoginThrows("EMP001", "password", 1L, 3L, ErrorCode.ROLE_NOT_FOUND);
+    }
+
+    // ──── 리프레시 토큰 ────
+
+    @Test
+    @DisplayName("로그인 성공 시 리프레시 토큰도 함께 반환한다")
+    void login_성공_리프레시_토큰_포함() {
+        Practitioner practitioner = createPractitioner(1L, "EMP001", "hashedPw", "홍길동");
+        PractitionerRole role = createPractitionerRole(practitioner, RoleCode.nurse);
+        Ward ward = createWard(3L);
+
+        given(organizationRepository.existsById(1L)).willReturn(true);
+        given(wardRepository.existsById(3L)).willReturn(true);
+        given(wardRepository.findByWardIdAndOrganization_OrganizationId(3L, 1L)).willReturn(Optional.of(ward));
+        given(practitionerRepository.findByEmployeeNumber("EMP001")).willReturn(Optional.of(practitioner));
+        given(passwordEncoder.matches("password", "hashedPw")).willReturn(true);
+        given(practitionerRoleRepository.findByPractitionerAndPeriodEndIsNull(practitioner)).willReturn(List.of(role));
+        given(practitionerRoleRepository.findByPractitionerAndWard_WardIdAndPeriodEndIsNull(practitioner, 3L)).willReturn(Optional.of(role));
+        given(sessionLogRepository.save(any(SessionLog.class))).willAnswer(inv -> inv.getArgument(0));
+        given(jwtTokenProvider.createAccessToken(anyLong(), anyString(), anyString(), anyString(), anyString(), anyLong(), anyLong())).willReturn("mock-jwt-token");
+        given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
+        given(refreshTokenRepository.save(any(RefreshToken.class))).willAnswer(inv -> inv.getArgument(0));
+
+        AuthResult result = authService.login("EMP001", "password", "127.0.0.1", 1L, 3L);
+
+        assertThat(result.refreshToken()).isNotNull();
+        verify(refreshTokenRepository).save(any(RefreshToken.class));
+    }
+
+    @Test
+    @DisplayName("refresh 성공 시 새로운 토큰 쌍을 반환한다")
+    void refresh_성공() {
+        Practitioner practitioner = createPractitioner(1L, "EMP001", "hashedPw", "홍길동");
+        RefreshToken refreshToken = RefreshToken.create("session-1", practitioner, 604800000L, 1L, 3L, "nurse");
+
+        given(refreshTokenRepository.findByTokenValue(refreshToken.getTokenValue())).willReturn(Optional.of(refreshToken));
+        given(jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-1", 1L, 3L)).willReturn("new-access-token");
+        given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
+        given(refreshTokenRepository.save(any(RefreshToken.class))).willAnswer(inv -> inv.getArgument(0));
+
+        AuthResult result = authService.refresh(refreshToken.getTokenValue());
+
+        assertThat(result.accessToken()).isEqualTo("new-access-token");
+        assertThat(result.refreshToken()).isNotNull();
+        assertThat(result.loginResponse().practitionerId()).isEqualTo(1L);
+        assertThat(refreshToken.isRevoked()).isTrue(); // 기존 토큰은 revoke
+    }
+
+    @Test
+    @DisplayName("refresh 실패 - 존재하지 않는 토큰 → REFRESH_TOKEN_INVALID")
+    void refresh_실패_존재하지_않는_토큰() {
+        given(refreshTokenRepository.findByTokenValue("invalid-token")).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.refresh("invalid-token"))
+                .isInstanceOf(CustomException.class)
+                .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.REFRESH_TOKEN_INVALID));
+    }
+
+    @Test
+    @DisplayName("refresh 실패 - revoke된 토큰 재사용 → REFRESH_TOKEN_REUSE_DETECTED")
+    void refresh_실패_재사용_감지() {
+        Practitioner practitioner = createPractitioner(1L, "EMP001", "hashedPw", "홍길동");
+        RefreshToken refreshToken = RefreshToken.create("session-1", practitioner, 604800000L, 1L, 3L, "nurse");
+        refreshToken.revoke(); // 이미 revoke된 토큰
+
+        given(refreshTokenRepository.findByTokenValue(refreshToken.getTokenValue())).willReturn(Optional.of(refreshToken));
+
+        assertThatThrownBy(() -> authService.refresh(refreshToken.getTokenValue()))
+                .isInstanceOf(CustomException.class)
+                .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.REFRESH_TOKEN_REUSE_DETECTED));
+
+        verify(refreshTokenRepository).revokeAllBySessionId("session-1");
+    }
+
+    @Test
+    @DisplayName("refresh 실패 - 만료된 토큰 → REFRESH_TOKEN_INVALID")
+    void refresh_실패_만료된_토큰() throws Exception {
+        Practitioner practitioner = createPractitioner(1L, "EMP001", "hashedPw", "홍길동");
+        RefreshToken refreshToken = RefreshToken.create("session-1", practitioner, 604800000L, 1L, 3L, "nurse");
+
+        // 만료시간을 과거로 설정
+        Field expiresAtField = RefreshToken.class.getDeclaredField("expiresAt");
+        expiresAtField.setAccessible(true);
+        expiresAtField.set(refreshToken, java.time.LocalDateTime.now().minusDays(1));
+
+        given(refreshTokenRepository.findByTokenValue(refreshToken.getTokenValue())).willReturn(Optional.of(refreshToken));
+
+        assertThatThrownBy(() -> authService.refresh(refreshToken.getTokenValue()))
+                .isInstanceOf(CustomException.class)
+                .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.REFRESH_TOKEN_INVALID));
+    }
+
+    @Test
+    @DisplayName("로그아웃 시 해당 세션의 리프레시 토큰도 모두 revoke된다")
+    void logout_성공_리프레시_토큰_revoke() {
+        Practitioner practitioner = createPractitioner(1L, "EMP001", "hashedPw", "홍길동");
+        SessionLog sessionLog = SessionLog.create(practitioner, "127.0.0.1");
+        given(sessionLogRepository.findById(sessionLog.getSessionId())).willReturn(Optional.of(sessionLog));
+
+        authService.logout(sessionLog.getSessionId());
+
+        verify(refreshTokenRepository).revokeAllBySessionId(sessionLog.getSessionId());
     }
 
     // ──── 로그아웃 ────
