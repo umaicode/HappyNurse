@@ -23,6 +23,7 @@ class JwtTokenProviderTest {
         jwtTokenProvider = new JwtTokenProvider();
         setField(jwtTokenProvider, "secretBase64", SECRET);
         setField(jwtTokenProvider, "expirationMs", EXPIRATION_MS);
+        setField(jwtTokenProvider, "refreshTokenExpirationMs", 604800000L);
         jwtTokenProvider.init();
     }
 
@@ -97,6 +98,12 @@ class JwtTokenProviderTest {
         String token = jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-123", 1L, 3L);
 
         assertThat(jwtTokenProvider.getSessionId(token)).isEqualTo("session-123");
+    }
+
+    @Test
+    @DisplayName("리프레시 토큰 만료 시간을 정상 반환한다")
+    void getRefreshTokenExpirationMs_정상_반환() {
+        assertThat(jwtTokenProvider.getRefreshTokenExpirationMs()).isEqualTo(604800000L);
     }
 
     private void setField(Object target, String fieldName, Object value) throws Exception {

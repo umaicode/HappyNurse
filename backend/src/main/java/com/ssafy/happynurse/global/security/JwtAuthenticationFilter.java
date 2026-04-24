@@ -1,6 +1,9 @@
 package com.ssafy.happynurse.global.security;
 
+import com.ssafy.happynurse.global.exception.ErrorCode;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -27,21 +30,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                      FilterChain filterChain) throws ServletException, IOException {
         String token = extractTokenFromCookie(request);
 
-        if (token != null && jwtTokenProvider.validateToken(token)) {
-            Claims claims = jwtTokenProvider.getClaims(token);
-            CustomUserDetails userDetails = new CustomUserDetails(
-                    Long.parseLong(claims.getSubject()),
-                    claims.get("employeeNumber", String.class),
-                    claims.get("name", String.class),
-                    claims.get("role", String.class),
-                    claims.get("sessionId", String.class),
-                    claims.get("organizationId", Long.class),
-                    claims.get("wardId", Long.class)
-            );
-            UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(auth);
+        if (token != null) {
+            try {
+                Claims claims = jwtTokenProvider.getClaims(token);
+                CustomUserDetails userDetails = new CustomUserDetails(
+                        Long.parseLong(claims.getSubject()),
+                        claims.get("employeeNumber", String.class),
+                        claims.get("name", String.class),
+                        claims.get("role", String.class),
+                        claims.get("sessionId", String.class),
+                        claims.get("organizationId", Long.class),
+                        claims.get("wardId", Long.class)
+                );
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            } catch (ExpiredJwtException e) {
+                request.setAttribute("authError", ErrorCode.TOKEN_EXPIRED);
+            } catch (JwtException | IllegalArgumentException e) {
+                request.setAttribute("authError", ErrorCode.TOKEN_INVALID);
+            }
         }
 
         filterChain.doFilter(request, response);

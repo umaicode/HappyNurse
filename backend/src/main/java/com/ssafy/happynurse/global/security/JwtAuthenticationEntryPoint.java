@@ -20,10 +20,15 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     public void commence(HttpServletRequest request,
                          HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
+        ErrorCode errorCode = (ErrorCode) request.getAttribute("authError");
+        if (errorCode == null) {
+            errorCode = ErrorCode.UNAUTHORIZED;
+        }
+
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write(
-                objectMapper.writeValueAsString(ApiResponse.fail(ErrorCode.UNAUTHORIZED))
+                objectMapper.writeValueAsString(ApiResponse.fail(errorCode))
         );
     }
 }
