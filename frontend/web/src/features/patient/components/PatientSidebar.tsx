@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { INITIAL_RECORDS } from "@/mockup/emr-data";
 import { MOCK_WARDS } from "@/mockup/wards";
+import { clearWardAssignments } from "@/lib/ward-assignments";
 import type { Patient, Ward } from "@/features/patient/types/ward";
 import {
   Collapsible,
@@ -192,6 +193,7 @@ export function PatientSidebar({ wards = MOCK_WARDS, onCollapse }: PatientSideba
           <button
             onClick={() => {
               localStorage.removeItem("currentUser");
+              clearWardAssignments();
               router.push("/");
             }}
             className="p-2 text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-surface)] rounded-xl transition-all shadow-xs border border-[var(--color-brand-primary)]/10"
