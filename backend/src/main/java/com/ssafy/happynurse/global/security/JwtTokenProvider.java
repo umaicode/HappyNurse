@@ -21,6 +21,9 @@ public class JwtTokenProvider {
     @Value("${jwt.access-token-expiration-ms}")
     private long expirationMs;
 
+    @Value("${jwt.refresh-token-expiration-ms}")
+    private long refreshTokenExpirationMs;
+
     private SecretKey key;
 
     @PostConstruct
@@ -41,6 +44,19 @@ public class JwtTokenProvider {
                 .claim("sessionId", sessionId)
                 .claim("organizationId", organizationId)
                 .claim("wardId", wardId)
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + expirationMs))
+                .signWith(key)
+                .compact();
+    }
+
+    public String createPatientToken(Long patientId, String patientName) {
+
+        Date now = new Date();
+        return Jwts.builder()
+                .subject(String.valueOf(patientId))
+                .claim("name", patientName)
+                .claim("role", "PATIENT")
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expirationMs))
                 .signWith(key)
@@ -75,5 +91,9 @@ public class JwtTokenProvider {
 
     public long getExpirationMs() {
         return expirationMs;
+    }
+
+    public long getRefreshTokenExpirationMs() {
+        return refreshTokenExpirationMs;
     }
 }

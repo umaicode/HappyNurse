@@ -38,3 +38,7 @@ out/
 
 ### Secrets ###
 src/main/resources/
+
+### docs ###
+/docs/superpowers
+/sc

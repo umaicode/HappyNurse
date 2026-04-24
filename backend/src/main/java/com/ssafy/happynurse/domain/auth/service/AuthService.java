@@ -2,7 +2,9 @@ package com.ssafy.happynurse.domain.auth.service;
 
 import com.ssafy.happynurse.domain.auth.dto.AuthResult;
 import com.ssafy.happynurse.domain.auth.dto.LoginResponse;
+import com.ssafy.happynurse.domain.auth.entity.RefreshToken;
 import com.ssafy.happynurse.domain.auth.entity.SessionLog;
+import com.ssafy.happynurse.domain.auth.repository.redis.RefreshTokenRepository;
 import com.ssafy.happynurse.domain.auth.repository.SessionLogRepository;
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.common.entity.PractitionerRole;
@@ -28,6 +30,8 @@ public class AuthService {
     private final PractitionerRepository practitionerRepository;
     private final PractitionerRoleRepository practitionerRoleRepository;
     private final SessionLogRepository sessionLogRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenReuseDetector reuseDetector;
     private final OrganizationRepository organizationRepository;
     private final WardRepository wardRepository;
     private final PasswordEncoder passwordEncoder;
@@ -96,7 +100,68 @@ public class AuthService {
                 wardId
         );
 
-        return new AuthResult(token, loginResponse);
+        RefreshToken refreshToken = RefreshToken.create(
+                sessionLog.getSessionId(),
+                practitioner.getPractitionerId(),
+                practitioner.getEmployeeNumber(),
+                practitioner.getName(),
+                jwtTokenProvider.getRefreshTokenExpirationMs(),
+                organizationId, wardId, roleCode);
+        refreshTokenRepository.save(refreshToken);
+
+        return new AuthResult(token, refreshToken.getTokenValue(), loginResponse);
+    }
+
+    public AuthResult refresh(String refreshTokenValue) {
+        // 1. 재사용 탐지
+        String reusedSessionId = reuseDetector.getReusedSessionId(refreshTokenValue);
+        if (reusedSessionId != null) {
+            List<RefreshToken> sessionTokens = refreshTokenRepository.findBySessionId(reusedSessionId);
+            refreshTokenRepository.deleteAll(sessionTokens);
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_REUSE_DETECTED);
+        }
+
+        // 2. 토큰 조회 (없으면 만료되었거나 유효하지 않음)
+        RefreshToken refreshToken = refreshTokenRepository.findById(refreshTokenValue)
+                .orElseThrow(() -> new CustomException(ErrorCode.REFRESH_TOKEN_INVALID));
+
+        // 3. 기존 토큰 삭제 + 재사용 마커 등록
+        refreshTokenRepository.delete(refreshToken);
+        reuseDetector.markAsRotated(refreshTokenValue, refreshToken.getSessionId(),
+                jwtTokenProvider.getRefreshTokenExpirationMs());
+
+        // 4. 새 토큰 발급
+        String newAccessToken = jwtTokenProvider.createAccessToken(
+                refreshToken.getPractitionerId(),
+                refreshToken.getEmployeeNumber(),
+                refreshToken.getPractitionerName(),
+                refreshToken.getRoleCode(),
+                refreshToken.getSessionId(),
+                refreshToken.getOrganizationId(),
+                refreshToken.getWardId()
+        );
+
+        RefreshToken newRefreshToken = RefreshToken.create(
+                refreshToken.getSessionId(),
+                refreshToken.getPractitionerId(),
+                refreshToken.getEmployeeNumber(),
+                refreshToken.getPractitionerName(),
+                jwtTokenProvider.getRefreshTokenExpirationMs(),
+                refreshToken.getOrganizationId(),
+                refreshToken.getWardId(),
+                refreshToken.getRoleCode());
+        refreshTokenRepository.save(newRefreshToken);
+
+        LoginResponse loginResponse = new LoginResponse(
+                refreshToken.getPractitionerId(),
+                refreshToken.getPractitionerName(),
+                refreshToken.getEmployeeNumber(),
+                refreshToken.getRoleCode(),
+                refreshToken.getOrganizationId(),
+                refreshToken.getWardId()
+        );
+
+        return new AuthResult(newAccessToken, newRefreshToken.getTokenValue(), loginResponse);
     }
 
     @Transactional
@@ -104,5 +169,8 @@ public class AuthService {
         SessionLog sessionLog = sessionLogRepository.findById(sessionId)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
         sessionLog.markLogout();
+
+        List<RefreshToken> sessionTokens = refreshTokenRepository.findBySessionId(sessionId);
+        refreshTokenRepository.deleteAll(sessionTokens);
     }
 }

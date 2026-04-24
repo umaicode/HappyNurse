@@ -22,6 +22,9 @@ public enum ErrorCode implements ResponseCode {
     TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "인증 토큰이 만료되었습니다."),
     TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 인증 토큰입니다."),
 
+    REFRESH_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 리프레시 토큰입니다."),
+    REFRESH_TOKEN_REUSE_DETECTED(HttpStatus.UNAUTHORIZED, "리프레시 토큰 재사용이 감지되었습니다. 다시 로그인해주세요."),
+
     // Organization / Ward
     ORGANIZATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 기관입니다."),
     WARD_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 병동입니다."),
@@ -32,7 +35,13 @@ public enum ErrorCode implements ResponseCode {
     ROLE_NOT_FOUND(HttpStatus.FORBIDDEN, "해당 병동에 대한 권한이 없습니다."),
 
     // Business (409)
-    DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "이미 존재하는 리소스입니다.");
+    DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "이미 존재하는 리소스입니다."),
+
+    // Patient
+    PATIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "환자를 찾을 수 없습니다."),
+    PATIENT_INACTIVE(HttpStatus.BAD_REQUEST, "비활성화된 환자입니다."),
+    ENCOUNTER_NOT_FOUND(HttpStatus.NOT_FOUND, "활성 입원 정보를 찾을 수 없습니다."),
+    PATIENT_VERIFY_FAILED(HttpStatus.UNAUTHORIZED, "이름 또는 생년월일이 일치하지 않습니다.");
 
     private final HttpStatus status;
     private final String message;
