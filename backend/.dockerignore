@@ -1,9 +1,0 @@
-.gradle
-build
-.idea
-.vscode
-*.iml
-.DS_Store
-HELP.md
-docs
-**/node_modules
