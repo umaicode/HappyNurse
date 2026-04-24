@@ -30,7 +30,7 @@ import java.util.Arrays;
 
 @Tag(name = "인증", description = "로그인, 로그아웃, 토큰 갱신 API")
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -77,7 +77,7 @@ public class AuthController {
                 cookieName, result.accessToken(), expirationMs, cookieSecure, cookieSameSite);
         ResponseCookie refreshCookie = CookieUtil.createTokenCookie(
                 refreshCookieName, result.refreshToken(), refreshExpirationMs,
-                cookieSecure, cookieSameSite, "/api/auth");
+                cookieSecure, cookieSameSite, "/auth");
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
@@ -99,7 +99,7 @@ public class AuthController {
         ResponseCookie accessCookie = CookieUtil.clearAccessTokenCookie(
                 cookieName, cookieSecure, cookieSameSite);
         ResponseCookie refreshCookie = CookieUtil.clearTokenCookie(
-                refreshCookieName, cookieSecure, cookieSameSite, "/api/auth");
+                refreshCookieName, cookieSecure, cookieSameSite, "/auth");
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
@@ -125,7 +125,7 @@ public class AuthController {
                 cookieName, result.accessToken(), expirationMs, cookieSecure, cookieSameSite);
         ResponseCookie refreshCookie = CookieUtil.createTokenCookie(
                 refreshCookieName, result.refreshToken(), refreshExpirationMs,
-                cookieSecure, cookieSameSite, "/api/auth");
+                cookieSecure, cookieSameSite, "/auth");
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
