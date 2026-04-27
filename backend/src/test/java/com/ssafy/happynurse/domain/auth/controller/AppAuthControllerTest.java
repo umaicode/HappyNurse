@@ -53,22 +53,23 @@ class AppAuthControllerTest {
     // ──── 로그인 ────
 
     @Test
-    @DisplayName("앱 로그인 성공 시 accessToken이 응답 body에 포함된다")
+    @DisplayName("앱 로그인 성공 시 accessToken과 refreshToken이 응답 body에 포함된다")
     void login_성공_accessToken이_body에_포함() throws Exception {
         LoginResponse loginResponse = new LoginResponse(1L, "홍길동", "EMP001", "nurse", 1L, 3L);
-        AuthResult authResult = new AuthResult("mock-jwt-token", loginResponse);
-        given(authService.login(anyString(), anyString(), anyString(), anyLong(), anyLong()))
+        AuthResult authResult = new AuthResult("mock-jwt-token", "mock-refresh-token", loginResponse);
+        given(authService.login(anyString(), anyString(), anyString(), anyLong(), anyLong(), anyLong()))
                 .willReturn(authResult);
 
         LoginRequest request = new LoginRequest(1L, 3L, "EMP001", "password");
 
-        mockMvc.perform(post("/api/app/auth/login")
+        mockMvc.perform(post("/app/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("로그인에 성공했습니다."))
                 .andExpect(jsonPath("$.data.accessToken").value("mock-jwt-token"))
+                .andExpect(jsonPath("$.data.refreshToken").value("mock-refresh-token"))
                 .andExpect(jsonPath("$.data.practitionerId").value(1))
                 .andExpect(jsonPath("$.data.name").value("홍길동"))
                 .andExpect(jsonPath("$.data.employeeNumber").value("EMP001"))
@@ -81,13 +82,13 @@ class AppAuthControllerTest {
     @DisplayName("앱 로그인 성공 시 Set-Cookie 헤더가 응답에 없다")
     void login_성공_SetCookie헤더_없음() throws Exception {
         LoginResponse loginResponse = new LoginResponse(1L, "홍길동", "EMP001", "nurse", 1L, 3L);
-        AuthResult authResult = new AuthResult("mock-jwt-token", loginResponse);
-        given(authService.login(anyString(), anyString(), anyString(), anyLong(), anyLong()))
+        AuthResult authResult = new AuthResult("mock-jwt-token", "mock-refresh-token", loginResponse);
+        given(authService.login(anyString(), anyString(), anyString(), anyLong(), anyLong(), anyLong()))
                 .willReturn(authResult);
 
         LoginRequest request = new LoginRequest(1L, 3L, "EMP001", "password");
 
-        mockMvc.perform(post("/api/app/auth/login")
+        mockMvc.perform(post("/app/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -101,7 +102,7 @@ class AppAuthControllerTest {
                 {"wardId": 3, "employeeNumber": "EMP001", "password": "password"}
                 """;
 
-        mockMvc.perform(post("/api/app/auth/login")
+        mockMvc.perform(post("/app/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest());
@@ -114,7 +115,7 @@ class AppAuthControllerTest {
                 {"organizationId": 1, "employeeNumber": "EMP001", "password": "password"}
                 """;
 
-        mockMvc.perform(post("/api/app/auth/login")
+        mockMvc.perform(post("/app/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest());
@@ -127,7 +128,7 @@ class AppAuthControllerTest {
                 {"organizationId": 1, "wardId": 3, "password": "password"}
                 """;
 
-        mockMvc.perform(post("/api/app/auth/login")
+        mockMvc.perform(post("/app/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest());
@@ -140,7 +141,7 @@ class AppAuthControllerTest {
                 {"organizationId": 1, "wardId": 3, "employeeNumber": "EMP001"}
                 """;
 
-        mockMvc.perform(post("/api/app/auth/login")
+        mockMvc.perform(post("/app/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest());
@@ -156,7 +157,7 @@ class AppAuthControllerTest {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities()));
 
-        mockMvc.perform(post("/api/app/auth/logout"))
+        mockMvc.perform(post("/app/auth/logout"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("로그아웃되었습니다."));
@@ -172,7 +173,7 @@ class AppAuthControllerTest {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities()));
 
-        mockMvc.perform(post("/api/app/auth/logout"))
+        mockMvc.perform(post("/app/auth/logout"))
                 .andExpect(status().isOk())
                 .andExpect(header().doesNotExist("Set-Cookie"));
     }

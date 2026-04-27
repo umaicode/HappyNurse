@@ -69,10 +69,9 @@ class AuthServiceTest {
         given(practitionerRoleRepository.findByPractitionerAndWard_WardIdAndPeriodEndIsNull(practitioner, 3L)).willReturn(Optional.of(role));
         given(sessionLogRepository.save(any(SessionLog.class))).willAnswer(inv -> inv.getArgument(0));
         given(jwtTokenProvider.createAccessToken(anyLong(), anyString(), anyString(), anyString(), anyString(), anyLong(), anyLong())).willReturn("mock-jwt-token");
-        given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
         given(refreshTokenRepository.save(any(RefreshToken.class))).willAnswer(inv -> inv.getArgument(0));
 
-        AuthResult result = authService.login("EMP001", "password", "127.0.0.1", 1L, 3L);
+        AuthResult result = authService.login("EMP001", "password", "127.0.0.1", 1L, 3L, 604800000L);
 
         assertThat(result).isNotNull();
         assertThat(result.accessToken()).isEqualTo("mock-jwt-token");
@@ -177,7 +176,6 @@ class AuthServiceTest {
         given(reuseDetector.getReusedSessionId(refreshToken.getTokenValue())).willReturn(null);
         given(refreshTokenRepository.findById(refreshToken.getTokenValue())).willReturn(Optional.of(refreshToken));
         given(jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-1", 1L, 3L)).willReturn("new-access-token");
-        given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
         given(refreshTokenRepository.save(any(RefreshToken.class))).willAnswer(inv -> inv.getArgument(0));
 
         AuthResult result = authService.refresh(refreshToken.getTokenValue());
@@ -272,7 +270,7 @@ class AuthServiceTest {
     }
 
     private void assertLoginThrows(String empNo, String password, Long orgId, Long wardId, ErrorCode expected) {
-        assertThatThrownBy(() -> authService.login(empNo, password, "127.0.0.1", orgId, wardId))
+        assertThatThrownBy(() -> authService.login(empNo, password, "127.0.0.1", orgId, wardId, 604800000L))
                 .isInstanceOf(CustomException.class)
                 .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode()).isEqualTo(expected));
     }

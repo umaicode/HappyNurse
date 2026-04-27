@@ -2,6 +2,7 @@ package com.ssafy.happynurse.domain.auth.dto;
 
 public record AppLoginResponse(
         String accessToken,
+        String refreshToken,
         Long practitionerId,
         String name,
         String employeeNumber,
@@ -13,6 +14,7 @@ public record AppLoginResponse(
         LoginResponse lr = result.loginResponse();
         return new AppLoginResponse(
                 result.accessToken(),
+                result.refreshToken(),
                 lr.practitionerId(),
                 lr.name(),
                 lr.employeeNumber(),

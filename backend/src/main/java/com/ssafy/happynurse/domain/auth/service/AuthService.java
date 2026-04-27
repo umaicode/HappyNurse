@@ -39,7 +39,7 @@ public class AuthService {
 
     @Transactional
     public AuthResult login(String employeeNumber, String password, String ipAddress,
-                            Long organizationId, Long wardId) {
+                            Long organizationId, Long wardId, long refreshExpirationMs) {
         // 1. 기관 존재 확인
         if (!organizationRepository.existsById(organizationId)) {
             throw new CustomException(ErrorCode.ORGANIZATION_NOT_FOUND);
@@ -105,7 +105,7 @@ public class AuthService {
                 practitioner.getPractitionerId(),
                 practitioner.getEmployeeNumber(),
                 practitioner.getName(),
-                jwtTokenProvider.getRefreshTokenExpirationMs(),
+                refreshExpirationMs,
                 organizationId, wardId, roleCode);
         refreshTokenRepository.save(refreshToken);
 
@@ -146,7 +146,7 @@ public class AuthService {
                 refreshToken.getPractitionerId(),
                 refreshToken.getEmployeeNumber(),
                 refreshToken.getPractitionerName(),
-                jwtTokenProvider.getRefreshTokenExpirationMs(),
+                refreshToken.getTtl(),
                 refreshToken.getOrganizationId(),
                 refreshToken.getWardId(),
                 refreshToken.getRoleCode());
