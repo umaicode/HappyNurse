@@ -197,9 +197,15 @@ pipeline {
 
     post {
         success {
+            script {
+                notifyMattermost('SUCCESS')
+            }
             echo "[SUCCESS] Build #${env.BUILD_NUMBER} deployed to ${env.DEPLOY_ENV}"
         }
         failure {
+            script {
+                notifyMattermost('FAILURE')
+            }
             echo "[FAILURE] Build #${env.BUILD_NUMBER} FAILED for ${env.DEPLOY_ENV}"
             echo "Check deploy.sh output above for rollback status."
         }
@@ -208,3 +214,105 @@ pipeline {
         }
     }
 }
+
+// ──────────────────────────────────────────────────────────────
+// Mattermost 알림 함수
+// ──────────────────────────────────────────────────────────────
+def notifyMattermost(String result) {
+    // 결과별 색상 + 이모지 (Mattermost는 attachment color로 좌측 막대 색깔)
+    def color    = (result == 'SUCCESS') ? '#36a64f' : '#d00000'
+    def emoji    = (result == 'SUCCESS') ? '🟢'      : '🔴'
+    def envLabel = env.DEPLOY_ENV.toUpperCase()
+
+    // 트리거 정보
+    def cause = currentBuild.getBuildCauses()
+    def triggerText = '알 수 없음'
+    if (cause) {
+        def first = cause[0]
+        if (first._class?.contains('UserIdCause')) {
+            triggerText = "수동 빌드 (${first.userName ?: '?'})"
+        } else if (first._class?.contains('TimerTrigger')) {
+            triggerText = '⏰ Cron (1시간 자동)'
+        } else if (first._class?.contains('GitLabWebHookCause') || first.shortDescription?.toString()?.contains('GitLab')) {
+            triggerText = "GitLab webhook (${first.shortDescription ?: 'push/MR'})"
+        } else {
+            triggerText = first.shortDescription?.toString() ?: '?'
+        }
+    }
+
+    // 변경된 서비스
+    def changedServices = []
+    if (env.CHANGED_BACKEND  == 'true') changedServices << 'backend'
+    if (env.CHANGED_AI       == 'true') changedServices << 'ai'
+    if (env.CHANGED_FRONTEND == 'true') changedServices << 'frontend'
+    def changedText = changedServices.isEmpty() ? '없음' : changedServices.join(', ')
+
+    // 커밋 정보
+    def commitMsg    = sh(script: 'git log -1 --pretty=%B || true', returnStdout: true).trim().take(120)
+    def commitAuthor = sh(script: 'git log -1 --pretty=%an || true', returnStdout: true).trim()
+
+    // 빌드 시간
+    def duration = currentBuild.durationString.replaceFirst(/ and counting$/, '')
+
+    // 빌드 페이지 링크
+    def jenkinsUrl = env.BUILD_URL ?: "https://k14e101.p.ssafy.io/jenkins/job/${env.JOB_NAME}/${env.BUILD_NUMBER}/"
+
+    // 환경별 접속 URL
+    def serviceUrls = ''
+    if (result == 'SUCCESS') {
+        if (env.DEPLOY_ENV == 'dev') {
+            serviceUrls = """
+*🌐 접속 URL*
+- Frontend: https://k14e101.p.ssafy.io/dev/
+- Swagger:  https://k14e101.p.ssafy.io/dev/api/swagger-ui.html
+- AI:       https://k14e101.p.ssafy.io/dev/ai/
+"""
+        } else {
+            serviceUrls = """
+*🌐 접속 URL*
+- Frontend: https://k14e101.p.ssafy.io/
+- AI:       https://k14e101.p.ssafy.io/ai/
+"""
+        }
+    }
+
+    // 실패 시 콘솔 링크 추가
+    def failureFooter = ''
+    if (result == 'FAILURE') {
+        failureFooter = "\n\n*🔍 실패 분석*: <${jenkinsUrl}console|Console Output에서 확인>"
+    }
+
+    // 메시지 본문
+    def text = """
+${emoji} **[${envLabel}] Build #${env.BUILD_NUMBER} ${result}**
+
+*Commit*:    `${env.GIT_COMMIT_SHORT}` — ${commitMsg}
+*Author*:    ${commitAuthor}
+*Triggered*: ${triggerText}
+*Changed*:   ${changedText}
+*Duration*:  ${duration}
+${serviceUrls}${failureFooter}
+
+[🔗 Build Details](${jenkinsUrl})
+"""
+
+    // Mattermost로 전송
+    withCredentials([string(credentialsId: 'mattermost-webhook-url', variable: 'MM_URL')]) {
+        // JSON escape를 위해 텍스트를 파일에 쓰고 curl로 보냄
+        writeFile file: '.mm-payload.json', text: groovy.json.JsonOutput.toJson([
+            username: 'jenkins-bot',
+            attachments: [[
+                color: color,
+                text: text
+            ]]
+        ])
+        sh '''
+            curl -sS -X POST -H "Content-Type: application/json" \
+                -d @.mm-payload.json \
+                "$MM_URL" || echo "[WARN] Mattermost notification failed (non-fatal)"
+            rm -f .mm-payload.json
+        '''
+    }
+}
+
+
