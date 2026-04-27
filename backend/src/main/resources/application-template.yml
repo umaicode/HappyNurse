@@ -54,3 +54,8 @@ jwt:
 
 server:
   port: 8080
+
+# Dev-only toggles
+app:
+  dev:
+    enabled: false
