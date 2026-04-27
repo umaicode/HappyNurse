@@ -1,3 +1,4 @@
+// Material3 테마 컬러 팔레트 — Purple/Teal 80/40 톤 정의
 package com.happynurse.presentation.ui.theme
 
 import androidx.compose.ui.graphics.Color

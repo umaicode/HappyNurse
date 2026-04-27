@@ -1,3 +1,4 @@
+// 워치→폰 DataLayer 송신 — 음성 파일/태그 결과를 폰 앱으로 전송
 package com.happynurse.wear.data.remote
 
 import android.content.Context

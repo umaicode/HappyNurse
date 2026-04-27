@@ -1,3 +1,4 @@
+// 단일 Activity — Compose setContent로 NavGraph를 호스팅
 package com.happynurse
 
 import android.os.Bundle

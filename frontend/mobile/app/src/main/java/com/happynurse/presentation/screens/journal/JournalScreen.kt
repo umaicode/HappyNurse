@@ -1,3 +1,4 @@
+// 간호 일지 화면 — 좌우 화살표로 날짜 이동, 카테고리별 타임라인 표시
 package com.happynurse.presentation.screens.journal
 
 import androidx.compose.foundation.background

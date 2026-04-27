@@ -1,3 +1,4 @@
+// 의사 오더 카드 — 탭하면 상세 내용이 펼쳐지는 토글식 카드
 package com.happynurse.presentation.components
 
 import androidx.compose.animation.AnimatedVisibility

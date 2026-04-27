@@ -1,3 +1,4 @@
+// 인계 화면 — 교대 인수인계 환자 카드 리스트
 package com.happynurse.presentation.screens.handover
 
 import androidx.compose.foundation.background

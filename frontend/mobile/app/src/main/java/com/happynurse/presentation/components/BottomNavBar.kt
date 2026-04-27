@@ -1,3 +1,4 @@
+// 4개 탭(환자/일지/인계/의사오더)을 가진 하단 네비게이션 바
 package com.happynurse.presentation.components
 
 import androidx.compose.material.icons.Icons

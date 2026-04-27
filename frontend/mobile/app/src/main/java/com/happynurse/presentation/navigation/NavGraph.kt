@@ -1,3 +1,4 @@
+// 폰 앱 네비게이션 그래프 — login을 시작점으로 11개 라우트(환자/일지/인계/오더 등) 정의
 package com.happynurse.presentation.navigation
 
 import androidx.compose.runtime.Composable

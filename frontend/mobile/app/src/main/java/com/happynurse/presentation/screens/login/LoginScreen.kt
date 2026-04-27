@@ -1,3 +1,4 @@
+// 로그인 화면 — 직급 드롭다운 선택 후 생체인증(지문/얼굴) 버튼으로 진입
 package com.happynurse.presentation.screens.login
 
 import androidx.compose.foundation.background

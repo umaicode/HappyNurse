@@ -1,3 +1,4 @@
+// 간호 일지 타임라인 아이템 — 8개 카테고리(V/S, 투약, 처치, 식이 등) 아이콘+텍스트 행
 package com.happynurse.presentation.components
 
 import androidx.compose.foundation.layout.Arrangement

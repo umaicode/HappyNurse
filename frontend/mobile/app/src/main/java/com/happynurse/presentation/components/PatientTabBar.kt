@@ -1,3 +1,4 @@
+// 환자 상세 화면 상단의 수평 스크롤 탭 바
 package com.happynurse.presentation.components
 
 import androidx.compose.foundation.BorderStroke

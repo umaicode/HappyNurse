@@ -1,3 +1,4 @@
+// 재사용 태그 칩 — 배경/전경 색상을 커스터마이징할 수 있는 라운드형 태그
 package com.happynurse.presentation.components
 
 import androidx.compose.foundation.background

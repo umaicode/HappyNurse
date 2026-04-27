@@ -1,3 +1,4 @@
+// 환자 목록 화면 — LazyColumn으로 환자 카드 리스트 + 상단 알림 아이콘
 package com.happynurse.presentation.screens.patient
 
 import androidx.compose.foundation.BorderStroke

@@ -1,3 +1,4 @@
+// Android Instrumentation 테스트 예제(템플릿) — 실기기/에뮬레이터에서 실행
 package com.happynurse
 
 import androidx.test.platform.app.InstrumentationRegistry

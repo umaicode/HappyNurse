@@ -1,3 +1,4 @@
+// 알림 ViewModel(Hilt) — WearNotification/NotificationType(IV_ALERT, TIMER_ALARM) 상태 관리
 package com.happynurse.wear.presentation.screens.notification
 
 import androidx.lifecycle.ViewModel

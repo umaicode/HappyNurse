@@ -1,3 +1,4 @@
+// NFC 태그 쓰기 화면 — 환자/약물 태그 발급용(TODO, 와이어프레임 외)
 package com.happynurse.presentation.screens.nfc
 
 import androidx.compose.runtime.Composable

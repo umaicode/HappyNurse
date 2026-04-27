@@ -1,3 +1,4 @@
+// HappyNurseWearTheme — Wear Compose MaterialTheme 래퍼
 package com.happynurse.wear.presentation.theme
 
 import androidx.compose.runtime.Composable

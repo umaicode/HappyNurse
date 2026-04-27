@@ -1,3 +1,4 @@
+// 워치 단일 Activity — SwipeDismissable NavController로 WearNavGraph 호스팅
 package com.happynurse.wear
 
 import android.os.Bundle
