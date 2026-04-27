@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, LogOut, ChevronRight, PanelLeftClose } from "lucide-react";
+import { Search, LogOut, ChevronRight, PanelLeftClose, Settings } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -18,11 +18,13 @@ import {
 interface PatientSidebarProps {
   wards?: Ward[];
   onCollapse?: () => void;
+  onOpenAssignModal?: () => void;
 }
 
 export function PatientSidebar({
   wards = MOCK_WARDS,
   onCollapse,
+  onOpenAssignModal,
 }: PatientSidebarProps = {}) {
   const router = useRouter();
   const currentUser =
@@ -143,22 +145,29 @@ export function PatientSidebar({
           onOpenChange={setIsMyPatientsOpen}
           className="w-full"
         >
-          <CollapsibleTrigger className="w-full px-4 py-2.5 flex items-center justify-between bg-white border-b border-border-subtle group hover:bg-slate-50 transition-colors">
-            <div className="flex items-center gap-2">
+          <div className="w-full px-4 py-2.5 flex items-center justify-between bg-white border-b border-border-subtle hover:bg-slate-50 transition-colors">
+            <CollapsibleTrigger className="flex-1 flex items-center justify-between gap-2 group">
               <span className="text-[14px] font-black text-[var(--color-brand-primary)]">
                 내 담당 환자
               </span>
-              <span className="text-[11px] font-bold bg-[var(--color-brand-surface)] text-[var(--color-brand-primary)] px-2 py-0.5 rounded-full">
-                {filteredMyPatients.length}
-              </span>
-            </div>
-            <ChevronRight
-              className={cn(
-                "w-4 h-4 text-content-muted transition-transform duration-200",
-                isMyPatientsOpen && "rotate-90",
-              )}
-            />
-          </CollapsibleTrigger>
+              <ChevronRight
+                className={cn(
+                  "w-4 h-4 text-content-muted transition-transform duration-200",
+                  isMyPatientsOpen && "rotate-90",
+                )}
+              />
+            </CollapsibleTrigger>
+            {onOpenAssignModal && (
+              <button
+                type="button"
+                onClick={onOpenAssignModal}
+                aria-label="담당 환자 설정"
+                className="ml-2 flex h-7 w-7 items-center justify-center rounded-md text-content-muted hover:bg-[var(--color-brand-surface)] hover:text-[var(--color-brand-primary)] transition"
+              >
+                <Settings className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           <CollapsibleContent>
             <div className="flex flex-col bg-white">
               {filteredMyPatients.length === 0 ? (
@@ -188,14 +197,9 @@ export function PatientSidebar({
           className="w-full"
         >
           <CollapsibleTrigger className="w-full px-4 py-2.5 flex items-center justify-between bg-slate-50/50 border-b border-border-subtle group hover:bg-slate-50 transition-colors">
-            <div className="flex items-center gap-2">
-              <span className="text-[14px] font-black text-content-secondary">
-                전체 환자
-              </span>
-              <span className="text-[11px] font-bold bg-slate-200 text-content-muted px-2 py-0.5 rounded-full">
-                {filteredOtherPatients.length}
-              </span>
-            </div>
+            <span className="text-[14px] font-black text-content-secondary">
+              전체 환자
+            </span>
             <ChevronRight
               className={cn(
                 "w-4 h-4 text-content-muted transition-transform duration-200",
