@@ -1,3 +1,4 @@
+// 간호 일지 ViewModel(Hilt) — 일지 데이터/날짜 상태 관리(TODO)
 package com.happynurse.presentation.screens.journal
 
 import androidx.lifecycle.ViewModel

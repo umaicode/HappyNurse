@@ -1,3 +1,4 @@
+// 음성 녹음 화면(워치) — Idle/Recording/Processing/Done/Error 상태별 버튼 UI
 package com.happynurse.wear.presentation.screens.recording
 
 import androidx.compose.foundation.layout.Arrangement

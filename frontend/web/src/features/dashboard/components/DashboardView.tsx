@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -7,7 +7,7 @@ import { EMRGrid } from "./EMRGrid";
 import { RightPanel } from "./RightPanel";
 import { MOCK_WARDS } from "@/mockup/wards";
 import { loadWards, saveWards } from "@/lib/ward-assignments";
-import type { Ward } from "@/features/patient/types/ward";
+import type { Ward } from "@/features/patient/types/patient";
 
 export function DashboardView() {
   const [isLeftOpen, setIsLeftOpen] = useState(true);
@@ -62,10 +62,7 @@ export function DashboardView() {
       currentUser={currentUser}
       onAssignPatients={assignPatientsToCurrentUser}
       sidebar={
-        <PatientSidebar
-          wards={wards}
-          onCollapse={() => setIsLeftOpen(false)}
-        />
+        <PatientSidebar wards={wards} onCollapse={() => setIsLeftOpen(false)} />
       }
       mainGrid={<EMRGrid />}
       actionPanel={<RightPanel onCollapse={() => setIsRightOpen(false)} />}

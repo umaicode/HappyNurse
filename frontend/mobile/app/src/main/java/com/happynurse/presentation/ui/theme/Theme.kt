@@ -1,3 +1,4 @@
+// HappyNurseTheme — Material3 다크/라이트/다이나믹 컬러 스킴 적용 래퍼
 package com.happynurse.presentation.ui.theme
 
 import android.os.Build

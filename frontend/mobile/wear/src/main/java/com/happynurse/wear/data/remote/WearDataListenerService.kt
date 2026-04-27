@@ -1,3 +1,4 @@
+// 폰→워치 메시지 수신 서비스 — /notification, /session 경로의 DataLayer 메시지 처리
 package com.happynurse.wear.data.remote
 
 import com.google.android.gms.wearable.MessageEvent

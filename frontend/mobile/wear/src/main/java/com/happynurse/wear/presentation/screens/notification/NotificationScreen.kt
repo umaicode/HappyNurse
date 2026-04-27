@@ -1,3 +1,4 @@
+// 알림 화면(워치) — 폰에서 푸시된 환자명/위치/알림 유형(IV/타이머) 표시
 package com.happynurse.wear.presentation.screens.notification
 
 import androidx.compose.foundation.layout.Arrangement

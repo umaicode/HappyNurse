@@ -198,20 +198,6 @@
   --color-patient-bg: #f5f6f8;
 }
 
-@keyframes pt-glow {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 0 rgba(55, 64, 74, 0.45),
-      0 0 0 4px var(--color-patient-slate-surface);
-  }
-  50% {
-    box-shadow:
-      0 0 0 7px rgba(55, 64, 74, 0),
-      0 0 0 4px var(--color-patient-slate-surface);
-  }
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;

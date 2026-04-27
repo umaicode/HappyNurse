@@ -1,3 +1,4 @@
+// 환자 NFC 태그 화면(워치) — 전자팔찌 태깅 후 대기/성공/오류 상태 표시
 package com.happynurse.wear.presentation.screens.nfc
 
 import androidx.compose.foundation.layout.Arrangement
