@@ -218,19 +218,17 @@ pipeline {
 // ──────────────────────────────────────────────────────────────
 // Mattermost 알림 함수
 // ──────────────────────────────────────────────────────────────
-// ──────────────────────────────────────────────────────────────
-// Mattermost 알림 (깔끔하고 모던하게)
-// ──────────────────────────────────────────────────────────────
 def notifyMattermost(String result) {
     // ─── 색상 및 기본 상태 ───
     def isSuccess = (result == 'SUCCESS')
     def color     = isSuccess ? '#2eb886' : '#e01e5a' // 초록 / 빨강
     def envLabel  = env.DEPLOY_ENV.toUpperCase()
 
-    // ─── pretext (가장 상단 알림 텍스트) ───
-    def pretext = isSuccess 
-        ? "**[SUCCESS]** ${envLabel} 배포를 완료했습니다."
-        : "**[FAILED]** ${envLabel} 배포에 실패했습니다. 로그 확인이 필요합니다."
+    // ─── 커스텀 이모지 및 큰 헤더 (초록/빨강 박스 안쪽) ───
+    def jenkinsEmoji = isSuccess ? ':jenkins_muscle:' : ':jenkins5:'
+    def headerText = isSuccess 
+        ? "# ${jenkinsEmoji} ${envLabel} 배포 뿌슝빠슝"
+        : "# ${jenkinsEmoji} ${envLabel} 안되잖아 다시해"
 
     // ─── 트리거 정보 ───
     def cause = currentBuild.getBuildCauses()
@@ -270,7 +268,7 @@ def notifyMattermost(String result) {
     def jenkinsUrl = env.BUILD_URL ?: "https://k14e101.p.ssafy.io/jenkins/job/${env.JOB_NAME}/${env.BUILD_NUMBER}/"
     def consoleUrl = "${jenkinsUrl}console"
 
-    // ─── title (헤더 영역) ───
+    // ─── title (소제목 영역) ───
     def title = "Build #${env.BUILD_NUMBER} (${branch})"
 
     // ─── fields (2단 정렬, 깔끔한 영문 라벨 사용) ───
@@ -283,9 +281,9 @@ def notifyMattermost(String result) {
         [title: 'Duration', value: duration,      short: true]
     ]
 
-    // ─── 메시지 본문 ───
-    // 커밋 메시지는 인용구로 처리하여 깔끔하게 분리
-    def text = "> *${commitMsg}*\n\n"
+    // ─── 메시지 본문 (박스 내부) ───
+    // 큰 글씨 헤더를 가장 위에 배치하고, 커밋 메시지를 인용구로 띄움
+    def text = "${headerText}\n\n> *${commitMsg}*\n\n"
 
     if (isSuccess) {
         text += "**Service Links**\n"
@@ -317,7 +315,7 @@ def notifyMattermost(String result) {
         attachments: [[
             fallback: "[${envLabel}] Build #${env.BUILD_NUMBER} ${result}",
             color: color,
-            pretext: pretext,
+            // pretext 항목을 완전히 제거하여 박스 바깥의 글씨를 없앰
             title: title,
             title_link: jenkinsUrl,
             text: text,
