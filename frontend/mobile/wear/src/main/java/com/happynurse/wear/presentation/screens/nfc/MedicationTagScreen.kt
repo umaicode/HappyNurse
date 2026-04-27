@@ -1,3 +1,4 @@
+// 약물 NFC 태그 화면(워치) — 약물 태깅 후 일치/불일치/오류 상태 표시(5 Rights)
 package com.happynurse.wear.presentation.screens.nfc
 
 import androidx.compose.foundation.layout.Arrangement

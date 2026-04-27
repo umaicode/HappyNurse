@@ -1,3 +1,4 @@
+// Hilt 모듈 — Retrofit 인스턴스와 HappyNurseApi 싱글톤을 제공
 package com.happynurse.di
 
 import com.happynurse.BuildConfig

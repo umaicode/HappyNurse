@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Check, Clock } from "lucide-react";
+import { Check } from "lucide-react";
 import { nurseMock, patientMock, symptomsMock } from "@/mockup/patient";
 
 export default function Complete() {
@@ -63,39 +63,6 @@ export default function Complete() {
               )
             }
           />
-        </div>
-
-        <div className="rounded-2xl border border-patient-hairline bg-white px-4 pt-3.5 pb-4">
-          <div className="mb-5 text-base font-extrabold tracking-wide text-[#383838]">
-            진행 상태
-          </div>
-          <div className="flex items-start justify-center gap-0">
-            {/* 확인중 */}
-            <div className="flex flex-col items-center gap-1.5 w-[64px]">
-              <div
-                className="flex size-[28px] items-center justify-center rounded-full bg-patient-slate text-white"
-                style={{ animation: "pt-glow 1.8s ease-in-out infinite" }}
-              >
-                <Clock className="size-3.5" strokeWidth={2.5} />
-              </div>
-              <span className="text-lg font-bold whitespace-nowrap text-patient-slate">
-                확인중
-              </span>
-            </div>
-
-            {/* 커넥터 */}
-            <div className="mt-3.5 h-0.5 w-16 rounded-full bg-patient-hairline" />
-
-            {/* 확인완료 */}
-            <div className="flex flex-col items-center gap-1.5">
-              <div className="flex size-[28px] items-center justify-center rounded-full border-[1.5px] border-patient-line bg-white text-patient-fade">
-                <Check className="size-3.5" strokeWidth={2.5} />
-              </div>
-              <span className="text-lg font-bold whitespace-nowrap text-patient-muted">
-                확인완료
-              </span>
-            </div>
-          </div>
         </div>
 
         <div className="flex-1" />

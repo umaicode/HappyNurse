@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import type { Ward } from "@/features/patient/types/ward";
+import type { Ward } from "@/features/patient/types/patient";
 
 interface AssignPatientModalProps {
   wards: Ward[];
@@ -65,7 +65,12 @@ export function AssignPatientModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent className="sm:max-w-[640px] max-h-[85vh] overflow-hidden flex flex-col rounded-2xl p-0 border border-border-base bg-white shadow-2xl">
         <DialogHeader className="px-7 pt-7 pb-4 border-b border-border-subtle">
           <DialogTitle className="text-2xl font-bold text-[var(--color-sub-primary)]">
@@ -138,12 +143,7 @@ export function AssignPatientModal({
             {selectedIds.size}명 선택됨
           </span>
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              onClick={onClose}
-            >
+            <Button type="button" variant="outline" size="lg" onClick={onClose}>
               취소
             </Button>
             <Button

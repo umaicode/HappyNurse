@@ -1,3 +1,4 @@
+// JUnit 로컬 단위 테스트 예제(템플릿)
 package com.happynurse
 
 import org.junit.Test

@@ -1,3 +1,4 @@
+// 알림 설정 ViewModel(Hilt) — NotificationSettings를 MutableStateFlow로 관리
 package com.happynurse.presentation.screens.notification
 
 import androidx.lifecycle.ViewModel

@@ -8,9 +8,13 @@
  */
 import type { NextConfig } from 'next'
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
+
 const nextConfig: NextConfig = {
   output: 'standalone',
-  reactCompiler: true, // React Compiler 활성화 (선택)
+  basePath: basePath,
+  assetPrefix: basePath,
+  reactCompiler: true,
 }
 
 export default nextConfig

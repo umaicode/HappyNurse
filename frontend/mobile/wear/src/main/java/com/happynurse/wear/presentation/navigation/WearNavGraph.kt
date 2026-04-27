@@ -1,3 +1,4 @@
+// 워치 앱 네비게이션 — main/patient_tag/medication_tag/recording/notification 5개 라우트
 package com.happynurse.wear.presentation.navigation
 
 import androidx.compose.runtime.Composable

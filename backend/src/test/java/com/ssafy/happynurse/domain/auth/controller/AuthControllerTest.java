@@ -66,7 +66,7 @@ class AuthControllerTest {
     @Test
     @DisplayName("POST /auth/login 성공 시 200 + 쿠키 2개 + JSON body")
     void login_성공_쿠키2개_설정() throws Exception {
-        given(authService.login(anyString(), anyString(), anyString(), anyLong(), anyLong()))
+        given(authService.login(anyString(), anyString(), anyString(), anyLong(), anyLong(), anyLong()))
                 .willReturn(AUTH_RESULT);
 
         LoginRequest request = new LoginRequest(1L, 3L, "EMP001", "password");
@@ -101,7 +101,7 @@ class AuthControllerTest {
     @Test
     @DisplayName("POST /auth/login 실패 - 잘못된 자격증명 시 401")
     void login_실패_잘못된_자격증명() throws Exception {
-        given(authService.login(anyString(), anyString(), anyString(), anyLong(), anyLong()))
+        given(authService.login(anyString(), anyString(), anyString(), anyLong(), anyLong(), anyLong()))
                 .willThrow(new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
         LoginRequest request = new LoginRequest(1L, 3L, "EMP001", "wrong");

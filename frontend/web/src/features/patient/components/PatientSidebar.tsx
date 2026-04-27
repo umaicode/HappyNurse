@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { Search, LogOut, ChevronRight, PanelLeftClose } from "lucide-react";
+import { Search, LogOut, ChevronRight, PanelLeftClose, Settings } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { INITIAL_RECORDS } from "@/mockup/emr-data";
 import { MOCK_WARDS } from "@/mockup/wards";
 import { clearWardAssignments } from "@/lib/ward-assignments";
-import type { Patient, Ward } from "@/features/patient/types/ward";
+import type { Patient, Ward } from "@/features/patient/types/patient";
 import {
   Collapsible,
   CollapsibleContent,
@@ -18,11 +18,19 @@ import {
 interface PatientSidebarProps {
   wards?: Ward[];
   onCollapse?: () => void;
+  onOpenAssignModal?: () => void;
 }
 
-export function PatientSidebar({ wards = MOCK_WARDS, onCollapse }: PatientSidebarProps = {}) {
+export function PatientSidebar({
+  wards = MOCK_WARDS,
+  onCollapse,
+  onOpenAssignModal,
+}: PatientSidebarProps = {}) {
   const router = useRouter();
-  const currentUser = typeof window !== 'undefined' ? localStorage.getItem("currentUser") || "김영희" : "김영희";
+  const currentUser =
+    typeof window !== "undefined"
+      ? localStorage.getItem("currentUser") || "김영희"
+      : "김영희";
   const [activePatientId, setActivePatientId] = useState("p1");
   const [searchQuery, setSearchQuery] = useState("");
   const [isMyPatientsOpen, setIsMyPatientsOpen] = useState(true);
@@ -39,18 +47,24 @@ export function PatientSidebar({ wards = MOCK_WARDS, onCollapse }: PatientSideba
     [wards],
   );
 
-  const myPatients = useMemo(() =>
-    allPatients.filter(p => p.assignedNurse === currentUser),
-  [allPatients, currentUser]);
+  const myPatients = useMemo(
+    () => allPatients.filter((p) => p.assignedNurse === currentUser),
+    [allPatients, currentUser],
+  );
 
-  const otherPatients = useMemo(() =>
-    allPatients.filter(p => p.assignedNurse !== currentUser),
-  [allPatients, currentUser]);
+  const otherPatients = useMemo(
+    () => allPatients.filter((p) => p.assignedNurse !== currentUser),
+    [allPatients, currentUser],
+  );
 
-  const duplicateNames = useMemo(() => allPatients.reduce((acc: {[key: string]: number}, p) => {
-    acc[p.name] = (acc[p.name] || 0) + 1;
-    return acc;
-  }, {}), [allPatients]);
+  const duplicateNames = useMemo(
+    () =>
+      allPatients.reduce((acc: { [key: string]: number }, p) => {
+        acc[p.name] = (acc[p.name] || 0) + 1;
+        return acc;
+      }, {}),
+    [allPatients],
+  );
 
   // 환자별 미확정 기록 개수 계산 (patientId 미지정 레코드는 p1 소속)
   const unconfirmedCounts = useMemo(() => {
@@ -63,8 +77,12 @@ export function PatientSidebar({ wards = MOCK_WARDS, onCollapse }: PatientSideba
     return counts;
   }, []);
 
-  const filteredMyPatients = myPatients.filter(p => p.name.includes(searchQuery));
-  const filteredOtherPatients = otherPatients.filter(p => p.name.includes(searchQuery));
+  const filteredMyPatients = myPatients.filter((p) =>
+    p.name.includes(searchQuery),
+  );
+  const filteredOtherPatients = otherPatients.filter((p) =>
+    p.name.includes(searchQuery),
+  );
 
   // 전체 환자 섹션을 호수(room) 단위로 그룹핑. 호수 순서는 원본 wards 정의 순서를 따름.
   const otherPatientsByRoom = useMemo(() => {
@@ -90,7 +108,11 @@ export function PatientSidebar({ wards = MOCK_WARDS, onCollapse }: PatientSideba
       {/* Brand & Search Header */}
       <div className="p-3 border-b border-border-base flex flex-col gap-3">
         <div className="flex items-center justify-between px-1">
-          <img src="/images/logo_ic.png" alt="해피너스 로고" className="h-5 w-auto object-contain" />
+          <img
+            src="/images/logo_ic.png"
+            alt="해피너스 로고"
+            className="h-5 w-auto object-contain"
+          />
           {onCollapse && (
             <button
               type="button"
@@ -117,16 +139,35 @@ export function PatientSidebar({ wards = MOCK_WARDS, onCollapse }: PatientSideba
 
       {/* Patient Lists with Toggle Sections */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
-
         {/* 1. My Patients Section */}
-        <Collapsible open={isMyPatientsOpen} onOpenChange={setIsMyPatientsOpen} className="w-full">
-          <CollapsibleTrigger className="w-full px-4 py-2.5 flex items-center justify-between bg-white border-b border-border-subtle group hover:bg-slate-50 transition-colors">
-            <div className="flex items-center gap-2">
-              <span className="text-[14px] font-black text-[var(--color-brand-primary)]">내 담당 환자</span>
-              <span className="text-[11px] font-bold bg-[var(--color-brand-surface)] text-[var(--color-brand-primary)] px-2 py-0.5 rounded-full">{filteredMyPatients.length}</span>
-            </div>
-            <ChevronRight className={cn("w-4 h-4 text-content-muted transition-transform duration-200", isMyPatientsOpen && "rotate-90")} />
-          </CollapsibleTrigger>
+        <Collapsible
+          open={isMyPatientsOpen}
+          onOpenChange={setIsMyPatientsOpen}
+          className="w-full"
+        >
+          <div className="w-full px-4 py-2.5 flex items-center justify-between bg-white border-b border-border-subtle hover:bg-slate-50 transition-colors">
+            <CollapsibleTrigger className="flex-1 flex items-center justify-between gap-2 group">
+              <span className="text-[14px] font-black text-[var(--color-brand-primary)]">
+                내 담당 환자
+              </span>
+              <ChevronRight
+                className={cn(
+                  "w-4 h-4 text-content-muted transition-transform duration-200",
+                  isMyPatientsOpen && "rotate-90",
+                )}
+              />
+            </CollapsibleTrigger>
+            {onOpenAssignModal && (
+              <button
+                type="button"
+                onClick={onOpenAssignModal}
+                aria-label="담당 환자 설정"
+                className="ml-2 flex h-7 w-7 items-center justify-center rounded-md text-content-muted hover:bg-[var(--color-brand-surface)] hover:text-[var(--color-brand-primary)] transition"
+              >
+                <Settings className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           <CollapsibleContent>
             <div className="flex flex-col bg-white">
               {filteredMyPatients.length === 0 ? (
@@ -134,7 +175,7 @@ export function PatientSidebar({ wards = MOCK_WARDS, onCollapse }: PatientSideba
                   담당 환자가 없습니다
                 </div>
               ) : (
-                filteredMyPatients.map(patient => (
+                filteredMyPatients.map((patient) => (
                   <PatientItem
                     key={patient.id}
                     patient={patient}
@@ -150,13 +191,21 @@ export function PatientSidebar({ wards = MOCK_WARDS, onCollapse }: PatientSideba
         </Collapsible>
 
         {/* 2. All Other Patients Section */}
-        <Collapsible open={isAllPatientsOpen} onOpenChange={setIsAllPatientsOpen} className="w-full">
+        <Collapsible
+          open={isAllPatientsOpen}
+          onOpenChange={setIsAllPatientsOpen}
+          className="w-full"
+        >
           <CollapsibleTrigger className="w-full px-4 py-2.5 flex items-center justify-between bg-slate-50/50 border-b border-border-subtle group hover:bg-slate-50 transition-colors">
-            <div className="flex items-center gap-2">
-              <span className="text-[14px] font-black text-content-secondary">전체 환자</span>
-              <span className="text-[11px] font-bold bg-slate-200 text-content-muted px-2 py-0.5 rounded-full">{filteredOtherPatients.length}</span>
-            </div>
-            <ChevronRight className={cn("w-4 h-4 text-content-muted transition-transform duration-200", isAllPatientsOpen && "rotate-90")} />
+            <span className="text-[14px] font-black text-content-secondary">
+              전체 환자
+            </span>
+            <ChevronRight
+              className={cn(
+                "w-4 h-4 text-content-muted transition-transform duration-200",
+                isAllPatientsOpen && "rotate-90",
+              )}
+            />
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="flex flex-col bg-white">
@@ -165,7 +214,7 @@ export function PatientSidebar({ wards = MOCK_WARDS, onCollapse }: PatientSideba
                   <div className="px-4 py-1.5 bg-slate-100/70 border-b border-border-subtle text-[11px] font-bold text-content-tertiary tracking-wider uppercase">
                     {roomName}
                   </div>
-                  {patients.map(patient => (
+                  {patients.map((patient) => (
                     <PatientItem
                       key={patient.id}
                       patient={patient}
@@ -186,8 +235,12 @@ export function PatientSidebar({ wards = MOCK_WARDS, onCollapse }: PatientSideba
       <div className="p-3 border-t border-border-base bg-white">
         <div className="flex items-center justify-between gap-3 p-2.5 bg-[var(--color-surface-base)] rounded-xl border border-border-subtle/50 transition-all hover:border-[var(--color-brand-primary)]/20">
           <div className="flex flex-col min-w-0 pl-1">
-            <span className="text-[14px] font-black text-content-primary truncate leading-tight">{currentUser}</span>
-            <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider mt-0.5">RN / Charge Nurse</span>
+            <span className="text-[14px] font-black text-content-primary truncate leading-tight">
+              {currentUser}
+            </span>
+            <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider mt-0.5">
+              RN / Charge Nurse
+            </span>
           </div>
 
           <button
@@ -215,7 +268,13 @@ interface PatientItemProps {
   onClick: () => void;
 }
 
-function PatientItem({ patient, isActive, isDuplicate, unconfirmedCount = 0, onClick }: PatientItemProps) {
+function PatientItem({
+  patient,
+  isActive,
+  isDuplicate,
+  unconfirmedCount = 0,
+  onClick,
+}: PatientItemProps) {
   return (
     <button
       onClick={onClick}
@@ -229,17 +288,36 @@ function PatientItem({ patient, isActive, isDuplicate, unconfirmedCount = 0, onC
       <div className="flex flex-col gap-1 min-w-0 flex-1">
         <div className="flex items-center gap-3">
           <div className="relative inline-block shrink-0">
-            <span className={cn("text-base tracking-tight truncate", isActive ? "font-bold text-[var(--color-sub-primary)]" : "font-semibold text-content-secondary")}>
+            <span
+              className={cn(
+                "text-base tracking-tight truncate",
+                isActive
+                  ? "font-bold text-[var(--color-sub-primary)]"
+                  : "font-semibold text-content-secondary",
+              )}
+            >
               {patient.name}
             </span>
             {isDuplicate && (
-              <div className="absolute top-0 -right-1 size-1 rounded-full bg-[var(--color-brand-primary)] shadow-[0_0_4px_var(--color-brand-primary)]/40" title="동명이인" />
+              <div
+                className="absolute top-0 -right-1 size-1 rounded-full bg-[var(--color-brand-primary)] shadow-[0_0_4px_var(--color-brand-primary)]/40"
+                title="동명이인"
+              />
             )}
           </div>
-          <div className={cn("flex items-center gap-1 text-[13px] font-mono shrink-0", isActive ? "text-[var(--color-sub-primary)]/70 font-bold" : "text-content-muted")}>
+          <div
+            className={cn(
+              "flex items-center gap-1 text-[13px] font-mono shrink-0",
+              isActive
+                ? "text-[var(--color-sub-primary)]/70 font-bold"
+                : "text-content-muted",
+            )}
+          >
             <span>{patient.gender}</span>
             <span>/</span>
-            <span>{patient.birthday ? patient.birthday.substring(2) : "00.01.01"}</span>
+            <span>
+              {patient.birthday ? patient.birthday.substring(2) : "00.01.01"}
+            </span>
           </div>
         </div>
       </div>

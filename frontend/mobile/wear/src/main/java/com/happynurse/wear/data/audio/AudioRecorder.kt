@@ -1,3 +1,4 @@
+// MediaRecorder 래퍼 — MP3 음성 녹음 startRecording/stopRecording 제공
 package com.happynurse.wear.data.audio
 
 import android.content.Context

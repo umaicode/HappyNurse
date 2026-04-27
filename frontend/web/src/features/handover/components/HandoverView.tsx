@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useRouter } from "next/navigation";
 import {
@@ -29,12 +29,13 @@ import type {
   HandoverPatient,
   HandoverSummary,
 } from "@/features/handover/types/handover";
-import type { Ward } from "@/features/patient/types/ward";
+import type { Ward } from "@/features/patient/types/patient";
 
 // 환자별 간호 기록을 조회 (patientId 미지정 레코드는 p1 소속)
 function getRecordsForPatient(patientId: string): NursingRecord[] {
-  return INITIAL_RECORDS
-    .filter((record) => (record.patientId || "p1") === patientId)
+  return INITIAL_RECORDS.filter(
+    (record) => (record.patientId || "p1") === patientId,
+  )
     .slice()
     .sort((a, b) => a.time.localeCompare(b.time));
 }
@@ -45,11 +46,18 @@ function findSummary(patientId: string): HandoverSummary | undefined {
 
 export function HandoverView() {
   const router = useRouter();
-  const currentUser = typeof window !== 'undefined' ? localStorage.getItem("currentUser") || "김영희" : "김영희";
+  const currentUser =
+    typeof window !== "undefined"
+      ? localStorage.getItem("currentUser") || "김영희"
+      : "김영희";
   const [wards, setWards] = useState<Ward[]>(MOCK_WARDS);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
-  const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(
+    null,
+  );
+  const [expandedSources, setExpandedSources] = useState<Set<string>>(
+    new Set(),
+  );
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -65,8 +73,7 @@ export function HandoverView() {
         .filter((patient) => patient.assignedNurse === currentUser)
         .map((patient) => patient.id),
     );
-    return HANDOVER_PATIENTS
-      .filter((hp) => myIds.has(hp.id))
+    return HANDOVER_PATIENTS.filter((hp) => myIds.has(hp.id))
       .slice()
       .sort((a, b) => a.name.localeCompare(b.name, "ko"));
   }, [wards, currentUser]);
@@ -74,10 +81,11 @@ export function HandoverView() {
   const filteredPatients = useMemo(() => {
     const query = searchQuery.trim();
     if (!query) return myPatients;
-    return myPatients.filter((patient) =>
-      patient.name.includes(query) ||
-      patient.patientNo.includes(query) ||
-      patient.room.includes(query),
+    return myPatients.filter(
+      (patient) =>
+        patient.name.includes(query) ||
+        patient.patientNo.includes(query) ||
+        patient.room.includes(query),
     );
   }, [searchQuery, myPatients]);
 
@@ -142,7 +150,10 @@ export function HandoverView() {
 
   const handleSelectPatient = (id: string) => {
     // 하이라이트는 스크롤 스파이(IntersectionObserver)가 담당한다.
-    cardRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    cardRefs.current[id]?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   };
 
   const toggleSource = (patientId: string) => {
@@ -167,7 +178,12 @@ export function HandoverView() {
           </button>
           <div className="flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-[var(--color-brand-primary)]" />
-            <Heading level="h2" className="text-[22px] font-bold text-slate-800">AI 인수인계 리포트</Heading>
+            <Heading
+              level="h2"
+              className="text-[22px] font-bold text-slate-800"
+            >
+              AI 인수인계 리포트
+            </Heading>
           </div>
         </div>
 
@@ -189,12 +205,16 @@ export function HandoverView() {
         <aside className="w-72 shrink-0 bg-white border-r border-border-base flex flex-col">
           <div className="px-5 py-4 border-b border-border-base shrink-0">
             <div className="flex items-center justify-between">
-              <span className="text-[15px] font-bold text-slate-800">담당 환자</span>
+              <span className="text-[15px] font-bold text-slate-800">
+                담당 환자
+              </span>
               <span className="text-[13px] font-semibold text-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 px-2.5 py-0.5 rounded-full">
                 {myPatients.length}명
               </span>
             </div>
-            <p className="mt-1.5 text-[12px] text-slate-400">클릭하면 해당 환자 카드로 이동해요</p>
+            <p className="mt-1.5 text-[12px] text-slate-400">
+              클릭하면 해당 환자 카드로 이동해요
+            </p>
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
             {filteredPatients.length === 0 ? (
@@ -212,23 +232,31 @@ export function HandoverView() {
                       "w-full text-left px-4 py-3 rounded-xl transition-all relative group",
                       isSelected
                         ? "bg-[var(--color-surface-card)] shadow-md"
-                        : "bg-transparent hover:bg-[var(--color-surface-hover)]"
+                        : "bg-transparent hover:bg-[var(--color-surface-hover)]",
                     )}
                   >
                     {isSelected && (
                       <span className="absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r bg-[var(--color-brand-primary)]" />
                     )}
                     <div className="flex items-center justify-between gap-2">
-                      <span className={cn(
-                        "text-[16px] font-semibold truncate",
-                        isSelected ? "text-[var(--color-brand-primary)]" : "text-slate-800"
-                      )}>
+                      <span
+                        className={cn(
+                          "text-[16px] font-semibold truncate",
+                          isSelected
+                            ? "text-[var(--color-brand-primary)]"
+                            : "text-slate-800",
+                        )}
+                      >
                         {patient.name}
                       </span>
-                      <span className="text-[12px] text-slate-400 shrink-0">{patient.room}</span>
+                      <span className="text-[12px] text-slate-400 shrink-0">
+                        {patient.room}
+                      </span>
                     </div>
                     <div className="mt-1.5">
-                      <span className="text-[13px] text-slate-500 truncate block">{patient.mainSymptom}</span>
+                      <span className="text-[13px] text-slate-500 truncate block">
+                        {patient.mainSymptom}
+                      </span>
                     </div>
                   </button>
                 );
@@ -271,7 +299,9 @@ export function HandoverView() {
               {filteredPatients.length === 0 ? (
                 <div className="bg-white rounded-2xl shadow-sm px-8 py-16 flex flex-col items-center gap-3 text-[var(--color-content-muted)]">
                   <Sparkles className="size-6 opacity-50" />
-                  <Text className="text-[14px] font-medium">담당 환자가 없습니다</Text>
+                  <Text className="text-[14px] font-medium">
+                    담당 환자가 없습니다
+                  </Text>
                   <Text className="text-[12px] text-[var(--color-content-tertiary)]">
                     대시보드에서 담당 환자를 설정하면 여기에 표시됩니다.
                   </Text>
@@ -288,23 +318,34 @@ export function HandoverView() {
                   return (
                     <div
                       key={patient.id}
-                      ref={(el) => { cardRefs.current[patient.id] = el; }}
+                      ref={(el) => {
+                        cardRefs.current[patient.id] = el;
+                      }}
                       data-patient-id={patient.id}
                       className={cn(
                         "bg-white rounded-2xl overflow-hidden flex flex-col transition-all scroll-mt-4",
                         selectedPatientId === patient.id
                           ? "shadow-xl"
-                          : "shadow-sm hover:shadow-md"
+                          : "shadow-sm hover:shadow-md",
                       )}
                     >
                       {/* [CARD HEADER] */}
                       <div className="px-5 py-3.5 bg-slate-50/60 border-b border-border-base flex items-center gap-4">
                         <div className="flex items-baseline gap-2.5">
-                          <Heading level="h3" className="text-2xl font-bold text-slate-800">{patient.name}</Heading>
-                          <Text className="text-[15px] text-slate-500 font-medium">{patient.birthDate}</Text>
+                          <Heading
+                            level="h3"
+                            className="text-2xl font-bold text-slate-800"
+                          >
+                            {patient.name}
+                          </Heading>
+                          <Text className="text-[15px] text-slate-500 font-medium">
+                            {patient.birthDate}
+                          </Text>
                         </div>
                         <div className="w-px h-5 bg-border-base" />
-                        <Badge className="bg-slate-100 text-slate-600 font-medium border-none text-[13px] px-2.5 py-0.5 hover:bg-slate-100">{patient.room}</Badge>
+                        <Badge className="bg-slate-100 text-slate-600 font-medium border-none text-[13px] px-2.5 py-0.5 hover:bg-slate-100">
+                          {patient.room}
+                        </Badge>
                         <Badge
                           className="ml-auto bg-[var(--color-brand-surface)] text-[var(--color-brand-primary)] font-semibold border-none text-[13px] px-3 py-1 hover:bg-[var(--color-brand-surface)]"
                           title="주요 증상"
@@ -317,8 +358,13 @@ export function HandoverView() {
                       {!summary ? (
                         <div className="p-8 flex flex-col items-center justify-center gap-2 text-[var(--color-content-muted)]">
                           <Sparkles className="size-6 opacity-50" />
-                          <Text className="text-[14px] font-medium">요약 준비 중</Text>
-                          <Text className="text-[12px] text-[var(--color-content-tertiary)]">해당 환자의 AI 인수인계 요약이 아직 생성되지 않았어요.</Text>
+                          <Text className="text-[14px] font-medium">
+                            요약 준비 중
+                          </Text>
+                          <Text className="text-[12px] text-[var(--color-content-tertiary)]">
+                            해당 환자의 AI 인수인계 요약이 아직 생성되지
+                            않았어요.
+                          </Text>
                         </div>
                       ) : (
                         <div className="p-6 flex flex-col gap-5">
@@ -332,7 +378,9 @@ export function HandoverView() {
                               {summary.generatedAt}
                             </span>
                             {summary.model && (
-                              <span className="text-[var(--color-content-tertiary)]">· {summary.model}</span>
+                              <span className="text-[var(--color-content-tertiary)]">
+                                · {summary.model}
+                              </span>
                             )}
                           </div>
 
@@ -346,15 +394,23 @@ export function HandoverView() {
                             <div className="space-y-2.5 p-4 rounded-xl bg-amber-50/60 border border-amber-200">
                               <div className="flex items-center gap-2">
                                 <AlertTriangle className="size-4 text-amber-600" />
-                                <Heading level="h4" className="text-[15px] font-bold text-amber-900">
+                                <Heading
+                                  level="h4"
+                                  className="text-[15px] font-bold text-amber-900"
+                                >
                                   다음 교대 확인사항
                                 </Heading>
                               </div>
                               <ul className="space-y-1.5 pl-1">
                                 {summary.watchPoints.map((point, i) => (
-                                  <li key={i} className="flex gap-2.5 text-[14px] leading-relaxed text-amber-900">
+                                  <li
+                                    key={i}
+                                    className="flex gap-2.5 text-[14px] leading-relaxed text-amber-900"
+                                  >
                                     <span className="mt-2 size-1.5 rounded-full bg-amber-500 shrink-0" />
-                                    <span className="flex-1 min-w-0">{point}</span>
+                                    <span className="flex-1 min-w-0">
+                                      {point}
+                                    </span>
                                   </li>
                                 ))}
                               </ul>
@@ -363,28 +419,38 @@ export function HandoverView() {
 
                           {/* Vitals Note */}
                           {summary.vitalsNote && (
-                            <div className={cn(
-                              "flex items-start gap-2.5 p-3 rounded-xl border",
-                              patient.recentVitals.status === "abnormal"
-                                ? "bg-rose-50/60 border-rose-200"
-                                : "bg-emerald-50/60 border-emerald-200",
-                            )}>
-                              <Activity className={cn(
-                                "size-4 mt-0.5 shrink-0",
-                                patient.recentVitals.status === "abnormal" ? "text-rose-500" : "text-emerald-600",
-                              )} />
+                            <div
+                              className={cn(
+                                "flex items-start gap-2.5 p-3 rounded-xl border",
+                                patient.recentVitals.status === "abnormal"
+                                  ? "bg-rose-50/60 border-rose-200"
+                                  : "bg-emerald-50/60 border-emerald-200",
+                              )}
+                            >
+                              <Activity
+                                className={cn(
+                                  "size-4 mt-0.5 shrink-0",
+                                  patient.recentVitals.status === "abnormal"
+                                    ? "text-rose-500"
+                                    : "text-emerald-600",
+                                )}
+                              />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5">
                                   <span className="text-[12px] font-bold uppercase tracking-wider text-[var(--color-content-tertiary)]">
                                     바이탈 트렌드
                                   </span>
-                                  <Badge className={cn(
-                                    "border-none text-[11px] px-2 py-0 font-semibold",
-                                    patient.recentVitals.status === "abnormal"
-                                      ? "bg-rose-100 text-rose-700 hover:bg-rose-100"
-                                      : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100",
-                                  )}>
-                                    {patient.recentVitals.status === "abnormal" ? "주의" : "안정"}
+                                  <Badge
+                                    className={cn(
+                                      "border-none text-[11px] px-2 py-0 font-semibold",
+                                      patient.recentVitals.status === "abnormal"
+                                        ? "bg-rose-100 text-rose-700 hover:bg-rose-100"
+                                        : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100",
+                                    )}
+                                  >
+                                    {patient.recentVitals.status === "abnormal"
+                                      ? "주의"
+                                      : "안정"}
                                   </Badge>
                                 </div>
                                 <Text className="text-[14px] text-[var(--color-content-secondary)]">
@@ -399,15 +465,23 @@ export function HandoverView() {
                             <div className="space-y-2.5">
                               <div className="flex items-center gap-2">
                                 <TrendingUp className="size-4 text-[var(--color-brand-primary)]" />
-                                <Heading level="h4" className="text-[15px] font-bold text-[var(--color-content-primary)]">
+                                <Heading
+                                  level="h4"
+                                  className="text-[15px] font-bold text-[var(--color-content-primary)]"
+                                >
                                   주요 경과
                                 </Heading>
                               </div>
                               <ul className="space-y-1.5 pl-1">
                                 {summary.keyIssues.map((issue, i) => (
-                                  <li key={i} className="flex gap-2.5 text-[14px] leading-relaxed text-[var(--color-content-secondary)]">
+                                  <li
+                                    key={i}
+                                    className="flex gap-2.5 text-[14px] leading-relaxed text-[var(--color-content-secondary)]"
+                                  >
                                     <span className="mt-2 size-1.5 rounded-full bg-[var(--color-brand-primary)]/60 shrink-0" />
-                                    <span className="flex-1 min-w-0">{issue}</span>
+                                    <span className="flex-1 min-w-0">
+                                      {issue}
+                                    </span>
                                   </li>
                                 ))}
                               </ul>
@@ -428,7 +502,8 @@ export function HandoverView() {
                                   <ChevronRight className="size-4" />
                                 )}
                                 <FileText className="size-3.5" />
-                                근거 기록 {sourceRecords.length}건 {isSourceOpen ? "접기" : "보기"}
+                                근거 기록 {sourceRecords.length}건{" "}
+                                {isSourceOpen ? "접기" : "보기"}
                               </button>
                               {isSourceOpen && (
                                 <ul className="mt-3 space-y-2">

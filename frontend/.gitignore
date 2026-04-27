@@ -1,110 +1,99 @@
-# ──────────────────────────────────────────
-# Claude Code
-# ──────────────────────────────────────────
+# =========================================================
+# Frontend 통합 .gitignore
+# 하위 프로젝트: mobile/ (Android Kotlin), web/ (Next.js)
+# =========================================================
+
+# ───────────── 공통: Claude Code ─────────────
 .claude/
 CLAUDE.md
 DESIGN.md
+mobile/CONVENTIONS.md
 
-# ──────────────────────────────────────────
-# Next.js (web)
-# ──────────────────────────────────────────
-/.next/
-/out/
-next-env.d.ts
-*.tsbuildinfo
-
-# ──────────────────────────────────────────
-# 의존성
-# ──────────────────────────────────────────
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# ──────────────────────────────────────────
-# 빌드 결과물
-# ──────────────────────────────────────────
-/build
-/coverage
-app/build/
-wear/build/
-
-# ──────────────────────────────────────────
-# 환경변수 / 시크릿 (절대 커밋 금지)
-# ──────────────────────────────────────────
-.env*
-secrets.properties
-google-services.json
-GoogleService-Info.plist
-*.jks
-*.keystore
-keystore.properties
-*.pem
-
-# ──────────────────────────────────────────
-# Android
-# ──────────────────────────────────────────
+# ───────────── 공통: IDE ─────────────
+.idea/
+.vscode/
 *.iml
-.gradle
-/local.properties
-local.properties
-/captures
-.externalNativeBuild
-.cxx
 
-# ──────────────────────────────────────────
-# IDEA / IntelliJ
-# ──────────────────────────────────────────
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-/.idea/deploymentTargetSelector.xml
-/.idea/deviceManager.xml
-
-# ──────────────────────────────────────────
-# 로그
-# ──────────────────────────────────────────
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# ──────────────────────────────────────────
-# 임시 파일
-# ──────────────────────────────────────────
-*.tmp
-*.swp
-*.bak
-
-# ──────────────────────────────────────────
-# 음성 녹음 캐시 (워치 앱 생성)
-# ──────────────────────────────────────────
-*.mp3
-*.mp4
-*.wav
-*.pcm
-
-# ──────────────────────────────────────────
-# OS
-# ──────────────────────────────────────────
+# ───────────── 공통: OS 생성 파일 ─────────────
 .DS_Store
 **/.DS_Store
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# ──────────────────────────────────────────
+# ───────────── 공통: 로그/임시 ─────────────
+*.log
+*.tmp
+*.swp
+*.bak
+
+# ───────────── 공통: 환경변수 / 시크릿 ─────────────
+.env*
+*.pem
+
+# =========================================================
+# mobile/  — Android (Kotlin, Gradle, Hilt)
+# =========================================================
+
+# Gradle 빌드 산출물
+mobile/**/build/
+mobile/**/out/
+mobile/**/bin/
+mobile/**/generated/
+mobile/.gradle/
+
+# 로컬 SDK 경로 / 캡처 / NDK
+mobile/local.properties
+mobile/captures/
+mobile/.externalNativeBuild/
+mobile/.cxx/
+
+# Android 시그니처 / 시크릿 (절대 커밋 금지)
+*.jks
+*.keystore
+keystore.properties
+secrets.properties
+google-services.json
+GoogleService-Info.plist
+
+# 음성 녹음 캐시 (워치 앱이 런타임에 생성)
+*.mp3
+*.mp4
+*.wav
+*.pcm
+
+# =========================================================
+# web/   — Next.js 16 (TypeScript, pnpm)
+# =========================================================
+
+# 의존성
+web/node_modules/
+web/.pnp
+web/.pnp.*
+web/.yarn/*
+!web/.yarn/patches
+!web/.yarn/plugins
+!web/.yarn/releases
+!web/.yarn/versions
+
+# Next.js 빌드 산출물
+web/.next/
+web/out/
+web/build/
+web/next-env.d.ts
+web/*.tsbuildinfo
+
+# 테스트 커버리지
+web/coverage/
+
+# 디버그 로그
+web/npm-debug.log*
+web/yarn-debug.log*
+web/yarn-error.log*
+web/.pnpm-debug.log*
+
 # Vercel
-# ──────────────────────────────────────────
-.vercel
+web/.vercel
 
-
+# 현웅이
 src.zip
