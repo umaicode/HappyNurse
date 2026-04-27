@@ -8,10 +8,10 @@ pipeline {
         disableConcurrentBuilds()
     }
 
-    triggers {
-        // 1시간마다 polling (개발 초기용)
-        // cron('H * * * *')
-    }
+    // triggers {
+    //     // 1시간마다 polling (개발 초기용)
+    //     cron('H * * * *')
+    // }
 
     environment {
         DEPLOY_ENV = "${env.JOB_NAME == 'prod-deploy' ? 'prod' : 'dev'}"
