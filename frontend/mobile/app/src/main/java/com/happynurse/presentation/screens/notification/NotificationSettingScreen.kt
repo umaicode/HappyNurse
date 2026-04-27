@@ -1,3 +1,4 @@
+// 알림 설정 화면 — IV/타이머/오더/투약오류 등 알림 유형별 토글 설정
 package com.happynurse.presentation.screens.notification
 
 import androidx.compose.runtime.Composable

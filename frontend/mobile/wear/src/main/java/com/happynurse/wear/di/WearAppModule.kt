@@ -1,3 +1,4 @@
+// 워치 Hilt 모듈 — Nfc/Gesture/Audio/DataClient 싱글톤 제공
 package com.happynurse.wear.di
 
 import android.content.Context

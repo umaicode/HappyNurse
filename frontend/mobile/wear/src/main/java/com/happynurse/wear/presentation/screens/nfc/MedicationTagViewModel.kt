@@ -1,3 +1,4 @@
+// 약물 NFC 태그 ViewModel(Hilt) — NfcManager.readMedicationTag로 약물 정보 복호화 후 5 Rights 검증
 package com.happynurse.wear.presentation.screens.nfc
 
 import androidx.lifecycle.ViewModel

@@ -1,3 +1,4 @@
+// 음성 녹음 ViewModel(Hilt) — AudioRecorder/GestureDetector/WearDataClient 통합으로 녹음→폰 전송
 package com.happynurse.wear.presentation.screens.recording
 
 import androidx.lifecycle.ViewModel

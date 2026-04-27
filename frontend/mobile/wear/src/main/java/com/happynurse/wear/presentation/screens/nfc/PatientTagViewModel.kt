@@ -1,3 +1,4 @@
+// 환자 NFC 태그 ViewModel(Hilt) — NfcManager.readPatientTag로 환자 정보 복호화
 package com.happynurse.wear.presentation.screens.nfc
 
 import androidx.lifecycle.ViewModel

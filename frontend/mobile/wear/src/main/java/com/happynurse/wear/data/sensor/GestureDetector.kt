@@ -1,3 +1,4 @@
+// 센서 기반 제스처 감지 — PINCH_DOUBLE 등 제스처 이벤트를 SharedFlow로 발행
 package com.happynurse.wear.data.sensor
 
 import kotlinx.coroutines.flow.MutableSharedFlow
