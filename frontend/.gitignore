@@ -7,6 +7,7 @@
 .claude/
 CLAUDE.md
 DESIGN.md
+mobile/CONVENTIONS.md
 
 # ───────────── 공통: IDE ─────────────
 .idea/
