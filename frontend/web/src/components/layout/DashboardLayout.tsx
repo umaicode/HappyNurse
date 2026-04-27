@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -15,7 +15,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { AssignPatientModal } from "@/features/dashboard/components/AssignPatientModal";
-import type { Ward } from "@/features/patient/types/ward";
+import type { Ward } from "@/features/patient/types/patient";
 
 interface DashboardLayoutProps {
   sidebar: ReactNode;
