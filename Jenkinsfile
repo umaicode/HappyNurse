@@ -219,93 +219,136 @@ pipeline {
 // Mattermost 알림 함수
 // ──────────────────────────────────────────────────────────────
 def notifyMattermost(String result) {
-    // 결과별 색상 + 이모지 (Mattermost는 attachment color로 좌측 막대 색깔)
-    def color    = (result == 'SUCCESS') ? '#36a64f' : '#d00000'
-    def emoji    = (result == 'SUCCESS') ? '🟢'      : '🔴'
-    def envLabel = env.DEPLOY_ENV.toUpperCase()
+    // ─── 색상/이모지/라벨 ───
+    def isSuccess = (result == 'SUCCESS')
+    def color     = isSuccess ? '#2eb886' : '#e01e5a'  // 슬랙스러운 초록/빨강
+    def envLabel  = env.DEPLOY_ENV.toUpperCase()
+    def envEmoji  = env.DEPLOY_ENV == 'prod' ? '🚀' : '🧪'
+    def resultEmoji = isSuccess ? '🟢' : '🔴'
 
-    // 트리거 정보
+    // ─── pretext (채널 알림 영역, 가장 위에 큼직하게) ───
+    def pretext
+    if (isSuccess) {
+        pretext = "${resultEmoji}  **${envLabel}** 배포 성공"
+    } else {
+        // prod 실패는 강조
+        if (env.DEPLOY_ENV == 'prod') {
+            pretext = "🚨  **${envLabel}** 배포 실패 — 확인 필요"
+        } else {
+            pretext = "${resultEmoji}  **${envLabel}** 배포 실패"
+        }
+    }
+
+    // ─── 트리거 정보 (간결하게) ───
     def cause = currentBuild.getBuildCauses()
     def triggerText = '알 수 없음'
     if (cause) {
         def first = cause[0]
-        if (first._class?.contains('UserIdCause')) {
-            triggerText = "수동 빌드 (${first.userName ?: '?'})"
-        } else if (first._class?.contains('TimerTrigger')) {
-            triggerText = '⏰ Cron (1시간 자동)'
-        } else if (first._class?.contains('GitLabWebHookCause') || first.shortDescription?.toString()?.contains('GitLab')) {
-            triggerText = "GitLab webhook (${first.shortDescription ?: 'push/MR'})"
+        def klass = first._class ?: ''
+        if (klass.contains('UserIdCause')) {
+            triggerText = "👤 ${first.userName ?: '?'} (수동)"
+        } else if (klass.contains('TimerTrigger')) {
+            triggerText = '⏰ Cron'
+        } else if (klass.contains('GitLab') || (first.shortDescription?.toString()?.contains('GitLab'))) {
+            triggerText = "🦊 GitLab webhook"
         } else {
             triggerText = first.shortDescription?.toString() ?: '?'
         }
     }
 
-    // 변경된 서비스
-    def changedServices = []
-    if (env.CHANGED_BACKEND  == 'true') changedServices << 'backend'
-    if (env.CHANGED_AI       == 'true') changedServices << 'ai'
-    if (env.CHANGED_FRONTEND == 'true') changedServices << 'frontend'
-    def changedText = changedServices.isEmpty() ? '없음' : changedServices.join(', ')
+    // ─── 변경된 서비스 ───
+    def changedList = []
+    if (env.CHANGED_BACKEND  == 'true') changedList << '⚙️ backend'
+    if (env.CHANGED_AI       == 'true') changedList << '🤖 ai'
+    if (env.CHANGED_FRONTEND == 'true') changedList << '🎨 frontend'
+    def changedText = changedList.isEmpty() ? '_없음_' : changedList.join(' · ')
 
-    // 커밋 정보
-    def commitMsg    = sh(script: 'git log -1 --pretty=%B || true', returnStdout: true).trim().take(120)
-    def commitAuthor = sh(script: 'git log -1 --pretty=%an || true', returnStdout: true).trim()
+    // ─── 커밋 정보 ───
+    def commitMsgFull = sh(script: 'git log -1 --pretty=%s || true', returnStdout: true).trim()
+    def commitMsg     = commitMsgFull.take(80) + (commitMsgFull.length() > 80 ? '...' : '')
+    def commitAuthor  = sh(script: 'git log -1 --pretty=%an || true', returnStdout: true).trim()
+    def commitSha     = env.GIT_COMMIT_SHORT ?: 'unknown'
+    def branch        = env.GIT_BRANCH?.replaceFirst('^origin/', '') ?: env.DEPLOY_ENV
 
-    // 빌드 시간
-    def duration = currentBuild.durationString.replaceFirst(/ and counting$/, '')
+    // ─── 빌드 시간 ───
+    def duration  = currentBuild.durationString.replaceFirst(/ and counting$/, '')
+    def buildTime = sh(script: "TZ=Asia/Seoul date '+%Y-%m-%d %H:%M'", returnStdout: true).trim()
 
-    // 빌드 페이지 링크
+    // ─── 빌드 URL ───
     def jenkinsUrl = env.BUILD_URL ?: "https://k14e101.p.ssafy.io/jenkins/job/${env.JOB_NAME}/${env.BUILD_NUMBER}/"
+    def consoleUrl = "${jenkinsUrl}console"
 
-    // 환경별 접속 URL
-    def serviceUrls = ''
-    if (result == 'SUCCESS') {
+    // ─── title (헤더) ───
+    def title = "${envEmoji} Build #${env.BUILD_NUMBER} — ${branch}"
+
+    // ─── fields (2단 정렬, KV 표) ───
+    def fields = [
+        [title: '👤 Author',   value: commitAuthor,  short: true],
+        [title: '🔀 Trigger',  value: triggerText,   short: true],
+        [title: '📦 Changed',  value: changedText,   short: true],
+        [title: '⏱  Duration', value: duration,      short: true],
+        [title: '#️⃣ Commit',   value: "`${commitSha}`",  short: true],
+        [title: '🌿 Branch',   value: "`${branch}`", short: true]
+    ]
+
+    // ─── 메시지 본문 ───
+    def text = "*${commitMsg}*\n"
+
+    if (isSuccess) {
         if (env.DEPLOY_ENV == 'dev') {
-            serviceUrls = """
-*🌐 접속 URL*
-- Frontend: https://k14e101.p.ssafy.io/dev/
-- Swagger:  https://k14e101.p.ssafy.io/dev/api/swagger-ui.html
-- AI:       https://k14e101.p.ssafy.io/dev/ai/
+            text += """
+🌐 **접속 URL**
+- [Frontend](https://k14e101.p.ssafy.io/dev/)
+- [Swagger](https://k14e101.p.ssafy.io/dev/api/swagger-ui.html)
+- [AI](https://k14e101.p.ssafy.io/dev/ai/)
 """
         } else {
-            serviceUrls = """
-*🌐 접속 URL*
-- Frontend: https://k14e101.p.ssafy.io/
-- AI:       https://k14e101.p.ssafy.io/ai/
+            text += """
+🌐 **접속 URL**
+- [Frontend](https://k14e101.p.ssafy.io/)
+- [AI](https://k14e101.p.ssafy.io/ai/)
 """
         }
+    } else {
+        // 실패 시 — 마지막 에러 한 줄 추출 시도
+        def errorLine = sh(
+            script: """
+                BUILD_LOG=\$(curl -sS -k '${jenkinsUrl}consoleText' 2>/dev/null || true)
+                echo "\$BUILD_LOG" | grep -E 'Caused by|ERROR|FAILURE|placeholder' | tail -3 || echo ''
+            """,
+            returnStdout: true
+        ).trim()
+
+        if (errorLine) {
+            // 너무 길면 자름
+            errorLine = errorLine.take(400)
+            text += "\n🔍 **마지막 에러 라인**\n```\n${errorLine}\n```\n"
+        }
+
+        text += "\n[🔗 Console Output 보기](${consoleUrl})"
     }
 
-    // 실패 시 콘솔 링크 추가
-    def failureFooter = ''
-    if (result == 'FAILURE') {
-        failureFooter = "\n\n*🔍 실패 분석*: <${jenkinsUrl}console|Console Output에서 확인>"
-    }
+    // ─── 페이로드 구성 ───
+    def payload = [
+        username: 'Jenkins Bot',
+        icon_url: 'https://www.jenkins.io/images/logos/jenkins/jenkins.png',
+        attachments: [[
+            fallback: "[${envLabel}] Build #${env.BUILD_NUMBER} ${result}",
+            color: color,
+            pretext: pretext,
+            title: title,
+            title_link: jenkinsUrl,
+            text: text,
+            fields: fields,
+            footer: "HappyNurse CI/CD • ${env.JOB_NAME}",
+            footer_icon: 'https://www.jenkins.io/images/logos/jenkins/jenkins.png',
+            ts: (System.currentTimeMillis() / 1000) as long
+        ]]
+    ]
 
-    // 메시지 본문
-    def text = """
-${emoji} **[${envLabel}] Build #${env.BUILD_NUMBER} ${result}**
-
-*Commit*:    `${env.GIT_COMMIT_SHORT}` — ${commitMsg}
-*Author*:    ${commitAuthor}
-*Triggered*: ${triggerText}
-*Changed*:   ${changedText}
-*Duration*:  ${duration}
-${serviceUrls}${failureFooter}
-
-[🔗 Build Details](${jenkinsUrl})
-"""
-
-    // Mattermost로 전송
+    // ─── 전송 ───
     withCredentials([string(credentialsId: 'mattermost-webhook-url', variable: 'MM_URL')]) {
-        // JSON escape를 위해 텍스트를 파일에 쓰고 curl로 보냄
-        writeFile file: '.mm-payload.json', text: groovy.json.JsonOutput.toJson([
-            username: 'jenkins-bot',
-            attachments: [[
-                color: color,
-                text: text
-            ]]
-        ])
+        writeFile file: '.mm-payload.json', text: groovy.json.JsonOutput.toJson(payload)
         sh '''
             curl -sS -X POST -H "Content-Type: application/json" \
                 -d @.mm-payload.json \
