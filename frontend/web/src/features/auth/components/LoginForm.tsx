@@ -94,7 +94,7 @@ export function LoginForm() {
       {/* 개발용 환자 로그인 버튼 */}
       <button 
         onClick={() => router.push("/patient")}
-        className="absolute top-4 left-4 z-50 rounded-2xl border border-action-blue-hover bg-white px-3 py-1.5 text-[26px] font-bold text-black hover:bg-[#a0afec] transition-colors"
+        className="absolute top-4 left-4 z-50 rounded-2xl border border-action-blue-hover bg-[#e2e3e4] px-3 py-1.5 text-[22px] font-bold text-gray-600 hover:bg-[#a0afec] transition-colors"
       >
         🛠️ 환자 로그인
       </button>

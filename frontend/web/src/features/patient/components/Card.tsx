@@ -2,7 +2,7 @@
  * 환자 카드.
  * 이름 · 나이 · 침대번호 · 진단명 · 미이관 STT 건수.
  */
-import type { Patient } from '../types'
+import type { Patient } from '../types/patient'
 
 export function Card({ patient }: { patient: Patient }) {
   return (

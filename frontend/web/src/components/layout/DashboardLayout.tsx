@@ -7,7 +7,8 @@ import {
   Share2,
   UserPlus,
   PanelLeftOpen,
-  PanelRightOpen,
+  SidebarClose,
+  SidebarOpen,
 } from "lucide-react";
 import {
   Popover,
@@ -23,6 +24,7 @@ interface DashboardLayoutProps {
   isRightOpen: boolean;
   onOpenLeft: () => void;
   onOpenRight: () => void;
+  onToggleRight: () => void;
   onOpenAssignModal: () => void;
 }
 
@@ -57,7 +59,7 @@ export function DashboardLayout({
   isLeftOpen,
   isRightOpen,
   onOpenLeft,
-  onOpenRight,
+  onToggleRight,
   onOpenAssignModal,
 }: DashboardLayoutProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -96,26 +98,29 @@ export function DashboardLayout({
             <PanelLeftOpen className="h-4 w-4" />
           </button>
         )}
-
-        {/* Floating "open" button when the right panel is collapsed */}
-        {!isRightOpen && (
-          <button
-            type="button"
-            onClick={onOpenRight}
-            aria-label="우측 패널 펼치기"
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-l-md bg-white/95 backdrop-blur border border-r-0 border-border-base/60 text-content-secondary shadow-md hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition"
-          >
-            <PanelRightOpen className="h-4 w-4" />
-          </button>
-        )}
       </main>
 
       {/* 3. Right (보조창 - Doctor's Order) */}
-      <aside
-        className={`${isRightOpen ? "w-[280px] border" : "w-0 border-0"} flex-shrink-0 bg-[var(--color-surface-base)] rounded-[6px] flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden border-border-base/60 transition-[width] duration-300 ease-in-out`}
-      >
-        <div className="w-[280px] h-full flex flex-col">{actionPanel}</div>
-      </aside>
+      <div className="relative flex-shrink-0 flex">
+        {/* 우측 패널 토글 버튼 — aside 왼쪽 경계에 고정 */}
+        <button
+          type="button"
+          onClick={onToggleRight}
+          aria-label={isRightOpen ? "우측 패널 접기" : "우측 패널 펼치기"}
+          className="absolute left-0 top-[14px] -translate-y-1/2 -translate-x-full z-20 flex h-7 w-5 items-center justify-center rounded-l-md bg-white/95 backdrop-blur border border-r-0 border-border-base/60 text-content-secondary shadow-sm hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition-colors"
+        >
+          {isRightOpen ? (
+            <SidebarClose className="h-4 w-4" />
+          ) : (
+            <SidebarOpen className="h-4 w-4" />
+          )}
+        </button>
+        <aside
+          className={`${isRightOpen ? "w-[280px] border" : "w-0 border-0"} bg-[var(--color-surface-base)] rounded-[6px] flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden border-border-base/60 transition-[width] duration-300 ease-in-out`}
+        >
+          <div className="w-[280px] h-full flex flex-col">{actionPanel}</div>
+        </aside>
+      </div>
 
       {/* Floating Action Button (FAB) */}
       <div className="absolute bottom-8 right-8 z-[100]">

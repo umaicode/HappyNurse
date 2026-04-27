@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { getList } from '../api'
-import type { Patient, PatientQuery } from '../types'
+import type { Patient, PatientQuery } from '../types/patient'
 
 export function usePatient(initialQuery: PatientQuery = {}) {
   const [patients, setPatients] = useState<Patient[]>([])
