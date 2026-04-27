@@ -136,10 +136,10 @@ pipeline {
                             echo ">>> [FRONTEND] Building happynurse-frontend:${tag} (basePath='${basePath}')"
                             sh """
                                 cd frontend/web
-                                docker build \
-                                    --build-arg NEXT_PUBLIC_BASE_PATH=${basePath} \
-                                    -t happynurse-frontend:${tag} \
-                                    -t happynurse-frontend:${latest} \
+                                docker build \\
+                                    --build-arg NEXT_PUBLIC_BASE_PATH=${basePath} \\
+                                    -t happynurse-frontend:${tag} \\
+                                    -t happynurse-frontend:${latest} \\
                                     .
                             """
                         }
