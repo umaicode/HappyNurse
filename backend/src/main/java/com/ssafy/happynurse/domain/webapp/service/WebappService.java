@@ -1,21 +1,31 @@
 package com.ssafy.happynurse.domain.webapp.service;
 
+import com.ssafy.happynurse.domain.common.entity.Practitioner;
+import com.ssafy.happynurse.domain.nurse.entity.Notification;
+import com.ssafy.happynurse.domain.nurse.entity.SourceType;
+import com.ssafy.happynurse.domain.nurse.repository.NotificationRepository;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.entity.EncounterStatus;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
 import com.ssafy.happynurse.domain.patient.repository.EncounterRepository;
 import com.ssafy.happynurse.domain.patient.repository.PatientRepository;
-import com.ssafy.happynurse.domain.webapp.dto.NfcEntryResponse;
-import com.ssafy.happynurse.domain.webapp.dto.PatientVerifyRequest;
-import com.ssafy.happynurse.domain.webapp.dto.PatientVerifyResult;
+import com.ssafy.happynurse.domain.webapp.dto.*;
+import com.ssafy.happynurse.domain.webapp.entity.InputMethod;
+import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
+import com.ssafy.happynurse.domain.webapp.entity.QuickSymptomButton;
+import com.ssafy.happynurse.domain.webapp.event.SymptomSubmittedEvent;
+import com.ssafy.happynurse.domain.webapp.repository.PatientSelfReportRepository;
+import com.ssafy.happynurse.domain.webapp.repository.QuickSymptomButtonRepository;
 import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
 import com.ssafy.happynurse.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +37,10 @@ public class WebappService {
     private final PatientRepository patientRepository;
     private final EncounterRepository encounterRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final QuickSymptomButtonRepository quickSymptomButtonRepository;
+    private final PatientSelfReportRepository patientSelfReportRepository;
+    private final NotificationRepository notificationRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public NfcEntryResponse getPatientEntry(Long patientId) {
         Patient patient = patientRepository.findById(patientId)
@@ -64,5 +78,72 @@ public class WebappService {
                 encounter.getName(),
                 encounter.getRoom().getRoomName()
         );
+    }
+
+    public List<SymptomButtonResponse> getButtons() {
+        return quickSymptomButtonRepository.findAllByOrderByDisplayOrderAsc()
+                .stream()
+                .map(SymptomButtonResponse::from)
+                .toList();
+    }
+
+    @Transactional
+    public SymptomSubmitResponse submitSymptom(Long jwtPatientId, Long pathPatientId, SymptomSubmitRequest request) {
+        if (!jwtPatientId.equals(pathPatientId)) {
+            throw new CustomException(ErrorCode.PATIENT_ID_MISMATCH);
+        }
+
+        boolean hasButton = request.getButtonId() != null;
+        boolean hasText = request.getSymptomText() != null && !request.getSymptomText().isBlank();
+        if (hasButton == hasText) {
+            throw new CustomException(ErrorCode.SYMPTOM_INPUT_INVALID);
+        }
+
+        Patient patient = patientRepository.findById(jwtPatientId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
+
+        Encounter encounter = encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)
+                .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
+
+        QuickSymptomButton button = null;
+        String symptomText;
+        InputMethod inputMethod;
+
+        if (hasButton) {
+            button = quickSymptomButtonRepository.findById(request.getButtonId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.BUTTON_NOT_FOUND));
+            symptomText = button.getLabel();
+            inputMethod = InputMethod.quick_button;
+        } else {
+            symptomText = request.getSymptomText();
+            inputMethod = InputMethod.text;
+        }
+
+        PatientSelfReport savedReport = patientSelfReportRepository.save(PatientSelfReport.create(patient, encounter, inputMethod, button, symptomText));
+
+        Practitioner assignedPractitioner = encounter.getAssignedPractitioner();
+        if (assignedPractitioner != null) {
+            notificationRepository.save(Notification.create(
+                    assignedPractitioner,
+                    SourceType.self_report,
+                    savedReport,
+                    patient,
+                    encounter.getName() + "님의 증상 알림",
+                    symptomText
+            ));
+        }
+
+        // 이벤트 발행 (트랜잭션 커밋 후 SseNotificationListener가 처리)
+        eventPublisher.publishEvent(new SymptomSubmittedEvent(
+                assignedPractitioner != null ? assignedPractitioner.getPractitionerId() : null,
+                patient.getPatientId(),
+                encounter.getName(),
+                encounter.getRoom().getRoomName(),
+                symptomText,
+                savedReport.getSelfReportId(),
+                savedReport.getSubmittedAt()
+        ));
+
+        return new SymptomSubmitResponse(savedReport.getSelfReportId(), savedReport.getSubmittedAt());
     }
 }
