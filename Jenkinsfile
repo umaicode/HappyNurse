@@ -10,7 +10,7 @@ pipeline {
 
     triggers {
         // 1시간마다 polling (개발 초기용)
-        cron('H * * * *')
+        // cron('H * * * *')
     }
 
     environment {
