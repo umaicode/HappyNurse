@@ -1,0 +1,56 @@
+# ─────────────────────────────────────────────
+# 이 파일은 application.yml 템플릿입니다.
+# 사용법:
+#   1. 이 파일을 application.yml로 복사
+#   2. <FILL_ME> 부분을 본인 환경 값으로 교체
+#   3. application.yml은 .gitignore에 의해 git에 올라가지 않음
+# ─────────────────────────────────────────────
+
+spring:
+  application:
+    name: happynurse
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/happynurse_local
+    username: happynurse_app
+    password: <FILL_ME_LOCAL_DB_PASSWORD>
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+jwt:
+  secret: <FILL_ME_ANY_LOCAL_SECRET_AT_LEAST_32_CHARS>
+  access-token-expiration-ms: 1800000
+  cookie-name: ACCESS_TOKEN
+  refresh-token-expiration-ms: 604800000
+  refresh-cookie-name: REFRESH_TOKEN
+  cookie-secure: false
+  cookie-same-site: Lax
+
+server:
+  port: 8080
