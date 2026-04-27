@@ -1,6 +1,8 @@
 package com.ssafy.happynurse.domain.auth.service;
 
 import com.ssafy.happynurse.domain.auth.dto.AuthResult;
+import com.ssafy.happynurse.domain.auth.dto.SignupRequest;
+import com.ssafy.happynurse.domain.auth.dto.SignupResponse;
 import com.ssafy.happynurse.domain.auth.entity.RefreshToken;
 import com.ssafy.happynurse.domain.auth.entity.SessionLog;
 import com.ssafy.happynurse.domain.auth.repository.redis.RefreshTokenRepository;
@@ -19,12 +21,14 @@ import com.ssafy.happynurse.global.security.JwtTokenProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.lang.reflect.Field;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -258,6 +262,131 @@ class AuthServiceTest {
                 .isInstanceOf(CustomException.class)
                 .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode())
                         .isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
+    }
+
+    // ──── 회원가입 ────
+
+    @Test
+    @DisplayName("회원가입 성공 시 Practitioner와 활성 PractitionerRole이 저장되고 SignupResponse를 반환한다")
+    void signup_성공() {
+        Ward ward = createWard(3L);
+        SignupRequest request = new SignupRequest(
+                "DEV001", "Password!23", "테스트개발자", "010-1111-2222",
+                1L, 3L, RoleCode.nurse);
+
+        given(wardRepository.findByWardIdAndOrganization_OrganizationId(3L, 1L)).willReturn(Optional.of(ward));
+        given(practitionerRepository.existsByEmployeeNumber("DEV001")).willReturn(false);
+        given(passwordEncoder.encode("Password!23")).willReturn("hashed-password");
+        given(practitionerRepository.save(any(Practitioner.class))).willAnswer(inv -> {
+            Practitioner p = inv.getArgument(0);
+            setField(p, "practitionerId", 42L);
+            return p;
+        });
+        given(practitionerRoleRepository.save(any(PractitionerRole.class))).willAnswer(inv -> inv.getArgument(0));
+
+        SignupResponse response = authService.signup(request);
+
+        assertThat(response.practitionerId()).isEqualTo(42L);
+        assertThat(response.employeeNumber()).isEqualTo("DEV001");
+        assertThat(response.name()).isEqualTo("테스트개발자");
+        assertThat(response.roleCode()).isEqualTo("nurse");
+        assertThat(response.organizationId()).isEqualTo(1L);
+        assertThat(response.wardId()).isEqualTo(3L);
+        assertThat(response.periodStart()).isEqualTo(LocalDate.now());
+        verify(practitionerRepository).save(any(Practitioner.class));
+        verify(practitionerRoleRepository).save(any(PractitionerRole.class));
+    }
+
+    @Test
+    @DisplayName("회원가입 시 password는 BCrypt encoder로 인코딩되어 저장된다")
+    void signup_password_BCrypt_인코딩() {
+        Ward ward = createWard(3L);
+        SignupRequest request = new SignupRequest(
+                "DEV002", "Plain!Password", "테스터", null,
+                1L, 3L, RoleCode.nurse);
+
+        given(wardRepository.findByWardIdAndOrganization_OrganizationId(3L, 1L)).willReturn(Optional.of(ward));
+        given(practitionerRepository.existsByEmployeeNumber("DEV002")).willReturn(false);
+        given(passwordEncoder.encode("Plain!Password")).willReturn("$2a$10$hashed");
+        given(practitionerRepository.save(any(Practitioner.class))).willAnswer(inv -> inv.getArgument(0));
+        given(practitionerRoleRepository.save(any(PractitionerRole.class))).willAnswer(inv -> inv.getArgument(0));
+
+        ArgumentCaptor<Practitioner> captor = ArgumentCaptor.forClass(Practitioner.class);
+
+        authService.signup(request);
+
+        verify(passwordEncoder).encode("Plain!Password");
+        verify(practitionerRepository).save(captor.capture());
+        assertThat(captor.getValue().getPasswordHash()).isEqualTo("$2a$10$hashed");
+    }
+
+    @Test
+    @DisplayName("회원가입 시 PractitionerRole은 periodEnd=null(활성)로 저장된다")
+    void signup_역할_활성상태로_저장() {
+        Ward ward = createWard(3L);
+        SignupRequest request = new SignupRequest(
+                "DEV003", "Password!23", "테스터", null,
+                1L, 3L, RoleCode.head_nurse);
+
+        given(wardRepository.findByWardIdAndOrganization_OrganizationId(3L, 1L)).willReturn(Optional.of(ward));
+        given(practitionerRepository.existsByEmployeeNumber("DEV003")).willReturn(false);
+        given(passwordEncoder.encode(anyString())).willReturn("hashed");
+        given(practitionerRepository.save(any(Practitioner.class))).willAnswer(inv -> inv.getArgument(0));
+        given(practitionerRoleRepository.save(any(PractitionerRole.class))).willAnswer(inv -> inv.getArgument(0));
+
+        ArgumentCaptor<PractitionerRole> captor = ArgumentCaptor.forClass(PractitionerRole.class);
+
+        authService.signup(request);
+
+        verify(practitionerRoleRepository).save(captor.capture());
+        PractitionerRole saved = captor.getValue();
+        assertThat(saved.getRoleCode()).isEqualTo(RoleCode.head_nurse);
+        assertThat(saved.getWard()).isSameAs(ward);
+        assertThat(saved.getPeriodStart()).isEqualTo(LocalDate.now());
+        assertThat(saved.getPeriodEnd()).isNull();
+    }
+
+    @Test
+    @DisplayName("ward가 존재하지 않거나 organization에 속하지 않으면 → WARD_NOT_FOUND")
+    void signup_실패_ward_없음() {
+        SignupRequest request = new SignupRequest(
+                "DEV001", "Password!23", "테스터", null,
+                1L, 999L, RoleCode.nurse);
+
+        given(wardRepository.findByWardIdAndOrganization_OrganizationId(999L, 1L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.signup(request))
+                .isInstanceOf(CustomException.class)
+                .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.WARD_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("이미 존재하는 사원번호 → DUPLICATE_RESOURCE")
+    void signup_실패_사원번호_중복() {
+        Ward ward = createWard(3L);
+        SignupRequest request = new SignupRequest(
+                "EXISTING", "Password!23", "테스터", null,
+                1L, 3L, RoleCode.nurse);
+
+        given(wardRepository.findByWardIdAndOrganization_OrganizationId(3L, 1L)).willReturn(Optional.of(ward));
+        given(practitionerRepository.existsByEmployeeNumber("EXISTING")).willReturn(true);
+
+        assertThatThrownBy(() -> authService.signup(request))
+                .isInstanceOf(CustomException.class)
+                .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.DUPLICATE_RESOURCE));
+    }
+
+    @Test
+    @DisplayName("SignupRequest.toString()에 password 평문이 노출되지 않는다")
+    void signup_request_toString_password_마스킹() {
+        SignupRequest request = new SignupRequest(
+                "DEV001", "MySecret!23", "테스터", null,
+                1L, 3L, RoleCode.nurse);
+
+        assertThat(request.toString()).doesNotContain("MySecret!23");
+        assertThat(request.toString()).contains("password=***");
     }
 
     // ──── 헬퍼 ────

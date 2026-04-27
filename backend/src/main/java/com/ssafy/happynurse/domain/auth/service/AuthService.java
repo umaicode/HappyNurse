@@ -2,6 +2,8 @@ package com.ssafy.happynurse.domain.auth.service;
 
 import com.ssafy.happynurse.domain.auth.dto.AuthResult;
 import com.ssafy.happynurse.domain.auth.dto.LoginResponse;
+import com.ssafy.happynurse.domain.auth.dto.SignupRequest;
+import com.ssafy.happynurse.domain.auth.dto.SignupResponse;
 import com.ssafy.happynurse.domain.auth.entity.RefreshToken;
 import com.ssafy.happynurse.domain.auth.entity.SessionLog;
 import com.ssafy.happynurse.domain.auth.repository.redis.RefreshTokenRepository;
@@ -10,6 +12,7 @@ import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.common.entity.PractitionerRole;
 import com.ssafy.happynurse.domain.common.repository.PractitionerRepository;
 import com.ssafy.happynurse.domain.common.repository.PractitionerRoleRepository;
+import com.ssafy.happynurse.domain.patient.entity.Ward;
 import com.ssafy.happynurse.domain.patient.repository.OrganizationRepository;
 import com.ssafy.happynurse.domain.patient.repository.WardRepository;
 import com.ssafy.happynurse.global.exception.CustomException;
@@ -20,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -162,6 +166,39 @@ public class AuthService {
         );
 
         return new AuthResult(newAccessToken, newRefreshToken.getTokenValue(), loginResponse);
+    }
+
+    @Transactional
+    public SignupResponse signup(SignupRequest request) {
+        Ward ward = wardRepository
+                .findByWardIdAndOrganization_OrganizationId(request.wardId(), request.organizationId())
+                .orElseThrow(() -> new CustomException(ErrorCode.WARD_NOT_FOUND));
+
+        if (practitionerRepository.existsByEmployeeNumber(request.employeeNumber())) {
+            throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
+        }
+
+        String passwordHash = passwordEncoder.encode(request.password());
+
+        Practitioner practitioner = new Practitioner(
+                null, request.employeeNumber(), passwordHash, request.name(), request.phone(),
+                null, null);
+        Practitioner saved = practitionerRepository.save(practitioner);
+
+        LocalDate periodStart = LocalDate.now();
+        PractitionerRole role = new PractitionerRole(
+                null, saved, ward, request.roleCode(), periodStart, null, null);
+        practitionerRoleRepository.save(role);
+
+        return new SignupResponse(
+                saved.getPractitionerId(),
+                saved.getEmployeeNumber(),
+                saved.getName(),
+                request.roleCode().name(),
+                request.organizationId(),
+                ward.getWardId(),
+                periodStart
+        );
     }
 
     @Transactional
