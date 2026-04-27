@@ -26,6 +26,11 @@ COPY --from=deps /app/node_modules ./node_modules
 # 소스 복사
 COPY . .
 
+# basePath 환경별 분리 (dev=/dev, prod=빈값)
+# Jenkinsfile에서 --build-arg NEXT_PUBLIC_BASE_PATH 전달
+ARG NEXT_PUBLIC_BASE_PATH=
+ENV NEXT_PUBLIC_BASE_PATH=$NEXT_PUBLIC_BASE_PATH
+
 # Next.js 빌드
 # standalone 모드로 빌드해서 runtime 이미지를 최소화
 ENV NEXT_TELEMETRY_DISABLED=1

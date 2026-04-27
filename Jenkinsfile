@@ -130,13 +130,16 @@ pipeline {
                         script {
                             def tag     = "${env.DEPLOY_ENV}-${env.GIT_COMMIT_SHORT}"
                             def latest  = "${env.DEPLOY_ENV}-latest"
+                            // dev는 /dev prefix, prod는 root에서 서비스
+                            def basePath = env.DEPLOY_ENV == 'dev' ? '/dev' : ''
 
-                            echo ">>> [FRONTEND] Building happynurse-frontend:${tag}"
+                            echo ">>> [FRONTEND] Building happynurse-frontend:${tag} (basePath='${basePath}')"
                             sh """
                                 cd frontend/web
-                                docker build \
-                                    -t happynurse-frontend:${tag} \
-                                    -t happynurse-frontend:${latest} \
+                                docker build \\
+                                    --build-arg NEXT_PUBLIC_BASE_PATH=${basePath} \\
+                                    -t happynurse-frontend:${tag} \\
+                                    -t happynurse-frontend:${latest} \\
                                     .
                             """
                         }
