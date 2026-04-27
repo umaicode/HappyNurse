@@ -1,5 +1,5 @@
 import { MOCK_WARDS } from "@/mockup/wards";
-import type { Ward } from "@/features/patient/types/ward";
+import type { Ward } from "@/features/patient/types/patient";
 
 const STORAGE_KEY = "ward-assignments";
 

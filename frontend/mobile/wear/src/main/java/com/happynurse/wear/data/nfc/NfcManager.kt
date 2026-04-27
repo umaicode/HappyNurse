@@ -1,3 +1,4 @@
+// NFC 태그 리더 — 환자/약물 태그를 AES-256으로 복호화해 DTO 반환
 package com.happynurse.wear.data.nfc
 
 import javax.inject.Inject

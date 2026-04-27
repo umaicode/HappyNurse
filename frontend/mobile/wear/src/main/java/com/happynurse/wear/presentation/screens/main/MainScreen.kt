@@ -1,3 +1,4 @@
+// 워치 메인 화면 — 환자 태깅/약물 태깅/음성 녹음 진입 칩 버튼 리스트
 package com.happynurse.wear.presentation.screens.main
 
 import androidx.compose.foundation.layout.Arrangement
