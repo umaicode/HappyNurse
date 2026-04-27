@@ -2,6 +2,7 @@ package com.ssafy.happynurse.domain.nurse.service;
 
 import com.ssafy.happynurse.domain.nurse.dto.SseNotificationPayload;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -46,6 +47,20 @@ public class SseEmitterManager {
             log.warn("SSE 전송 실패: practitionerId={}", practitionerId);
             remove(practitionerId);
         }
+    }
+
+    @Scheduled(fixedRate = 30000)   // 30초마다 실행
+    public void sendHeartbeat() {
+        emitters.forEach((practitionerId, emitter) -> {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("heartbeat")
+                        .data("ping"));
+            } catch (IOException e) {
+                log.warn("Heartbeat 실패, 연결 제거: practitionerId={}", practitionerId);
+                remove(practitionerId);
+            }
+        });
     }
 
     private void remove(Long practitionerId) {
