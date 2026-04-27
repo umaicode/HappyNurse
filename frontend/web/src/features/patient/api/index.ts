@@ -4,7 +4,7 @@
  *
  * TODO: 백엔드 연동 시 목업 데이터 제거 후 아래 주석 해제
  */
-import type { Patient, PatientDetail, PatientQuery } from '../types'
+import type { Patient, PatientDetail, PatientQuery } from '../types/patient'
 
 // ─── 목업 데이터 ───────────────────────────────────────────
 const MOCK_PATIENTS: Patient[] = [

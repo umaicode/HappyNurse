@@ -61,6 +61,7 @@ export function DashboardView() {
         isRightOpen={isRightOpen}
         onOpenLeft={() => setIsLeftOpen(true)}
         onOpenRight={() => setIsRightOpen(true)}
+        onToggleRight={() => setIsRightOpen((prev) => !prev)}
         onOpenAssignModal={() => setIsAssignOpen(true)}
         sidebar={
           <PatientSidebar
@@ -69,12 +70,7 @@ export function DashboardView() {
             onOpenAssignModal={() => setIsAssignOpen(true)}
           />
         }
-        mainGrid={
-          <EMRGrid
-            isRightOpen={isRightOpen}
-            onToggleRight={() => setIsRightOpen((prev) => !prev)}
-          />
-        }
+        mainGrid={<EMRGrid />}
         actionPanel={<RightPanel />}
       />
       <AssignPatientModal
