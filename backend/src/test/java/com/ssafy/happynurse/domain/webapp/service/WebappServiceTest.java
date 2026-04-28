@@ -1,9 +1,6 @@
 package com.ssafy.happynurse.domain.webapp.service;
 
-import com.ssafy.happynurse.domain.patient.entity.Encounter;
-import com.ssafy.happynurse.domain.patient.entity.EncounterStatus;
-import com.ssafy.happynurse.domain.patient.entity.Patient;
-import com.ssafy.happynurse.domain.patient.entity.Room;
+import com.ssafy.happynurse.domain.patient.entity.*;
 import com.ssafy.happynurse.domain.patient.repository.EncounterRepository;
 import com.ssafy.happynurse.domain.patient.repository.PatientRepository;
 import com.ssafy.happynurse.domain.webapp.dto.NfcEntryResponse;
@@ -12,6 +9,17 @@ import com.ssafy.happynurse.domain.webapp.dto.PatientVerifyResult;
 import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
 import com.ssafy.happynurse.global.security.JwtTokenProvider;
+import com.ssafy.happynurse.domain.common.entity.Practitioner;
+import com.ssafy.happynurse.domain.nurse.entity.Notification;
+import com.ssafy.happynurse.domain.nurse.repository.NotificationRepository;
+import com.ssafy.happynurse.domain.webapp.dto.SymptomSubmitRequest;
+import com.ssafy.happynurse.domain.webapp.dto.SymptomSubmitResponse;
+import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
+import com.ssafy.happynurse.domain.webapp.entity.QuickSymptomButton;
+import com.ssafy.happynurse.domain.webapp.event.SymptomSubmittedEvent;
+import com.ssafy.happynurse.domain.webapp.repository.PatientSelfReportRepository;
+import com.ssafy.happynurse.domain.webapp.repository.QuickSymptomButtonRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +28,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,6 +47,14 @@ public class WebappServiceTest {
     JwtTokenProvider jwtTokenProvider;
     @InjectMocks
     WebappService webAppService;
+    @Mock
+    QuickSymptomButtonRepository quickSymptomButtonRepository;
+    @Mock
+    PatientSelfReportRepository patientSelfReportRepository;
+    @Mock
+    NotificationRepository notificationRepository;
+    @Mock
+    ApplicationEventPublisher eventPublisher;
 
     @Test
     @DisplayName("존재하지 않는 환자 진입 시 PATIENT_NOT_FOUND 발생")
@@ -90,13 +108,14 @@ public class WebappServiceTest {
 
     @Test
     @DisplayName("본인 확인: 이름 + 생년월일 일치 시 토큰과 환자 정보 반환")
-    void verify_succes() {
+    void verify_success() {
         // given
         Patient patient = createPatient(1L);
-        Encounter encounter = createEncounter(patient, "김가민", LocalDate.of(2001, 4, 29), "301호실");
+        Encounter encounter = createEncounterForVerify(patient);
 
         given(patientRepository.findById(1L)).willReturn(Optional.of(patient));
-        given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)).willReturn(Optional.of(encounter));
+        given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
+                .willReturn(Optional.of(encounter));
         given(jwtTokenProvider.createPatientToken(1L, "김가민")).willReturn("mock-token");
 
         // when
@@ -106,6 +125,12 @@ public class WebappServiceTest {
         assertThat(result.getToken()).isEqualTo("mock-token");
         assertThat(result.getPatientName()).isEqualTo("김가민");
         assertThat(result.getRoomName()).isEqualTo("301호실");
+        assertThat(result.getGender()).isEqualTo("female");
+        assertThat(result.getDepartmentCode()).isEqualTo("정형외과");
+        assertThat(result.getDiseaseName()).isEqualTo("퇴행성 무릎 관절염");
+        assertThat(result.getChiefComplaint()).isEqualTo("무릎 통증");
+        assertThat(result.getSurgeryName()).isEqualTo("슬관절 전치환술");
+        assertThat(result.getAssignedNurseName()).isEqualTo("문현지");
     }
 
     @Test
@@ -139,6 +164,130 @@ public class WebappServiceTest {
         assertThatThrownBy(() -> webAppService.verifyPatient(createRequest(1L, "김가민", "990101")))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PATIENT_VERIFY_FAILED);
+    }
+
+    // ----- 증상 버튼 목록 조회 -----
+    @Test
+    @DisplayName("버튼 목록 조회: 정상 반환")
+    void getButtons_success() {
+        // given
+        QuickSymptomButton btn = createButton(1L, "드레싱 교체", 1);
+        given(quickSymptomButtonRepository.findAllByOrderByDisplayOrderAsc())
+                .willReturn(List.of(btn));
+
+        // when
+        var result = webAppService.getButtons();
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getLabel()).isEqualTo("드레싱 교체");
+    }
+
+    // ----- 증상 제출 -----
+    @Test
+    @DisplayName("증상 제출: 버튼 선택 성공")
+    void submitSymptom_button_success() {
+        // given
+        Patient patient = createPatient(1L);
+        Practitioner nurse = createPractitioner(10L);
+        Encounter encounter = createEncounterWithWard(patient, "김가민", "301호", 3L, nurse);
+        QuickSymptomButton button = createButton(1L, "드레싱 교체", 1);
+        PatientSelfReport savedReport = createSavedReport(42L, LocalDateTime.now());
+
+        given(patientRepository.findById(1L)).willReturn(Optional.of(patient));
+        given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
+                .willReturn(Optional.of(encounter));
+        given(quickSymptomButtonRepository.findById(1L)).willReturn(Optional.of(button));
+        given(patientSelfReportRepository.save(any())).willReturn(savedReport);
+
+        SymptomSubmitRequest request = new SymptomSubmitRequest();
+        request.setButtonId(1L);
+
+        // when
+        SymptomSubmitResponse response = webAppService.submitSymptom(1L, 1L, request);
+
+        // then
+        assertThat(response.getSelfReportId()).isEqualTo(42L);
+        verify(patientSelfReportRepository).save(any(PatientSelfReport.class));
+        verify(notificationRepository).save(any(Notification.class));
+        verify(eventPublisher).publishEvent(any(SymptomSubmittedEvent.class));
+    }
+
+    @Test
+    @DisplayName("증상 제출: 직접 입력 성공")
+    void submitSymptom_text_success() {
+        // given
+        Patient patient = createPatient(1L);
+        Practitioner nurse = createPractitioner(10L);
+        Encounter encounter = createEncounterWithWard(patient, "김가민", "301호", 3L, nurse);
+        PatientSelfReport savedReport = createSavedReport(43L, LocalDateTime.now());
+
+        given(patientRepository.findById(1L)).willReturn(Optional.of(patient));
+        given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
+                .willReturn(Optional.of(encounter));
+        given(patientSelfReportRepository.save(any())).willReturn(savedReport);
+
+        SymptomSubmitRequest request = new SymptomSubmitRequest();
+        request.setSymptomText("열이 납니다");
+
+        // when
+        SymptomSubmitResponse response = webAppService.submitSymptom(1L, 1L, request);
+
+        // then
+        assertThat(response.getSelfReportId()).isEqualTo(43L);
+        verify(patientSelfReportRepository).save(any(PatientSelfReport.class));
+        verify(eventPublisher).publishEvent(any(SymptomSubmittedEvent.class));
+    }
+
+    @Test
+    @DisplayName("증상 제출: JWT patientId와 path patientId 불일치 -> PATIENT_ID_MISMATCH")
+    void submitSymptom_patientIdMismatch() {
+        SymptomSubmitRequest request = new SymptomSubmitRequest();
+        request.setButtonId(1L);
+
+        assertThatThrownBy(() -> webAppService.submitSymptom(1L, 99L, request))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PATIENT_ID_MISMATCH);
+    }
+
+    @Test
+    @DisplayName("증상 제출: 없는 버튼 ID -> BUTTON_NOT_FOUND")
+    void submitSymptom_buttonNotFound() {
+        // given
+        Patient patient = createPatient(1L);
+        Encounter encounter = createEncounterWithWard(patient, "김가민", "301호", 3L, null);
+
+        given(patientRepository.findById(1L)).willReturn(Optional.of(patient));
+        given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
+                .willReturn(Optional.of(encounter));
+        given(quickSymptomButtonRepository.findById(99L)).willReturn(Optional.empty());
+
+        SymptomSubmitRequest request = new SymptomSubmitRequest();
+        request.setButtonId(99L);
+
+        assertThatThrownBy(() -> webAppService.submitSymptom(1L, 1L, request))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BUTTON_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("증상 제출: buttonId와 symptomText 둘 다 입력 -> SYMPTOM_INPUT_INVALID")
+    void submitSymptom_bothInputs() {
+        SymptomSubmitRequest request = new SymptomSubmitRequest();
+        request.setButtonId(1L);
+        request.setSymptomText("열이 납니다");
+
+        assertThatThrownBy(() -> webAppService.submitSymptom(1L, 1L, request))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SYMPTOM_INPUT_INVALID);
+    }
+
+    @Test
+    @DisplayName("증상 제출: buttonId와 symptomText 둘 다 없음 -> SYMPTOM_INPUT_INVALID")
+    void submitSymptom_noInput() {
+        assertThatThrownBy(() -> webAppService.submitSymptom(1L, 1L, new SymptomSubmitRequest()))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SYMPTOM_INPUT_INVALID);
     }
 
     // 헬퍼 함수
@@ -199,4 +348,86 @@ public class WebappServiceTest {
         throw new NoSuchFieldException(fieldName);
     }
 
+    private QuickSymptomButton createButton(Long id, String label, int order) {
+        try {
+            QuickSymptomButton btn = newInstance(QuickSymptomButton.class);
+            setField(btn, "buttonId", id);
+            setField(btn, "label", label);
+            setField(btn, "displayOrder", order);
+            return btn;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Practitioner createPractitioner(Long id) {
+        try {
+            Practitioner p = newInstance(Practitioner.class);
+            setField(p, "practitionerId", id);
+            return p;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Encounter createEncounterWithWard(Patient patient, String name,
+                                              String roomName, Long wardId,
+                                              Practitioner assignedPractitioner) {
+        try {
+            Ward ward = newInstance(Ward.class);
+            setField(ward, "wardId", wardId);
+
+            Room room = newInstance(Room.class);
+            setField(room, "roomName", roomName);
+            setField(room, "ward", ward);
+
+            Encounter encounter = newInstance(Encounter.class);
+            setField(encounter, "patient", patient);
+            setField(encounter, "name", name);
+            setField(encounter, "status", EncounterStatus.in_progress);
+            setField(encounter, "room", room);
+            setField(encounter, "assignedPractitioner", assignedPractitioner);
+            return encounter;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private PatientSelfReport createSavedReport(Long id, LocalDateTime submittedAt) {
+        try {
+            PatientSelfReport report = newInstance(PatientSelfReport.class);
+            setField(report, "selfReportId", id);
+            setField(report, "submittedAt", submittedAt);
+            return report;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Encounter createEncounterForVerify(Patient patient) {
+        try {
+            Room room = newInstance(Room.class);
+            setField(room, "roomName", "301호실");
+
+            Practitioner nurse = newInstance(Practitioner.class);
+            setField(nurse, "practitionerId", 10L);
+            setField(nurse, "name", "문현지");
+
+            Encounter encounter = newInstance(Encounter.class);
+            setField(encounter, "patient", patient);
+            setField(encounter, "name", "김가민");
+            setField(encounter, "birthDate", LocalDate.of(2001, 4, 29));
+            setField(encounter, "status", EncounterStatus.in_progress);
+            setField(encounter, "room", room);
+            setField(encounter, "gender", Gender.female);
+            setField(encounter, "departmentCode", "정형외과");
+            setField(encounter, "diseaseName", "퇴행성 무릎 관절염");
+            setField(encounter, "chiefComplaint", "무릎 통증");
+            setField(encounter, "surgeryName", "슬관절 전치환술");
+            setField(encounter, "assignedPractitioner", nurse);
+            return encounter;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
