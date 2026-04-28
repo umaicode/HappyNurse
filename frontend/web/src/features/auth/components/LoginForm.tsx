@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 import { motion } from 'motion/react'
@@ -36,6 +36,42 @@ const isDevelopment = process.env.NEXT_PUBLIC_APP_ENV === 'dev'
 const FALLBACK_ORGANIZATION_ID = 1
 const FALLBACK_WARD_ID = 1
 
+// 마지막으로 로그인 성공한 세션의 병원·병동을 기억해 다음 로그인 때 step 1 을 스킵한다.
+// "병원/병동 다시 선택" → 새 값으로 로그인 성공 시점에만 덮어쓰므로, 단순히 선택만 바꾼 경우엔 보존된다.
+const LOGIN_CONTEXT_KEY = 'lastLoginContext'
+
+interface LoginContext {
+  hospital: string
+  wardId: string
+}
+
+// wardId 만 필수로 본다. hospital 인풋은 현재 자유 텍스트라 빈 값도 허용.
+// 향후 병원 조회 API 연동 시 hospital 을 hospitalId 기반으로 교체하고 필수로 올리면 됨.
+const loginContextStorage = {
+  load(): LoginContext | null {
+    if (typeof window === 'undefined') return null
+    try {
+      const raw = window.localStorage.getItem(LOGIN_CONTEXT_KEY)
+      if (!raw) return null
+      const parsed = JSON.parse(raw) as Partial<LoginContext>
+      if (typeof parsed.wardId === 'string' && parsed.wardId.length > 0) {
+        return {
+          hospital: typeof parsed.hospital === 'string' ? parsed.hospital : '',
+          wardId: parsed.wardId,
+        }
+      }
+      return null
+    } catch {
+      return null
+    }
+  },
+  save(context: LoginContext) {
+    if (typeof window === 'undefined') return
+    if (!context.wardId) return
+    window.localStorage.setItem(LOGIN_CONTEXT_KEY, JSON.stringify(context))
+  },
+}
+
 export function LoginForm() {
   const router = useRouter()
   const setUser = useAuthStore((state) => state.setUser)
@@ -48,9 +84,20 @@ export function LoginForm() {
   const [errorMessage, setErrorMessage] = useState('')
   const [isSignupOpen, setIsSignupOpen] = useState(false)
 
+  // 마운트 시 마지막 로그인 컨텍스트가 있으면 step 1 을 건너뛰고 사번/비밀번호 입력으로 바로 진입.
+  useEffect(() => {
+    const saved = loginContextStorage.load()
+    if (saved) {
+      setHospital(saved.hospital)
+      setWard(saved.wardId)
+      setStep(2)
+    }
+  }, [])
+
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: (data) => {
+      loginContextStorage.save({ hospital, wardId: ward })
       setUser(data)
       router.push('/dashboard')
     },
@@ -63,6 +110,9 @@ export function LoginForm() {
     mutationFn: devLogin,
     onSuccess: (data) => {
       devTokenStorage.setTokens(data.accessToken, data.refreshToken)
+      // step 1 을 거치며 병원·병동을 채운 상태에서 dev 로그인했을 때만 컨텍스트 저장.
+      // 빈 상태로 dev 로그인하면 무의미한 컨텍스트라 저장 안 함 (load 단계에서 어차피 무시됨).
+      loginContextStorage.save({ hospital, wardId: ward })
       setUser({
         practitionerId: data.practitionerId,
         name: data.name,
@@ -162,7 +212,7 @@ export function LoginForm() {
         >
           환자 로그인
         </button>
-        {isDevelopment && step === 2 ? (
+        {isDevelopment ? (
           <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white/80 px-2 py-1.5 shadow-sm backdrop-blur">
             <span className="text-xs font-bold text-content-muted">
               개발 환경 전용

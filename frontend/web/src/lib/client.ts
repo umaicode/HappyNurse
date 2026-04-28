@@ -2,7 +2,9 @@
  * Axios 인스턴스.
  *
  * - withCredentials 기본값 true → 백엔드 ACCESS_TOKEN/REFRESH_TOKEN 쿠키 자동 전송
- * - 'dev' 환경 한정 (NEXT_PUBLIC_APP_ENV === 'dev'): localStorage 의 dev 토큰을 Authorization 헤더로 주입
+ * - 'dev' 환경 한정 (NEXT_PUBLIC_APP_ENV === 'dev'): localStorage 의 dev 토큰을 Authorization 헤더로 주입.
+ *   단, 환자 라우트(/patient/*) 에서는 주입하지 않음 — 환자 인증은 쿠키 기반이고 간호사 dev 토큰이
+ *   섞이면 백엔드에서 컨텍스트가 꼬일 수 있음.
  * - 401 인터셉터: /auth/refresh 시도 → 성공 시 원 요청 재시도, 실패 시 /login 으로 이동
  *   환자 라우트(/patient/*) 는 글로벌 핸들러에서 빠짐 — 컴포넌트가 자체 처리
  */
@@ -33,9 +35,13 @@ export const devTokenStorage = {
   },
 }
 
-// DEV 한정: localStorage 토큰을 Authorization 헤더로 주입
+const isPatientRoute = () =>
+  typeof window !== 'undefined' &&
+  window.location.pathname.startsWith('/patient')
+
+// DEV 한정: localStorage 토큰을 Authorization 헤더로 주입. 환자 라우트는 제외.
 client.interceptors.request.use((config) => {
-  if (process.env.NEXT_PUBLIC_APP_ENV === 'dev') {
+  if (process.env.NEXT_PUBLIC_APP_ENV === 'dev' && !isPatientRoute()) {
     const accessToken = devTokenStorage.getAccessToken()
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`
@@ -47,10 +53,6 @@ client.interceptors.request.use((config) => {
 type RetryConfig = AxiosRequestConfig & { _retry?: boolean }
 
 let refreshPromise: Promise<void> | null = null
-
-const isPatientRoute = () =>
-  typeof window !== 'undefined' &&
-  window.location.pathname.startsWith('/patient')
 
 const performRefresh = () => {
   if (refreshPromise) return refreshPromise
