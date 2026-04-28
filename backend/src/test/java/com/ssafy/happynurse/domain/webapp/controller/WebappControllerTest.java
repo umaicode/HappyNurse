@@ -62,7 +62,7 @@ public class WebappControllerTest {
                 .willReturn(new NfcEntryResponse(1L, "김가민", "301호실"));
 
         // when & then
-        mockMvc.perform(get("/api/nfc/patients/1/entry"))
+        mockMvc.perform(get("/nfc/patients/1/entry"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.patientName").value("김가민"))
                 .andExpect(jsonPath("$.data.roomName").value("301호실"));
@@ -74,7 +74,7 @@ public class WebappControllerTest {
         given(webappService.getPatientEntry(99L))
                 .willThrow(new CustomException(ErrorCode.PATIENT_NOT_FOUND));
 
-        mockMvc.perform(get("/api/nfc/patients/99/entry"))
+        mockMvc.perform(get("/nfc/patients/99/entry"))
                 .andExpect(status().isNotFound());
     }
 
@@ -95,7 +95,7 @@ public class WebappControllerTest {
                 ));
 
         // when & then
-        mockMvc.perform(post("/api/patients/verify")
+        mockMvc.perform(post("/patients/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -123,7 +123,7 @@ public class WebappControllerTest {
         given(webappService.verifyPatient(any()))
                 .willThrow(new CustomException(ErrorCode.PATIENT_VERIFY_FAILED));
 
-        mockMvc.perform(post("/api/patients/verify")
+        mockMvc.perform(post("/patients/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
@@ -138,7 +138,7 @@ public class WebappControllerTest {
         request.setName("김가민");
         request.setBirthDate("abc");
 
-        mockMvc.perform(post("/api/patients/verify")
+        mockMvc.perform(post("/patients/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -153,7 +153,7 @@ public class WebappControllerTest {
                         new SymptomButtonResponse(2L, "통증", "통증이 있습니다", 2)
                 ));
 
-        mockMvc.perform(get("/api/symptoms/buttons"))
+        mockMvc.perform(get("/symptoms/buttons"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].label").value("드레싱 교체"))
                 .andExpect(jsonPath("$.data[1].label").value("통증"))
@@ -170,7 +170,7 @@ public class WebappControllerTest {
         SymptomSubmitRequest request = new SymptomSubmitRequest();
         request.setButtonId(1L);
 
-        mockMvc.perform(post("/api/patients/1/symptoms")
+        mockMvc.perform(post("/patients/1/symptoms")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -186,7 +186,7 @@ public class WebappControllerTest {
         SymptomSubmitRequest request = new SymptomSubmitRequest();
         request.setButtonId(1L);
 
-        mockMvc.perform(post("/api/patients/99/symptoms")
+        mockMvc.perform(post("/patients/99/symptoms")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());

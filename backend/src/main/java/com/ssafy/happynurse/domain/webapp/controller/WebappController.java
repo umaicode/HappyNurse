@@ -54,7 +54,7 @@ public class WebappController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "환자를 찾을 수 없음"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "활성 입원 정보 없음")
     })
-    @GetMapping("/api/nfc/patients/{patientId}/entry")
+    @GetMapping("/nfc/patients/{patientId}/entry")
     public ResponseEntity<ApiResponse<NfcEntryResponse>> nfcEntry(
             @Parameter(description = "NFC 태그 URL에 포함된 환자 ID", example = "1", required = true)
             @PathVariable Long patientId
@@ -77,7 +77,7 @@ public class WebappController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "입력값 오류 (birthDate 형식 불일치 등)"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "환자를 찾을 수 없음")
     })
-    @PostMapping("/api/patients/verify")
+    @PostMapping("/patients/verify")
     public ResponseEntity<ApiResponse<PatientVerifyResponse>> verifyPatient(
             @RequestBody @Valid PatientVerifyRequest request,
             HttpServletResponse response
@@ -111,7 +111,7 @@ public class WebappController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "버튼 목록 반환"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "환자 JWT 없음")
     })
-    @GetMapping("/api/symptoms/buttons")
+    @GetMapping("/symptoms/buttons")
     public ResponseEntity<ApiResponse<List<SymptomButtonResponse>>> getButtons() {
         return ResponseEntity.ok(ApiResponse.ok(webappService.getButtons()));
     }
@@ -128,7 +128,7 @@ public class WebappController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "본인이 아닌 환자 ID 시도"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "버튼 없음 또는 활성 입원 없음")
     })
-    @PostMapping("/api/patients/{patientId}/symptoms")
+    @PostMapping("/patients/{patientId}/symptoms")
     public ResponseEntity<ApiResponse<SymptomSubmitResponse>> submitSymptom(
             @Parameter(description = "환자 ID (JWT의 subject와 일치해야 함)", example = "1", required = true)
             @PathVariable Long patientId,
