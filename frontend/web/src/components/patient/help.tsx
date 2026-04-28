@@ -1,35 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, ChevronLeft, Mic } from "lucide-react";
-import {
-  faqMock,
-  nurseMock,
-  patientMock,
-  symptomsMock,
-} from "@/mockup/patient";
+import { faqMock, nurseMock, symptomsMock } from "@/mockup/patient";
 
 type TabKey = "form" | "faq";
 
 export default function Help() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const patientName = searchParams.get("name") ?? patientMock.name;
+  const patientName = searchParams.get("name") ?? "";
+  const roomName = searchParams.get("roomName") ?? "";
   const [selectedSymptom, setSelectedSymptom] = useState<string | null>(null);
   const [directInput, setDirectInput] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("form");
   const [openFaqId, setOpenFaqId] = useState<string | null>(null);
 
-  const faqs = useMemo(
-    () =>
-      faqMock.filter(
-        (item) =>
-          item.surgeryType === patientMock.surgeryType &&
-          item.ward === patientMock.ward,
-      ),
-    [],
-  );
+  const faqs = faqMock;
 
   const toggleSymptom = (id: string) => {
     setSelectedSymptom((prev) => (prev === id ? null : id));
@@ -46,6 +34,7 @@ export default function Help() {
 
     const params = new URLSearchParams({
       name: patientName,
+      roomName,
       symptoms: selectedSymptom ?? "",
       sentAt,
     });
@@ -77,19 +66,7 @@ export default function Help() {
             {patientName}
           </span>
           <span className="rounded-full mx-1 bg-patient-slate-surface px-2 py-[2px] text-[16px] font-bold text-patient-slate">
-            {patientMock.room}
-          </span>
-          <span
-            className={`rounded-full px-3 py-[2px] text-[14px] font-extrabold ${
-              patientMock.gender === "F"
-                ? "bg-[#b78b9c] text-white"
-                : "bg-[#91a9c0] text-white"
-            }`}
-          >
-            {patientMock.gender}
-          </span>
-          <span className="text-lg font-bold text-patient-sub">
-            {patientMock.ward} · {patientMock.surgeryType}
+            {roomName}
           </span>
         </div>
         <div className="h-px bg-patient-hairline" />
