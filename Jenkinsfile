@@ -308,24 +308,9 @@ def notifyMattermost(String result) {
     if (isSuccess) {
         text += "**Service Links**\n"
         if (env.DEPLOY_ENV == 'dev') {
-<<<<<<< HEAD
-            serviceUrls = '''
-*🌐 접속 URL*
-- Frontend: https://k14e101.p.ssafy.io/dev/
-- Swagger:  https://k14e101.p.ssafy.io/dev/api/swagger-ui.html
-- AI:       https://k14e101.p.ssafy.io/dev/ai/
-'''
-        } else {
-            serviceUrls = '''
-*🌐 접속 URL*
-- Frontend: https://k14e101.p.ssafy.io/
-- AI:       https://k14e101.p.ssafy.io/ai/
-'''
-=======
             text += "[Frontend](https://k14e101.p.ssafy.io/dev/)  |  [Swagger](https://k14e101.p.ssafy.io/dev/api/swagger-ui.html)  |  [AI](https://k14e101.p.ssafy.io/dev/ai/)"
         } else {
             text += "[Frontend](https://k14e101.p.ssafy.io/)  |  [AI](https://k14e101.p.ssafy.io/ai/)"
->>>>>>> 78751acb4405e960f45406eca4fa4ad23df6cd94
         }
     } else {
         def errorLine = sh(
@@ -372,9 +357,6 @@ def notifyMattermost(String result) {
         '''
     }
 }
-<<<<<<< HEAD
-=======
 
 
 
->>>>>>> 78751acb4405e960f45406eca4fa4ad23df6cd94
