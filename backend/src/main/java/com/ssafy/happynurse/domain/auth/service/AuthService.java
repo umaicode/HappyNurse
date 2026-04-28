@@ -19,6 +19,7 @@ import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
 import com.ssafy.happynurse.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -81,7 +83,39 @@ public class AuthService {
 
         String roleCode = wardRole.getRoleCode().name();
 
-        // 8. 세션 생성 + JWT 발급
+        return issueAuthResult(practitioner, roleCode, organizationId, wardId, ipAddress, refreshExpirationMs);
+    }
+
+    /**
+     * DEV ONLY — use only via DevAuthController.
+     * 사원번호만으로 로그인하고 비밀번호 검증을 생략한다. 첫 번째 활성 PractitionerRole에서
+     * organizationId/wardId/roleCode를 도출해 토큰을 발급한다.
+     */
+    @Transactional
+    public AuthResult devLogin(String employeeNumber, String ipAddress, long refreshExpirationMs) {
+        Practitioner practitioner = practitionerRepository.findByEmployeeNumber(employeeNumber)
+                .orElseThrow(() -> new CustomException(ErrorCode.EMPLOYEE_NUMBER_NOT_FOUND));
+
+        List<PractitionerRole> activeRoles =
+                practitionerRoleRepository.findByPractitionerAndPeriodEndIsNull(practitioner);
+        if (activeRoles.isEmpty()) {
+            throw new CustomException(ErrorCode.ACCOUNT_DISABLED);
+        }
+
+        PractitionerRole role = activeRoles.get(0);
+        Long wardId = role.getWard().getWardId();
+        Long organizationId = role.getWard().getOrganization().getOrganizationId();
+        String roleCode = role.getRoleCode().name();
+
+        log.warn("[DEV] dev-login issued (password skipped) — employeeNumber={}, practitionerId={}, wardId={}, organizationId={}, role={}, ip={}",
+                employeeNumber, practitioner.getPractitionerId(), wardId, organizationId, roleCode, ipAddress);
+
+        return issueAuthResult(practitioner, roleCode, organizationId, wardId, ipAddress, refreshExpirationMs);
+    }
+
+    private AuthResult issueAuthResult(Practitioner practitioner, String roleCode,
+                                       Long organizationId, Long wardId,
+                                       String ipAddress, long refreshExpirationMs) {
         SessionLog sessionLog = SessionLog.create(practitioner, ipAddress);
         sessionLogRepository.save(sessionLog);
 
