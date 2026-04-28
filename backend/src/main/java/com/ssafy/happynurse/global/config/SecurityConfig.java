@@ -46,7 +46,7 @@ public class SecurityConfig {
                 .authenticationEntryPoint(authenticationEntryPoint)
                 .accessDeniedHandler(accessDeniedHandler))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/login", "/auth/refresh", "/auth/signup").permitAll()
+                .requestMatchers("/auth/login", "/auth/refresh", "/auth/signup", "/auth/dev-login").permitAll()
                 .requestMatchers("/app/auth/login", "/app/auth/refresh").permitAll()
                 .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**",
                     "/api/swagger-ui/**", "/api/v3/api-docs/**", "/swagger-ui.html").permitAll()
