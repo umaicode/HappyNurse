@@ -1,0 +1,59 @@
+﻿spring:
+  application:
+    name: happynurse
+
+  # PostgreSQL
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  # JPA (prod: 안전 모드)
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+    defer-datasource-initialization: false
+
+  # Redis
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT}
+      database: ${SPRING_DATA_REDIS_DATABASE:2}
+
+# Swagger (prod 비활성화)
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# JWT
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration-ms: 1800000
+  cookie-name: ACCESS_TOKEN
+  refresh-token-expiration-ms: 604800000
+  refresh-cookie-name: REFRESH_TOKEN
+  cookie-secure: true
+  cookie-same-site: Lax
+  app-refresh-token-expiration-ms: 2592000000
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.ssafy.happynurse: INFO
+    org.hibernate.SQL: WARN
+
+# Dev-only toggles
+app:
+  dev:
+    enabled: false

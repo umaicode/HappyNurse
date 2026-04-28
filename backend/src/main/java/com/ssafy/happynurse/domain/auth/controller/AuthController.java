@@ -70,7 +70,8 @@ public class AuthController {
                 request.password(),
                 httpRequest.getRemoteAddr(),
                 request.organizationId(),
-                request.wardId()
+                request.wardId(),
+                refreshExpirationMs
         );
 
         ResponseCookie accessCookie = CookieUtil.createAccessTokenCookie(

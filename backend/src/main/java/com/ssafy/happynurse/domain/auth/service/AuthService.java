@@ -2,6 +2,8 @@ package com.ssafy.happynurse.domain.auth.service;
 
 import com.ssafy.happynurse.domain.auth.dto.AuthResult;
 import com.ssafy.happynurse.domain.auth.dto.LoginResponse;
+import com.ssafy.happynurse.domain.auth.dto.SignupRequest;
+import com.ssafy.happynurse.domain.auth.dto.SignupResponse;
 import com.ssafy.happynurse.domain.auth.entity.RefreshToken;
 import com.ssafy.happynurse.domain.auth.entity.SessionLog;
 import com.ssafy.happynurse.domain.auth.repository.redis.RefreshTokenRepository;
@@ -10,18 +12,22 @@ import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.common.entity.PractitionerRole;
 import com.ssafy.happynurse.domain.common.repository.PractitionerRepository;
 import com.ssafy.happynurse.domain.common.repository.PractitionerRoleRepository;
+import com.ssafy.happynurse.domain.patient.entity.Ward;
 import com.ssafy.happynurse.domain.patient.repository.OrganizationRepository;
 import com.ssafy.happynurse.domain.patient.repository.WardRepository;
 import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
 import com.ssafy.happynurse.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -39,7 +45,7 @@ public class AuthService {
 
     @Transactional
     public AuthResult login(String employeeNumber, String password, String ipAddress,
-                            Long organizationId, Long wardId) {
+                            Long organizationId, Long wardId, long refreshExpirationMs) {
         // 1. 기관 존재 확인
         if (!organizationRepository.existsById(organizationId)) {
             throw new CustomException(ErrorCode.ORGANIZATION_NOT_FOUND);
@@ -77,7 +83,39 @@ public class AuthService {
 
         String roleCode = wardRole.getRoleCode().name();
 
-        // 8. 세션 생성 + JWT 발급
+        return issueAuthResult(practitioner, roleCode, organizationId, wardId, ipAddress, refreshExpirationMs);
+    }
+
+    /**
+     * DEV ONLY — use only via DevAuthController.
+     * 사원번호만으로 로그인하고 비밀번호 검증을 생략한다. 첫 번째 활성 PractitionerRole에서
+     * organizationId/wardId/roleCode를 도출해 토큰을 발급한다.
+     */
+    @Transactional
+    public AuthResult devLogin(String employeeNumber, String ipAddress, long refreshExpirationMs) {
+        Practitioner practitioner = practitionerRepository.findByEmployeeNumber(employeeNumber)
+                .orElseThrow(() -> new CustomException(ErrorCode.EMPLOYEE_NUMBER_NOT_FOUND));
+
+        List<PractitionerRole> activeRoles =
+                practitionerRoleRepository.findByPractitionerAndPeriodEndIsNull(practitioner);
+        if (activeRoles.isEmpty()) {
+            throw new CustomException(ErrorCode.ACCOUNT_DISABLED);
+        }
+
+        PractitionerRole role = activeRoles.get(0);
+        Long wardId = role.getWard().getWardId();
+        Long organizationId = role.getWard().getOrganization().getOrganizationId();
+        String roleCode = role.getRoleCode().name();
+
+        log.warn("[DEV] dev-login issued (password skipped) — employeeNumber={}, practitionerId={}, wardId={}, organizationId={}, role={}, ip={}",
+                employeeNumber, practitioner.getPractitionerId(), wardId, organizationId, roleCode, ipAddress);
+
+        return issueAuthResult(practitioner, roleCode, organizationId, wardId, ipAddress, refreshExpirationMs);
+    }
+
+    private AuthResult issueAuthResult(Practitioner practitioner, String roleCode,
+                                       Long organizationId, Long wardId,
+                                       String ipAddress, long refreshExpirationMs) {
         SessionLog sessionLog = SessionLog.create(practitioner, ipAddress);
         sessionLogRepository.save(sessionLog);
 
@@ -105,7 +143,7 @@ public class AuthService {
                 practitioner.getPractitionerId(),
                 practitioner.getEmployeeNumber(),
                 practitioner.getName(),
-                jwtTokenProvider.getRefreshTokenExpirationMs(),
+                refreshExpirationMs,
                 organizationId, wardId, roleCode);
         refreshTokenRepository.save(refreshToken);
 
@@ -146,7 +184,7 @@ public class AuthService {
                 refreshToken.getPractitionerId(),
                 refreshToken.getEmployeeNumber(),
                 refreshToken.getPractitionerName(),
-                jwtTokenProvider.getRefreshTokenExpirationMs(),
+                refreshToken.getTtl(),
                 refreshToken.getOrganizationId(),
                 refreshToken.getWardId(),
                 refreshToken.getRoleCode());
@@ -162,6 +200,39 @@ public class AuthService {
         );
 
         return new AuthResult(newAccessToken, newRefreshToken.getTokenValue(), loginResponse);
+    }
+
+    @Transactional
+    public SignupResponse signup(SignupRequest request) {
+        Ward ward = wardRepository
+                .findByWardIdAndOrganization_OrganizationId(request.wardId(), request.organizationId())
+                .orElseThrow(() -> new CustomException(ErrorCode.WARD_NOT_FOUND));
+
+        if (practitionerRepository.existsByEmployeeNumber(request.employeeNumber())) {
+            throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
+        }
+
+        String passwordHash = passwordEncoder.encode(request.password());
+
+        Practitioner practitioner = new Practitioner(
+                null, request.employeeNumber(), passwordHash, request.name(), request.phone(),
+                null, null);
+        Practitioner saved = practitionerRepository.save(practitioner);
+
+        LocalDate periodStart = LocalDate.now();
+        PractitionerRole role = new PractitionerRole(
+                null, saved, ward, request.roleCode(), periodStart, null, null);
+        practitionerRoleRepository.save(role);
+
+        return new SignupResponse(
+                saved.getPractitionerId(),
+                saved.getEmployeeNumber(),
+                saved.getName(),
+                request.roleCode().name(),
+                request.organizationId(),
+                ward.getWardId(),
+                periodStart
+        );
     }
 
     @Transactional

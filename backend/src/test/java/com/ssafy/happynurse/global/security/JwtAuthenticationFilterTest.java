@@ -20,7 +20,7 @@ import static org.mockito.Mockito.verify;
 class JwtAuthenticationFilterTest {
 
     private static final String SECRET = Base64.getEncoder()
-            .encodeToString("this-is-a-test-secret-key-for-jwt-256bit!".getBytes());
+        .encodeToString("this-is-a-test-secret-key-for-jwt-256bit!".getBytes());
     private static final String COOKIE_NAME = "ACCESS_TOKEN";
 
     private JwtTokenProvider jwtTokenProvider;
