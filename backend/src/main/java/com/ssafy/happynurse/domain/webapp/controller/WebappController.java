@@ -92,7 +92,13 @@ public class WebappController {
                 new PatientVerifyResponse(
                         result.getPatientId(),
                         result.getPatientName(),
-                        result.getRoomName()
+                        result.getRoomName(),
+                        result.getGender(),
+                        result.getDepartmentCode(),
+                        result.getDiseaseName(),
+                        result.getChiefComplaint(),
+                        result.getSurgeryName(),
+                        result.getAssignedNurseName()
                 )
         ));
     }

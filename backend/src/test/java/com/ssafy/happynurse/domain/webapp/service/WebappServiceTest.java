@@ -1,9 +1,6 @@
 package com.ssafy.happynurse.domain.webapp.service;
 
-import com.ssafy.happynurse.domain.patient.entity.Encounter;
-import com.ssafy.happynurse.domain.patient.entity.EncounterStatus;
-import com.ssafy.happynurse.domain.patient.entity.Patient;
-import com.ssafy.happynurse.domain.patient.entity.Room;
+import com.ssafy.happynurse.domain.patient.entity.*;
 import com.ssafy.happynurse.domain.patient.repository.EncounterRepository;
 import com.ssafy.happynurse.domain.patient.repository.PatientRepository;
 import com.ssafy.happynurse.domain.webapp.dto.NfcEntryResponse;
@@ -15,7 +12,6 @@ import com.ssafy.happynurse.global.security.JwtTokenProvider;
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.nurse.entity.Notification;
 import com.ssafy.happynurse.domain.nurse.repository.NotificationRepository;
-import com.ssafy.happynurse.domain.patient.entity.Ward;
 import com.ssafy.happynurse.domain.webapp.dto.SymptomSubmitRequest;
 import com.ssafy.happynurse.domain.webapp.dto.SymptomSubmitResponse;
 import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
@@ -112,13 +108,14 @@ public class WebappServiceTest {
 
     @Test
     @DisplayName("본인 확인: 이름 + 생년월일 일치 시 토큰과 환자 정보 반환")
-    void verify_succes() {
+    void verify_success() {
         // given
         Patient patient = createPatient(1L);
-        Encounter encounter = createEncounter(patient, "김가민", LocalDate.of(2001, 4, 29), "301호실");
+        Encounter encounter = createEncounterForVerify(patient);
 
         given(patientRepository.findById(1L)).willReturn(Optional.of(patient));
-        given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)).willReturn(Optional.of(encounter));
+        given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
+                .willReturn(Optional.of(encounter));
         given(jwtTokenProvider.createPatientToken(1L, "김가민")).willReturn("mock-token");
 
         // when
@@ -128,6 +125,12 @@ public class WebappServiceTest {
         assertThat(result.getToken()).isEqualTo("mock-token");
         assertThat(result.getPatientName()).isEqualTo("김가민");
         assertThat(result.getRoomName()).isEqualTo("301호실");
+        assertThat(result.getGender()).isEqualTo("female");
+        assertThat(result.getDepartmentCode()).isEqualTo("정형외과");
+        assertThat(result.getDiseaseName()).isEqualTo("퇴행성 무릎 관절염");
+        assertThat(result.getChiefComplaint()).isEqualTo("무릎 통증");
+        assertThat(result.getSurgeryName()).isEqualTo("슬관절 전치환술");
+        assertThat(result.getAssignedNurseName()).isEqualTo("문현지");
     }
 
     @Test
@@ -396,6 +399,33 @@ public class WebappServiceTest {
             setField(report, "selfReportId", id);
             setField(report, "submittedAt", submittedAt);
             return report;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Encounter createEncounterForVerify(Patient patient) {
+        try {
+            Room room = newInstance(Room.class);
+            setField(room, "roomName", "301호실");
+
+            Practitioner nurse = newInstance(Practitioner.class);
+            setField(nurse, "practitionerId", 10L);
+            setField(nurse, "name", "문현지");
+
+            Encounter encounter = newInstance(Encounter.class);
+            setField(encounter, "patient", patient);
+            setField(encounter, "name", "김가민");
+            setField(encounter, "birthDate", LocalDate.of(2001, 4, 29));
+            setField(encounter, "status", EncounterStatus.in_progress);
+            setField(encounter, "room", room);
+            setField(encounter, "gender", Gender.female);
+            setField(encounter, "departmentCode", "정형외과");
+            setField(encounter, "diseaseName", "퇴행성 무릎 관절염");
+            setField(encounter, "chiefComplaint", "무릎 통증");
+            setField(encounter, "surgeryName", "슬관절 전치환술");
+            setField(encounter, "assignedPractitioner", nurse);
+            return encounter;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

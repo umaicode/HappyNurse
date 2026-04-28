@@ -76,8 +76,15 @@ public class WebappService {
                 token,
                 request.getPatientId(),
                 encounter.getName(),
-                encounter.getRoom().getRoomName()
+                encounter.getRoom().getRoomName(),
+                encounter.getGender().name(),
+                encounter.getDepartmentCode(),
+                encounter.getDiseaseName(),
+                encounter.getChiefComplaint(),
+                encounter.getSurgeryName(),
+                encounter.getAssignedPractitioner().getName()
         );
+
     }
 
     public List<SymptomButtonResponse> getButtons() {

@@ -79,7 +79,7 @@ public class WebappControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/patients/verify - 성공 시 HttpOnly 쿠키 설정")
+    @DisplayName("POST /api/patients/verify - 성공 시 HttpOnly 쿠키 설정 및 환자 정보 반환")
     void verify_success_setCookie() throws Exception {
         // given
         PatientVerifyRequest request = new PatientVerifyRequest();
@@ -88,7 +88,11 @@ public class WebappControllerTest {
         request.setBirthDate("010429");
 
         given(webappService.verifyPatient(any()))
-                .willReturn(new PatientVerifyResult("mock-token", 1L, "김가민", "301호실"));
+                .willReturn(new PatientVerifyResult(
+                        "mock-token", 1L, "김가민", "301호실",
+                        "female", "정형외과", "퇴행성 무릎 관절염",
+                        "무릎 통증", null, "문현지"
+                ));
 
         // when & then
         mockMvc.perform(post("/api/patients/verify")
@@ -98,6 +102,12 @@ public class WebappControllerTest {
                 .andExpect(cookie().httpOnly("ACCESS_TOKEN", true))
                 .andExpect(cookie().exists("ACCESS_TOKEN"))
                 .andExpect(jsonPath("$.data.patientName").value("김가민"))
+                .andExpect(jsonPath("$.data.gender").value("female"))
+                .andExpect(jsonPath("$.data.departmentCode").value("정형외과"))
+                .andExpect(jsonPath("$.data.diseaseName").value("퇴행성 무릎 관절염"))
+                .andExpect(jsonPath("$.data.chiefComplaint").value("무릎 통증"))
+                .andExpect(jsonPath("$.data.surgeryName").doesNotExist())
+                .andExpect(jsonPath("$.data.assignedNurseName").value("문현지"))
                 .andExpect(jsonPath("$.data.accessToken").doesNotExist());
     }
 
