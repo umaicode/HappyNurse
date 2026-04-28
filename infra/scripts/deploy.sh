@@ -139,11 +139,14 @@ done
 # ──────────────────────────────────────────────
 log "▶ Switching Nginx upstream to $NEW"
 
+# 변수 이름 (예: backend_dev_target)
+TARGET_VAR="${SERVICE}_${ENV}_target"
+
 cat > "$UPSTREAM_FILE" <<EOF
 # 현재 활성 색: ${NEW}
 # Last updated: $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')
-upstream ${SERVICE}_${ENV} {
-    server ${NEW_CONTAINER}:${PORT} max_fails=1 fail_timeout=5s;
+map "" \$${TARGET_VAR} {
+    default "${NEW_CONTAINER}:${PORT}";
 }
 EOF
 

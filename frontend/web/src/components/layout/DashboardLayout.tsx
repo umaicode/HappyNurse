@@ -14,8 +14,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { AssignPatientModal } from "@/features/dashboard/components/AssignPatientModal";
-import type { Ward } from "@/features/patient/types/patient";
 
 interface DashboardLayoutProps {
   sidebar: ReactNode;
@@ -25,9 +23,7 @@ interface DashboardLayoutProps {
   isRightOpen: boolean;
   onOpenLeft: () => void;
   onOpenRight: () => void;
-  wards: Ward[];
-  currentUser: string;
-  onAssignPatients: (patientIds: string[]) => void;
+  onOpenAssignModal: () => void;
 }
 
 type QuickActionId = "handover" | "assign-patient";
@@ -62,12 +58,9 @@ export function DashboardLayout({
   isRightOpen,
   onOpenLeft,
   onOpenRight,
-  wards,
-  currentUser,
-  onAssignPatients,
+  onOpenAssignModal,
 }: DashboardLayoutProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isAssignOpen, setIsAssignOpen] = useState(false);
   const router = useRouter();
 
   const handleActionClick = (actionId: QuickActionId) => {
@@ -75,7 +68,7 @@ export function DashboardLayout({
     if (actionId === "handover") {
       router.push("/handover");
     } else if (actionId === "assign-patient") {
-      setIsAssignOpen(true);
+      onOpenAssignModal();
     }
   };
 
@@ -168,13 +161,6 @@ export function DashboardLayout({
         </Popover>
       </div>
 
-      <AssignPatientModal
-        wards={wards}
-        currentUser={currentUser}
-        isOpen={isAssignOpen}
-        onClose={() => setIsAssignOpen(false)}
-        onAssignPatients={onAssignPatients}
-      />
     </div>
   );
 }
