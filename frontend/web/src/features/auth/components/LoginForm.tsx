@@ -371,7 +371,13 @@ export function LoginForm() {
                 </Button>
               </div>
             ) : (
-              <div className="space-y-8">
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  handleLogin()
+                }}
+                className="space-y-8"
+              >
                 <div>
                   <Heading
                     level="h2"
@@ -392,6 +398,8 @@ export function LoginForm() {
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
                       <Input
+                        name="employeeNumber"
+                        autoComplete="username"
                         placeholder="사원번호를 입력하세요"
                         value={employeeNumber}
                         onChange={(event) =>
@@ -410,12 +418,11 @@ export function LoginForm() {
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
                       <Input
                         type="password"
+                        name="password"
+                        autoComplete="current-password"
                         placeholder="비밀번호를 입력하세요"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') handleLogin()
-                        }}
                         className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
                       />
                     </div>
@@ -429,13 +436,13 @@ export function LoginForm() {
                 ) : null}
 
                 <Button
-                  onClick={handleLogin}
+                  type="submit"
                   disabled={loginMutation.isPending}
                   className="w-full h-15 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--color-brand-primary)]/20 transition-all flex items-center justify-center gap-2"
                 >
                   {loginMutation.isPending ? '로그인 중...' : '로그인'}
                 </Button>
-              </div>
+              </form>
             )}
           </div>
         </div>

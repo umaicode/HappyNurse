@@ -12,8 +12,10 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  basePath: basePath,
-  assetPrefix: basePath,
+  basePath,
+  // basePath 가 있는 환경(/dev)에서 nginx 가 슬래시 없는 요청을 슬래시 있는 형태로 301 시키므로,
+  // Next.js 도 동일 방향으로 통일해 루프를 끊는다.
+  trailingSlash: true,
   reactCompiler: true,
 }
 
