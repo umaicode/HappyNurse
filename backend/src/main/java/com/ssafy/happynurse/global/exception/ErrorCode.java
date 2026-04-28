@@ -34,6 +34,11 @@ public enum ErrorCode implements ResponseCode {
     ACCOUNT_DISABLED(HttpStatus.FORBIDDEN, "퇴사 처리된 계정입니다."),
     ROLE_NOT_FOUND(HttpStatus.FORBIDDEN, "해당 병동에 대한 권한이 없습니다."),
 
+    // Practitioner
+    PRACTITIONER_NOT_FOUND(HttpStatus.NOT_FOUND, "의료진을 찾을 수 없습니다."),
+    EMPLOYEE_NUMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "사원번호를 찾을 수 없습니다."),
+    PRACTITIONER_ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "현재 병동에서 활성화된 역할을 찾을 수 없습니다."),
+
     // Business (409)
     DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "이미 존재하는 리소스입니다."),
 
