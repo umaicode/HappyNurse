@@ -21,3 +21,16 @@ export interface AuthResponse {
     role: UserRole
   }
 }
+
+// [환자용 웹앱] 본인 확인
+export interface PatientVerifyRequest {
+  patientId: number
+  name: string
+  birthDate: string
+}
+
+export interface PatientInfo {
+  patientId: number
+  patientName: string
+  roomName: string
+}
