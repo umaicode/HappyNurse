@@ -51,8 +51,14 @@ public class Encounter {
     @Column(name = "department_code", length = 32)
     private String departmentCode; // 진료부서 코드
 
-    @Column(name = "surgery_type_code", length = 32)
-    private String surgeryTypeCode; // 수술 유형
+    @Column(name = "disease_name", length = 100)
+    private String diseaseName; // 병명
+
+    @Column(name = "chief_complaint", length = 100)
+    private String chiefComplaint;  // 주 증상
+
+    @Column(name = "surgery_name", length = 100)
+    private String surgeryName;     // 수술명
 
     @Column(nullable = false, length = 100)
     private String name; // 이름 (반정규화)
