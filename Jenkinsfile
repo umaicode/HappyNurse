@@ -130,7 +130,7 @@ pipeline {
                         script {
                             def tag      = "${env.DEPLOY_ENV}-${env.GIT_COMMIT_SHORT}"
                             def latest   = "${env.DEPLOY_ENV}-latest"
-
+                            
                             // 환경별 변수 결정
                             def basePath, apiUrl, aiUrl, appEnv
                             if (env.DEPLOY_ENV == 'dev') {
@@ -138,30 +138,26 @@ pipeline {
                                 apiUrl   = 'https://k14e101.p.ssafy.io/dev/api'
                                 aiUrl    = 'https://k14e101.p.ssafy.io/dev/ai'
                                 appEnv   = 'dev'
-            } else {
+                            } else {
                                 basePath = ''
                                 apiUrl   = 'https://k14e101.p.ssafy.io/api'
                                 aiUrl    = 'https://k14e101.p.ssafy.io/ai'
                                 appEnv   = 'prod'
                             }
-
+                            
                             echo ">>> [FRONTEND] Building happynurse-frontend:${tag}"
-                            echo "    basePath: ${basePath}"
-                            echo "    apiUrl:   ${apiUrl}"
-                            echo "    aiUrl:    ${aiUrl}"
-                            echo "    appEnv:   ${appEnv}"
-
-                            sh """
-                cd frontend/web
-                docker build
-                    --build-arg NEXT_PUBLIC_BASE_PATH=${basePath} \\
-                    --build-arg NEXT_PUBLIC_API_BASE_URL=${apiUrl} \\
-                    --build-arg NEXT_PUBLIC_AI_BASE_URL=${aiUrl} \\
-                    --build-arg NEXT_PUBLIC_APP_ENV=${appEnv} \\
-                    -t happynurse-frontend:${tag} \\
-                    -t happynurse-frontend:${latest} \\
-                    .
-            """
+                            echo "    basePath: ${basePath}, apiUrl: ${apiUrl}, aiUrl: ${aiUrl}, appEnv: ${appEnv}"
+                            
+                            def buildArgs = [
+                                "--build-arg NEXT_PUBLIC_BASE_PATH=${basePath}",
+                                "--build-arg NEXT_PUBLIC_API_BASE_URL=${apiUrl}",
+                                "--build-arg NEXT_PUBLIC_AI_BASE_URL=${aiUrl}",
+                                "--build-arg NEXT_PUBLIC_APP_ENV=${appEnv}",
+                                "-t happynurse-frontend:${tag}",
+                                "-t happynurse-frontend:${latest}"
+                            ].join(' ')
+                            
+                            sh "cd frontend/web && docker build ${buildArgs} ."
                         }
                     }
                 }
@@ -246,7 +242,7 @@ def notifyMattermost(String result) {
 
     // ─── 커스텀 이모지 및 큰 헤더 (초록/빨강 박스 안쪽) ───
     def jenkinsEmoji = isSuccess ? ':jenkins_muscle:' : ':jenkins5:'
-    def headerText = isSuccess 
+    def headerText = isSuccess
         ? "# ${jenkinsEmoji} ${envLabel} 배포 뿌슝빠슝"
         : "# ${jenkinsEmoji} ${envLabel} 안되잖아 다시해"
 
@@ -261,7 +257,7 @@ def notifyMattermost(String result) {
         } else if (klass.contains('TimerTrigger')) {
             triggerText = 'Cron Schedule'
         } else if (klass.contains('GitLab') || (first.shortDescription?.toString()?.contains('GitLab'))) {
-            triggerText = "GitLab Webhook"
+            triggerText = 'GitLab Webhook'
         } else {
             triggerText = first.shortDescription?.toString() ?: 'Unknown'
         }
@@ -306,11 +302,11 @@ def notifyMattermost(String result) {
     def text = "${headerText}\n\n> *${commitMsg}*\n\n"
 
     if (isSuccess) {
-        text += "**Service Links**\n"
+        text += '**Service Links**\n'
         if (env.DEPLOY_ENV == 'dev') {
-            text += "[Frontend](https://k14e101.p.ssafy.io/dev/)  |  [Swagger](https://k14e101.p.ssafy.io/dev/api/swagger-ui.html)  |  [AI](https://k14e101.p.ssafy.io/dev/ai/)"
+            text += '[Frontend](https://k14e101.p.ssafy.io/dev/)  |  [Swagger](https://k14e101.p.ssafy.io/dev/api/swagger-ui.html)  |  [AI](https://k14e101.p.ssafy.io/dev/ai/)'
         } else {
-            text += "[Frontend](https://k14e101.p.ssafy.io/)  |  [AI](https://k14e101.p.ssafy.io/ai/)"
+            text += '[Frontend](https://k14e101.p.ssafy.io/)  |  [AI](https://k14e101.p.ssafy.io/ai/)'
         }
     } else {
         def errorLine = sh(
@@ -357,6 +353,3 @@ def notifyMattermost(String result) {
         '''
     }
 }
-
-
-
