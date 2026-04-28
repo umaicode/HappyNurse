@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronLeft } from "lucide-react";
+import { ChevronDown, ChevronLeft, Mic } from "lucide-react";
 import {
   faqMock,
   nurseMock,
@@ -167,9 +167,23 @@ export default function Help() {
           </div>
 
           <div className="mt-4 flex flex-col gap-3">
-            <label className="text-lg font-bold text-patient-sub">
-              그 외 증상
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-lg font-bold text-patient-sub">
+                그 외 증상
+              </label>
+              <button
+                type="button"
+                aria-label="음성으로 입력"
+                disabled={!!selectedSymptom}
+                className={`flex size-9 items-center justify-center rounded-full transition-colors ${
+                  selectedSymptom
+                    ? "cursor-not-allowed bg-[#e5e7eb] text-patient-fade"
+                    : "bg-patient-primary text-white hover:bg-[#0F1F7A]"
+                }`}
+              >
+                <Mic className="size-[18px]" strokeWidth={2.2} />
+              </button>
+            </div>
             <textarea
               value={selectedSymptom ? "" : directInput}
               onChange={(event) => setDirectInput(event.target.value)}
