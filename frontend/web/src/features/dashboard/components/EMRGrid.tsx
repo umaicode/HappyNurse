@@ -9,8 +9,6 @@ import {
   ChevronRight,
   Check,
   AlertCircle,
-  PanelRightClose,
-  PanelRightOpen,
 } from "lucide-react";
 import * as React from "react";
 import { useState, useEffect } from "react";
@@ -249,12 +247,7 @@ function EditableCell({
   );
 }
 
-interface EMRGridProps {
-  isRightOpen: boolean;
-  onToggleRight: () => void;
-}
-
-export function EMRGrid({ isRightOpen, onToggleRight }: EMRGridProps) {
+export function EMRGrid() {
   const currentUser = typeof window !== 'undefined' ? localStorage.getItem("currentUser") || "김영희" : "김영희";
   const [activeTab, setActiveTab] = useState<"nursing" | "order" | "alerts" | "handover">("nursing");
   // EMRGrid는 현재 p1(김가민) 단일 환자 화면. patientId가 없거나 "p1"인 기록만 표시.
@@ -396,7 +389,6 @@ export function EMRGrid({ isRightOpen, onToggleRight }: EMRGridProps) {
                     onSelect={(date) =>
                       date && setSelectedDate(date)
                     }
-                    initialFocus
                   />
                 </PopoverContent>
               </Popover>
@@ -608,21 +600,6 @@ export function EMRGrid({ isRightOpen, onToggleRight }: EMRGridProps) {
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={onToggleRight}
-            aria-label={isRightOpen ? "우측 패널 접기" : "우측 패널 펼치기"}
-            className={cn(
-              "flex h-7 w-7 items-center justify-center rounded-md text-content-muted hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition",
-              activeTab === "nursing" ? "ml-2" : "ml-auto",
-            )}
-          >
-            {isRightOpen ? (
-              <PanelRightClose className="h-4 w-4" />
-            ) : (
-              <PanelRightOpen className="h-4 w-4" />
-            )}
-          </button>
         </div>
 
         <div className="flex flex-col h-full bg-[var(--color-surface-card)] border border-[var(--color-border-base)] rounded-lg shadow-md overflow-hidden relative">

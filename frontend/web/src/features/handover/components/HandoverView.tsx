@@ -177,7 +177,6 @@ export function HandoverView() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-[var(--color-brand-primary)]" />
             <Heading
               level="h2"
               className="text-[22px] font-bold text-slate-800"
