@@ -1,28 +1,71 @@
 /**
  * 인증 관련 타입 정의.
- * UserRole · LoginRequest · AuthResponse
+ *
+ * - [간호사용 웹] LoginRequest, AuthUser, DevLoginRequest, DevLoginResponse, SignupRequest, SignupResponse
+ * - [환자용 웹앱] PatientVerifyRequest, PatientInfo
+ *
+ * 백엔드 응답 wrapper: { success, message, errorCode, data } — api 함수에서 data 만 추출하여 반환.
  */
 
-export type UserRole = 'ADMIN' | 'HEAD_NURSE' | 'NURSE'
+// roleCode: 스웨거 enum — head_nurse | nurse | doctor | admin
+export type RoleCode = 'head_nurse' | 'nurse' | 'doctor' | 'admin'
+
+// [간호사용 웹] 로그인
 
 export interface LoginRequest {
-  hospitalCode: string
-  userId: string
+  organizationId: number
+  wardId: number
+  employeeNumber: string
   password: string
-  role: UserRole
 }
 
-export interface AuthResponse {
+export interface AuthUser {
+  practitionerId: number
+  name: string
+  employeeNumber: string
+  roleCode: RoleCode
+  wardId: number
+  // /auth/login · /auth/refresh 응답에만 포함, /practitioners/me 응답엔 없음
+  organizationId?: number
+  // /practitioners/me 응답에만 포함
+  wardName?: string
+}
+
+// [간호사용 웹] DEV 로그인 (응답 body 로 토큰 반환)
+
+export interface DevLoginRequest {
+  employeeNumber: string
+}
+
+export interface DevLoginResponse extends AuthUser {
   accessToken: string
   refreshToken: string
-  user: {
-    id: string
-    name: string
-    role: UserRole
-  }
 }
 
-// [환자용 웹앱] 본인 확인
+// [간호사용 웹] DEV 회원가입
+
+export interface SignupRequest {
+  employeeNumber: string
+  password: string
+  name: string
+  phone: string
+  organizationId: number
+  wardId: number
+  roleCode: RoleCode
+}
+
+export interface SignupResponse {
+  practitionerId: number
+  employeeNumber: string
+  name: string
+  roleCode: RoleCode
+  organizationId: number
+  wardId: number
+  periodStart: string
+}
+
+// [환자용 웹앱] 본인 확인 — 환자 웹앱 코드가 import 중. 변경 금지.
+
 export interface PatientVerifyRequest {
   patientId: number
   name: string
