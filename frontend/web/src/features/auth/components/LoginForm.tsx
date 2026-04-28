@@ -1,8 +1,9 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { motion } from "motion/react";
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useMutation } from '@tanstack/react-query'
+import { motion } from 'motion/react'
 import {
   ArrowRight,
   Lock,
@@ -10,33 +11,145 @@ import {
   ChevronLeft,
   Building2,
   LayoutGrid,
-} from "lucide-react";
-import { Text } from "@/components/ui/text";
-import { Heading } from "@/components/ui/heading";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+} from 'lucide-react'
+import { Text } from '@/components/ui/text'
+import { Heading } from '@/components/ui/heading'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { MOCK_WARDS } from "@/mockup/wards";
+} from '@/components/ui/select'
+import { MOCK_WARDS } from '@/mockup/wards'
+import { devLogin, login } from '../api'
+import { useAuthStore } from '../stores/auth'
+import { devTokenStorage } from '@/lib/client'
+import { DevSignupModal } from './DevSignupModal'
+
+const isDevelopment = process.env.NEXT_PUBLIC_APP_ENV === 'dev'
+
+// TODO: organizationId · wardId 조회 API 연동 시 사용자 선택값을 그대로 전송하도록 교체
+const FALLBACK_ORGANIZATION_ID = 1
+const FALLBACK_WARD_ID = 1
+
+// 마지막으로 로그인 성공한 세션의 병원·병동을 기억해 다음 로그인 때 step 1 을 스킵한다.
+// "병원/병동 다시 선택" → 새 값으로 로그인 성공 시점에만 덮어쓰므로, 단순히 선택만 바꾼 경우엔 보존된다.
+const LOGIN_CONTEXT_KEY = 'lastLoginContext'
+
+interface LoginContext {
+  hospital: string
+  wardId: string
+}
+
+// wardId 만 필수로 본다. hospital 인풋은 현재 자유 텍스트라 빈 값도 허용.
+// 향후 병원 조회 API 연동 시 hospital 을 hospitalId 기반으로 교체하고 필수로 올리면 됨.
+const loginContextStorage = {
+  load(): LoginContext | null {
+    if (typeof window === 'undefined') return null
+    try {
+      const raw = window.localStorage.getItem(LOGIN_CONTEXT_KEY)
+      if (!raw) return null
+      const parsed = JSON.parse(raw) as Partial<LoginContext>
+      if (typeof parsed.wardId === 'string' && parsed.wardId.length > 0) {
+        return {
+          hospital: typeof parsed.hospital === 'string' ? parsed.hospital : '',
+          wardId: parsed.wardId,
+        }
+      }
+      return null
+    } catch {
+      return null
+    }
+  },
+  save(context: LoginContext) {
+    if (typeof window === 'undefined') return
+    if (!context.wardId) return
+    window.localStorage.setItem(LOGIN_CONTEXT_KEY, JSON.stringify(context))
+  },
+}
 
 export function LoginForm() {
-  const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [hospital, setHospital] = useState("");
-  const [ward, setWard] = useState("");
-  const [username, setUsername] = useState("김영희");
+  const router = useRouter()
+  const setUser = useAuthStore((state) => state.setUser)
 
-  // Mock 로그인 — 입력 무시하고 항상 "김영희"로 진입
+  const [step, setStep] = useState(1)
+  const [hospital, setHospital] = useState('')
+  const [ward, setWard] = useState('')
+  const [employeeNumber, setEmployeeNumber] = useState('')
+  const [password, setPassword] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isSignupOpen, setIsSignupOpen] = useState(false)
+
+  // 마운트 시 마지막 로그인 컨텍스트가 있으면 step 1 을 건너뛰고 사번/비밀번호 입력으로 바로 진입.
+  useEffect(() => {
+    const saved = loginContextStorage.load()
+    if (saved) {
+      setHospital(saved.hospital)
+      setWard(saved.wardId)
+      setStep(2)
+    }
+  }, [])
+
+  const loginMutation = useMutation({
+    mutationFn: login,
+    onSuccess: (data) => {
+      loginContextStorage.save({ hospital, wardId: ward })
+      setUser(data)
+      router.push('/dashboard')
+    },
+    onError: () => {
+      setErrorMessage('로그인에 실패했습니다. 사번과 비밀번호를 확인해주세요.')
+    },
+  })
+
+  const devLoginMutation = useMutation({
+    mutationFn: devLogin,
+    onSuccess: (data) => {
+      devTokenStorage.setTokens(data.accessToken, data.refreshToken)
+      // step 1 을 거치며 병원·병동을 채운 상태에서 dev 로그인했을 때만 컨텍스트 저장.
+      // 빈 상태로 dev 로그인하면 무의미한 컨텍스트라 저장 안 함 (load 단계에서 어차피 무시됨).
+      loginContextStorage.save({ hospital, wardId: ward })
+      setUser({
+        practitionerId: data.practitionerId,
+        name: data.name,
+        employeeNumber: data.employeeNumber,
+        roleCode: data.roleCode,
+        organizationId: data.organizationId,
+        wardId: data.wardId,
+      })
+      router.push('/dashboard')
+    },
+    onError: () => {
+      setErrorMessage('DEV 로그인에 실패했습니다.')
+    },
+  })
+
   const handleLogin = () => {
-    localStorage.setItem("currentUser", "김영희");
-    router.push("/dashboard");
-  };
+    if (!employeeNumber.trim() || !password.trim() || loginMutation.isPending) return
+    setErrorMessage('')
+    loginMutation.mutate({
+      organizationId: FALLBACK_ORGANIZATION_ID,
+      wardId: FALLBACK_WARD_ID,
+      employeeNumber: employeeNumber.trim(),
+      password,
+    })
+  }
+
+  const handleDevLogin = () => {
+    if (devLoginMutation.isPending) return
+    let targetEmployeeNumber = employeeNumber.trim()
+    if (!targetEmployeeNumber) {
+      const input = window.prompt('사번을 입력하세요')
+      if (!input?.trim()) return
+      targetEmployeeNumber = input.trim()
+    }
+    setErrorMessage('')
+    devLoginMutation.mutate({ employeeNumber: targetEmployeeNumber })
+  }
 
   return (
     <div className="fixed inset-0 flex w-full bg-white overflow-hidden font-sans">
@@ -91,13 +204,41 @@ export function LoginForm() {
       {/* Layer 6: Soft white veil */}
       <div className="absolute inset-0 z-2 bg-gradient-to-b from-white/15 via-transparent to-white/10" />
 
-      {/* 개발용 환자 로그인 버튼 */}
-      <button 
-        onClick={() => router.push("/patient")}
-        className="absolute top-4 left-4 z-50 rounded-2xl border border-action-blue-hover bg-[#e2e3e4] px-3 py-1.5 text-[22px] font-bold text-gray-600 hover:bg-[#a0afec] transition-colors"
-      >
-        🛠️ 환자 로그인
-      </button>
+      {/* 좌측 상단 dev 툴: 환자 라우트 진입 + DEV 전용 동작 (운영 빌드에서는 DEV 동작은 숨김) */}
+      <div className="absolute top-4 left-4 z-50 flex items-center gap-2">
+        <button
+          onClick={() => router.push('/patient')}
+          className="rounded-2xl border border-action-blue-hover bg-[#e2e3e4] px-3 py-1.5 text-[22px] font-bold text-gray-600 hover:bg-[#a0afec] transition-colors"
+        >
+          환자 로그인
+        </button>
+        {isDevelopment ? (
+          <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white/80 px-2 py-1.5 shadow-sm backdrop-blur">
+            <span className="text-xs font-bold text-content-muted">
+              개발 환경 전용
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDevLogin}
+              disabled={devLoginMutation.isPending}
+            >
+              {devLoginMutation.isPending
+                ? 'DEV 로그인 중...'
+                : 'DEV 로그인 (사번만)'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsSignupOpen(true)}
+            >
+              테스트 회원가입
+            </Button>
+          </div>
+        ) : null}
+      </div>
 
       {/* Content Layer */}
       <div className="relative z-10 flex w-full h-full">
@@ -151,11 +292,14 @@ export function LoginForm() {
             {/* 상단 영역: 뒤로가기 버튼 (step 1에서도 높이 유지) */}
             <div className="mb-6">
               <button
-                onClick={() => setStep(1)}
+                onClick={() => {
+                  setStep(1)
+                  setErrorMessage('')
+                }}
                 aria-hidden={step !== 2}
                 tabIndex={step === 2 ? 0 : -1}
                 className={`flex items-center gap-1.5 text-sm font-bold text-content-muted hover:text-[var(--color-brand-primary)] transition-opacity group ${
-                  step === 2 ? "opacity-100" : "opacity-0 pointer-events-none"
+                  step === 2 ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 }`}
               >
                 <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -185,10 +329,11 @@ export function LoginForm() {
                     </Label>
                     <div className="relative">
                       <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
+                      {/* TODO: 병원 조회 API 연동 시 Select 로 교체. 현재 입력값은 무시됨. */}
                       <Input
                         placeholder="병원을 검색하세요"
                         value={hospital}
-                        onChange={(e) => setHospital(e.target.value)}
+                        onChange={(event) => setHospital(event.target.value)}
                         className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
                       />
                     </div>
@@ -200,14 +345,15 @@ export function LoginForm() {
                     </Label>
                     <div className="relative">
                       <LayoutGrid className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted z-10 pointer-events-none" />
+                      {/* TODO: 병동 조회 API 연동 시 실제 wardId 를 사용. 현재 선택값은 UI 표시용. */}
                       <Select value={ward} onValueChange={setWard}>
                         <SelectTrigger className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus:border-[var(--color-brand-primary)] focus:ring-4 focus:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-bold text-content-primary transition-all">
                           <SelectValue placeholder="접속할 병동을 선택하세요" />
                         </SelectTrigger>
                         <SelectContent className="z-[100] rounded-xl border-[var(--color-border-base)] shadow-xl">
-                          {MOCK_WARDS.map((ward) => (
-                            <SelectItem key={ward.id} value={ward.id}>
-                              {ward.name}
+                          {MOCK_WARDS.map((wardOption) => (
+                            <SelectItem key={wardOption.id} value={wardOption.id}>
+                              {wardOption.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -246,9 +392,11 @@ export function LoginForm() {
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
                       <Input
-                        placeholder="아이디를 입력하세요"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="사원번호를 입력하세요"
+                        value={employeeNumber}
+                        onChange={(event) =>
+                          setEmployeeNumber(event.target.value)
+                        }
                         className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
                       />
                     </div>
@@ -263,23 +411,42 @@ export function LoginForm() {
                       <Input
                         type="password"
                         placeholder="비밀번호를 입력하세요"
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') handleLogin()
+                        }}
                         className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
                       />
                     </div>
                   </div>
                 </div>
 
+                {errorMessage ? (
+                  <p className="text-sm font-semibold text-red-500">
+                    {errorMessage}
+                  </p>
+                ) : null}
+
                 <Button
                   onClick={handleLogin}
+                  disabled={loginMutation.isPending}
                   className="w-full h-15 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--color-brand-primary)]/20 transition-all flex items-center justify-center gap-2"
                 >
-                  로그인
+                  {loginMutation.isPending ? '로그인 중...' : '로그인'}
                 </Button>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {isDevelopment ? (
+        <DevSignupModal
+          isOpen={isSignupOpen}
+          onClose={() => setIsSignupOpen(false)}
+        />
+      ) : null}
     </div>
-  );
+  )
 }

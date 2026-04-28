@@ -47,4 +47,16 @@ public class Notification {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    public static Notification create(Practitioner recipientPractitioner, SourceType sourceType, PatientSelfReport patientSelfReport, Patient patient, String title, String body) {
+        Notification notification = new Notification();
+        notification.recipientPractitioner = recipientPractitioner;
+        notification.sourceType = sourceType;
+        notification.sourceSelfReport = patientSelfReport;
+        notification.patient = patient;
+        notification.title = title;
+        notification.body = body;
+
+        return notification;
+    }
 }

@@ -8,27 +8,43 @@ import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class SwaggerConfig {
 
+    @Value("${spring.profiles.active:default}")
+    private String activeProfile;
+
     @Bean
     public OpenAPI openAPI() {
         String jwtScheme = "bearerAuth";
 
-        return new OpenAPI()
+        OpenAPI api = new OpenAPI()
             .info(new Info()
                 .title("HappyNurse API")
                 .description("HappyNurse 서비스 API 문서")
-                .version("v1.0.0"))            .addServersItem(new Server().url("http://localhost:8080")
-                .description("Local 서버"))
-            .addServersItem(new Server().url("https://j14e101.p.ssafy.io:dev")
-                .description("Dev 서버"))
-            .addServersItem(new Server().url("https://j14e101.p.ssafy.io")
-                .description("Prod 서버"))
+                .version("v1.0.0"));
 
+        // 환경별 server URL 분기
+        if ("prod".equals(activeProfile)) {
+            api.addServersItem(new Server()
+                .url("https://k14e101.p.ssafy.io/api")
+                .description("Prod 서버"));
+        } else if ("dev".equals(activeProfile)) {
+            api.addServersItem(new Server()
+                .url("https://k14e101.p.ssafy.io/dev/api")
+                .description("Dev 서버"));
+        }
+
+        // Local은 항상 추가 (개발자가 swagger 로컬 띄울 때 유용)
+        api.addServersItem(new Server()
+            .url("http://localhost:8080")
+            .description("Local 서버"));
+
+        return api
             .addSecurityItem(new SecurityRequirement().addList(jwtScheme))
             .components(new Components()
                 .addSecuritySchemes(jwtScheme, new SecurityScheme()
@@ -49,14 +65,12 @@ public class SwaggerConfig {
                     .addApiResponse("403", new ApiResponse().description("권한이 없는 사용자 요청 (ForbiddenException)"))
                     .addApiResponse("500", new ApiResponse().description("서버 내부 오류 (InternalServerError)"));
 
-                // POST, PUT, PATCH (데이터를 생성/수정하는 조작)에만 400, 409 추가
                 if ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) {
                     operation.getResponses()
                         .addApiResponse("400", new ApiResponse().description("유효하지 않은 데이터 (BadRequestException)"))
                         .addApiResponse("409", new ApiResponse().description("데이터 중복 발생 (DuplicateResourceException)"));
                 }
 
-                // GET, PUT, PATCH, DELETE (특정 리소스를 다루는 경우)에 404 추가
                 if ("GET".equals(method) || "PUT".equals(method) || "PATCH".equals(method) || "DELETE".equals(method)) {
                     operation.getResponses()
                         .addApiResponse("404", new ApiResponse().description("요청한 리소스를 찾을 수 없음 (ResourceNotFoundException)"));

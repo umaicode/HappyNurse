@@ -7,6 +7,7 @@ import {
   Share2,
   UserPlus,
   PanelLeftOpen,
+  PanelLeftClose,
   SidebarClose,
   SidebarOpen,
 } from "lucide-react";
@@ -22,7 +23,7 @@ interface DashboardLayoutProps {
   actionPanel: ReactNode;
   isLeftOpen: boolean;
   isRightOpen: boolean;
-  onOpenLeft: () => void;
+  onToggleLeft: () => void;
   onOpenRight: () => void;
   onToggleRight: () => void;
   onOpenAssignModal: () => void;
@@ -58,7 +59,7 @@ export function DashboardLayout({
   actionPanel,
   isLeftOpen,
   isRightOpen,
-  onOpenLeft,
+  onToggleLeft,
   onToggleRight,
   onOpenAssignModal,
 }: DashboardLayoutProps) {
@@ -87,27 +88,26 @@ export function DashboardLayout({
       <main className="flex-1 flex flex-col min-w-0 relative z-10">
         {mainGrid}
 
-        {/* Floating "open" button when the left sidebar is collapsed */}
-        {!isLeftOpen && (
-          <button
-            type="button"
-            onClick={onOpenLeft}
-            aria-label="좌측 사이드바 펼치기"
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-r-md bg-white/95 backdrop-blur border border-l-0 border-border-base/60 text-content-secondary shadow-md hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition"
-          >
+        {/* 좌측 패널 토글 — main 의 좌측 경계(= 좌측 사이드바 우측 경계선) 위에 걸침 */}
+        <button
+          type="button"
+          onClick={onToggleLeft}
+          aria-label={isLeftOpen ? "좌측 사이드바 접기" : "좌측 사이드바 펼치기"}
+          className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-md bg-white/95 backdrop-blur border border-border-base/60 text-content-secondary shadow-md hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition-colors"
+        >
+          {isLeftOpen ? (
+            <PanelLeftClose className="h-4 w-4" />
+          ) : (
             <PanelLeftOpen className="h-4 w-4" />
-          </button>
-        )}
-      </main>
+          )}
+        </button>
 
-      {/* 3. Right (보조창 - Doctor's Order) */}
-      <div className="relative flex-shrink-0 flex">
-        {/* 우측 패널 토글 버튼 — aside 왼쪽 경계에 고정 */}
+        {/* 우측 패널 토글 — main 의 우측 경계(= 우측 사이드바 좌측 경계선) 위에 걸침 */}
         <button
           type="button"
           onClick={onToggleRight}
           aria-label={isRightOpen ? "우측 패널 접기" : "우측 패널 펼치기"}
-          className="absolute left-0 top-[14px] -translate-y-1/2 -translate-x-full z-20 flex h-7 w-5 items-center justify-center rounded-l-md bg-white/95 backdrop-blur border border-r-0 border-border-base/60 text-content-secondary shadow-sm hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition-colors"
+          className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-md bg-white/95 backdrop-blur border border-border-base/60 text-content-secondary shadow-md hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition-colors"
         >
           {isRightOpen ? (
             <SidebarClose className="h-4 w-4" />
@@ -115,12 +115,14 @@ export function DashboardLayout({
             <SidebarOpen className="h-4 w-4" />
           )}
         </button>
-        <aside
-          className={`${isRightOpen ? "w-[280px] border" : "w-0 border-0"} bg-[var(--color-surface-base)] rounded-[6px] flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden border-border-base/60 transition-[width] duration-300 ease-in-out`}
-        >
-          <div className="w-[280px] h-full flex flex-col">{actionPanel}</div>
-        </aside>
-      </div>
+      </main>
+
+      {/* 3. Right (보조창 - Doctor's Order) */}
+      <aside
+        className={`${isRightOpen ? "w-[280px] border" : "w-0 border-0"} flex-shrink-0 bg-[var(--color-surface-base)] rounded-[6px] flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden border-border-base/60 transition-[width] duration-300 ease-in-out`}
+      >
+        <div className="w-[280px] h-full flex flex-col">{actionPanel}</div>
+      </aside>
 
       {/* Floating Action Button (FAB) */}
       <div className="absolute bottom-8 right-8 z-[100]">
