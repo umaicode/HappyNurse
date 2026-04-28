@@ -66,16 +66,18 @@ export default function Auth() {
     setSubmitting(true);
     setErrorMessage("");
     try {
-      const info = await verifyPatient({
+      const verified = await verifyPatient({
         patientId,
         name: name.trim(),
         birthDate: birthDigits.join(""),
       });
-      const params = new URLSearchParams({
-        name: info.patientName,
-        roomName: info.roomName,
+      const query = new URLSearchParams({
+        patientId: String(verified.patientId),
+        name: verified.patientName,
+        roomName: verified.roomName,
+        assignedNurseName: verified.assignedNurseName ?? "",
       });
-      router.push(`/patient/help?${params.toString()}`);
+      router.push(`/patient/help?${query.toString()}`);
     } catch {
       setErrorMessage("이름 또는 생년월일이 일치하지 않습니다.");
     } finally {

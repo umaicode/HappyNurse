@@ -71,7 +71,18 @@ const redirectToLogin = () => {
 }
 
 client.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const body = response.data
+    if (
+      body &&
+      typeof body === 'object' &&
+      'success' in body &&
+      'data' in body
+    ) {
+      response.data = (body as { data: unknown }).data
+    }
+    return response
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as RetryConfig | undefined
     const status = error.response?.status

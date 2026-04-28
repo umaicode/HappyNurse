@@ -64,7 +64,7 @@ export interface SignupResponse {
   periodStart: string
 }
 
-// [환자용 웹앱] 본인 확인 — 환자 웹앱 코드가 import 중. 변경 금지.
+// [환자용 웹앱] 본인 확인 — 환자 웹앱 코드가 import 중.
 
 export interface PatientVerifyRequest {
   patientId: number
@@ -72,8 +72,15 @@ export interface PatientVerifyRequest {
   birthDate: string
 }
 
+// swagger PatientVerifyResponse 와 일치.
 export interface PatientInfo {
   patientId: number
   patientName: string
   roomName: string
+  gender?: string
+  departmentCode?: string
+  diseaseName?: string
+  chiefComplaint?: string
+  surgeryName?: string | null
+  assignedNurseName?: string
 }

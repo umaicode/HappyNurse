@@ -43,3 +43,23 @@ export interface PatientNfc {
   patientName: string;
   roomName: string;
 }
+
+// [환자용 웹앱] 증상 버튼 (GET /symptoms/buttons)
+export interface SymptomButton {
+  buttonId: number;
+  label: string;
+  description: string;
+  displayOrder: number;
+}
+
+// [환자용 웹앱] 증상 제출 (POST /patients/{patientId}/symptoms)
+// buttonId 와 symptomText 중 하나만 채워서 전송한다.
+export interface SymptomSubmitRequest {
+  buttonId?: number;
+  symptomText?: string;
+}
+
+export interface SymptomSubmitResponse {
+  selfReportId: number;
+  submittedAt: string;
+}

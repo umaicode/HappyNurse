@@ -1,8 +1,10 @@
 /**
  * 환자 API 함수.
  *
+ * client 응답 인터셉터가 { success, data, ... } wrapper 의 data 만 평탄화하여 내려준다.
+ *
  * - [간호사용 웹] getList(params) · getDetail(id)  ─ 목업 (mockup/nurse-patients.ts)
- * - [환자용 웹앱] getNfcEntry(patientId)
+ * - [환자용 웹앱] getNfcEntry · getButtons · submitSymptom
  */
 import { client } from "@/lib/client";
 import {
@@ -14,6 +16,9 @@ import type {
   PatientDetail,
   PatientNfc,
   PatientQuery,
+  SymptomButton,
+  SymptomSubmitRequest,
+  SymptomSubmitResponse,
 } from "../types/patient";
 
 // [간호사용 웹] 환자 목록 / 상세
@@ -30,4 +35,19 @@ export const getDetail = (_id: string): Promise<PatientDetail> =>
 export const getNfcEntry = (patientId: number): Promise<PatientNfc> =>
   client
     .get(`/nfc/patients/${patientId}/entry`)
-    .then((response) => response.data?.data ?? response.data);
+    .then((response) => response.data);
+
+// [환자용 웹앱] 증상 버튼 목록
+
+export const getButtons = (): Promise<SymptomButton[]> =>
+  client.get("/symptoms/buttons").then((response) => response.data);
+
+// [환자용 웹앱] 증상 제출
+
+export const submitSymptom = (
+  patientId: number,
+  body: SymptomSubmitRequest,
+): Promise<SymptomSubmitResponse> =>
+  client
+    .post(`/patients/${patientId}/symptoms`, body)
+    .then((response) => response.data);
