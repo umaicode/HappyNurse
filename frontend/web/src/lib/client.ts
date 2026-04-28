@@ -52,6 +52,14 @@ client.interceptors.request.use((config) => {
 
 type RetryConfig = AxiosRequestConfig & { _retry?: boolean }
 
+// 인증을 "얻으려는" 엔드포인트 목록.
+// 이 요청들이 401 을 받으면 자격증명 자체의 실패라 refresh 로 살릴 수 없다.
+// 인터셉터에서 글로벌 처리하지 말고 호출 컴포넌트의 onError 가 안내하도록 그대로 reject.
+const AUTH_ENTRY_PATHS = ['/auth/login', '/auth/dev-login', '/auth/refresh']
+
+const isAuthEntryRequest = (url: string | undefined) =>
+  !!url && AUTH_ENTRY_PATHS.some((path) => url.includes(path))
+
 let refreshPromise: Promise<void> | null = null
 
 const performRefresh = () => {
@@ -84,6 +92,11 @@ client.interceptors.response.use(
 
     // 환자 라우트는 글로벌 401 핸들러를 거치지 않음 (간호사 /login 으로 보내면 안 됨)
     if (isPatientRoute()) {
+      return Promise.reject(error)
+    }
+
+    // 로그인/리프레시 자체의 401 은 컴포넌트가 안내. refresh 흐름으로 hard reload 트리거 금지.
+    if (isAuthEntryRequest(originalRequest.url)) {
       return Promise.reject(error)
     }
 
