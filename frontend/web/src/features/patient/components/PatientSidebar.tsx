@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, LogOut, ChevronRight, PanelLeftClose, Settings } from "lucide-react";
+import { Search, LogOut, ChevronRight, Settings } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -17,13 +17,11 @@ import {
 
 interface PatientSidebarProps {
   wards?: Ward[];
-  onCollapse?: () => void;
   onOpenAssignModal?: () => void;
 }
 
 export function PatientSidebar({
   wards = MOCK_WARDS,
-  onCollapse,
   onOpenAssignModal,
 }: PatientSidebarProps = {}) {
   const router = useRouter();
@@ -107,22 +105,12 @@ export function PatientSidebar({
     <div className="flex flex-col h-full bg-[var(--color-surface-base)]">
       {/* Brand & Search Header */}
       <div className="p-3 border-b border-border-base flex flex-col gap-3">
-        <div className="flex items-center justify-between px-1">
+        <div className="flex items-center px-1">
           <img
             src="/images/logo_ic.png"
             alt="해피너스 로고"
             className="h-5 w-auto object-contain"
           />
-          {onCollapse && (
-            <button
-              type="button"
-              onClick={onCollapse}
-              aria-label="좌측 사이드바 접기"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-content-muted hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition"
-            >
-              <PanelLeftClose className="h-4 w-4" />
-            </button>
-          )}
         </div>
 
         <div className="relative">

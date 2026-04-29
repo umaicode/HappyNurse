@@ -1,16 +1,3 @@
-// 환자용 웹 화면 목업 데이터
-// Scope: src/app/patient/**
-
-export const patientMock = {
-  id: "P-0301",
-  name: "김가민",
-  room: "301호실",
-  birthDate: "010429",
-  gender: "F" as "F" | "M",
-  surgeryType: "🛠️퇴행성 무릎 관절염",
-  ward: "🛠️정형외과 병동",
-};
-
 export const nurseMock = {
   id: "N-017",
   name: "문현지",

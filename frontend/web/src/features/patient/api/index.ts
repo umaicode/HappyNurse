@@ -1,35 +1,33 @@
 /**
  * 환자 API 함수.
- * getList(params) · getDetail(id)
  *
- * TODO: 백엔드 연동 시 목업 데이터 제거 후 아래 주석 해제
+ * - [간호사용 웹] getList(params) · getDetail(id)  ─ 목업 (mockup/nurse-patients.ts)
+ * - [환자용 웹앱] getNfcEntry(patientId)
  */
-import type { Patient, PatientDetail, PatientQuery } from '../types'
+import { client } from "@/lib/client";
+import {
+  INITIAL_PATIENTS,
+  INITIAL_PATIENT_DETAIL,
+} from "@/mockup/nurse-patients";
+import type {
+  Patient,
+  PatientDetail,
+  PatientNfc,
+  PatientQuery,
+} from "../types/patient";
 
-// ─── 목업 데이터 ───────────────────────────────────────────
-const MOCK_PATIENTS: Patient[] = [
-  { id: '1', name: '김영수', age: 68, bedNo: '01A', roomNo: '302호', diagnosis: 'I50.0 울혈성 심부전', pendingSTTCount: 2 },
-  { id: '2', name: '박미선', age: 55, bedNo: '02B', roomNo: '302호', diagnosis: 'J18.9 폐렴', pendingSTTCount: 0 },
-  { id: '3', name: '이철호', age: 72, bedNo: '03A', roomNo: '302호', diagnosis: 'N18.3 만성 신장병 3기', pendingSTTCount: 1 },
-  { id: '4', name: '정은지', age: 45, bedNo: '04A', roomNo: '302호', diagnosis: 'E11.9 당뇨병', pendingSTTCount: 0 },
-]
-
-const MOCK_DETAIL: PatientDetail = {
-  id: '1', name: '김영수', age: 68, bedNo: '01A', roomNo: '302호',
-  diagnosis: 'I50.0 울혈성 심부전', pendingSTTCount: 2,
-  admittedAt: '2025-04-01', nurseId: 'nurse-01',
-}
-// ──────────────────────────────────────────────────────────
+// [간호사용 웹] 환자 목록 / 상세
+// TODO: 백엔드 연동 시 mockup 의존 제거 후 실제 API 호출로 교체
 
 export const getList = (_params: PatientQuery): Promise<Patient[]> =>
-  Promise.resolve(MOCK_PATIENTS)
+  Promise.resolve(INITIAL_PATIENTS);
 
 export const getDetail = (_id: string): Promise<PatientDetail> =>
-  Promise.resolve(MOCK_DETAIL)
+  Promise.resolve(INITIAL_PATIENT_DETAIL);
 
-// ─── 백엔드 연동 시 아래로 교체 ────────────────────────────
-// import { client } from '@/lib/client'
-// export const getList = (params: PatientQuery) =>
-//   client.get<Patient[]>('/patients', { params }).then((r) => r.data)
-// export const getDetail = (id: string) =>
-//   client.get<PatientDetail>(`/patients/${id}`).then((r) => r.data)
+// [환자용 웹앱] NFC 진입
+
+export const getNfcEntry = (patientId: number): Promise<PatientNfc> =>
+  client
+    .get(`/nfc/patients/${patientId}/entry`)
+    .then((response) => response.data?.data ?? response.data);
