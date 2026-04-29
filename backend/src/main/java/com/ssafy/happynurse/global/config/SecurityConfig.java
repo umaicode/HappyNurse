@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -52,6 +53,8 @@ public class SecurityConfig {
                     "/api/swagger-ui/**", "/api/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/nfc/patients/**").permitAll()    // 환자 NFC 진입
                 .requestMatchers("/patients/verify").permitAll()    // 환자 본인 확인
+                .requestMatchers(HttpMethod.GET, "/organizations").permitAll()           // 로그인 화면 병원 목록
+                .requestMatchers(HttpMethod.GET, "/organizations/*/wards").permitAll()   // 로그인 화면 병동 목록
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, cookieName),
                 UsernamePasswordAuthenticationFilter.class);
