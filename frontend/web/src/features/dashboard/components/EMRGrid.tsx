@@ -11,15 +11,85 @@ import {
   AlertCircle,
 } from "lucide-react";
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { format, addDays, subDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import {
   INITIAL_RECORDS,
   INITIAL_ORDERS,
   INITIAL_PATIENT_ALERTS,
-  INITIAL_PATIENT_INFO,
 } from "@/mockup/emr-data";
+import { useAuthStore } from "@/features/auth/stores/auth";
+import { usePatientDetail } from "../hooks/usePatientDetail";
+import type { PatientDetailResponse } from "../types/patient-detail";
+import {
+  calculateAge,
+  formatBirthFull,
+  formatGenderShort,
+} from "@/lib/patient-display";
+
+interface PatientHeader {
+  name: string;
+  genderAge: string;
+  id: string;
+  department: string;
+  doctor: string;
+  date: string;
+  cc: string;
+  surgeryName: string;
+  diseaseName: string;
+  address: string;
+  birthday: string;
+  phone: string;
+}
+
+const EMPTY_HEADER: PatientHeader = {
+  name: "",
+  genderAge: "",
+  id: "",
+  department: "",
+  doctor: "",
+  date: "",
+  cc: "",
+  surgeryName: "",
+  diseaseName: "",
+  address: "",
+  birthday: "",
+  phone: "",
+};
+
+function formatAdmissionDate(periodStart: string): string {
+  if (!periodStart) return "";
+  const start = new Date(periodStart);
+  if (Number.isNaN(start.getTime())) return periodStart;
+  const yyyy = start.getFullYear();
+  const mm = String(start.getMonth() + 1).padStart(2, "0");
+  const dd = String(start.getDate()).padStart(2, "0");
+  const days = Math.floor(
+    (Date.now() - start.getTime()) / (1000 * 60 * 60 * 24),
+  );
+  return `${yyyy}.${mm}.${dd} (D+${days})`;
+}
+
+function buildHeaderFromApi(
+  detail: PatientDetailResponse | undefined,
+): PatientHeader {
+  if (!detail) return EMPTY_HEADER;
+  return {
+    name: detail.name,
+    genderAge: `${formatGenderShort(detail.gender)}/${calculateAge(detail.birthDate)}`,
+    id: detail.identifierValue,
+    department: detail.departmentCode,
+    doctor: "",
+    date: formatAdmissionDate(detail.periodStart),
+    cc: detail.chiefComplaint,
+    surgeryName: detail.surgeryName,
+    diseaseName: detail.diseaseName,
+    address: detail.address,
+    birthday: formatBirthFull(detail.birthDate),
+    phone: detail.phone,
+  };
+}
 
 const HOURS = [
   "전체 시간",
@@ -247,10 +317,16 @@ function EditableCell({
   );
 }
 
-export function EMRGrid() {
-  const currentUser = typeof window !== 'undefined' ? localStorage.getItem("currentUser") || "김영희" : "김영희";
+interface EMRGridProps {
+  patientId: number | null;
+}
+
+export function EMRGrid({ patientId }: EMRGridProps) {
+  const currentUser = useAuthStore((state) => state.user?.name ?? "");
+  const patientDetailQuery = usePatientDetail(patientId);
+
   const [activeTab, setActiveTab] = useState<"nursing" | "order" | "alerts" | "handover">("nursing");
-  // EMRGrid는 현재 p1(김가민) 단일 환자 화면. patientId가 없거나 "p1"인 기록만 표시.
+  // EMRGrid는 현재 p1(김가민) 단일 환자 화면 — INITIAL_RECORDS 등 mockup 은 Step 5 까지 유지.
   const [records, setRecords] = useState<NursingRecord[]>(
     INITIAL_RECORDS.filter((r) => {
       const pid = (r as { patientId?: string }).patientId;
@@ -268,14 +344,31 @@ export function EMRGrid() {
   const [isGlobalEditing, setIsGlobalEditing] = useState(false);
   const [recordsSnapshot, setRecordsSnapshot] = useState<NursingRecord[] | null>(null);
 
-  const [patientInfo, setPatientInfo] = useState(INITIAL_PATIENT_INFO);
+  // 헤더는 API 응답을 base 로 하고, 편집 내용은 클라이언트 override 로만 보관.
+  // 저장 endpoint 가 아직 없어서 새로고침/환자 변경 시 override 는 사라진다.
+  const baseHeader = useMemo(
+    () => buildHeaderFromApi(patientDetailQuery.data),
+    [patientDetailQuery.data],
+  );
+  const [overrides, setOverrides] = useState<Partial<PatientHeader>>({});
+  const lastPatientIdRef = useRef<number | null>(patientId);
+  if (lastPatientIdRef.current !== patientId) {
+    lastPatientIdRef.current = patientId;
+    setOverrides({});
+  }
+  const patientInfo: PatientHeader = { ...baseHeader, ...overrides };
 
-  const handleUpdatePatient = (
-    field: keyof typeof patientInfo,
-    val: string,
-  ) => {
-    setPatientInfo((prev) => ({ ...prev, [field]: val }));
+  const handleUpdatePatient = (field: keyof PatientHeader, val: string) => {
+    setOverrides((prev) => ({ ...prev, [field]: val }));
   };
+
+  if (patientId === null) {
+    return (
+      <div className="flex flex-1 items-center justify-center bg-[var(--color-surface-base)] text-content-muted text-body-base font-medium">
+        좌측 환자 목록에서 환자를 선택해주세요
+      </div>
+    );
+  }
 
   const handleAddRecord = (record: NursingRecord) => {
     setRecords((prev) =>
@@ -455,93 +548,132 @@ export function EMRGrid() {
           </div>
         </div>
 
-        {/* Patient Info Grid - Ultra Dense */}
-        <div className="grid grid-cols-[100px_1fr_100px_1fr_100px_1fr_100px_1fr] border border-[var(--color-border-base)] text-body-sm bg-[var(--color-surface-card)] rounded overflow-hidden shadow-sm">
-          {/* Row 1 */}
-          <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-b border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap">
-            진료부서
+        {/* Patient Info Grid - Ultra Dense (마지막 value 컬럼은 1.5fr — 진료일/휴대폰 가독성 확보) */}
+        <div className="grid grid-cols-[100px_1fr_100px_1fr_100px_1fr_100px_1.5fr] border border-[var(--color-border-base)] text-body-sm bg-[var(--color-surface-card)] rounded overflow-hidden shadow-sm">
+          {/* Row 1: Department · Doctor · Admission Date (1:1:1) */}
+          <div className="col-span-8 grid grid-cols-3 border-b border-[var(--color-border-base)]">
+            <div className="flex items-stretch border-r border-[var(--color-border-base)]">
+              <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+                진료부서
+              </div>
+              <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
+                <EditableCell
+                  value={patientInfo.department}
+                  onUpdate={(val) =>
+                    handleUpdatePatient("department", val)
+                  }
+                  className="font-bold text-[var(--color-content-secondary)] truncate w-full"
+                />
+              </div>
+            </div>
+            <div className="flex items-stretch border-r border-[var(--color-border-base)]">
+              <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+                진료의
+              </div>
+              <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
+                <EditableCell
+                  value={patientInfo.doctor}
+                  onUpdate={(val) => handleUpdatePatient("doctor", val)}
+                  className="font-bold text-[var(--color-content-secondary)] truncate w-full"
+                />
+              </div>
+            </div>
+            <div className="flex items-stretch">
+              <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+                입원일
+              </div>
+              <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
+                <EditableCell
+                  value={patientInfo.date}
+                  onUpdate={(val) => handleUpdatePatient("date", val)}
+                  className="font-mono font-bold text-[var(--color-content-secondary)] truncate w-full"
+                />
+              </div>
+            </div>
           </div>
-          <div className="border-r border-b border-[var(--color-border-base)] px-2.5 py-1 flex items-center min-w-0">
-            <EditableCell
-              value={patientInfo.department}
-              onUpdate={(val) =>
-                handleUpdatePatient("department", val)
-              }
-              className="font-bold text-[var(--color-content-secondary)] truncate w-full"
-            />
+          {/* Row 2: Address · Birthday · Phone (1:1:1) — Row 3 와 정렬 */}
+          <div className="col-span-8 grid grid-cols-3 border-b border-[var(--color-border-base)]">
+            <div className="flex items-stretch border-r border-[var(--color-border-base)]">
+              <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+                주소
+              </div>
+              <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
+                <EditableCell
+                  value={patientInfo.address}
+                  onUpdate={(val) => handleUpdatePatient("address", val)}
+                  className="font-medium text-[var(--color-content-tertiary)] truncate w-full"
+                />
+              </div>
+            </div>
+            <div className="flex items-stretch border-r border-[var(--color-border-base)]">
+              <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+                생년월일
+              </div>
+              <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
+                <EditableCell
+                  value={patientInfo.birthday}
+                  onUpdate={(val) =>
+                    handleUpdatePatient("birthday", val)
+                  }
+                  className="font-mono font-bold text-[var(--color-content-secondary)] truncate w-full"
+                />
+              </div>
+            </div>
+            <div className="flex items-stretch">
+              <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+                휴대폰
+              </div>
+              <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
+                <EditableCell
+                  value={patientInfo.phone}
+                  onUpdate={(val) => handleUpdatePatient("phone", val)}
+                  className="font-mono font-bold text-[var(--color-content-secondary)] truncate w-full"
+                />
+              </div>
+            </div>
           </div>
-          <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-b border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap">
-            진료의
-          </div>
-          <div className="border-r border-b border-[var(--color-border-base)] px-2.5 py-1 flex items-center min-w-0">
-            <EditableCell
-              value={patientInfo.doctor}
-              onUpdate={(val) =>
-                handleUpdatePatient("doctor", val)
-              }
-              className="font-bold text-[var(--color-content-secondary)] truncate w-full"
-            />
-          </div>
-          <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-b border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap">
-            보험유형
-          </div>
-          <div className="border-r border-b border-[var(--color-border-base)] px-2.5 py-1 flex items-center min-w-0">
-            <EditableCell
-              value={patientInfo.insurance}
-              onUpdate={(val) =>
-                handleUpdatePatient("insurance", val)
-              }
-              className="font-bold text-[var(--color-content-secondary)] truncate w-full"
-            />
-          </div>
-          <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-b border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap">
-            진료일(입원)
-          </div>
-          <div className="border-b border-[var(--color-border-base)] px-2.5 py-1 flex items-center min-w-0">
-            <EditableCell
-              value={patientInfo.date}
-              onUpdate={(val) =>
-                handleUpdatePatient("date", val)
-              }
-              className="font-mono font-bold text-[var(--color-content-secondary)] truncate w-full"
-            />
-          </div>
-          {/* Row 2: CC & Address */}
-          <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-b border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap">
-            주증상(C/C)
-          </div>
-          <div className="border-r border-b border-[var(--color-border-base)] px-2.5 py-1 col-span-3 flex items-center min-w-0">
-            <EditableCell
-              value={patientInfo.cc}
-              onUpdate={(val) => handleUpdatePatient("cc", val)}
-              className="font-bold text-[var(--color-content-secondary)] truncate w-full"
-            />
-          </div>
-          <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-b border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap">
-            주소
-          </div>
-          <div className="border-b border-[var(--color-border-base)] px-2.5 py-1 col-span-3 flex items-center min-w-0">
-            <EditableCell
-              value={patientInfo.address}
-              onUpdate={(val) =>
-                handleUpdatePatient("address", val)
-              }
-              className="font-medium text-[var(--color-content-tertiary)] truncate w-full"
-            />
-          </div>
-          {/* Row 3: Patient Memo (Softer Style) */}
-          <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap">
-            메모
-          </div>
-          <div className="px-2.5 py-1 col-span-7 flex items-center min-w-0 bg-[var(--color-brand-surface)]/40">
-            <EditableCell
-              value={patientInfo.memo}
-              onUpdate={(val) =>
-                handleUpdatePatient("memo", val)
-              }
-              className="font-bold text-[#1D4ED8] truncate w-full"
-              placeholder="중요 메모를 입력하세요"
-            />
+          {/* Row 3: Disease Name · CC · Surgery Name (1:1:1) */}
+          <div className="col-span-8 grid grid-cols-3">
+            <div className="flex items-stretch border-r border-[var(--color-border-base)]">
+              <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+                병명
+              </div>
+              <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
+                <EditableCell
+                  value={patientInfo.diseaseName}
+                  onUpdate={(val) =>
+                    handleUpdatePatient("diseaseName", val)
+                  }
+                  className="font-bold text-[var(--color-content-secondary)] truncate w-full"
+                />
+              </div>
+            </div>
+            <div className="flex items-stretch border-r border-[var(--color-border-base)]">
+              <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+                주증상
+              </div>
+              <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
+                <EditableCell
+                  value={patientInfo.cc}
+                  onUpdate={(val) => handleUpdatePatient("cc", val)}
+                  className="font-bold text-[var(--color-content-secondary)] truncate w-full"
+                />
+              </div>
+            </div>
+            <div className="flex items-stretch">
+              <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+                수술명
+              </div>
+              <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
+                <EditableCell
+                  value={patientInfo.surgeryName}
+                  onUpdate={(val) =>
+                    handleUpdatePatient("surgeryName", val)
+                  }
+                  className="font-bold text-[var(--color-content-secondary)] truncate w-full"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>

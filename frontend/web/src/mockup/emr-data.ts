@@ -500,19 +500,3 @@ export const INITIAL_PATIENT_ALERTS: PatientAlert[] = [
     message: "HR 115 로 상승. 빈맥 경보 발생.",
   },
 ];
-
-export const INITIAL_PATIENT_INFO = {
-  name: "김가민",
-  genderAge: "F/25",
-  id: "PT0001",
-  room: "7101호",
-  department: "소화기내과",
-  doctor: "김의사",
-  date: "2026.04.10 (D+4)",
-  insurance: "건강보험 (국민)",
-  cc: "우하복부 통증 (RLQ pain), 오심",
-  memo: "낙상 고위험군 (보행 시 주의 요망), 보호자 상주 중",
-  birthday: "1999.05.20",
-  address:
-    "서울특별시 강남구 테헤란로 123 해피아파트 101동 202호",
-};

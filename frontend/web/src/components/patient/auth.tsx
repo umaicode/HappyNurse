@@ -10,10 +10,13 @@ export default function Auth() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const patientId = Number(searchParams.get("patientId"));
+  const isPrefill = searchParams.get("prefill") === "1";
 
   const [nfcName, setNfcName] = useState("");
-  const [name, setName] = useState("");
-  const [birthDigits, setBirthDigits] = useState<string[]>(Array(6).fill(""));
+  const [name, setName] = useState(isPrefill ? "이승연" : "");
+  const [birthDigits, setBirthDigits] = useState<string[]>(
+    isPrefill ? ["9", "9", "0", "7", "2", "5"] : Array(6).fill(""),
+  );
   const [focusIdx, setFocusIdx] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
