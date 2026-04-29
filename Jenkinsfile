@@ -130,7 +130,7 @@ pipeline {
                         script {
                             def tag      = "${env.DEPLOY_ENV}-${env.GIT_COMMIT_SHORT}"
                             def latest   = "${env.DEPLOY_ENV}-latest"
-                            
+
                             // 환경별 변수 결정
                             def basePath, apiUrl, aiUrl, appEnv
                             if (env.DEPLOY_ENV == 'dev') {
@@ -144,10 +144,10 @@ pipeline {
                                 aiUrl    = 'https://k14e101.p.ssafy.io/ai'
                                 appEnv   = 'prod'
                             }
-                            
+
                             echo ">>> [FRONTEND] Building happynurse-frontend:${tag}"
                             echo "    basePath: ${basePath}, apiUrl: ${apiUrl}, aiUrl: ${aiUrl}, appEnv: ${appEnv}"
-                            
+
                             def buildArgs = [
                                 "--build-arg NEXT_PUBLIC_BASE_PATH=${basePath}",
                                 "--build-arg NEXT_PUBLIC_API_BASE_URL=${apiUrl}",
@@ -156,7 +156,7 @@ pipeline {
                                 "-t happynurse-frontend:${tag}",
                                 "-t happynurse-frontend:${latest}"
                             ].join(' ')
-                            
+
                             sh "cd frontend/web && docker build ${buildArgs} ."
                         }
                     }
@@ -214,12 +214,23 @@ pipeline {
     post {
         success {
             script {
-                notifyMattermost('SUCCESS')
+                def hasChanges = (env.CHANGED_BACKEND  == 'true' ||
+                          env.CHANGED_AI       == 'true' ||
+                          env.CHANGED_FRONTEND == 'true')
+                def durationMs = currentBuild.duration ?: 0
+
+                // 변경 없거나, 30초 미만 빌드는 빈 트리거로 간주
+                if (!hasChanges || durationMs < 30000) {
+                    echo "[SKIP NOTIFY] No real work done (changes=${hasChanges}, duration=${durationMs}ms)"
+        } else {
+                    notifyMattermost('SUCCESS')
+                }
             }
             echo "[SUCCESS] Build #${env.BUILD_NUMBER} deployed to ${env.DEPLOY_ENV}"
         }
         failure {
             script {
+                // 실패는 항상 알림 (변경 없어도 실패면 시스템 이상)
                 notifyMattermost('FAILURE')
             }
             echo "[FAILURE] Build #${env.BUILD_NUMBER} FAILED for ${env.DEPLOY_ENV}"
