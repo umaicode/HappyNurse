@@ -43,6 +43,3 @@ src/main/resources/CLAUDE.md
 ### docs ###
 /docs/superpowers
 /sc
-
-### gitignore
-src/main/resources/
