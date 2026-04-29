@@ -51,6 +51,7 @@ jwt:
   refresh-cookie-name: REFRESH_TOKEN
   cookie-secure: false
   cookie-same-site: Lax
+  app-refresh-token-expiration-ms: 2592000000
 
 server:
   port: 8080
@@ -59,3 +60,8 @@ logging:
   level:
     com.ssafy.happynurse: DEBUG
     org.hibernate.SQL: DEBUG
+
+# Dev-only toggles
+app:
+  dev:
+    enabled: true

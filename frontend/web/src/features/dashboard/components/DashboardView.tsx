@@ -59,14 +59,13 @@ export function DashboardView() {
       <DashboardLayout
         isLeftOpen={isLeftOpen}
         isRightOpen={isRightOpen}
-        onOpenLeft={() => setIsLeftOpen(true)}
+        onToggleLeft={() => setIsLeftOpen((prev) => !prev)}
         onOpenRight={() => setIsRightOpen(true)}
         onToggleRight={() => setIsRightOpen((prev) => !prev)}
         onOpenAssignModal={() => setIsAssignOpen(true)}
         sidebar={
           <PatientSidebar
             wards={wards}
-            onCollapse={() => setIsLeftOpen(false)}
             onOpenAssignModal={() => setIsAssignOpen(true)}
           />
         }

@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface PractitionerRepository extends JpaRepository<Practitioner, Long> {
     Optional<Practitioner> findByEmployeeNumber(String employeeNumber);
+
+    boolean existsByEmployeeNumber(String employeeNumber);
 }

@@ -9,7 +9,7 @@
  *
  * 토큰 갱신(/auth/refresh) 은 client.ts 의 401 인터셉터가 직접 호출하므로 별도 export 하지 않는다.
  */
-import { client } from '@/lib/client'
+import { client } from "@/lib/client";
 import type {
   AuthUser,
   DevLoginRequest,
@@ -19,7 +19,7 @@ import type {
   PatientVerifyRequest,
   SignupRequest,
   SignupResponse,
-} from '../types'
+} from "../types";
 
 // [간호사용 웹] 로그인 / 로그아웃 / 내 정보
 
@@ -27,7 +27,7 @@ export const login = (request: LoginRequest): Promise<AuthUser> =>
   client.post('/auth/login', request).then((response) => response.data)
 
 export const logout = (): Promise<void> =>
-  client.post('/auth/logout').then(() => undefined)
+  client.post("/auth/logout").then(() => undefined);
 
 export const getMe = (): Promise<AuthUser> =>
   client.get('/practitioners/me').then((response) => response.data)
