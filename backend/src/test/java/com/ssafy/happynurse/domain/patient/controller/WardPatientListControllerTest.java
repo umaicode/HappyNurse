@@ -49,12 +49,12 @@ class WardPatientListControllerTest {
     }
 
     @Test
-    @DisplayName("GET /wards/me/patients 성공 시 200 + 7 필드(isMyPatient 포함) 환자 목록 반환")
+    @DisplayName("GET /wards/me/patients 성공 시 200 + 9 필드(patientId · isMyPatient 포함) 환자 목록 반환")
     void listMyWardPatients_성공() throws Exception {
         authenticate(new CustomUserDetails(99L, "EMP099", "본인", "nurse", "session-1", 1L, 3L));
         given(wardPatientListService.listWardPatients(anyLong(), anyLong()))
                 .willReturn(List.of(
-                        new WardPatientListResponse(100L, "김가민", Gender.female,
+                        new WardPatientListResponse(1L, 100L, "김가민", Gender.female,
                                 LocalDate.of(1999, 5, 20), "7101호", "A", 2L, true)
                 ));
 
@@ -62,6 +62,7 @@ class WardPatientListControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("병동 환자 목록 조회에 성공했습니다."))
+                .andExpect(jsonPath("$.data[0].patientId").value(1))
                 .andExpect(jsonPath("$.data[0].encounterId").value(100))
                 .andExpect(jsonPath("$.data[0].name").value("김가민"))
                 .andExpect(jsonPath("$.data[0].gender").value("female"))
