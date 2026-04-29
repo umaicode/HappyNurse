@@ -6,6 +6,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 
 public record WardPatientListResponse(
+        @Schema(description = "환자 PK", example = "1")
+        Long patientId,
+
         @Schema(description = "입원(Encounter) PK", example = "100")
         Long encounterId,
 

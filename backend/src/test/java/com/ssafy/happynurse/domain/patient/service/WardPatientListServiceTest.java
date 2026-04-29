@@ -6,6 +6,7 @@ import com.ssafy.happynurse.domain.patient.cache.AssignedPatientsCache;
 import com.ssafy.happynurse.domain.patient.dto.WardPatientListResponse;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.entity.Gender;
+import com.ssafy.happynurse.domain.patient.entity.Patient;
 import com.ssafy.happynurse.domain.patient.entity.Room;
 import com.ssafy.happynurse.domain.patient.repository.EncounterRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -162,17 +163,31 @@ class WardPatientListServiceTest {
                                       LocalDate birthDate, String roomName, String bedName) {
         try {
             Room room = createRoom(encounterId * 100, roomName);
+            Patient patient = createPatient(encounterId);
 
             var ctor = Encounter.class.getDeclaredConstructor();
             ctor.setAccessible(true);
             Encounter e = ctor.newInstance();
             setField(e, "encounterId", encounterId);
+            setField(e, "patient", patient);
             setField(e, "room", room);
             setField(e, "name", name);
             setField(e, "gender", gender);
             setField(e, "birthDate", birthDate);
             setField(e, "bedName", bedName);
             return e;
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private Patient createPatient(Long patientId) {
+        try {
+            var ctor = Patient.class.getDeclaredConstructor();
+            ctor.setAccessible(true);
+            Patient p = ctor.newInstance();
+            setField(p, "patientId", patientId);
+            return p;
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
