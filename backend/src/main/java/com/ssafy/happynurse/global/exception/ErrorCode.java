@@ -46,6 +46,7 @@ public enum ErrorCode implements ResponseCode {
     PATIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "환자를 찾을 수 없습니다."),
     PATIENT_INACTIVE(HttpStatus.BAD_REQUEST, "비활성화된 환자입니다."),
     ENCOUNTER_NOT_FOUND(HttpStatus.NOT_FOUND, "활성 입원 정보를 찾을 수 없습니다."),
+    ENCOUNTER_NOT_IN_MY_WARD(HttpStatus.FORBIDDEN, "본인 병동의 입원이 아닙니다."),
     PATIENT_VERIFY_FAILED(HttpStatus.UNAUTHORIZED, "이름 또는 생년월일이 일치하지 않습니다."),
 
     // Symptom
