@@ -69,6 +69,7 @@ public class WardPatientListService {
 
     private WardPatientListResponse toResponse(Encounter e, long unconfirmedNursingCount, boolean isMyPatient) {
         return new WardPatientListResponse(
+                e.getPatient().getPatientId(),
                 e.getEncounterId(),
                 e.getName(),
                 e.getGender(),
