@@ -7,7 +7,9 @@ import {
   Share2,
   UserPlus,
   PanelLeftOpen,
-  PanelRightOpen,
+  PanelLeftClose,
+  SidebarClose,
+  SidebarOpen,
 } from "lucide-react";
 import {
   Popover,
@@ -21,8 +23,9 @@ interface DashboardLayoutProps {
   actionPanel: ReactNode;
   isLeftOpen: boolean;
   isRightOpen: boolean;
-  onOpenLeft: () => void;
+  onToggleLeft: () => void;
   onOpenRight: () => void;
+  onToggleRight: () => void;
   onOpenAssignModal: () => void;
 }
 
@@ -56,8 +59,8 @@ export function DashboardLayout({
   actionPanel,
   isLeftOpen,
   isRightOpen,
-  onOpenLeft,
-  onOpenRight,
+  onToggleLeft,
+  onToggleRight,
   onOpenAssignModal,
 }: DashboardLayoutProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -85,29 +88,33 @@ export function DashboardLayout({
       <main className="flex-1 flex flex-col min-w-0 relative z-10">
         {mainGrid}
 
-        {/* Floating "open" button when the left sidebar is collapsed */}
-        {!isLeftOpen && (
-          <button
-            type="button"
-            onClick={onOpenLeft}
-            aria-label="좌측 사이드바 펼치기"
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-r-md bg-white/95 backdrop-blur border border-l-0 border-border-base/60 text-content-secondary shadow-md hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition"
-          >
+        {/* 좌측 패널 토글 — main 의 좌측 경계(= 좌측 사이드바 우측 경계선) 위에 걸침 */}
+        <button
+          type="button"
+          onClick={onToggleLeft}
+          aria-label={isLeftOpen ? "좌측 사이드바 접기" : "좌측 사이드바 펼치기"}
+          className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-md bg-white/95 backdrop-blur border border-border-base/60 text-content-secondary shadow-md hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition-colors"
+        >
+          {isLeftOpen ? (
+            <PanelLeftClose className="h-4 w-4" />
+          ) : (
             <PanelLeftOpen className="h-4 w-4" />
-          </button>
-        )}
+          )}
+        </button>
 
-        {/* Floating "open" button when the right panel is collapsed */}
-        {!isRightOpen && (
-          <button
-            type="button"
-            onClick={onOpenRight}
-            aria-label="우측 패널 펼치기"
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-l-md bg-white/95 backdrop-blur border border-r-0 border-border-base/60 text-content-secondary shadow-md hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition"
-          >
-            <PanelRightOpen className="h-4 w-4" />
-          </button>
-        )}
+        {/* 우측 패널 토글 — main 의 우측 경계(= 우측 사이드바 좌측 경계선) 위에 걸침 */}
+        <button
+          type="button"
+          onClick={onToggleRight}
+          aria-label={isRightOpen ? "우측 패널 접기" : "우측 패널 펼치기"}
+          className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-md bg-white/95 backdrop-blur border border-border-base/60 text-content-secondary shadow-md hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition-colors"
+        >
+          {isRightOpen ? (
+            <SidebarClose className="h-4 w-4" />
+          ) : (
+            <SidebarOpen className="h-4 w-4" />
+          )}
+        </button>
       </main>
 
       {/* 3. Right (보조창 - Doctor's Order) */}
