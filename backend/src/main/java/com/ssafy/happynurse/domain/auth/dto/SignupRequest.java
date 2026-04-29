@@ -4,20 +4,18 @@ import com.ssafy.happynurse.domain.common.entity.RoleCode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 @Schema(description = "회원가입 요청 (dev 전용 테스트 계정 생성)")
 public record SignupRequest(
-        @Schema(description = "사원번호 (영문/숫자/_-)", example = "DEV001")
+        @Schema(description = "사원번호 (dev 테스트용, 32자 이하)", example = "DEV001")
         @NotBlank(message = "사원번호는 필수입니다.")
         @Size(max = 32, message = "사원번호는 32자 이하여야 합니다.")
-        @Pattern(regexp = "^[A-Za-z0-9_-]+$", message = "사원번호는 영문/숫자/_- 만 허용됩니다.")
         String employeeNumber,
 
-        @Schema(description = "비밀번호 (8~72자)", example = "Password!23")
+        @Schema(description = "비밀번호 (dev 테스트용, 4~72자)", example = "1234")
         @NotBlank(message = "비밀번호는 필수입니다.")
-        @Size(min = 8, max = 72, message = "비밀번호는 8~72자여야 합니다.")
+        @Size(min = 4, max = 72, message = "비밀번호는 4~72자여야 합니다.")
         String password,
 
         @Schema(description = "이름", example = "홍길동")
