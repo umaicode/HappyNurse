@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { getMe } from '@/features/auth/api'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useAuthStore } from '@/features/auth/stores/auth'
 import { Spinner } from '@/components/common/Spinner'
 
@@ -23,6 +24,8 @@ export default function WebLayout({
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
   const setUser = useAuthStore((state) => state.setUser)
+  // 15 분 자동 로그아웃 타이머 활성화 (useAuth 의 useEffect 가 user 가 set 된 동안 동작)
+  useAuth()
 
   const { isError, isPending, isSuccess } = useQuery({
     queryKey: ['auth', 'session'],

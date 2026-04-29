@@ -22,14 +22,12 @@ import { INITIAL_RECORDS } from "@/mockup/emr-data";
 import { HANDOVER_PATIENTS } from "@/mockup/handover-data";
 import { HANDOVER_SUMMARIES } from "@/mockup/handover-summaries";
 import { HANDOVER_SHIFT_OVERVIEW } from "@/mockup/handover-overview";
-import { MOCK_WARDS } from "@/mockup/wards";
-import { loadWards } from "@/lib/ward-assignments";
+import { useAuthStore } from "@/features/auth/stores/auth";
 import type { NursingRecord } from "@/features/dashboard/types/record";
 import type {
   HandoverPatient,
   HandoverSummary,
 } from "@/features/handover/types/handover";
-import type { Ward } from "@/features/patient/types/patient";
 
 // 환자별 간호 기록을 조회 (patientId 미지정 레코드는 p1 소속)
 function getRecordsForPatient(patientId: string): NursingRecord[] {
@@ -46,11 +44,7 @@ function findSummary(patientId: string): HandoverSummary | undefined {
 
 export function HandoverView() {
   const router = useRouter();
-  const currentUser =
-    typeof window !== "undefined"
-      ? localStorage.getItem("currentUser") || "김영희"
-      : "김영희";
-  const [wards, setWards] = useState<Ward[]>(MOCK_WARDS);
+  const currentUser = useAuthStore((state) => state.user?.name ?? "");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(
     null,
@@ -61,22 +55,13 @@ export function HandoverView() {
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    setWards(loadWards());
-  }, []);
-
-  // wards 에서 내 담당 환자 id 추출 → HANDOVER_PATIENTS 와 조인 → 가나다순 정렬
+  // 인계 환자 본 컨텐츠 (HANDOVER_*) 가 mockup 인 동안엔 mockup 자체의 assignedNurse 로 필터링.
+  // 본 컨텐츠가 API 화 되면 useWardPatients 의 isMyPatient 로 교체 예정.
   const myPatients = useMemo<HandoverPatient[]>(() => {
-    const myIds = new Set(
-      wards
-        .flatMap((ward) => ward.rooms.flatMap((room) => room.patients))
-        .filter((patient) => patient.assignedNurse === currentUser)
-        .map((patient) => patient.id),
-    );
-    return HANDOVER_PATIENTS.filter((hp) => myIds.has(hp.id))
+    return HANDOVER_PATIENTS.filter((hp) => hp.assignedNurse === currentUser)
       .slice()
       .sort((a, b) => a.name.localeCompare(b.name, "ko"));
-  }, [wards, currentUser]);
+  }, [currentUser]);
 
   const filteredPatients = useMemo(() => {
     const query = searchQuery.trim();
