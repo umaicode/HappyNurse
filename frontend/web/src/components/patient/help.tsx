@@ -45,7 +45,7 @@ export default function Help() {
   const hasRequest = !!selectedSymptom || !!directInput.trim();
 
   return (
-    <div className="flex flex-1 flex-col gap-5 px-[22px] pt-5 pb-[50px]">
+    <div className="flex flex-1 min-h-0 flex-col gap-5 px-[22px] pt-5 pb-[50px]">
       <div className="relative flex h-12 items-center justify-center">
         <button
           type="button"
@@ -184,7 +184,7 @@ export default function Help() {
           </button>
         </div>
       ) : (
-        <div className="flex flex-1 mt-2 flex-col gap-[17px] overflow-auto">
+        <div className="flex flex-1 min-h-0 mt-2 flex-col gap-[17px] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {faqs.length === 0 ? (
             <p className="py-10 text-center text-lg font-bold text-patient-muted">
               등록된 FAQ가 없습니다.
