@@ -42,3 +42,6 @@ src/main/resources/application.yml
 ### docs ###
 /docs/superpowers
 /sc
+
+### gitignore
+src/main/resources/
