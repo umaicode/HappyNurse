@@ -10,8 +10,21 @@
  */
 import axios, { AxiosError, AxiosRequestConfig } from 'axios'
 
+// 로컬(localhost) 환경에서는 same-origin 프록시(/api-proxy)로 보내고,
+// 배포 환경(dev/prod)에서는 절대 URL 로 직접 호출한다.
+// 로컬은 백엔드와 도메인이 달라 SameSite=Lax 쿠키가 차단되므로 Next.js rewrite 를 거쳐 same-origin 으로 만든다.
+const resolveBaseUrl = (): string => {
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname === 'localhost'
+  ) {
+    return '/api-proxy'
+  }
+  return process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
+}
+
 export const client = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  baseURL: resolveBaseUrl(),
   withCredentials: true,
 })
 
