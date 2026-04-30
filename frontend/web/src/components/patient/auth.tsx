@@ -75,15 +75,16 @@ export default function Auth() {
         birthDate: birthDigits.join(""),
       });
       const params = new URLSearchParams({
-        name: info.patientName,
-        roomName: info.roomName,
-        gender: info.gender,
-        diseaseName: info.diseaseName,
-        surgeryName: info.surgeryName,
-        chiefComplaint: info.chiefComplaint,
-        assignedNurseName: info.assignedNurseName,
+        patientId: String(verified.patientId),
+        name: verified.patientName,
+        roomName: verified.roomName,
+        gender: verified.gender,
+        diseaseName: verified.diseaseName,
+        surgeryName: verified.surgeryName ?? "",
+        chiefComplaint: verified.chiefComplaint,
+        assignedNurseName: verified.assignedNurseName,
       });
-      router.push(`/patient/help?${query.toString()}`);
+      router.push(`/patient/help?${params.toString()}`);
     } catch {
       setErrorMessage("이름 또는 생년월일이 일치하지 않습니다.");
     } finally {

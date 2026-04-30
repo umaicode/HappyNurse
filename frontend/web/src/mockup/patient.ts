@@ -1,14 +1,3 @@
-export const symptomsMock = [
-  { id: "pain", label: "통증", sub: "약물 요청" },
-  { id: "toilet", label: "화장실", sub: "이동 도움" },
-  { id: "dressing", label: "드레싱", sub: "드레싱 교체" },
-  { id: "iv", label: "수액", sub: "수액 점검" },
-  { id: "position", label: "체위 변경", sub: "자세 도움" },
-  { id: "breathing", label: "호흡 불편", sub: "응급 요청" },
-] as const;
-
-export type SymptomId = (typeof symptomsMock)[number]["id"];
-
 export type FaqItem = {
   id: string;
   question: string;

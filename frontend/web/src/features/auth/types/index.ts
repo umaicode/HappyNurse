@@ -77,4 +77,11 @@ export interface PatientInfo {
   patientId: number;
   patientName: string;
   roomName: string;
+  gender: string;
+  departmentCode: string;
+  diseaseName: string;
+  chiefComplaint: string;
+  // 수술 없는 환자는 null
+  surgeryName: string | null;
+  assignedNurseName: string;
 }
