@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
@@ -271,15 +272,37 @@ public class WebappServiceTest {
     }
 
     @Test
-    @DisplayName("증상 제출: buttonId와 symptomText 둘 다 입력 -> SYMPTOM_INPUT_INVALID")
-    void submitSymptom_bothInputs() {
+    @DisplayName("증상 제출: 버튼 + 텍스트 동시 입력 성공 — 합쳐진 텍스트로 저장")
+    void submitSymptom_buttonAndText_success() {
+        // given
+        Patient patient = createPatient(1L);
+        Practitioner nurse = createPractitioner(10L);
+        Encounter encounter = createEncounterWithWard(patient, "김가민", "301호", 3L, nurse);
+        QuickSymptomButton button = createButton(1L, "드레싱 교체", 1);
+        PatientSelfReport savedReport = createSavedReport(44L, LocalDateTime.now());
+
+        given(patientRepository.findById(1L)).willReturn(Optional.of(patient));
+        given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
+                .willReturn(Optional.of(encounter));
+        given(quickSymptomButtonRepository.findById(1L)).willReturn(Optional.of(button));
+        given(patientSelfReportRepository.save(any())).willReturn(savedReport);
+
         SymptomSubmitRequest request = new SymptomSubmitRequest();
         request.setButtonId(1L);
-        request.setSymptomText("열이 납니다");
+        request.setSymptomText("특히 왼쪽 다리가 심합니다");
 
-        assertThatThrownBy(() -> webAppService.submitSymptom(1L, 1L, request))
-                .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SYMPTOM_INPUT_INVALID);
+        // when
+        SymptomSubmitResponse response = webAppService.submitSymptom(1L, 1L, request);
+
+        // then
+        assertThat(response.getSelfReportId()).isEqualTo(44L);
+
+        ArgumentCaptor<PatientSelfReport> reportCaptor = ArgumentCaptor.forClass(PatientSelfReport.class);
+        verify(patientSelfReportRepository).save(reportCaptor.capture());
+        assertThat(reportCaptor.getValue().getSymptomText())
+                .isEqualTo("드레싱 교체 - 특히 왼쪽 다리가 심합니다");
+        verify(notificationRepository).save(any(Notification.class));
+        verify(eventPublisher).publishEvent(any(SymptomSubmittedEvent.class));
     }
 
     @Test

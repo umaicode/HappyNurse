@@ -135,7 +135,7 @@ public class WebappService {
 
         boolean hasButton = request.getButtonId() != null;
         boolean hasText = request.getSymptomText() != null && !request.getSymptomText().isBlank();
-        if (hasButton == hasText) {
+        if (!hasButton && !hasText) {
             throw new CustomException(ErrorCode.SYMPTOM_INPUT_INVALID);
         }
 
@@ -152,7 +152,9 @@ public class WebappService {
         if (hasButton) {
             button = quickSymptomButtonRepository.findById(request.getButtonId())
                     .orElseThrow(() -> new CustomException(ErrorCode.BUTTON_NOT_FOUND));
-            symptomText = button.getLabel();
+            symptomText = hasText
+                    ? button.getLabel() + " - " + request.getSymptomText()
+                    : button.getLabel();
             inputMethod = InputMethod.quick_button;
         } else {
             symptomText = request.getSymptomText();

@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @ConditionalOnProperty(name = "app.dev.enabled", havingValue = "true")
-@Tag(name = "Dev", description = "[개발용] 개발 환경 전용 API")
+@Tag(name = "Patient Webapp", description = "[개발용] 개발 환경 전용 API")
 @RestController
 @RequiredArgsConstructor
 @Slf4j
