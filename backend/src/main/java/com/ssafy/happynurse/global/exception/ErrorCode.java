@@ -42,6 +42,9 @@ public enum ErrorCode implements ResponseCode {
     // Business (409)
     DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "이미 존재하는 리소스입니다."),
 
+    // NFC
+    NFC_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "유효하지 않은 NFC 토큰입니다."),
+
     // Patient
     PATIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "환자를 찾을 수 없습니다."),
     PATIENT_INACTIVE(HttpStatus.BAD_REQUEST, "비활성화된 환자입니다."),

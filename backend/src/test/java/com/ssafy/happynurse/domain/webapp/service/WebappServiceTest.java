@@ -67,14 +67,15 @@ public class WebappServiceTest {
     @DisplayName("NFC 진입: 정상 조회 시 환자 이름과 병실 반환")
     void nfcEntry_success() {
         // given
+        String token = "valid-nfc-token-123";
         Patient patient = createPatient(1L);
         Encounter encounter = createEncounter(patient, "김가민", LocalDate.of(2001, 4, 29), "301호실");
 
-        given(patientRepository.findById(1L)).willReturn(Optional.of(patient));
+        given(patientRepository.findByNfcToken(token)).willReturn(Optional.of(patient));
         given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)).willReturn(Optional.of(encounter));
 
         // when
-        NfcEntryResponse response = webAppService.getPatientEntry(1L);
+        NfcEntryResponse response = webAppService.getPatientEntry(token);
 
         // then
         assertThat(response.getPatientName()).isEqualTo("김가민");
@@ -82,26 +83,28 @@ public class WebappServiceTest {
     }
 
     @Test
-    @DisplayName("NFC 진입: 존재하지 않는 환자 -> PATIENT_NOT_FOUND")
-    void nfcEntry_patientNotFound() {
-        given(patientRepository.findById(99L)).willReturn(Optional.empty());
+    @DisplayName("NFC 진입: 유효하지 않은 토큰 -> NFC_TOKEN_INVALID")
+    void nfcEntry_tokenInvalid() {
+        String token = "invalid-nfc-token-999";
+        given(patientRepository.findByNfcToken(token)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> webAppService.getPatientEntry(99L))
+        assertThatThrownBy(() -> webAppService.getPatientEntry(token))
                 .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PATIENT_NOT_FOUND);
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NFC_TOKEN_INVALID);
     }
 
     @Test
     @DisplayName("NFC 진입: 활성 입원 없음 -> ENCOUNTER_NOT_FOUND")
     void nfcEntry_encounterNotFound() {
         // given
+        String token = "valid-nfc-token-123";
         Patient patient = createPatient(1L);
 
-        given(patientRepository.findById(1L)).willReturn(Optional.of(patient));
+        given(patientRepository.findByNfcToken(token)).willReturn(Optional.of(patient));
         given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)).willReturn(Optional.empty());
 
         // then
-        assertThatThrownBy(() -> webAppService.getPatientEntry(1L))
+        assertThatThrownBy(() -> webAppService.getPatientEntry(token))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ENCOUNTER_NOT_FOUND);
     }
