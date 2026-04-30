@@ -46,6 +46,10 @@ public class MedicationAdministration {
     @JoinColumn(name = "medication_id", nullable = false)
     private Medication medication;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32)
+    private RecordStatus status;
+
     @Column(name = "effective_datetime", nullable = false)
     private LocalDateTime effectiveDatetime; // 투약 시각
 
