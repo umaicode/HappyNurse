@@ -44,26 +44,26 @@ public class WebappService {
     private final NotificationRepository notificationRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    public NfcEntryResponse getPatientEntry(Long patientId) {
-        Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
+    public NfcEntryResponse getPatientEntry(String token) {
+        Patient patient = patientRepository.findByNfcToken(token)
+            .orElseThrow(() -> new CustomException(ErrorCode.NFC_TOKEN_INVALID));
 
         Encounter encounter = encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)
-                .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
+            .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
 
         return new NfcEntryResponse(
-                patientId,
-                encounter.getName(),
-                encounter.getRoom().getRoomName()
+            patient.getPatientId(),
+            encounter.getName(),
+            encounter.getRoom().getRoomName()
         );
     }
 
     public PatientVerifyResult verifyPatient(PatientVerifyRequest request) {
         Patient patient = patientRepository.findById(request.getPatientId())
-                .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
+            .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
 
         Encounter encounter = encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)
-                .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
+            .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
 
         boolean nameMatch = encounter.getName().equals(request.getName());
         boolean birthMatch = encounter.getBirthDate().format(BIRTH_FORMATTER).equals(request.getBirthDate());
@@ -88,8 +88,8 @@ public class WebappService {
                 encounter.getChiefComplaint(),
                 encounter.getSurgeryName(),
 //                encounter.getAssignedPractitioner().getName()
-                // NullPointerException 해결
-                assignedPractitioner != null ? assignedPractitioner.getName() : null
+            // NullPointerException 해결
+            assignedPractitioner != null ? assignedPractitioner.getName() : null
         );
 
     }
@@ -122,9 +122,9 @@ public class WebappService {
 
     public List<SymptomButtonResponse> getButtons() {
         return quickSymptomButtonRepository.findAllByOrderByDisplayOrderAsc()
-                .stream()
-                .map(SymptomButtonResponse::from)
-                .toList();
+            .stream()
+            .map(SymptomButtonResponse::from)
+            .toList();
     }
 
     @Transactional
@@ -140,10 +140,10 @@ public class WebappService {
         }
 
         Patient patient = patientRepository.findById(jwtPatientId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
+            .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
 
         Encounter encounter = encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)
-                .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
+            .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
 
         QuickSymptomButton button = null;
         String symptomText;
