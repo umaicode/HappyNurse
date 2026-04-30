@@ -72,6 +72,9 @@ public class WebappService {
 
         String token = jwtTokenProvider.createPatientToken(request.getPatientId(), encounter.getName());
 
+        // NullPointerException 해결
+        Practitioner assignedPractitioner = encounter.getAssignedPractitioner();
+
         return new PatientVerifyResult(
                 token,
                 request.getPatientId(),
@@ -82,7 +85,9 @@ public class WebappService {
                 encounter.getDiseaseName(),
                 encounter.getChiefComplaint(),
                 encounter.getSurgeryName(),
-                encounter.getAssignedPractitioner().getName()
+//                encounter.getAssignedPractitioner().getName()
+                // NullPointerException 해결
+                assignedPractitioner != null ? assignedPractitioner.getName() : null
         );
 
     }
