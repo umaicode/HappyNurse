@@ -20,6 +20,7 @@ import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
 import com.ssafy.happynurse.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -90,6 +92,32 @@ public class WebappService {
                 assignedPractitioner != null ? assignedPractitioner.getName() : null
         );
 
+    }
+
+    public PatientVerifyResult devVerify(Long patientId) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
+
+        Encounter encounter = encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)
+                .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
+
+        log.warn("[DEV] dev-verify issued (verification skipped) — patientId={}", patientId);
+
+        String token = jwtTokenProvider.createPatientToken(patientId, encounter.getName());
+
+        Practitioner assignedPractitioner = encounter.getAssignedPractitioner();
+        return new PatientVerifyResult(
+                token,
+                patientId,
+                encounter.getName(),
+                encounter.getRoom().getRoomName(),
+                encounter.getGender().name(),
+                encounter.getDepartmentCode(),
+                encounter.getDiseaseName(),
+                encounter.getChiefComplaint(),
+                encounter.getSurgeryName(),
+                assignedPractitioner != null ? assignedPractitioner.getName() : null
+        );
     }
 
     public List<SymptomButtonResponse> getButtons() {

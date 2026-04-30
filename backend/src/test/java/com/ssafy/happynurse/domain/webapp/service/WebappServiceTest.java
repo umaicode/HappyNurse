@@ -290,6 +290,49 @@ public class WebappServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SYMPTOM_INPUT_INVALID);
     }
 
+    @Test
+    @DisplayName("devVerify: patientId만으로 토큰과 환자 정보 반환")
+    void devVerify_success() {
+        Patient patient = createPatient(1L);
+        Encounter encounter = createEncounterForVerify(patient);
+
+        given(patientRepository.findById(1L)).willReturn(Optional.of(patient));
+        given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
+                .willReturn(Optional.of(encounter));
+        given(jwtTokenProvider.createPatientToken(1L, "김가민")).willReturn("mock-dev-token");
+
+        PatientVerifyResult result = webAppService.devVerify(1L);
+
+        assertThat(result.getToken()).isEqualTo("mock-dev-token");
+        assertThat(result.getPatientId()).isEqualTo(1L);
+        assertThat(result.getPatientName()).isEqualTo("김가민");
+        assertThat(result.getRoomName()).isEqualTo("301호실");
+        assertThat(result.getDiseaseName()).isEqualTo("퇴행성 무릎 관절염");
+    }
+
+    @Test
+    @DisplayName("devVerify: 존재하지 않는 환자 → PATIENT_NOT_FOUND")
+    void devVerify_patientNotFound() {
+        given(patientRepository.findById(99L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> webAppService.devVerify(99L))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PATIENT_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("devVerify: 활성 입원 없음 → ENCOUNTER_NOT_FOUND")
+    void devVerify_encounterNotFound() {
+        Patient patient = createPatient(1L);
+        given(patientRepository.findById(1L)).willReturn(Optional.of(patient));
+        given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> webAppService.devVerify(1L))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ENCOUNTER_NOT_FOUND);
+    }
+
     // 헬퍼 함수
     private Patient createPatient(Long id) {
         try {
