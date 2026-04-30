@@ -65,5 +65,6 @@ logging:
 app:
   dev:
     enabled: true
-  nfc-secret: ${NFC-SECRET}
-  webapp-base-url: ${WEBAPP-BASE-URL}
+  nfc-secret: ${NFC_SECRET}
+  webapp-base-url: ${WEBAPP_BASE_URL}
+  
