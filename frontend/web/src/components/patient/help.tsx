@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, ChevronLeft, Mic } from "lucide-react";
-import { faqMock } from "@/mockup/patient";
-import { getButtons, submitSymptom } from "@/features/patient/api";
-import type { SymptomButton } from "@/features/patient/types/patient";
-import { formatHHmm } from "@/lib/time";
+import { faqMock, symptomsMock } from "@/mockup/patient";
 
 type TabKey = "form" | "faq";
+
+const genderLabel = (gender: string): string => {
+  if (gender === "male") return "남";
+  if (gender === "female") return "여";
+  return "";
+};
 
 export default function Help() {
   const router = useRouter();
@@ -16,15 +19,16 @@ export default function Help() {
   const patientId = Number(searchParams.get("patientId"));
   const patientName = searchParams.get("name") ?? "";
   const roomName = searchParams.get("roomName") ?? "";
+  const gender = searchParams.get("gender") ?? "";
+  const diseaseName = searchParams.get("diseaseName") ?? "";
+  const surgeryName = searchParams.get("surgeryName") ?? "";
+  const chiefComplaint = searchParams.get("chiefComplaint") ?? "";
   const assignedNurseName = searchParams.get("assignedNurseName") ?? "";
-
-  const [buttons, setButtons] = useState<SymptomButton[]>([]);
-  const [selectedButtonId, setSelectedButtonId] = useState<number | null>(null);
+  const [selectedSymptom, setSelectedSymptom] = useState<string | null>(null);
   const [directInput, setDirectInput] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("form");
   const [openFaqId, setOpenFaqId] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const faqs = faqMock;
 
@@ -40,42 +44,30 @@ export default function Help() {
     setSelectedButtonId((prev) => (prev === buttonId ? null : buttonId));
   };
 
-  const trimmedDirect = directInput.trim();
-  const hasRequest = selectedButtonId !== null || trimmedDirect.length > 0;
+  const handleSubmit = () => {
+    const trimmedInput = directInput.trim();
+    if (!selectedSymptom && !trimmedInput) return;
 
-  const handleSubmit = async () => {
-    if (!hasRequest || !patientId || submitting) return;
-    setSubmitting(true);
-    setErrorMessage("");
-    try {
-      const submitted = await submitSymptom(
-        patientId,
-        selectedButtonId
-          ? { buttonId: selectedButtonId }
-          : { symptomText: trimmedDirect },
-      );
-      const selected = buttons.find(
-        (button) => button.buttonId === selectedButtonId,
-      );
-      const query = new URLSearchParams({
-        name: patientName,
-        roomName,
-        assignedNurseName,
-        sentAt: formatHHmm(submitted.submittedAt),
-      });
-      if (selected) query.set("requestLabel", selected.label);
-      if (trimmedDirect && !selectedButtonId)
-        query.set("direct", trimmedDirect);
-      router.push(`/patient/complete?${query.toString()}`);
-    } catch {
-      setErrorMessage("요청을 전송할 수 없습니다. 잠시 후 다시 시도해주세요.");
-    } finally {
-      setSubmitting(false);
-    }
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const sentAt = `${hours}:${minutes}`;
+
+    const params = new URLSearchParams({
+      name: patientName,
+      roomName,
+      symptoms: selectedSymptom ?? "",
+      sentAt,
+      assignedNurseName,
+    });
+    if (trimmedInput) params.set("direct", trimmedInput);
+    router.push(`/patient/complete?${params.toString()}`);
   };
 
+  const hasRequest = !!selectedSymptom || !!directInput.trim();
+
   return (
-    <div className="flex flex-1 flex-col gap-5 px-[22px] pt-5 pb-[50px]">
+    <div className="flex flex-1 min-h-0 flex-col gap-5 px-[22px] pt-5 pb-[50px]">
       <div className="relative flex h-12 items-center justify-center">
         <button
           type="button"
@@ -91,23 +83,72 @@ export default function Help() {
       </div>
 
       <div className="flex flex-col gap-1 rounded-2xl bg-[#F9FAFB] px-4 py-2 shadow-[0_1px_6px_rgba(0,0,0,0.08)]">
-        <div className="flex flex-wrap items-center gap-1">
-          <span className="text-[22px] font-extrabold tracking-tight text-patient-ink">
-            {patientName}
-          </span>
-          <span className="rounded-full mx-1 bg-patient-slate-surface px-2 py-[2px] text-[16px] font-bold text-patient-slate">
-            {roomName}
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[22px] font-extrabold tracking-tight text-patient-ink">
+              {patientName}
+            </span>
+            {roomName ? (
+              <span className="rounded-full bg-patient-slate-surface px-2 py-[2px] text-[16px] font-bold text-patient-slate">
+                {roomName}
+              </span>
+            ) : null}
+            {gender ? (
+              <span className="rounded-full bg-patient-slate-surface px-2 py-[2px] text-[16px] font-bold text-patient-slate">
+                {genderLabel(gender)}
+              </span>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold tracking-tight text-patient-muted">
+              담당 간호사
+            </span>
+            <span className="text-lg font-bold tracking-tight text-patient-ink">
+              {assignedNurseName}
+            </span>
+          </div>
         </div>
         <div className="h-px bg-patient-hairline" />
-        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setDetailsOpen((prev) => !prev)}
+          className="flex w-full items-center gap-2 py-1 text-left"
+        >
           <span className="text-lg font-bold tracking-tight text-patient-muted">
-            담당 간호사
+            병명
           </span>
-          <span className="text-lg font-bold tracking-tight text-patient-ink">
-            {assignedNurseName || "-"}
+          <span className="text-[18px] font-bold tracking-tight text-patient-ink">
+            {diseaseName}
           </span>
-        </div>
+          <ChevronDown
+            className={`ml-auto size-4 shrink-0 text-patient-muted transition-transform duration-200 ${
+              detailsOpen ? "rotate-180" : ""
+            }`}
+            strokeWidth={2.5}
+          />
+        </button>
+        {detailsOpen ? (
+          <>
+            <div className="h-px bg-patient-hairline" />
+            <div className="flex items-center gap-2 py-1">
+              <span className="text-lg font-bold tracking-tight text-patient-muted">
+                주 증상
+              </span>
+              <span className="text-[18px] font-bold tracking-tight text-patient-ink">
+                {chiefComplaint}
+              </span>
+            </div>
+            <div className="h-px bg-patient-hairline" />
+            <div className="flex items-center gap-2 py-1">
+              <span className="text-lg font-bold tracking-tight text-patient-muted">
+                수술명
+              </span>
+              <span className="text-[18px] font-bold tracking-tight text-patient-ink">
+                {surgeryName}
+              </span>
+            </div>
+          </>
+        ) : null}
       </div>
 
       <div className="flex border-b border-patient-hairline">
@@ -217,9 +258,9 @@ export default function Help() {
           </button>
         </div>
       ) : (
-        <div className="flex flex-1 mt-2 flex-col gap-[17px] overflow-auto">
+        <div className="flex flex-1 min-h-0 mt-2 flex-col gap-[17px] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {faqs.length === 0 ? (
-            <p className="py-10 text-center text-lg font-bold text-patient-muted">
+            <p className="shrink-0 py-10 text-center text-lg font-bold text-patient-muted">
               등록된 FAQ가 없습니다.
             </p>
           ) : (
@@ -228,7 +269,7 @@ export default function Help() {
               return (
                 <div
                   key={faq.id}
-                  className="overflow-hidden rounded-xl bg-[#F8F8F8] shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
+                  className="shrink-0 overflow-hidden rounded-xl bg-[#F8F8F8] shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
                 >
                   <button
                     type="button"

@@ -74,13 +74,7 @@ export interface PatientVerifyRequest {
 
 // swagger PatientVerifyResponse 와 일치.
 export interface PatientInfo {
-  patientId: number
-  patientName: string
-  roomName: string
-  gender?: string
-  departmentCode?: string
-  diseaseName?: string
-  chiefComplaint?: string
-  surgeryName?: string | null
-  assignedNurseName?: string
+  patientId: number;
+  patientName: string;
+  roomName: string;
 }

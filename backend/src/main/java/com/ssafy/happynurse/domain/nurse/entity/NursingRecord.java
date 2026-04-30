@@ -13,7 +13,13 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "nursing_record")
+@Table(
+        name = "nursing_record",
+        indexes = {
+                @Index(name = "idx_nursing_record_encounter_status",
+                        columnList = "encounter_id, status")
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class NursingRecord {

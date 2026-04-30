@@ -48,10 +48,10 @@ jwt:
   access-token-expiration-ms: 1800000
   cookie-name: ACCESS_TOKEN
   refresh-token-expiration-ms: 604800000
+  app-refresh-token-expiration-ms: 2592000000
   refresh-cookie-name: REFRESH_TOKEN
   cookie-secure: false
   cookie-same-site: Lax
-  app-refresh-token-expiration-ms: 2592000000
 
 server:
   port: 8080

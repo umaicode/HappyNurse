@@ -1,9 +1,13 @@
-/**
- * [환자용 웹앱] FAQ 목업.
- *
- * 증상 버튼·담당 간호사 정보는 실제 API 로 대체되어 mock 이 제거됨.
- * FAQ 는 백엔드 API 미개발 상태이므로 임시로 유지한다.
- */
+export const symptomsMock = [
+  { id: "pain", label: "통증", sub: "약물 요청" },
+  { id: "toilet", label: "화장실", sub: "이동 도움" },
+  { id: "dressing", label: "드레싱", sub: "드레싱 교체" },
+  { id: "iv", label: "수액", sub: "수액 점검" },
+  { id: "position", label: "체위 변경", sub: "자세 도움" },
+  { id: "breathing", label: "호흡 불편", sub: "응급 요청" },
+] as const;
+
+export type SymptomId = (typeof symptomsMock)[number]["id"];
 
 export type FaqItem = {
   id: string;
