@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
-import { nurseMock, symptomsMock } from "@/mockup/patient";
+import { symptomsMock } from "@/mockup/patient";
 
 export default function Complete() {
   const router = useRouter();
@@ -13,6 +13,7 @@ export default function Complete() {
   const sentAt = searchParams.get("sentAt") ?? "";
   const symptomsParam = searchParams.get("symptoms") ?? "";
   const directInput = searchParams.get("direct") ?? "";
+  const assignedNurseName = searchParams.get("assignedNurseName") ?? "";
 
   const selectedIds = symptomsParam
     ? symptomsParam.split(",").filter(Boolean)
@@ -40,7 +41,7 @@ export default function Complete() {
       <div className="flex flex-1 flex-col gap-3">
         <div className="rounded-2xl border border-patient-hairline bg-white px-4 py-1">
           <Row label="환자" value={`${patientName} · ${roomName}`} />
-          <Row label="담당 간호사" value={nurseMock.name} />
+          <Row label="담당 간호사" value={assignedNurseName} />
           <Row label="전송 시각" value={sentAt} />
           <Row
             label="요청 내용"
