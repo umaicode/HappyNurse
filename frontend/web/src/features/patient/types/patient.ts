@@ -37,13 +37,6 @@ export interface Ward {
   rooms: Room[];
 }
 
-// [환자용 웹앱] NFC 진입 응답
-export interface PatientNfc {
-  patientId: number;
-  patientName: string;
-  roomName: string;
-}
-
 // [환자용 웹앱] 증상 버튼 (GET /symptoms/buttons)
 export interface SymptomButton {
   buttonId: number;
