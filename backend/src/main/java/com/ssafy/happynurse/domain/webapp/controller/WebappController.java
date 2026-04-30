@@ -120,11 +120,12 @@ public class WebappController {
             summary = "증상 제출",
             description = "환자가 증상 버튼을 선택하거나 직접 텍스트를 입력하여 증상을 제출합니다. " +
                     "제출 성공 시 같은 병동 간호사에게 실시간 SSE 알림이 전송됩니다. " +
-                    "buttonId와 symptomText 중 하나만 입력해야 합니다."
+                    "buttonId와 symptomText 중 하나 이상 입력해야 합니다. " +
+                    "둘 다 입력 시 '버튼라벨 - 추가텍스트' 형식으로 저장됩니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "증상 제출 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "입력값 오류 (버튼/텍스트 둘 다 있거나 없음)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "입력값 오류 (버튼/텍스트 둘 다 없음)"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "본인이 아닌 환자 ID 시도"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "버튼 없음 또는 활성 입원 없음")
     })
