@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Schema(description = "증상 제출 요청 (buttonId와 symptomText 중 하나만 입력)")
+@Schema(description = "증상 제출 요청 (buttonId와 symptomText 중 하나 이상 입력. 둘 다 입력 시 '버튼라벨 - 추가텍스트' 형식으로 저장)")
 @Getter
 @Setter
 @NoArgsConstructor

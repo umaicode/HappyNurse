@@ -53,6 +53,7 @@ public class SecurityConfig {
                     "/api/swagger-ui/**", "/api/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/nfc/patients/**").permitAll()    // 환자 NFC 진입
                 .requestMatchers("/patients/verify").permitAll()    // 환자 본인 확인
+                .requestMatchers("/patients/dev-verify").permitAll()    // 환자 dev 버전 본인 확인
                 .requestMatchers("/nfc/redirect").permitAll()       // NFC 진입 redirect
                 .requestMatchers(HttpMethod.GET, "/organizations").permitAll()           // 로그인 화면 병원 목록
                 .requestMatchers(HttpMethod.GET, "/organizations/*/wards").permitAll()   // 로그인 화면 병동 목록

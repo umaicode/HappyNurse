@@ -20,6 +20,7 @@ import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
 import com.ssafy.happynurse.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -92,6 +94,32 @@ public class WebappService {
 
     }
 
+    public PatientVerifyResult devVerify(Long patientId) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
+
+        Encounter encounter = encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)
+                .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
+
+        log.warn("[DEV] dev-verify issued (verification skipped) — patientId={}", patientId);
+
+        String token = jwtTokenProvider.createPatientToken(patientId, encounter.getName());
+
+        Practitioner assignedPractitioner = encounter.getAssignedPractitioner();
+        return new PatientVerifyResult(
+                token,
+                patientId,
+                encounter.getName(),
+                encounter.getRoom().getRoomName(),
+                encounter.getGender().name(),
+                encounter.getDepartmentCode(),
+                encounter.getDiseaseName(),
+                encounter.getChiefComplaint(),
+                encounter.getSurgeryName(),
+                assignedPractitioner != null ? assignedPractitioner.getName() : null
+        );
+    }
+
     public List<SymptomButtonResponse> getButtons() {
         return quickSymptomButtonRepository.findAllByOrderByDisplayOrderAsc()
             .stream()
@@ -107,7 +135,7 @@ public class WebappService {
 
         boolean hasButton = request.getButtonId() != null;
         boolean hasText = request.getSymptomText() != null && !request.getSymptomText().isBlank();
-        if (hasButton == hasText) {
+        if (!hasButton && !hasText) {
             throw new CustomException(ErrorCode.SYMPTOM_INPUT_INVALID);
         }
 
@@ -123,8 +151,10 @@ public class WebappService {
 
         if (hasButton) {
             button = quickSymptomButtonRepository.findById(request.getButtonId())
-                .orElseThrow(() -> new CustomException(ErrorCode.BUTTON_NOT_FOUND));
-            symptomText = button.getLabel();
+                    .orElseThrow(() -> new CustomException(ErrorCode.BUTTON_NOT_FOUND));
+            symptomText = hasText
+                    ? button.getLabel() + " - " + request.getSymptomText()
+                    : button.getLabel();
             inputMethod = InputMethod.quick_button;
         } else {
             symptomText = request.getSymptomText();
@@ -136,24 +166,24 @@ public class WebappService {
         Practitioner assignedPractitioner = encounter.getAssignedPractitioner();
         if (assignedPractitioner != null) {
             notificationRepository.save(Notification.create(
-                assignedPractitioner,
-                SourceType.self_report,
-                savedReport,
-                patient,
-                encounter.getName() + "님의 증상 알림",
-                symptomText
+                    assignedPractitioner,
+                    SourceType.self_report,
+                    savedReport,
+                    patient,
+                    encounter.getName() + "님의 증상 알림",
+                    symptomText
             ));
         }
 
         // 이벤트 발행 (트랜잭션 커밋 후 SseNotificationListener가 처리)
         eventPublisher.publishEvent(new SymptomSubmittedEvent(
-            assignedPractitioner != null ? assignedPractitioner.getPractitionerId() : null,
-            patient.getPatientId(),
-            encounter.getName(),
-            encounter.getRoom().getRoomName(),
-            symptomText,
-            savedReport.getSelfReportId(),
-            savedReport.getSubmittedAt()
+                assignedPractitioner != null ? assignedPractitioner.getPractitionerId() : null,
+                patient.getPatientId(),
+                encounter.getName(),
+                encounter.getRoom().getRoomName(),
+                symptomText,
+                savedReport.getSelfReportId(),
+                savedReport.getSubmittedAt()
         ));
 
         return new SymptomSubmitResponse(savedReport.getSelfReportId(), savedReport.getSubmittedAt());
