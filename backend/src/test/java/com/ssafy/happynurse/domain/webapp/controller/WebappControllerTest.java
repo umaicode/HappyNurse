@@ -55,27 +55,29 @@ public class WebappControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/nfc/patients/{id}/entry - 정상 응답")
+    @DisplayName("GET /nfc/patients/entry - 정상 응답 (토큰 기반)")
     void nfcEntry_success() throws Exception {
         // given
-        given(webappService.getPatientEntry(1L))
+        String validToken = "valid-nfc-token-123";
+        given(webappService.getPatientEntry(validToken))
                 .willReturn(new NfcEntryResponse(1L, "김가민", "301호실"));
 
         // when & then
-        mockMvc.perform(get("/nfc/patients/1/entry"))
+        mockMvc.perform(get("/nfc/patients/entry").param("token", validToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.patientName").value("김가민"))
                 .andExpect(jsonPath("$.data.roomName").value("301호실"));
     }
 
     @Test
-    @DisplayName("GET /api/nfc/patients/{id}/entry - 환자 없으면 404")
-    void nfcEntry_notFound() throws Exception {
-        given(webappService.getPatientEntry(99L))
-                .willThrow(new CustomException(ErrorCode.PATIENT_NOT_FOUND));
+    @DisplayName("GET /nfc/patients/entry - 유효하지 않은 토큰이면 400")
+    void nfcEntry_tokenInvalid() throws Exception {
+        String invalidToken = "invalid-nfc-token-999";
+        given(webappService.getPatientEntry(invalidToken))
+                .willThrow(new CustomException(ErrorCode.NFC_TOKEN_INVALID));
 
-        mockMvc.perform(get("/nfc/patients/99/entry"))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/nfc/patients/entry").param("token", invalidToken))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
