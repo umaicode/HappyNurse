@@ -77,6 +77,11 @@ export default function Auth() {
       const params = new URLSearchParams({
         name: info.patientName,
         roomName: info.roomName,
+        gender: info.gender,
+        diseaseName: info.diseaseName,
+        surgeryName: info.surgeryName,
+        chiefComplaint: info.chiefComplaint,
+        assignedNurseName: info.assignedNurseName,
       });
       router.push(`/patient/help?${params.toString()}`);
     } catch {

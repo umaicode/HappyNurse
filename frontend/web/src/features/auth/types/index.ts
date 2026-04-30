@@ -76,4 +76,10 @@ export interface PatientInfo {
   patientId: number;
   patientName: string;
   roomName: string;
+  gender: "male" | "female";
+  departmentCode: string;
+  diseaseName: string;
+  chiefComplaint: string;
+  surgeryName: string;
+  assignedNurseName: string;
 }
