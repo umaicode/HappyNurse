@@ -60,3 +60,5 @@ server:
 app:
   dev:
     enabled: false
+  nfc-secret: ${NFC-SECRET}
+  webapp-base-url: ${WEBAPP-BASE-URL}
