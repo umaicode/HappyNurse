@@ -1,9 +1,3 @@
-export const nurseMock = {
-  id: "N-017",
-  name: "문현지",
-  role: "담당 간호사",
-};
-
 export const symptomsMock = [
   { id: "pain", label: "통증", sub: "약물 요청" },
   { id: "toilet", label: "화장실", sub: "이동 도움" },
