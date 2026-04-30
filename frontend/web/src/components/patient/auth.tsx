@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Check } from "lucide-react";
-import { getNfcEntry } from "@/features/patient/api";
 import { verifyPatient } from "@/features/auth/api";
 
 export default function Auth() {
@@ -12,7 +10,6 @@ export default function Auth() {
   const patientId = Number(searchParams.get("patientId"));
   const isPrefill = searchParams.get("prefill") === "1";
 
-  const [nfcName, setNfcName] = useState("");
   const [name, setName] = useState(isPrefill ? "이승연" : "");
   const [birthDigits, setBirthDigits] = useState<string[]>(
     isPrefill ? ["9", "9", "0", "7", "2", "5"] : Array(6).fill(""),
@@ -21,13 +18,6 @@ export default function Auth() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
-
-  useEffect(() => {
-    if (!patientId) return;
-    getNfcEntry(patientId)
-      .then((info) => setNfcName(info.patientName))
-      .catch(() => setErrorMessage("환자 정보를 불러올 수 없습니다."));
-  }, [patientId]);
 
   const handleBirthChange = (index: number, value: string) => {
     const digit = value.replace(/[^0-9]/g, "").slice(-1);
@@ -98,20 +88,6 @@ export default function Auth() {
         <span className="text-sm font-extrabold tracking-wide text-patient-primary">
           환자용
         </span>
-      </div>
-
-      <div className="flex items-center gap-4 rounded-2xl bg-[#F9FAFB] px-4 py-3.5 shadow-[0_1px_6px_rgba(0,0,0,0.08)]">
-        <div className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-[#497461] text-white">
-          <Check className="size-4" strokeWidth={3.5} />
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-lg font-extrabold tracking-wide text-[#497461]">
-            NFC 태깅 완료
-          </span>
-          <span className="text-lg font-bold text-patient-ink">
-            {nfcName ? `${nfcName}님의 팔찌가 인식되었습니다` : "팔찌 정보를 불러오는 중입니다"}
-          </span>
-        </div>
       </div>
 
       <h1 className="mt-15 text-[22px] leading-[1.35] font-extrabold tracking-tight text-patient-ink">
