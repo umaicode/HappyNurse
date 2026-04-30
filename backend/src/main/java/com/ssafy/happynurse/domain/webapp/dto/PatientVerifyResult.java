@@ -11,4 +11,10 @@ public class PatientVerifyResult {
     private Long patientId;
     private String patientName;
     private String roomName;
+    private String gender;
+    private String departmentCode;
+    private String diseaseName;
+    private String chiefComplaint;
+    private String surgeryName;
+    private String assignedNurseName;
 }

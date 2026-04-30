@@ -16,7 +16,7 @@ pipeline {
     environment {
         DEPLOY_ENV = "${env.JOB_NAME == 'prod-deploy' ? 'prod' : 'dev'}"
         BUILD_TIME = sh(script: "TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S'", returnStdout: true).trim()
-        INFRA_DIR = "/home/deploy/infra"
+        INFRA_DIR = '/home/deploy/infra'
     }
 
     stages {
@@ -26,14 +26,14 @@ pipeline {
                     // 짧은 커밋 SHA (8자리)
                     env.GIT_COMMIT_SHORT = env.GIT_COMMIT ? env.GIT_COMMIT.substring(0, 8) : 'unknown'
 
-                    echo "============================================"
+                    echo '============================================'
                     echo " Build #${env.BUILD_NUMBER}"
                     echo " Job Name     : ${env.JOB_NAME}"
                     echo " Deploy Env   : ${env.DEPLOY_ENV}"
                     echo " Build Time   : ${env.BUILD_TIME} (KST)"
                     echo " Commit       : ${env.GIT_COMMIT_SHORT}"
                     echo " Prev Success : ${env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: 'none (first build)'}"
-                    echo "============================================"
+                    echo '============================================'
                 }
             }
         }
@@ -45,7 +45,7 @@ pipeline {
                     def curr = env.GIT_COMMIT
 
                     if (!prev) {
-                        echo ">>> No previous successful build. Building ALL services."
+                        echo '>>> No previous successful build. Building ALL services.'
                         env.CHANGED_BACKEND = 'true'
                         env.CHANGED_AI = 'true'
                         env.CHANGED_FRONTEND = 'true'
@@ -69,14 +69,14 @@ pipeline {
                             it.startsWith('infra/')
                         }
                         if (infraChanged) {
-                            echo ">>> Jenkinsfile or infra/ changed. Rebuilding ALL services."
+                            echo '>>> Jenkinsfile or infra/ changed. Rebuilding ALL services.'
                             env.CHANGED_BACKEND = 'true'
                             env.CHANGED_AI = 'true'
                             env.CHANGED_FRONTEND = 'true'
                         }
                     }
 
-                    echo ">>> Build plan:"
+                    echo '>>> Build plan:'
                     echo "    backend  : ${env.CHANGED_BACKEND}"
                     echo "    ai       : ${env.CHANGED_AI}"
                     echo "    frontend : ${env.CHANGED_FRONTEND}"
@@ -128,20 +128,36 @@ pipeline {
                     when { environment name: 'CHANGED_FRONTEND', value: 'true' }
                     steps {
                         script {
-                            def tag     = "${env.DEPLOY_ENV}-${env.GIT_COMMIT_SHORT}"
-                            def latest  = "${env.DEPLOY_ENV}-latest"
-                            // dev는 /dev prefix, prod는 root에서 서비스
-                            def basePath = env.DEPLOY_ENV == 'dev' ? '/dev' : ''
+                            def tag      = "${env.DEPLOY_ENV}-${env.GIT_COMMIT_SHORT}"
+                            def latest   = "${env.DEPLOY_ENV}-latest"
 
-                            echo ">>> [FRONTEND] Building happynurse-frontend:${tag} (basePath='${basePath}')"
-                            sh """
-                                cd frontend/web
-                                docker build \\
-                                    --build-arg NEXT_PUBLIC_BASE_PATH=${basePath} \\
-                                    -t happynurse-frontend:${tag} \\
-                                    -t happynurse-frontend:${latest} \\
-                                    .
-                            """
+                            // 환경별 변수 결정
+                            def basePath, apiUrl, aiUrl, appEnv
+                            if (env.DEPLOY_ENV == 'dev') {
+                                basePath = '/dev'
+                                apiUrl   = 'https://k14e101.p.ssafy.io/dev/api'
+                                aiUrl    = 'https://k14e101.p.ssafy.io/dev/ai'
+                                appEnv   = 'dev'
+                            } else {
+                                basePath = ''
+                                apiUrl   = 'https://k14e101.p.ssafy.io/api'
+                                aiUrl    = 'https://k14e101.p.ssafy.io/ai'
+                                appEnv   = 'prod'
+                            }
+
+                            echo ">>> [FRONTEND] Building happynurse-frontend:${tag}"
+                            echo "    basePath: ${basePath}, apiUrl: ${apiUrl}, aiUrl: ${aiUrl}, appEnv: ${appEnv}"
+
+                            def buildArgs = [
+                                "--build-arg NEXT_PUBLIC_BASE_PATH=${basePath}",
+                                "--build-arg NEXT_PUBLIC_API_BASE_URL=${apiUrl}",
+                                "--build-arg NEXT_PUBLIC_AI_BASE_URL=${aiUrl}",
+                                "--build-arg NEXT_PUBLIC_APP_ENV=${appEnv}",
+                                "-t happynurse-frontend:${tag}",
+                                "-t happynurse-frontend:${latest}"
+                            ].join(' ')
+
+                            sh "cd frontend/web && docker build ${buildArgs} ."
                         }
                     }
                 }
@@ -152,7 +168,7 @@ pipeline {
             steps {
                 script {
                     // 배포 스크립트에 실행권한 부여 (Windows 체크아웃 대비)
-                    sh "chmod +x infra/scripts/deploy.sh"
+                    sh 'chmod +x infra/scripts/deploy.sh'
 
                     // 순차 배포 (Nginx reload 충돌 방지)
                     if (env.CHANGED_BACKEND == 'true') {
@@ -176,7 +192,7 @@ pipeline {
                 script {
                     // 이전 버전 이미지 정리 (디스크 공간 확보)
                     // 같은 서비스/env의 :latest 아닌 태그 중 오래된 것 제거 (최근 3개만 유지)
-                    echo ">>> Pruning old images"
+                    echo '>>> Pruning old images'
                     sh '''
                         for svc in backend ai frontend; do
                             docker images "happynurse-${svc}" --format "{{.Repository}}:{{.Tag}}\\t{{.CreatedAt}}" | \
@@ -198,16 +214,27 @@ pipeline {
     post {
         success {
             script {
-                notifyMattermost('SUCCESS')
+                def hasChanges = (env.CHANGED_BACKEND  == 'true' ||
+                          env.CHANGED_AI       == 'true' ||
+                          env.CHANGED_FRONTEND == 'true')
+                def durationMs = currentBuild.duration ?: 0
+
+                // 변경 없거나, 30초 미만 빌드는 빈 트리거로 간주
+                if (!hasChanges || durationMs < 30000) {
+                    echo "[SKIP NOTIFY] No real work done (changes=${hasChanges}, duration=${durationMs}ms)"
+        } else {
+                    notifyMattermost('SUCCESS')
+                }
             }
             echo "[SUCCESS] Build #${env.BUILD_NUMBER} deployed to ${env.DEPLOY_ENV}"
         }
         failure {
             script {
+                // 실패는 항상 알림 (변경 없어도 실패면 시스템 이상)
                 notifyMattermost('FAILURE')
             }
             echo "[FAILURE] Build #${env.BUILD_NUMBER} FAILED for ${env.DEPLOY_ENV}"
-            echo "Check deploy.sh output above for rollback status."
+            echo 'Check deploy.sh output above for rollback status.'
         }
         always {
             echo "Pipeline finished at ${env.BUILD_TIME}"
@@ -226,7 +253,7 @@ def notifyMattermost(String result) {
 
     // ─── 커스텀 이모지 및 큰 헤더 (초록/빨강 박스 안쪽) ───
     def jenkinsEmoji = isSuccess ? ':jenkins_muscle:' : ':jenkins5:'
-    def headerText = isSuccess 
+    def headerText = isSuccess
         ? "# ${jenkinsEmoji} ${envLabel} 배포 뿌슝빠슝"
         : "# ${jenkinsEmoji} ${envLabel} 안되잖아 다시해"
 
@@ -241,7 +268,7 @@ def notifyMattermost(String result) {
         } else if (klass.contains('TimerTrigger')) {
             triggerText = 'Cron Schedule'
         } else if (klass.contains('GitLab') || (first.shortDescription?.toString()?.contains('GitLab'))) {
-            triggerText = "GitLab Webhook"
+            triggerText = 'GitLab Webhook'
         } else {
             triggerText = first.shortDescription?.toString() ?: 'Unknown'
         }
@@ -286,11 +313,11 @@ def notifyMattermost(String result) {
     def text = "${headerText}\n\n> *${commitMsg}*\n\n"
 
     if (isSuccess) {
-        text += "**Service Links**\n"
+        text += '**Service Links**\n'
         if (env.DEPLOY_ENV == 'dev') {
-            text += "[Frontend](https://k14e101.p.ssafy.io/dev/)  |  [Swagger](https://k14e101.p.ssafy.io/dev/api/swagger-ui.html)  |  [AI](https://k14e101.p.ssafy.io/dev/ai/)"
+            text += '[Frontend](https://k14e101.p.ssafy.io/dev/)  |  [Swagger](https://k14e101.p.ssafy.io/dev/api/swagger-ui.html)  |  [AI](https://k14e101.p.ssafy.io/dev/ai/)'
         } else {
-            text += "[Frontend](https://k14e101.p.ssafy.io/)  |  [AI](https://k14e101.p.ssafy.io/ai/)"
+            text += '[Frontend](https://k14e101.p.ssafy.io/)  |  [AI](https://k14e101.p.ssafy.io/ai/)'
         }
     } else {
         def errorLine = sh(
@@ -337,6 +364,3 @@ def notifyMattermost(String result) {
         '''
     }
 }
-
-
-

@@ -5,7 +5,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import type { Patient } from '../types'
+import type { Patient } from '../types/patient'
 
 export function Table({ data }: { data: Patient[] }) {
   const router = useRouter()

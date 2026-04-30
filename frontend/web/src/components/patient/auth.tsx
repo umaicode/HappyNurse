@@ -1,16 +1,33 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
-import { patientMock } from "@/mockup/patient";
+import { getNfcEntry } from "@/features/patient/api";
+import { verifyPatient } from "@/features/auth/api";
 
 export default function Auth() {
   const router = useRouter();
-  const [name, setName] = useState(patientMock.name);
-  const [birthDigits, setBirthDigits] = useState<string[]>(Array(6).fill(""));
+  const searchParams = useSearchParams();
+  const patientId = Number(searchParams.get("patientId"));
+  const isPrefill = searchParams.get("prefill") === "1";
+
+  const [nfcName, setNfcName] = useState("");
+  const [name, setName] = useState(isPrefill ? "이승연" : "");
+  const [birthDigits, setBirthDigits] = useState<string[]>(
+    isPrefill ? ["9", "9", "0", "7", "2", "5"] : Array(6).fill(""),
+  );
   const [focusIdx, setFocusIdx] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  useEffect(() => {
+    if (!patientId) return;
+    getNfcEntry(patientId)
+      .then((info) => setNfcName(info.patientName))
+      .catch(() => setErrorMessage("환자 정보를 불러올 수 없습니다."));
+  }, [patientId]);
 
   const handleBirthChange = (index: number, value: string) => {
     const digit = value.replace(/[^0-9]/g, "").slice(-1);
@@ -45,7 +62,34 @@ export default function Auth() {
   };
 
   const filledCount = birthDigits.filter(Boolean).length;
-  const isComplete = filledCount === 6;
+  const isComplete = filledCount === 6 && name.trim().length > 0;
+
+  const handleSubmit = async () => {
+    if (!isComplete || !patientId || submitting) return;
+    setSubmitting(true);
+    setErrorMessage("");
+    try {
+      const info = await verifyPatient({
+        patientId,
+        name: name.trim(),
+        birthDate: birthDigits.join(""),
+      });
+      const params = new URLSearchParams({
+        name: info.patientName,
+        roomName: info.roomName,
+        gender: info.gender,
+        diseaseName: info.diseaseName,
+        surgeryName: info.surgeryName,
+        chiefComplaint: info.chiefComplaint,
+        assignedNurseName: info.assignedNurseName,
+      });
+      router.push(`/patient/help?${params.toString()}`);
+    } catch {
+      setErrorMessage("이름 또는 생년월일이 일치하지 않습니다.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-5 px-[22px] pt-5 pb-[50px]">
@@ -64,7 +108,7 @@ export default function Auth() {
             NFC 태깅 완료
           </span>
           <span className="text-lg font-bold text-patient-ink">
-            {patientMock.name}님의 팔찌가 인식되었습니다
+            {nfcName ? `${nfcName}님의 팔찌가 인식되었습니다` : "팔찌 정보를 불러오는 중입니다"}
           </span>
         </div>
       </div>
@@ -131,14 +175,15 @@ export default function Auth() {
         <p className="mt-1 text-sm font-medium text-patient-muted">
           예&nbsp;&nbsp;010429&nbsp;&nbsp;·&nbsp;&nbsp;2001년 4월 29일생
         </p>
+        {errorMessage ? (
+          <p className="mt-1 text-sm font-bold text-red-500">{errorMessage}</p>
+        ) : null}
       </div>
 
       <button
         type="button"
-        disabled={!isComplete}
-        onClick={() =>
-          router.push(`/patient/help?name=${encodeURIComponent(name)}`)
-        }
+        disabled={!isComplete || submitting}
+        onClick={handleSubmit}
         className="mt-auto h-14 w-full rounded-[14px] bg-patient-primary text-[20px] font-bold tracking-tight text-white transition-colors hover:bg-[#0F1F7A] disabled:cursor-default disabled:bg-[#C8CBD4]"
       >
         다음

@@ -50,6 +50,9 @@ public class Patient {
     @Column(nullable = false)
     private Boolean active; // 환자 활성 상태
 
+    @Column(name="nfc_token", length=64, unique = true)
+    private String nfcToken;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -57,4 +60,8 @@ public class Patient {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public void updateNfcToken(String nfcToken){
+        this.nfcToken = nfcToken;
+    }
 }
