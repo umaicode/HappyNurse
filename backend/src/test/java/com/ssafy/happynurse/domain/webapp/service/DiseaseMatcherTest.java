@@ -40,8 +40,8 @@ public class DiseaseMatcherTest {
     public void findBestMatch_patientContainsCandidate() {
         Optional<String> best = matcher.findBestMatch(
                 "퇴행성무릎관절염",
-                List.of("퇴행성관절염"));
-        assertThat(best).hasValue("퇴행성관절염");
+                List.of("무릎관절염"));
+        assertThat(best).hasValue("무릎관절염");
     }
 
     @Test
@@ -58,8 +58,8 @@ public class DiseaseMatcherTest {
     public void findBestMatch_longestWins() {
         Optional<String> best = matcher.findBestMatch(
                 "퇴행성무릎관절염",
-                List.of("관절염", "퇴행성관절염"));
-        assertThat(best).hasValue("퇴행성관절염");
+                List.of("관절염", "무릎관절염"));
+        assertThat(best).hasValue("무릎관절염");
     }
 
     @Test
