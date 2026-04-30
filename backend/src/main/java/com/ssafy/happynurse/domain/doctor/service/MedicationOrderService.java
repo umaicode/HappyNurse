@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -22,11 +24,14 @@ public class MedicationOrderService {
     private final MedicationOrderRepository medicationOrderRepository;
     private final PatientRepository patientRepository;
 
-    public MedicationOrderListResponse getOrdersByPatientId(Long patientId) {
+    public MedicationOrderListResponse getOrdersByPatientId(Long patientId, LocalDate date) {
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
 
-        List<MedicationOrder> orders = medicationOrderRepository.findByPatientIdWithPrescriber(patientId);
+        LocalDateTime dayStart = date.atStartOfDay();
+        LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
+
+        List<MedicationOrder> orders = medicationOrderRepository.findByPatientIdAndDate(patientId, dayStart, dayEnd);
 
         List<MedicationOrderItemResponse> items = orders.stream()
                 .map(this::toItemResponse)
