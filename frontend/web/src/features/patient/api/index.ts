@@ -11,10 +11,10 @@ import {
   INITIAL_PATIENTS,
   INITIAL_PATIENT_DETAIL,
 } from "@/mockup/nurse-patients";
+import type { PatientNfc } from "@/features/auth/types";
 import type {
   Patient,
   PatientDetail,
-  PatientNfc,
   PatientQuery,
   SymptomButton,
   SymptomSubmitRequest,

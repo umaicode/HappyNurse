@@ -2,7 +2,6 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
-import { symptomsMock } from "@/mockup/patient";
 
 export default function Complete() {
   const router = useRouter();
@@ -12,19 +11,10 @@ export default function Complete() {
   const roomName = searchParams.get("roomName") ?? "";
   const assignedNurseName = searchParams.get("assignedNurseName") ?? "";
   const sentAt = searchParams.get("sentAt") ?? "";
-  const requestLabel = searchParams.get("requestLabel") ?? "";
+  const symptomLabel = searchParams.get("symptoms") ?? "";
   const directInput = searchParams.get("direct") ?? "";
-  const assignedNurseName = searchParams.get("assignedNurseName") ?? "";
 
-  const selectedIds = symptomsParam
-    ? symptomsParam.split(",").filter(Boolean)
-    : [];
-  const requestLabels = symptomsMock
-    .filter((symptom) => selectedIds.includes(symptom.id))
-    .map((symptom) => symptom.label);
-  const requestChips = directInput
-    ? [...requestLabels, directInput]
-    : requestLabels;
+  const requestChips = [symptomLabel, directInput].filter(Boolean);
 
   return (
     <div className="flex flex-1 flex-col gap-5 px-[22px] pt-5 pb-[50px]">
@@ -48,10 +38,17 @@ export default function Complete() {
             label="요청 내용"
             last
             value={
-              requestChip ? (
-                <span className="rounded-full bg-patient-slate-surface px-3 py-1 text-lg font-bold text-patient-slate">
-                  {requestChip}
-                </span>
+              requestChips.length > 0 ? (
+                <div className="flex flex-wrap justify-end gap-1.5">
+                  {requestChips.map((chip) => (
+                    <span
+                      key={chip}
+                      className="rounded-full bg-patient-slate-surface px-3 py-1 text-lg font-bold text-patient-slate"
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
               ) : (
                 <span className="text-sm font-bold tracking-tight text-patient-ink">
                   -

@@ -1,10 +1,3 @@
-/**
- * [환자용 웹앱] FAQ 목업.
- *
- * 증상 버튼·담당 간호사 정보는 실제 API 로 대체되어 mock 이 제거됨.
- * FAQ 는 백엔드 API 미개발 상태이므로 임시로 유지한다.
- */
-
 export type FaqItem = {
   id: string;
   question: string;

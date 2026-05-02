@@ -2,7 +2,7 @@
  * 인증 관련 타입 정의.
  *
  * - [간호사용 웹] LoginRequest, AuthUser, DevLoginRequest, DevLoginResponse, SignupRequest, SignupResponse
- * - [환자용 웹앱] PatientVerifyRequest, PatientInfo
+ * - [환자용 웹앱] PatientNfc, PatientVerifyRequest, PatientInfo
  *
  * 백엔드 응답 wrapper: { success, message, errorCode, data } — api 함수에서 data 만 추출하여 반환.
  */
@@ -64,7 +64,14 @@ export interface SignupResponse {
   periodStart: string;
 }
 
-// [환자용 웹앱] 본인 확인
+// [환자용 웹앱] NFC 진입 응답
+export interface PatientNfc {
+  patientId: number;
+  patientName: string;
+  roomName: string;
+}
+
+// [환자용 웹앱] 본인 확인 — 환자 웹앱 코드가 import 중.
 
 export interface PatientVerifyRequest {
   patientId: number;
@@ -77,10 +84,11 @@ export interface PatientInfo {
   patientId: number;
   patientName: string;
   roomName: string;
-  gender: "male" | "female";
+  gender: string;
   departmentCode: string;
   diseaseName: string;
   chiefComplaint: string;
-  surgeryName: string;
+  // 수술 없는 환자는 null
+  surgeryName: string | null;
   assignedNurseName: string;
 }
