@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 import { motion } from 'motion/react'
@@ -222,7 +223,7 @@ export function LoginForm() {
       {/* 좌측 상단 dev 툴: 환자 라우트 진입 + DEV 전용 동작 (운영 빌드에서는 DEV 동작은 숨김) */}
       <div className="absolute top-4 left-4 z-50 flex items-center gap-2">
         <button
-          onClick={() => router.push('/patient?patientId=2&prefill=1')}
+          onClick={() => router.push('/patient/verify?patientId=2&prefill=1')}
           className="rounded-2xl border border-action-blue-hover bg-[#e2e3e4] px-3 py-1.5 text-[22px] font-bold text-gray-600 hover:bg-[#a0afec] transition-colors"
         >
           환자 로그인
@@ -266,10 +267,12 @@ export function LoginForm() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="flex flex-col items-start"
             >
-              <img
+              <Image
                 src="/images/logo_ic.png"
                 alt=""
-                className="h-20 w-20 object-contain mb-6"
+                width={80}
+                height={80}
+                className="object-contain mb-6"
               />
               <Heading
                 level="h1"
@@ -296,10 +299,12 @@ export function LoginForm() {
         {/* Right Panel: Login Form (50%) */}
         <div className="w-full md:w-1/2 flex flex-col items-center justify-center p-8 bg-white relative z-30 md:rounded-l-[60px] shadow-[-20px_0_50px_rgba(0,0,0,0.05)] border-l border-white/20">
           <div className="absolute top-10 right-12 hidden md:block">
-            <img
+            <Image
               src="/images/logo_2.png"
               alt="해피너스"
-              className="h-4 object-contain"
+              width={120}
+              height={16}
+              className="object-contain"
             />
           </div>
 
