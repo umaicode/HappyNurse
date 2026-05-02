@@ -98,7 +98,7 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${NEW_CONTAINER}$"; then
 fi
 
 cd "$INFRA_DIR"
-COLOR="$NEW" docker compose -f "$COMPOSE_FILE" up -d --no-deps "${SERVICE}-${ENV}"
+docker compose -f "$COMPOSE_FILE" up -d --no-deps "$NEW_CONTAINER"
 
 # ──────────────────────────────────────────────
 # 3. 헬스체크 (TCP 포트 열림 확인)

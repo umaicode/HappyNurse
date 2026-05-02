@@ -20,6 +20,7 @@ import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
 import com.ssafy.happynurse.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -42,26 +44,26 @@ public class WebappService {
     private final NotificationRepository notificationRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    public NfcEntryResponse getPatientEntry(Long patientId) {
-        Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
+    public NfcEntryResponse getPatientEntry(String token) {
+        Patient patient = patientRepository.findByNfcToken(token)
+            .orElseThrow(() -> new CustomException(ErrorCode.NFC_TOKEN_INVALID));
 
         Encounter encounter = encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)
-                .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
+            .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
 
         return new NfcEntryResponse(
-                patientId,
-                encounter.getName(),
-                encounter.getRoom().getRoomName()
+            patient.getPatientId(),
+            encounter.getName(),
+            encounter.getRoom().getRoomName()
         );
     }
 
     public PatientVerifyResult verifyPatient(PatientVerifyRequest request) {
         Patient patient = patientRepository.findById(request.getPatientId())
-                .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
+            .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
 
         Encounter encounter = encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)
-                .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
+            .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
 
         boolean nameMatch = encounter.getName().equals(request.getName());
         boolean birthMatch = encounter.getBirthDate().format(BIRTH_FORMATTER).equals(request.getBirthDate());
@@ -86,17 +88,43 @@ public class WebappService {
                 encounter.getChiefComplaint(),
                 encounter.getSurgeryName(),
 //                encounter.getAssignedPractitioner().getName()
-                // NullPointerException 해결
-                assignedPractitioner != null ? assignedPractitioner.getName() : null
+            // NullPointerException 해결
+            assignedPractitioner != null ? assignedPractitioner.getName() : null
         );
 
     }
 
+    public PatientVerifyResult devVerify(Long patientId) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
+
+        Encounter encounter = encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)
+                .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
+
+        log.warn("[DEV] dev-verify issued (verification skipped) — patientId={}", patientId);
+
+        String token = jwtTokenProvider.createPatientToken(patientId, encounter.getName());
+
+        Practitioner assignedPractitioner = encounter.getAssignedPractitioner();
+        return new PatientVerifyResult(
+                token,
+                patientId,
+                encounter.getName(),
+                encounter.getRoom().getRoomName(),
+                encounter.getGender().name(),
+                encounter.getDepartmentCode(),
+                encounter.getDiseaseName(),
+                encounter.getChiefComplaint(),
+                encounter.getSurgeryName(),
+                assignedPractitioner != null ? assignedPractitioner.getName() : null
+        );
+    }
+
     public List<SymptomButtonResponse> getButtons() {
         return quickSymptomButtonRepository.findAllByOrderByDisplayOrderAsc()
-                .stream()
-                .map(SymptomButtonResponse::from)
-                .toList();
+            .stream()
+            .map(SymptomButtonResponse::from)
+            .toList();
     }
 
     @Transactional
@@ -107,15 +135,15 @@ public class WebappService {
 
         boolean hasButton = request.getButtonId() != null;
         boolean hasText = request.getSymptomText() != null && !request.getSymptomText().isBlank();
-        if (hasButton == hasText) {
+        if (!hasButton && !hasText) {
             throw new CustomException(ErrorCode.SYMPTOM_INPUT_INVALID);
         }
 
         Patient patient = patientRepository.findById(jwtPatientId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
+            .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
 
         Encounter encounter = encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)
-                .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
+            .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
 
         QuickSymptomButton button = null;
         String symptomText;
@@ -124,7 +152,9 @@ public class WebappService {
         if (hasButton) {
             button = quickSymptomButtonRepository.findById(request.getButtonId())
                     .orElseThrow(() -> new CustomException(ErrorCode.BUTTON_NOT_FOUND));
-            symptomText = button.getLabel();
+            symptomText = hasText
+                    ? button.getLabel() + " - " + request.getSymptomText()
+                    : button.getLabel();
             inputMethod = InputMethod.quick_button;
         } else {
             symptomText = request.getSymptomText();
