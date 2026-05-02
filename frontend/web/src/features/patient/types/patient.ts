@@ -24,20 +24,6 @@ export interface PatientQuery {
   search?: string;
 }
 
-export interface Room {
-  id: string;
-  name: string;
-  capacity: number;
-  patients: Patient[];
-}
-
-export interface Ward {
-  id: string;
-  name: string;
-  rooms: Room[];
-}
-
-// [환자용 웹앱] 증상 버튼 (GET /symptoms/buttons)
 export interface SymptomButton {
   buttonId: number;
   label: string;
@@ -55,4 +41,17 @@ export interface SymptomSubmitRequest {
 export interface SymptomSubmitResponse {
   selfReportId: number;
   submittedAt: string;
+}
+
+// [환자용 웹앱] FAQ 조회 (GET /patients/{patientId}/faq)
+export interface FaqItem {
+  intentLabel: string;
+  question: string;
+  answer: string;
+}
+
+export interface FaqListResponse {
+  diseaseName: string;
+  matchedFaqDisease: string | null;
+  items: FaqItem[];
 }

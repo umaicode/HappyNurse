@@ -4,10 +4,8 @@
  * - [간호사용 웹] LoginRequest, AuthUser, DevLoginRequest, DevLoginResponse, SignupRequest, SignupResponse
  * - [환자용 웹앱] PatientNfc, PatientVerifyRequest, PatientInfo
  *
- * 백엔드 응답 wrapper: { success, message, errorCode, data } — api 함수에서 data 만 추출하여 반환.
  */
 
-// roleCode: 스웨거 enum — head_nurse | nurse | doctor | admin
 export type RoleCode = "head_nurse" | "nurse" | "doctor" | "admin";
 
 // [간호사용 웹] 로그인
@@ -25,13 +23,11 @@ export interface AuthUser {
   employeeNumber: string;
   roleCode: RoleCode;
   wardId: number;
-  // /auth/login · /auth/refresh 응답에만 포함, /practitioners/me 응답엔 없음
   organizationId?: number;
-  // /practitioners/me 응답에만 포함
   wardName?: string;
 }
 
-// [간호사용 웹] DEV 로그인 (응답 body 로 토큰 반환)
+// [간호사용 웹] DEV 로그인
 
 export interface DevLoginRequest {
   employeeNumber: string;
@@ -71,15 +67,12 @@ export interface PatientNfc {
   roomName: string;
 }
 
-// [환자용 웹앱] 본인 확인 — 환자 웹앱 코드가 import 중.
-
 export interface PatientVerifyRequest {
   patientId: number;
   name: string;
   birthDate: string;
 }
 
-// swagger PatientVerifyResponse 와 일치.
 export interface PatientInfo {
   patientId: number;
   patientName: string;

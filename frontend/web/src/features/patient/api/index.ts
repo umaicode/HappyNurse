@@ -19,6 +19,7 @@ import type {
   SymptomButton,
   SymptomSubmitRequest,
   SymptomSubmitResponse,
+  FaqListResponse,
 } from "../types/patient";
 
 // [간호사용 웹] 환자 목록 / 상세
@@ -42,6 +43,13 @@ export const getNfcEntry = (token: string): Promise<PatientNfc> =>
 export const getButtons = (): Promise<SymptomButton[]> =>
   client
     .get(`/symptoms/buttons`)
+    .then((response) => response.data?.data ?? response.data);
+
+// [환자용 웹앱] FAQ 조회
+
+export const getFaq = (patientId: number): Promise<FaqListResponse> =>
+  client
+    .get(`/patients/${patientId}/faq`)
     .then((response) => response.data?.data ?? response.data);
 
 // [환자용 웹앱] 증상 제출

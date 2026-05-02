@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronLeft } from "lucide-react";
-import { faqMock } from "@/mockup/patient";
-import { getButtons, submitSymptom } from "@/features/patient/api";
+import { getButtons, getFaq, submitSymptom } from "@/features/patient/api";
 import { usePatientStore } from "@/features/patient/stores/patient";
-import type { SymptomButton } from "@/features/patient/types/patient";
+import type { FaqItem, SymptomButton } from "@/features/patient/types/patient";
 
 type TabKey = "form" | "faq";
 
@@ -42,12 +41,11 @@ export default function Help() {
   const [selectedButtonId, setSelectedButtonId] = useState<number | null>(null);
   const [directInput, setDirectInput] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("form");
-  const [openFaqId, setOpenFaqId] = useState<string | null>(null);
+  const [faqs, setFaqs] = useState<FaqItem[]>([]);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
-  const faqs = faqMock;
 
   useEffect(() => {
     getButtons()
@@ -56,6 +54,13 @@ export default function Help() {
       )
       .catch(() => setErrorMessage("증상 버튼을 불러올 수 없습니다."));
   }, []);
+
+  useEffect(() => {
+    if (!patientId) return;
+    getFaq(patientId)
+      .then((res) => setFaqs(res.items))
+      .catch(() => {});
+  }, [patientId]);
 
   const toggleSymptom = (buttonId: number) => {
     setSelectedButtonId((prev) => (prev === buttonId ? null : buttonId));
@@ -273,17 +278,17 @@ export default function Help() {
               등록된 FAQ가 없습니다.
             </p>
           ) : (
-            faqs.map((faq) => {
-              const isOpen = openFaqId === faq.id;
+            faqs.map((faq, index) => {
+              const isOpen = openFaqIndex === index;
               return (
                 <div
-                  key={faq.id}
+                  key={index}
                   className="shrink-0 overflow-hidden rounded-xl bg-[#F8F8F8] shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
                 >
                   <button
                     type="button"
                     onClick={() =>
-                      setOpenFaqId((prev) => (prev === faq.id ? null : faq.id))
+                      setOpenFaqIndex((prev) => (prev === index ? null : index))
                     }
                     className="flex w-full items-center gap-2.5 px-3.5 py-3 text-left"
                   >
