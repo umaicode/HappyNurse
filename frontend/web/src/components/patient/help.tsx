@@ -7,19 +7,26 @@ import { getButtons, getFaq, submitSymptom } from "@/features/patient/api";
 import { usePatientStore } from "@/features/patient/stores/patient";
 import type { FaqItem, SymptomButton } from "@/features/patient/types/patient";
 
-type TabKey = "form" | "faq";
+type TabKey = "form" | "faq"
 
-const genderLabel = (gender: string): string => {
-  if (gender === "male") return "남";
-  if (gender === "female") return "여";
-  return "";
-};
+const INTENT_LABEL_COLORS: Record<string, string> = {
+  "정의":      "bg-sky-100 text-sky-700",
+  "증상":      "bg-red-100 text-red-700",
+  "원인":      "bg-orange-100 text-orange-700",
+  "진단":      "bg-yellow-100 text-yellow-700",
+  "치료":      "bg-green-100 text-green-700",
+  "약물":      "bg-teal-100 text-teal-700",
+  "예방":      "bg-cyan-100 text-cyan-700",
+  "식이, 생활": "bg-lime-100 text-lime-700",
+  "운동":      "bg-violet-100 text-violet-700",
+  "재활":      "bg-purple-100 text-purple-700",
+  "검진":      "bg-pink-100 text-pink-700",
+} as const;
 
-const genderChipClass = (gender: string): string => {
-  if (gender === "male") return "bg-blue-100 text-blue-700";
-  if (gender === "female") return "bg-pink-100 text-pink-700";
-  return "bg-patient-slate-surface text-patient-slate";
-};
+const GENDER = {
+  male:   { label: "남", chip: "bg-blue-100 text-blue-700" },
+  female: { label: "여", chip: "bg-pink-100 text-pink-700" },
+} as const;
 
 export default function Help() {
   const router = useRouter();
@@ -29,14 +36,16 @@ export default function Help() {
     if (!patient) router.replace("/patient/verify");
   }, [patient, router]);
 
-  const patientId = patient?.patientId ?? 0;
-  const patientName = patient?.patientName ?? "";
-  const roomName = patient?.roomName ?? "";
-  const gender = patient?.gender ?? "";
-  const diseaseName = patient?.diseaseName ?? "";
-  const surgeryName = patient?.surgeryName ?? "";
-  const chiefComplaint = patient?.chiefComplaint ?? "";
-  const assignedNurseName = patient?.assignedNurseName ?? "";
+  const {
+    patientId = 0,
+    patientName = "",
+    roomName = "",
+    gender = "",
+    diseaseName = "",
+    surgeryName = "",
+    chiefComplaint = "",
+    assignedNurseName = "",
+  } = patient ?? {};
   const [buttons, setButtons] = useState<SymptomButton[]>([]);
   const [selectedButtonId, setSelectedButtonId] = useState<number | null>(null);
   const [directInput, setDirectInput] = useState("");
@@ -80,8 +89,7 @@ export default function Help() {
         symptomText: trimmedInput || undefined,
       });
 
-      const now = new Date();
-      const sentAt = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      const sentAt = new Date().toTimeString().slice(0, 5);
       const selectedLabel =
         buttons.find((button) => button.buttonId === selectedButtonId)?.label ?? "";
 
@@ -121,9 +129,9 @@ export default function Help() {
             </span>
             {gender ? (
               <span
-                className={`rounded-full px-2 py-[2px] text-[16px] font-bold ${genderChipClass(gender)}`}
+                className={`rounded-full px-2 py-[2px] text-[16px] font-bold ${GENDER[gender as keyof typeof GENDER]?.chip}`}
               >
-                {genderLabel(gender)}
+                {GENDER[gender as keyof typeof GENDER]?.label}
               </span>
             ) : null}
             {roomName ? (
@@ -184,7 +192,7 @@ export default function Help() {
         ) : null}
       </div>
 
-      <div className="flex border-b border-patient-hairline">
+      <div className="flex mt-3 border-b border-patient-hairline">
         {(
           [
             { key: "form", label: "요청하기" },
@@ -292,8 +300,17 @@ export default function Help() {
                     }
                     className="flex w-full items-center gap-2.5 px-3.5 py-3 text-left"
                   >
-                    <span className="flex-1 text-[16px] font-bold tracking-tight text-patient-ink">
-                      {faq.question}
+                    <span className="flex flex-wrap items-center gap-2 flex-1">
+                      {faq.intentLabel ? (
+                        <span
+                          className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${INTENT_LABEL_COLORS[faq.intentLabel] ?? "bg-gray-100 text-gray-600"}`}
+                        >
+                          {faq.intentLabel}
+                        </span>
+                      ) : null}
+                      <span className="text-[16px] font-bold tracking-tight text-patient-ink">
+                        {faq.question}
+                      </span>
                     </span>
                     <ChevronDown
                       className={`size-4 shrink-0 text-patient-muted transition-transform duration-200 ${
