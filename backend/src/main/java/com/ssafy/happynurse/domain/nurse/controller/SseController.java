@@ -1,6 +1,6 @@
 package com.ssafy.happynurse.domain.nurse.controller;
 
-import com.ssafy.happynurse.domain.nurse.service.SseEmitterManager;
+import com.ssafy.happynurse.domain.nurse.notification.service.registry.PersonalEmitterRegistry;
 import com.ssafy.happynurse.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -17,13 +17,12 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequiredArgsConstructor
 public class SseController {
 
-    private final SseEmitterManager sseEmitterManager;
+    private final PersonalEmitterRegistry personalEmitterRegistry;
 
     @Operation(
-            summary = "간호사 SSE 구독",
-            description = "간호사가 웹 대시보드에 로그인 후 이 엔드포인트에 연결하면 " +
-                    "담당 환자가 증상을 제출할 때마다 실시간으로 알림을 수신합니다. " +
-                    "간호사 JWT가 필요합니다."
+            summary = "간호사 SSE 구독 (개인 채널)",
+            description = "간호사 JWT 기반 개인 채널 구독. 본인 담당 환자 이벤트가 발송된다. " +
+                    "Step 2 이후 데스크 PC 용 ward 채널은 별도 엔드포인트(/sse/ward-subscribe)로 분리될 예정."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "SSE 스트림 연결 성공"),
@@ -31,6 +30,6 @@ public class SseController {
     })
     @GetMapping(value = "/sse/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        return sseEmitterManager.register(userDetails.getPractitionerId());
+        return personalEmitterRegistry.register(userDetails.getPractitionerId());
     }
 }
