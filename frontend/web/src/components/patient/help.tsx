@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronLeft } from "lucide-react";
 import { faqMock } from "@/mockup/patient";
 import { getButtons, submitSymptom } from "@/features/patient/api";
+import { usePatientStore } from "@/features/patient/stores/patient";
 import type { SymptomButton } from "@/features/patient/types/patient";
 
 type TabKey = "form" | "faq";
@@ -23,15 +24,20 @@ const genderChipClass = (gender: string): string => {
 
 export default function Help() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const patientId = Number(searchParams.get("patientId"));
-  const patientName = searchParams.get("name") ?? "";
-  const roomName = searchParams.get("roomName") ?? "";
-  const gender = searchParams.get("gender") ?? "";
-  const diseaseName = searchParams.get("diseaseName") ?? "";
-  const surgeryName = searchParams.get("surgeryName") ?? "";
-  const chiefComplaint = searchParams.get("chiefComplaint") ?? "";
-  const assignedNurseName = searchParams.get("assignedNurseName") ?? "";
+  const patient = usePatientStore((state) => state.patient);
+
+  useEffect(() => {
+    if (!patient) router.replace("/patient/verify");
+  }, [patient, router]);
+
+  const patientId = patient?.patientId ?? 0;
+  const patientName = patient?.patientName ?? "";
+  const roomName = patient?.roomName ?? "";
+  const gender = patient?.gender ?? "";
+  const diseaseName = patient?.diseaseName ?? "";
+  const surgeryName = patient?.surgeryName ?? "";
+  const chiefComplaint = patient?.chiefComplaint ?? "";
+  const assignedNurseName = patient?.assignedNurseName ?? "";
   const [buttons, setButtons] = useState<SymptomButton[]>([]);
   const [selectedButtonId, setSelectedButtonId] = useState<number | null>(null);
   const [directInput, setDirectInput] = useState("");
@@ -70,21 +76,11 @@ export default function Help() {
       });
 
       const now = new Date();
-      const hours = String(now.getHours()).padStart(2, "0");
-      const minutes = String(now.getMinutes()).padStart(2, "0");
-      const sentAt = `${hours}:${minutes}`;
-
+      const sentAt = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
       const selectedLabel =
-        buttons.find((button) => button.buttonId === selectedButtonId)?.label ??
-        "";
+        buttons.find((button) => button.buttonId === selectedButtonId)?.label ?? "";
 
-      const params = new URLSearchParams({
-        name: patientName,
-        roomName,
-        symptoms: selectedLabel,
-        sentAt,
-        assignedNurseName,
-      });
+      const params = new URLSearchParams({ sentAt, symptoms: selectedLabel });
       if (trimmedInput) params.set("direct", trimmedInput);
       router.push(`/patient/complete?${params.toString()}`);
     } catch {

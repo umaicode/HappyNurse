@@ -1,15 +1,16 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
+import { usePatientStore } from "@/features/patient/stores/patient";
 
 export default function Complete() {
-  const router = useRouter();
+  const patient = usePatientStore((state) => state.patient);
   const searchParams = useSearchParams();
 
-  const patientName = searchParams.get("name") ?? "";
-  const roomName = searchParams.get("roomName") ?? "";
-  const assignedNurseName = searchParams.get("assignedNurseName") ?? "";
+  const patientName = patient?.patientName ?? "";
+  const roomName = patient?.roomName ?? "";
+  const assignedNurseName = patient?.assignedNurseName ?? "";
   const sentAt = searchParams.get("sentAt") ?? "";
   const symptomLabel = searchParams.get("symptoms") ?? "";
   const directInput = searchParams.get("direct") ?? "";
@@ -29,44 +30,32 @@ export default function Complete() {
         </h1>
       </div>
 
-      <div className="flex flex-1 flex-col gap-3">
-        <div className="rounded-2xl border border-patient-hairline bg-white px-4 py-1">
-          <Row label="환자" value={`${patientName} · ${roomName}`} />
-          <Row label="담당 간호사" value={assignedNurseName} />
-          <Row label="전송 시각" value={sentAt} />
-          <Row
-            label="요청 내용"
-            last
-            value={
-              requestChips.length > 0 ? (
-                <div className="flex flex-wrap justify-end gap-1.5">
-                  {requestChips.map((chip) => (
-                    <span
-                      key={chip}
-                      className="rounded-full bg-patient-slate-surface px-3 py-1 text-lg font-bold text-patient-slate"
-                    >
-                      {chip}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <span className="text-sm font-bold tracking-tight text-patient-ink">
-                  -
-                </span>
-              )
-            }
-          />
-        </div>
-
-        <div className="flex-1" />
-
-        <button
-          type="button"
-          onClick={() => router.push("/patient/help")}
-          className="h-14 w-full rounded-[14px] bg-patient-primary text-[20px] font-bold tracking-tight text-white transition-colors hover:bg-[#0F1F7A]"
-        >
-          확인
-        </button>
+      <div className="rounded-2xl border border-patient-hairline bg-white px-4 py-1">
+        <Row label="환자" value={`${patientName} · ${roomName}`} />
+        <Row label="담당 간호사" value={assignedNurseName} />
+        <Row label="전송 시각" value={sentAt} />
+        <Row
+          label="요청 내용"
+          last
+          value={
+            requestChips.length > 0 ? (
+              <div className="flex flex-wrap justify-end gap-1.5">
+                {requestChips.map((chip) => (
+                  <span
+                    key={chip}
+                    className="rounded-full bg-patient-slate-surface px-3 py-1 text-lg font-bold text-patient-slate"
+                  >
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span className="text-sm font-bold tracking-tight text-patient-ink">
+                -
+              </span>
+            )
+          }
+        />
       </div>
     </div>
   );

@@ -36,3 +36,20 @@ export const getNfcEntry = (token: string): Promise<PatientNfc> =>
   client
     .get(`/nfc/patients/entry`, { params: { token } })
     .then((response) => response.data?.data ?? response.data);
+
+// [환자용 웹앱] 증상 버튼 목록 조회
+
+export const getButtons = (): Promise<SymptomButton[]> =>
+  client
+    .get(`/symptoms/buttons`)
+    .then((response) => response.data?.data ?? response.data);
+
+// [환자용 웹앱] 증상 제출
+
+export const submitSymptom = (
+  patientId: number,
+  request: SymptomSubmitRequest,
+): Promise<SymptomSubmitResponse> =>
+  client
+    .post(`/patients/${patientId}/symptoms`, request)
+    .then((response) => response.data?.data ?? response.data);
