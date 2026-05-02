@@ -10,8 +10,6 @@ import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
 import com.ssafy.happynurse.global.security.JwtTokenProvider;
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
-import com.ssafy.happynurse.domain.nurse.notification.entity.Notification;
-import com.ssafy.happynurse.domain.nurse.notification.repository.NotificationRepository;
 import com.ssafy.happynurse.domain.webapp.dto.SymptomSubmitRequest;
 import com.ssafy.happynurse.domain.webapp.dto.SymptomSubmitResponse;
 import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
@@ -52,8 +50,6 @@ public class WebappServiceTest {
     QuickSymptomButtonRepository quickSymptomButtonRepository;
     @Mock
     PatientSelfReportRepository patientSelfReportRepository;
-    @Mock
-    NotificationRepository notificationRepository;
     @Mock
     ApplicationEventPublisher eventPublisher;
 
@@ -213,7 +209,6 @@ public class WebappServiceTest {
         // then
         assertThat(response.getSelfReportId()).isEqualTo(42L);
         verify(patientSelfReportRepository).save(any(PatientSelfReport.class));
-        verify(notificationRepository).save(any(Notification.class));
         verify(eventPublisher).publishEvent(any(SymptomSubmittedEvent.class));
     }
 
@@ -304,7 +299,6 @@ public class WebappServiceTest {
         verify(patientSelfReportRepository).save(reportCaptor.capture());
         assertThat(reportCaptor.getValue().getSymptomText())
                 .isEqualTo("드레싱 교체 - 특히 왼쪽 다리가 심합니다");
-        verify(notificationRepository).save(any(Notification.class));
         verify(eventPublisher).publishEvent(any(SymptomSubmittedEvent.class));
     }
 
