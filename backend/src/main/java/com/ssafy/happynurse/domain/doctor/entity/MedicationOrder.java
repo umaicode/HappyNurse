@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,39 +27,51 @@ public class MedicationOrder {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id", nullable = false)
-    private Patient patient;
+    private Patient patient; // 대상 환자
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "encounter_id")
-    private Encounter encounter;
+    private Encounter encounter; // 입원 정보
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "prescriber_id", nullable = false)
     private Practitioner prescriber; // 처방 의사
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "medication_id", nullable = false)
-    private Medication medication;
+    @JoinColumn(name = "medication_id")
+    private Medication medication; // 처방 약물
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private OrderStatus status;
+    private OrderStatus status; // 오더 상태
 
     @Column(name = "date_written", nullable = false)
-    private LocalDateTime dateWritten;
+    private LocalDateTime dateWritten; // 처방 작성 시간
 
-    @Column(name = "dosage_text", columnDefinition = "TEXT")
-    private String dosageText;
+    @Column(name = "order_code", length = 32)
+    private String orderCode; // 처방코드
 
-    @Column(name = "dosage_timing", length = 100)
-    private String dosageTiming; // 1일 3회, 식후 등
+    @Column(name = "order_name", length = 200)
+    private String orderName; // 처방명칭
+
+    @Column(name = "dose", precision = 10, scale = 2)
+    private BigDecimal dose; // 1회량
+
+    @Column(name = "frequency")
+    private Integer frequency; // 횟수
+
+    @Column(name = "dose_unit", length = 16)
+    private String doseUnit; // 단위
 
     @Column(length = 64)
-    private String route; // 투약경로 (oral, IV 등)
+    private String route; // 용법
+
+    @Column(columnDefinition = "TEXT")
+    private String remarks; // 참고사항
 
     @Enumerated(EnumType.STRING)
     @Column(name = "order_type", nullable = false)
-    private OrderType orderType;
+    private OrderType orderType; // 구분
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
