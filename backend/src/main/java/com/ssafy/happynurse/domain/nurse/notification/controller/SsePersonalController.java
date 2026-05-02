@@ -1,4 +1,4 @@
-package com.ssafy.happynurse.domain.nurse.controller;
+package com.ssafy.happynurse.domain.nurse.notification.controller;
 
 import com.ssafy.happynurse.domain.nurse.notification.service.registry.PersonalEmitterRegistry;
 import com.ssafy.happynurse.global.security.CustomUserDetails;
@@ -15,7 +15,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Tag(name = "SSE", description = "간호사 실시간 알림 구독 API")
 @RestController
 @RequiredArgsConstructor
-public class SseController {
+public class SsePersonalController {
 
     private final PersonalEmitterRegistry personalEmitterRegistry;
 
