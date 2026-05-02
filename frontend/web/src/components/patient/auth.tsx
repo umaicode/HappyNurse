@@ -9,22 +9,37 @@ import { verifyPatient } from "@/features/auth/api";
 export default function Auth() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const patientId = Number(searchParams.get("patientId"));
+  const token = searchParams.get("token");
+  const devPatientId = Number(searchParams.get("patientId")) || null;
+  const isPrefill = searchParams.get("prefill") === "1";
 
   const [nfcName, setNfcName] = useState("");
-  const [name, setName] = useState("");
-  const [birthDigits, setBirthDigits] = useState<string[]>(Array(6).fill(""));
+  const [resolvedPatientId, setResolvedPatientId] = useState<number | null>(
+    devPatientId,
+  );
+  const [name, setName] = useState(isPrefill ? "이승연" : "");
+  const [birthDigits, setBirthDigits] = useState<string[]>(
+    isPrefill ? ["9", "9", "0", "7", "2", "5"] : Array(6).fill(""),
+  );
   const [focusIdx, setFocusIdx] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
-    if (!patientId) return;
-    getNfcEntry(patientId)
-      .then((info) => setNfcName(info.patientName))
-      .catch(() => setErrorMessage("환자 정보를 불러올 수 없습니다."));
-  }, [patientId]);
+    if (token) {
+      getNfcEntry(token)
+        .then((info) => {
+          setNfcName(info.patientName);
+          setResolvedPatientId(info.patientId);
+        })
+        .catch(() => router.replace("/patient/invalid"));
+      return;
+    }
+    if (!devPatientId) {
+      router.replace("/patient/invalid");
+    }
+  }, [token, devPatientId, router]);
 
   const handleBirthChange = (index: number, value: string) => {
     const digit = value.replace(/[^0-9]/g, "").slice(-1);
@@ -62,20 +77,23 @@ export default function Auth() {
   const isComplete = filledCount === 6 && name.trim().length > 0;
 
   const handleSubmit = async () => {
-    if (!isComplete || !patientId || submitting) return;
+    if (!isComplete || !resolvedPatientId || submitting) return;
     setSubmitting(true);
     setErrorMessage("");
     try {
-      const verified = await verifyPatient({
-        patientId,
+      const info = await verifyPatient({
+        patientId: resolvedPatientId,
         name: name.trim(),
         birthDate: birthDigits.join(""),
       });
-      const query = new URLSearchParams({
-        patientId: String(verified.patientId),
-        name: verified.patientName,
-        roomName: verified.roomName,
-        assignedNurseName: verified.assignedNurseName ?? "",
+      const params = new URLSearchParams({
+        name: info.patientName,
+        roomName: info.roomName,
+        gender: info.gender,
+        diseaseName: info.diseaseName,
+        surgeryName: info.surgeryName,
+        chiefComplaint: info.chiefComplaint,
+        assignedNurseName: info.assignedNurseName,
       });
       router.push(`/patient/help?${query.toString()}`);
     } catch {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,59 +11,110 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import type { Ward } from "@/features/patient/types/patient";
+import { Input } from "@/components/ui/input";
+import {
+  formatBirthShort,
+  formatGenderShort,
+  groupByRoom,
+} from "@/lib/patient-display";
+import { useAssignMyPatients } from "@/features/patient/hooks/useWardPatients";
+import type { WardPatient } from "@/features/patient/types/ward-patient";
 
 interface AssignPatientModalProps {
-  wards: Ward[];
-  currentUser: string;
+  patients: WardPatient[];
   isOpen: boolean;
   onClose: () => void;
-  onAssignPatients: (patientIds: string[]) => void;
 }
 
+type RoomCheckedState = boolean | "indeterminate";
+
 export function AssignPatientModal({
-  wards,
-  currentUser,
+  patients,
   isOpen,
   onClose,
-  onAssignPatients,
 }: AssignPatientModalProps) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const assignMutation = useAssignMyPatients();
 
   const initiallyAssignedIds = useMemo(() => {
-    const set = new Set<string>();
-    wards.forEach((ward) =>
-      ward.rooms.forEach((room) =>
-        room.patients.forEach((patient) => {
-          if (patient.assignedNurse === currentUser) {
-            set.add(patient.id);
-          }
-        }),
-      ),
-    );
+    const set = new Set<number>();
+    patients.forEach((patient) => {
+      if (patient.isMyPatient) set.add(patient.encounterId);
+    });
     return set;
-  }, [wards, currentUser]);
+  }, [patients]);
 
-  // 모달이 열릴 때마다 현재 담당 상태로 초기화한다.
+  // 모달이 열릴 때마다 현재 담당 상태와 검색어를 초기화한다.
   useEffect(() => {
     if (isOpen) {
       setSelectedIds(new Set(initiallyAssignedIds));
+      setSearchQuery("");
+      setErrorMessage("");
     }
   }, [isOpen, initiallyAssignedIds]);
 
-  const togglePatient = (patientId: string) => {
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  const filteredPatients = useMemo(() => {
+    if (!normalizedQuery) return patients;
+    return patients.filter((p) =>
+      p.name.toLowerCase().includes(normalizedQuery),
+    );
+  }, [patients, normalizedQuery]);
+
+  const grouped = useMemo(
+    () => groupByRoom(filteredPatients),
+    [filteredPatients],
+  );
+
+  const togglePatient = (encounterId: number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(patientId)) next.delete(patientId);
-      else next.add(patientId);
+      if (next.has(encounterId)) next.delete(encounterId);
+      else next.add(encounterId);
       return next;
     });
   };
 
-  const handleConfirm = () => {
-    onAssignPatients(Array.from(selectedIds));
-    onClose();
+  const getRoomCheckedState = (roomPatients: WardPatient[]): RoomCheckedState => {
+    if (roomPatients.length === 0) return false;
+    const selectedCount = roomPatients.filter((p) =>
+      selectedIds.has(p.encounterId),
+    ).length;
+    if (selectedCount === 0) return false;
+    if (selectedCount === roomPatients.length) return true;
+    return "indeterminate";
   };
+
+  const toggleRoom = (roomPatients: WardPatient[]) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const allSelected = roomPatients.every((p) =>
+        next.has(p.encounterId),
+      );
+      if (allSelected) {
+        roomPatients.forEach((p) => next.delete(p.encounterId));
+      } else {
+        roomPatients.forEach((p) => next.add(p.encounterId));
+      }
+      return next;
+    });
+  };
+
+  const handleSave = () => {
+    if (assignMutation.isPending) return;
+    setErrorMessage("");
+    assignMutation.mutate(Array.from(selectedIds), {
+      onSuccess: () => onClose(),
+      onError: () =>
+        setErrorMessage("담당 환자 저장에 실패했습니다. 잠시 후 다시 시도해주세요."),
+    });
+  };
+
+  const hasResults = grouped.length > 0;
 
   return (
     <Dialog
@@ -71,7 +123,7 @@ export function AssignPatientModal({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-[640px] max-h-[85vh] overflow-hidden flex flex-col rounded-2xl p-0 border border-border-base bg-white shadow-2xl">
+      <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-hidden flex flex-col rounded-2xl p-0 border border-border-base bg-white shadow-2xl">
         <DialogHeader className="px-7 pt-7 pb-4 border-b border-border-subtle">
           <DialogTitle className="text-2xl font-bold text-[var(--color-sub-primary)]">
             담당 환자 설정
@@ -81,80 +133,102 @@ export function AssignPatientModal({
           </DialogDescription>
         </DialogHeader>
 
+        <div className="px-7 py-3 border-b border-border-subtle">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-content-muted z-10" />
+            <Input
+              type="text"
+              placeholder="환자명 검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 bg-white border-border-subtle focus-visible:ring-1 focus-visible:ring-[var(--color-brand-primary)]"
+            />
+          </div>
+        </div>
+
         <div className="flex-1 overflow-y-auto px-5 py-4">
-          {wards.map((ward) => {
-            if (ward.rooms.length === 0) return null;
-            return (
-              <div key={ward.id} className="flex flex-col gap-2 pb-4 last:pb-0">
-                <div className="px-2 text-[14px] font-black text-content-secondary tracking-wider uppercase">
-                  {ward.name}
-                </div>
-                {ward.rooms.map((room) => (
-                  <div key={room.id} className="flex flex-col">
-                    <div className="px-2 py-1.5 text-[13px] font-bold text-content-muted border-b border-border-subtle mb-1 tracking-wider uppercase">
-                      {room.name}
+          {!hasResults ? (
+            <div className="py-12 text-center text-[14px] font-semibold text-content-muted">
+              {patients.length === 0
+                ? "병동에 입원 중인 환자가 없습니다"
+                : "검색 결과가 없습니다"}
+            </div>
+          ) : (
+            grouped.map(({ roomName, items: roomPatients }) => {
+              const roomState = getRoomCheckedState(roomPatients);
+              const roomCheckboxId = `assign-room-${roomName}`;
+              return (
+                <div key={roomName} className="flex flex-col">
+                  <label
+                    htmlFor={roomCheckboxId}
+                    className="flex items-center gap-2 px-2 py-1.5 border-b border-border-subtle mb-1 cursor-pointer select-none hover:bg-[var(--color-surface-hover)] rounded-md"
+                  >
+                    <span className="text-[13px] font-bold text-content-muted tracking-wider uppercase">
+                      {roomName}
+                    </span>
+                    <div className="ml-auto flex items-center gap-2">
+                      <span className="text-[12px] font-semibold text-content-tertiary">
+                        전체선택
+                      </span>
+                      <Checkbox
+                        id={roomCheckboxId}
+                        checked={roomState}
+                        onCheckedChange={() => toggleRoom(roomPatients)}
+                      />
                     </div>
-                    <div className="flex flex-col">
-                      {room.patients.map((patient) => {
-                        const checked = selectedIds.has(patient.id);
-                        const checkboxId = `assign-${patient.id}`;
-                        return (
-                          <label
-                            key={patient.id}
-                            htmlFor={checkboxId}
-                            className="flex items-center justify-between w-full px-3 py-2.5 rounded-md hover:bg-[var(--color-surface-hover)] transition-all cursor-pointer select-none"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <Checkbox
-                                id={checkboxId}
-                                checked={checked}
-                                onCheckedChange={() =>
-                                  togglePatient(patient.id)
-                                }
-                              />
-                              <span className="text-base font-bold text-content-primary truncate">
-                                {patient.name}
-                              </span>
-                              <span className="text-[13px] font-mono font-bold text-content-muted shrink-0">
-                                {patient.gender}/
-                                {patient.birthday
-                                  ? patient.birthday.substring(2)
-                                  : "00.01.01"}
-                              </span>
-                            </div>
-                            <span className="text-[13px] font-semibold text-content-tertiary shrink-0">
-                              {patient.assignedNurse
-                                ? `담당 ${patient.assignedNurse}`
-                                : "미배정"}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
+                  </label>
+                  <div className="flex flex-col">
+                    {roomPatients.map((patient) => {
+                      const checked = selectedIds.has(patient.encounterId);
+                      const checkboxId = `assign-${patient.encounterId}`;
+                      return (
+                        <label
+                          key={patient.encounterId}
+                          htmlFor={checkboxId}
+                          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md hover:bg-[var(--color-surface-hover)] transition-all cursor-pointer select-none"
+                        >
+                          <Checkbox
+                            id={checkboxId}
+                            checked={checked}
+                            onCheckedChange={() =>
+                              togglePatient(patient.encounterId)
+                            }
+                          />
+                          <span className="text-base font-bold text-content-primary truncate">
+                            {patient.name}
+                          </span>
+                          <span className="text-[13px] font-mono font-bold text-content-muted shrink-0">
+                            {formatGenderShort(patient.gender)}/
+                            {formatBirthShort(patient.birthDate)}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
-            );
-          })}
+                </div>
+              );
+            })
+          )}
         </div>
 
         <div className="border-t border-border-subtle px-7 py-5 flex items-center justify-between gap-3 bg-white">
-          <span className="text-[13px] font-semibold text-content-tertiary">
-            {selectedIds.size}명 선택됨
-          </span>
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="lg" onClick={onClose}>
-              취소
-            </Button>
-            <Button
-              type="button"
-              variant="brand"
-              size="lg"
-              onClick={handleConfirm}
-            >
-              확인
-            </Button>
+          <div className="flex items-center gap-3 text-[13px] font-semibold">
+            <span className="text-content-tertiary">
+              {selectedIds.size}명 선택됨
+            </span>
+            {errorMessage ? (
+              <span className="text-red-500">{errorMessage}</span>
+            ) : null}
           </div>
+          <Button
+            type="button"
+            variant="brand"
+            size="lg"
+            onClick={handleSave}
+            disabled={assignMutation.isPending}
+          >
+            {assignMutation.isPending ? "저장 중..." : "저장"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

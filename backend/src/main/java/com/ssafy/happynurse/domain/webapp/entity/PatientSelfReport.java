@@ -1,6 +1,5 @@
 package com.ssafy.happynurse.domain.webapp.entity;
 
-import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
 import jakarta.persistence.*;
@@ -43,14 +42,15 @@ public class PatientSelfReport {
     @Column(name = "submitted_at", nullable = false)
     private LocalDateTime submittedAt; // 증상 전송 시간
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ack_practitioner_id")
-    private Practitioner ackPractitioner; // 확인 간호사
+    public static PatientSelfReport create(Patient patient, Encounter encounter, InputMethod inputMethod, QuickSymptomButton quickSymptomButton, String symptomText) {
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "ack_status", nullable = false)
-    private AckStatus ackStatus;
-
-    @Column(name = "ack_at")
-    private LocalDateTime ackAt;
+        PatientSelfReport report = new PatientSelfReport();
+        report.patient = patient;
+        report.encounter = encounter;
+        report.inputMethod = inputMethod;
+        report.quickSymptomButton = quickSymptomButton;
+        report.symptomText = symptomText;
+        report.submittedAt = LocalDateTime.now();
+        return report;
+    }
 }

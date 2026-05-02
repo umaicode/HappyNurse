@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -37,23 +38,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .formLogin(AbstractHttpConfigurer::disable)
-                .httpBasic(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .exceptionHandling(eh -> eh
-                        .authenticationEntryPoint(authenticationEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/auth/refresh").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**",
-                                "/api/swagger-ui/**", "/api/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/api/nfc/patients/**").permitAll()    // 환자 NFC 진입
-                        .requestMatchers("/api/patients/verify").permitAll()    // 환자 본인 확인
-                        .anyRequest().authenticated())
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, cookieName),
-                        UsernamePasswordAuthenticationFilter.class);
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .formLogin(AbstractHttpConfigurer::disable)
+            .httpBasic(AbstractHttpConfigurer::disable)
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .exceptionHandling(eh -> eh
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/auth/login", "/auth/refresh", "/auth/signup", "/auth/dev-login").permitAll()
+                .requestMatchers("/app/auth/login", "/app/auth/refresh").permitAll()
+                .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**",
+                    "/api/swagger-ui/**", "/api/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/nfc/patients/**").permitAll()    // 환자 NFC 진입
+                .requestMatchers("/patients/verify").permitAll()    // 환자 본인 확인
+                .requestMatchers("/patients/dev-verify").permitAll()    // 환자 dev 버전 본인 확인
+                .requestMatchers("/nfc/redirect").permitAll()       // NFC 진입 redirect
+                .requestMatchers(HttpMethod.GET, "/organizations").permitAll()           // 로그인 화면 병원 목록
+                .requestMatchers(HttpMethod.GET, "/organizations/*/wards").permitAll()   // 로그인 화면 병동 목록
+                .anyRequest().authenticated())
+            .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, cookieName),
+                UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

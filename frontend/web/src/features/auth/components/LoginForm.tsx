@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 import { motion } from 'motion/react'
@@ -24,33 +24,90 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MOCK_WARDS } from '@/mockup/wards'
 import { devLogin, login } from '../api'
+import { useOrganizations, useWards } from '../hooks/useOrganizations'
 import { useAuthStore } from '../stores/auth'
 import { devTokenStorage } from '@/lib/client'
 import { DevSignupModal } from './DevSignupModal'
 
 const isDevelopment = process.env.NEXT_PUBLIC_APP_ENV === 'dev'
 
-// TODO: organizationId · wardId 조회 API 연동 시 사용자 선택값을 그대로 전송하도록 교체
-const FALLBACK_ORGANIZATION_ID = 1
-const FALLBACK_WARD_ID = 1
+// 마지막으로 로그인 성공한 세션의 병원·병동을 기억해 다음 로그인 때 step 1 을 스킵한다.
+// "병원/병동 다시 선택" → 새 값으로 로그인 성공 시점에만 덮어쓰므로, 단순히 선택만 바꾼 경우엔 보존된다.
+const LOGIN_CONTEXT_KEY = 'lastLoginContext'
+
+interface LoginContext {
+  organizationId: string
+  wardId: string
+}
+
+const loginContextStorage = {
+  load(): LoginContext | null {
+    if (typeof window === 'undefined') return null
+    try {
+      const raw = window.localStorage.getItem(LOGIN_CONTEXT_KEY)
+      if (!raw) return null
+      const parsed = JSON.parse(raw) as Partial<LoginContext>
+      if (
+        typeof parsed.organizationId === 'string' &&
+        parsed.organizationId.length > 0 &&
+        typeof parsed.wardId === 'string' &&
+        parsed.wardId.length > 0
+      ) {
+        return {
+          organizationId: parsed.organizationId,
+          wardId: parsed.wardId,
+        }
+      }
+      return null
+    } catch {
+      return null
+    }
+  },
+  save(context: LoginContext) {
+    if (typeof window === 'undefined') return
+    if (!context.organizationId || !context.wardId) return
+    window.localStorage.setItem(LOGIN_CONTEXT_KEY, JSON.stringify(context))
+  },
+}
 
 export function LoginForm() {
   const router = useRouter()
   const setUser = useAuthStore((state) => state.setUser)
 
   const [step, setStep] = useState(1)
-  const [hospital, setHospital] = useState('')
+  const [organizationId, setOrganizationId] = useState('')
   const [ward, setWard] = useState('')
   const [employeeNumber, setEmployeeNumber] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [isSignupOpen, setIsSignupOpen] = useState(false)
 
+  const organizationsQuery = useOrganizations()
+  const wardsQuery = useWards(organizationId ? Number(organizationId) : null)
+
+  // 마운트 시 마지막 로그인 컨텍스트가 있으면 step 1 을 건너뛰고 사번/비밀번호 입력으로 바로 진입.
+  // SSR 초기 렌더와 클라이언트 첫 렌더의 HTML 을 일치시키기 위해 lazy init 이 아닌 useEffect 사용.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const saved = loginContextStorage.load()
+    if (saved) {
+      setOrganizationId(saved.organizationId)
+      setWard(saved.wardId)
+      setStep(2)
+    }
+  }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const handleOrganizationChange = (value: string) => {
+    setOrganizationId(value)
+    setWard('')
+  }
+
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: (data) => {
+      loginContextStorage.save({ organizationId, wardId: ward })
       setUser(data)
       router.push('/dashboard')
     },
@@ -63,6 +120,9 @@ export function LoginForm() {
     mutationFn: devLogin,
     onSuccess: (data) => {
       devTokenStorage.setTokens(data.accessToken, data.refreshToken)
+      // step 1 을 거치며 병원·병동을 채운 상태에서 dev 로그인했을 때만 컨텍스트 저장.
+      // 빈 상태로 dev 로그인하면 무의미한 컨텍스트라 저장 안 함 (load 단계에서 어차피 무시됨).
+      loginContextStorage.save({ organizationId, wardId: ward })
       setUser({
         practitionerId: data.practitionerId,
         name: data.name,
@@ -80,10 +140,15 @@ export function LoginForm() {
 
   const handleLogin = () => {
     if (!employeeNumber.trim() || !password.trim() || loginMutation.isPending) return
+    if (!organizationId || !ward) {
+      setErrorMessage('병원과 병동을 다시 선택해주세요.')
+      setStep(1)
+      return
+    }
     setErrorMessage('')
     loginMutation.mutate({
-      organizationId: FALLBACK_ORGANIZATION_ID,
-      wardId: FALLBACK_WARD_ID,
+      organizationId: Number(organizationId),
+      wardId: Number(ward),
       employeeNumber: employeeNumber.trim(),
       password,
     })
@@ -157,12 +222,12 @@ export function LoginForm() {
       {/* 좌측 상단 dev 툴: 환자 라우트 진입 + DEV 전용 동작 (운영 빌드에서는 DEV 동작은 숨김) */}
       <div className="absolute top-4 left-4 z-50 flex items-center gap-2">
         <button
-          onClick={() => router.push('/patient')}
+          onClick={() => router.push('/patient?patientId=2&prefill=1')}
           className="rounded-2xl border border-action-blue-hover bg-[#e2e3e4] px-3 py-1.5 text-[22px] font-bold text-gray-600 hover:bg-[#a0afec] transition-colors"
         >
           환자 로그인
         </button>
-        {isDevelopment && step === 2 ? (
+        {isDevelopment ? (
           <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white/80 px-2 py-1.5 shadow-sm backdrop-blur">
             <span className="text-xs font-bold text-content-muted">
               개발 환경 전용
@@ -278,14 +343,32 @@ export function LoginForm() {
                       소속 병원
                     </Label>
                     <div className="relative">
-                      <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
-                      {/* TODO: 병원 조회 API 연동 시 Select 로 교체. 현재 입력값은 무시됨. */}
-                      <Input
-                        placeholder="병원을 검색하세요"
-                        value={hospital}
-                        onChange={(event) => setHospital(event.target.value)}
-                        className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
-                      />
+                      <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted z-10 pointer-events-none" />
+                      <Select
+                        value={organizationId}
+                        onValueChange={handleOrganizationChange}
+                        disabled={organizationsQuery.isPending}
+                      >
+                        <SelectTrigger className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus:border-[var(--color-brand-primary)] focus:ring-4 focus:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-bold text-content-primary transition-all">
+                          <SelectValue
+                            placeholder={
+                              organizationsQuery.isPending
+                                ? '병원 정보를 불러오는 중...'
+                                : '병원을 선택하세요'
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent className="z-[100] rounded-xl border-[var(--color-border-base)] shadow-xl">
+                          {organizationsQuery.data?.map((organization) => (
+                            <SelectItem
+                              key={organization.organizationId}
+                              value={String(organization.organizationId)}
+                            >
+                              {organization.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
@@ -295,15 +378,29 @@ export function LoginForm() {
                     </Label>
                     <div className="relative">
                       <LayoutGrid className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted z-10 pointer-events-none" />
-                      {/* TODO: 병동 조회 API 연동 시 실제 wardId 를 사용. 현재 선택값은 UI 표시용. */}
-                      <Select value={ward} onValueChange={setWard}>
+                      <Select
+                        value={ward}
+                        onValueChange={setWard}
+                        disabled={!organizationId || wardsQuery.isPending}
+                      >
                         <SelectTrigger className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus:border-[var(--color-brand-primary)] focus:ring-4 focus:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-bold text-content-primary transition-all">
-                          <SelectValue placeholder="접속할 병동을 선택하세요" />
+                          <SelectValue
+                            placeholder={
+                              !organizationId
+                                ? '병원을 먼저 선택해주세요'
+                                : wardsQuery.isPending
+                                ? '병동 정보를 불러오는 중...'
+                                : '접속할 병동을 선택하세요'
+                            }
+                          />
                         </SelectTrigger>
                         <SelectContent className="z-[100] rounded-xl border-[var(--color-border-base)] shadow-xl">
-                          {MOCK_WARDS.map((wardOption) => (
-                            <SelectItem key={wardOption.id} value={wardOption.id}>
-                              {wardOption.name}
+                          {wardsQuery.data?.map((wardOption) => (
+                            <SelectItem
+                              key={wardOption.wardId}
+                              value={String(wardOption.wardId)}
+                            >
+                              {wardOption.wardName}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -314,14 +411,21 @@ export function LoginForm() {
 
                 <Button
                   onClick={() => setStep(2)}
-                  className="w-full h-15 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--color-brand-primary)]/20 transition-all flex items-center justify-center gap-2 group"
+                  disabled={!organizationId || !ward}
+                  className="w-full h-15 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--color-brand-primary)]/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   다음 단계
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </div>
             ) : (
-              <div className="space-y-8">
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  handleLogin()
+                }}
+                className="space-y-8"
+              >
                 <div>
                   <Heading
                     level="h2"
@@ -342,6 +446,8 @@ export function LoginForm() {
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
                       <Input
+                        name="employeeNumber"
+                        autoComplete="username"
                         placeholder="사원번호를 입력하세요"
                         value={employeeNumber}
                         onChange={(event) =>
@@ -360,12 +466,11 @@ export function LoginForm() {
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
                       <Input
                         type="password"
+                        name="password"
+                        autoComplete="current-password"
                         placeholder="비밀번호를 입력하세요"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') handleLogin()
-                        }}
                         className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
                       />
                     </div>
@@ -379,13 +484,13 @@ export function LoginForm() {
                 ) : null}
 
                 <Button
-                  onClick={handleLogin}
+                  type="submit"
                   disabled={loginMutation.isPending}
                   className="w-full h-15 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--color-brand-primary)]/20 transition-all flex items-center justify-center gap-2"
                 >
                   {loginMutation.isPending ? '로그인 중...' : '로그인'}
                 </Button>
-              </div>
+              </form>
             )}
           </div>
         </div>

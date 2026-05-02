@@ -1,128 +1,81 @@
 "use client";
 
-import { Search, LogOut, ChevronRight, PanelLeftClose, Settings } from "lucide-react";
+import { Search, LogOut, ChevronRight, Settings } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { INITIAL_RECORDS } from "@/mockup/emr-data";
-import { MOCK_WARDS } from "@/mockup/wards";
-import { clearWardAssignments } from "@/lib/ward-assignments";
-import type { Patient, Ward } from "@/features/patient/types/patient";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useAuthStore } from "@/features/auth/stores/auth";
+import {
+  formatBirthShort,
+  formatGenderShort,
+  groupByRoom,
+} from "@/lib/patient-display";
+import type { WardPatient } from "@/features/patient/types/ward-patient";
 
 interface PatientSidebarProps {
-  wards?: Ward[];
-  onCollapse?: () => void;
+  patients: WardPatient[];
+  isLoading?: boolean;
+  selectedPatientId: number | null;
+  onSelectPatient: (patientId: number) => void;
   onOpenAssignModal?: () => void;
 }
 
 export function PatientSidebar({
-  wards = MOCK_WARDS,
-  onCollapse,
+  patients,
+  isLoading,
+  selectedPatientId,
+  onSelectPatient,
   onOpenAssignModal,
-}: PatientSidebarProps = {}) {
+}: PatientSidebarProps) {
   const router = useRouter();
-  const currentUser =
-    typeof window !== "undefined"
-      ? localStorage.getItem("currentUser") || "김영희"
-      : "김영희";
-  const [activePatientId, setActivePatientId] = useState("p1");
+  const user = useAuthStore((state) => state.user);
+  const reset = useAuthStore((state) => state.reset);
   const [searchQuery, setSearchQuery] = useState("");
   const [isMyPatientsOpen, setIsMyPatientsOpen] = useState(true);
   const [isAllPatientsOpen, setIsAllPatientsOpen] = useState(true);
 
-  // Flatten, inject room name into each patient
-  const allPatients = useMemo<Patient[]>(
-    () =>
-      wards.flatMap((ward) =>
-        ward.rooms.flatMap((room) =>
-          room.patients.map((patient) => ({ ...patient, room: room.name })),
-        ),
-      ),
-    [wards],
-  );
-
-  const myPatients = useMemo(
-    () => allPatients.filter((p) => p.assignedNurse === currentUser),
-    [allPatients, currentUser],
-  );
-
-  const otherPatients = useMemo(
-    () => allPatients.filter((p) => p.assignedNurse !== currentUser),
-    [allPatients, currentUser],
-  );
-
   const duplicateNames = useMemo(
     () =>
-      allPatients.reduce((acc: { [key: string]: number }, p) => {
+      patients.reduce<Record<string, number>>((acc, p) => {
         acc[p.name] = (acc[p.name] || 0) + 1;
         return acc;
       }, {}),
-    [allPatients],
+    [patients],
   );
 
-  // 환자별 미확정 기록 개수 계산 (patientId 미지정 레코드는 p1 소속)
-  const unconfirmedCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    INITIAL_RECORDS.forEach((record) => {
-      if (record.isConfirmed) return;
-      const patientId = (record as { patientId?: string }).patientId || "p1";
-      counts[patientId] = (counts[patientId] || 0) + 1;
-    });
-    return counts;
-  }, []);
-
-  const filteredMyPatients = myPatients.filter((p) =>
-    p.name.includes(searchQuery),
-  );
-  const filteredOtherPatients = otherPatients.filter((p) =>
-    p.name.includes(searchQuery),
+  const filteredPatients = useMemo(
+    () => patients.filter((p) => p.name.includes(searchQuery)),
+    [patients, searchQuery],
   );
 
-  // 전체 환자 섹션을 호수(room) 단위로 그룹핑. 호수 순서는 원본 wards 정의 순서를 따름.
-  const otherPatientsByRoom = useMemo(() => {
-    const order: string[] = [];
-    wards.forEach((ward) =>
-      ward.rooms.forEach((room) => {
-        if (!order.includes(room.name)) order.push(room.name);
-      }),
-    );
-    const groups = new Map<string, Patient[]>();
-    filteredOtherPatients.forEach((patient) => {
-      const roomName = patient.room || "미지정";
-      if (!groups.has(roomName)) groups.set(roomName, []);
-      groups.get(roomName)!.push(patient);
-    });
-    return order
-      .filter((roomName) => groups.has(roomName))
-      .map((roomName) => ({ roomName, patients: groups.get(roomName)! }));
-  }, [filteredOtherPatients, wards]);
+  // 내 담당 환자 — 호실별 그룹핑
+  const myPatientsByRoom = useMemo(
+    () => groupByRoom(filteredPatients.filter((p) => p.isMyPatient)),
+    [filteredPatients],
+  );
+
+  // 전체 환자 — 담당 여부 무관하게 모든 환자 호실별 그룹핑
+  const allPatientsByRoom = useMemo(
+    () => groupByRoom(filteredPatients),
+    [filteredPatients],
+  );
 
   return (
     <div className="flex flex-col h-full bg-[var(--color-surface-base)]">
       {/* Brand & Search Header */}
       <div className="p-3 border-b border-border-base flex flex-col gap-3">
-        <div className="flex items-center justify-between px-1">
+        <div className="flex items-center px-1">
           <img
             src="/images/logo_ic.png"
             alt="해피너스 로고"
             className="h-5 w-auto object-contain"
           />
-          {onCollapse && (
-            <button
-              type="button"
-              onClick={onCollapse}
-              aria-label="좌측 사이드바 접기"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-content-muted hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition"
-            >
-              <PanelLeftClose className="h-4 w-4" />
-            </button>
-          )}
         </div>
 
         <div className="relative">
@@ -137,9 +90,8 @@ export function PatientSidebar({
         </div>
       </div>
 
-      {/* Patient Lists with Toggle Sections */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
-        {/* 1. My Patients Section */}
+        {/* My Patients */}
         <Collapsible
           open={isMyPatientsOpen}
           onOpenChange={setIsMyPatientsOpen}
@@ -170,27 +122,37 @@ export function PatientSidebar({
           </div>
           <CollapsibleContent>
             <div className="flex flex-col bg-white">
-              {filteredMyPatients.length === 0 ? (
+              {isLoading ? (
+                <div className="px-4 py-6 text-center text-[12px] font-medium text-content-muted">
+                  환자 정보를 불러오는 중...
+                </div>
+              ) : myPatientsByRoom.length === 0 ? (
                 <div className="px-4 py-6 text-center text-[12px] font-medium text-content-muted">
                   담당 환자가 없습니다
                 </div>
               ) : (
-                filteredMyPatients.map((patient) => (
-                  <PatientItem
-                    key={patient.id}
-                    patient={patient}
-                    isActive={activePatientId === patient.id}
-                    isDuplicate={duplicateNames[patient.name] > 1}
-                    unconfirmedCount={unconfirmedCounts[patient.id] || 0}
-                    onClick={() => setActivePatientId(patient.id)}
-                  />
+                myPatientsByRoom.map(({ roomName, items }) => (
+                  <div key={roomName} className="flex flex-col">
+                    <div className="px-4 py-1.5 bg-slate-100/70 border-b border-border-subtle text-[11px] font-bold text-content-tertiary tracking-wider uppercase">
+                      {roomName}
+                    </div>
+                    {items.map((patient) => (
+                      <PatientItem
+                        key={patient.encounterId}
+                        patient={patient}
+                        isActive={selectedPatientId === patient.patientId}
+                        isDuplicate={duplicateNames[patient.name] > 1}
+                        onClick={() => onSelectPatient(patient.patientId)}
+                      />
+                    ))}
+                  </div>
                 ))
               )}
             </div>
           </CollapsibleContent>
         </Collapsible>
 
-        {/* 2. All Other Patients Section */}
+        {/* All Other Patients */}
         <Collapsible
           open={isAllPatientsOpen}
           onOpenChange={setIsAllPatientsOpen}
@@ -209,19 +171,18 @@ export function PatientSidebar({
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="flex flex-col bg-white">
-              {otherPatientsByRoom.map(({ roomName, patients }) => (
+              {allPatientsByRoom.map(({ roomName, items }) => (
                 <div key={roomName} className="flex flex-col">
                   <div className="px-4 py-1.5 bg-slate-100/70 border-b border-border-subtle text-[11px] font-bold text-content-tertiary tracking-wider uppercase">
                     {roomName}
                   </div>
-                  {patients.map((patient) => (
+                  {items.map((patient) => (
                     <PatientItem
-                      key={patient.id}
+                      key={patient.encounterId}
                       patient={patient}
-                      isActive={activePatientId === patient.id}
+                      isActive={selectedPatientId === patient.patientId}
                       isDuplicate={duplicateNames[patient.name] > 1}
-                      unconfirmedCount={unconfirmedCounts[patient.id] || 0}
-                      onClick={() => setActivePatientId(patient.id)}
+                      onClick={() => onSelectPatient(patient.patientId)}
                     />
                   ))}
                 </div>
@@ -231,23 +192,22 @@ export function PatientSidebar({
         </Collapsible>
       </div>
 
-      {/* User Profile & Logout (Sticky Bottom) */}
+      {/* User profile + logout */}
       <div className="p-3 border-t border-border-base bg-white">
         <div className="flex items-center justify-between gap-3 p-2.5 bg-[var(--color-surface-base)] rounded-xl border border-border-subtle/50 transition-all hover:border-[var(--color-brand-primary)]/20">
           <div className="flex flex-col min-w-0 pl-1">
             <span className="text-[14px] font-black text-content-primary truncate leading-tight">
-              {currentUser}
+              {user?.name ?? ""}
             </span>
             <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider mt-0.5">
-              RN / Charge Nurse
+              {user?.wardName ?? ""}
             </span>
           </div>
 
           <button
             onClick={() => {
-              localStorage.removeItem("currentUser");
-              clearWardAssignments();
-              router.push("/");
+              reset();
+              router.push("/login");
             }}
             className="p-2 text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-surface)] rounded-xl transition-all shadow-xs border border-[var(--color-brand-primary)]/10"
             title="로그아웃"
@@ -261,10 +221,9 @@ export function PatientSidebar({
 }
 
 interface PatientItemProps {
-  patient: Patient;
+  patient: WardPatient;
   isActive: boolean;
   isDuplicate: boolean;
-  unconfirmedCount?: number;
   onClick: () => void;
 }
 
@@ -272,7 +231,6 @@ function PatientItem({
   patient,
   isActive,
   isDuplicate,
-  unconfirmedCount = 0,
   onClick,
 }: PatientItemProps) {
   return (
@@ -313,20 +271,18 @@ function PatientItem({
                 : "text-content-muted",
             )}
           >
-            <span>{patient.gender}</span>
+            <span>{formatGenderShort(patient.gender)}</span>
             <span>/</span>
-            <span>
-              {patient.birthday ? patient.birthday.substring(2) : "00.01.01"}
-            </span>
+            <span>{formatBirthShort(patient.birthDate)}</span>
           </div>
         </div>
       </div>
-      {unconfirmedCount > 0 && (
+      {patient.unconfirmedNursingCount > 0 && (
         <span
-          title={`확정 전 기록 ${unconfirmedCount}건`}
+          title={`확정 전 기록 ${patient.unconfirmedNursingCount}건`}
           className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-[var(--color-brand-surface)] text-[var(--color-brand-primary)] text-[11px] font-bold rounded-full shrink-0 ml-2"
         >
-          {unconfirmedCount}
+          {patient.unconfirmedNursingCount}
         </span>
       )}
     </button>

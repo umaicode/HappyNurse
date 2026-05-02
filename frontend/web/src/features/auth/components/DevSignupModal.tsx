@@ -85,7 +85,13 @@ export function DevSignupModal({ isOpen, onClose }: Props) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="flex w-[360px] flex-col gap-4">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          handleSubmit()
+        }}
+        className="flex w-[360px] flex-col gap-4"
+      >
         <div>
           <h2 className="text-xl font-bold text-[var(--color-sub-primary)]">
             테스트 회원가입
@@ -99,6 +105,8 @@ export function DevSignupModal({ isOpen, onClose }: Props) {
           <div className="space-y-1.5">
             <Label className="text-sm font-bold">사원 번호</Label>
             <Input
+              name="employeeNumber"
+              autoComplete="username"
               value={employeeNumber}
               onChange={(event) => setEmployeeNumber(event.target.value)}
               placeholder="DEV001"
@@ -109,15 +117,19 @@ export function DevSignupModal({ isOpen, onClose }: Props) {
             <Label className="text-sm font-bold">비밀번호</Label>
             <Input
               type="password"
+              name="password"
+              autoComplete="new-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="비밀번호"
+              placeholder="비밀번호 (8자 이상)"
             />
           </div>
 
           <div className="space-y-1.5">
             <Label className="text-sm font-bold">이름</Label>
             <Input
+              name="name"
+              autoComplete="name"
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="홍길동"
@@ -127,6 +139,9 @@ export function DevSignupModal({ isOpen, onClose }: Props) {
           <div className="space-y-1.5">
             <Label className="text-sm font-bold">연락처</Label>
             <Input
+              name="phone"
+              type="tel"
+              autoComplete="tel"
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
               placeholder="010-1111-2222"
@@ -149,15 +164,14 @@ export function DevSignupModal({ isOpen, onClose }: Props) {
             취소
           </Button>
           <Button
-            type="button"
+            type="submit"
             className="flex-1 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white"
-            onClick={handleSubmit}
             disabled={!isFormValid || isSubmitting}
           >
             {isSubmitting ? '처리 중...' : '가입 후 로그인'}
           </Button>
         </div>
-      </div>
+      </form>
     </Modal>
   )
 }

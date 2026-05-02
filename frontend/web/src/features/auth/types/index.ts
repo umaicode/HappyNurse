@@ -8,79 +8,79 @@
  */
 
 // roleCode: 스웨거 enum — head_nurse | nurse | doctor | admin
-export type RoleCode = 'head_nurse' | 'nurse' | 'doctor' | 'admin'
+export type RoleCode = "head_nurse" | "nurse" | "doctor" | "admin";
 
 // [간호사용 웹] 로그인
 
 export interface LoginRequest {
-  organizationId: number
-  wardId: number
-  employeeNumber: string
-  password: string
+  organizationId: number;
+  wardId: number;
+  employeeNumber: string;
+  password: string;
 }
 
 export interface AuthUser {
-  practitionerId: number
-  name: string
-  employeeNumber: string
-  roleCode: RoleCode
-  wardId: number
+  practitionerId: number;
+  name: string;
+  employeeNumber: string;
+  roleCode: RoleCode;
+  wardId: number;
   // /auth/login · /auth/refresh 응답에만 포함, /practitioners/me 응답엔 없음
-  organizationId?: number
+  organizationId?: number;
   // /practitioners/me 응답에만 포함
-  wardName?: string
+  wardName?: string;
 }
 
 // [간호사용 웹] DEV 로그인 (응답 body 로 토큰 반환)
 
 export interface DevLoginRequest {
-  employeeNumber: string
+  employeeNumber: string;
 }
 
 export interface DevLoginResponse extends AuthUser {
-  accessToken: string
-  refreshToken: string
+  accessToken: string;
+  refreshToken: string;
 }
 
 // [간호사용 웹] DEV 회원가입
 
 export interface SignupRequest {
-  employeeNumber: string
-  password: string
-  name: string
-  phone: string
-  organizationId: number
-  wardId: number
-  roleCode: RoleCode
+  employeeNumber: string;
+  password: string;
+  name: string;
+  phone: string;
+  organizationId: number;
+  wardId: number;
+  roleCode: RoleCode;
 }
 
 export interface SignupResponse {
-  practitionerId: number
-  employeeNumber: string
-  name: string
-  roleCode: RoleCode
-  organizationId: number
-  wardId: number
-  periodStart: string
+  practitionerId: number;
+  employeeNumber: string;
+  name: string;
+  roleCode: RoleCode;
+  organizationId: number;
+  wardId: number;
+  periodStart: string;
 }
 
-// [환자용 웹앱] 본인 확인 — 환자 웹앱 코드가 import 중.
+// [환자용 웹앱] 본인 확인
 
 export interface PatientVerifyRequest {
-  patientId: number
-  name: string
-  birthDate: string
+  patientId: number;
+  name: string;
+  birthDate: string;
 }
 
 // swagger PatientVerifyResponse 와 일치.
 export interface PatientInfo {
-  patientId: number
-  patientName: string
-  roomName: string
-  gender?: string
-  departmentCode?: string
-  diseaseName?: string
-  chiefComplaint?: string
-  surgeryName?: string | null
-  assignedNurseName?: string
+  patientId: number;
+  patientName: string;
+  roomName: string;
+  gender: "male" | "female";
+  departmentCode: string;
+  diseaseName: string;
+  chiefComplaint: string;
+  surgeryName: string;
+  assignedNurseName: string;
 }

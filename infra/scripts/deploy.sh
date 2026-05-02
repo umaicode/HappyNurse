@@ -98,7 +98,7 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${NEW_CONTAINER}$"; then
 fi
 
 cd "$INFRA_DIR"
-COLOR="$NEW" docker compose -f "$COMPOSE_FILE" up -d --no-deps "${SERVICE}-${ENV}"
+docker compose -f "$COMPOSE_FILE" up -d --no-deps "$NEW_CONTAINER"
 
 # ──────────────────────────────────────────────
 # 3. 헬스체크 (TCP 포트 열림 확인)
@@ -139,11 +139,14 @@ done
 # ──────────────────────────────────────────────
 log "▶ Switching Nginx upstream to $NEW"
 
+# 변수 이름 (예: backend_dev_target)
+TARGET_VAR="${SERVICE}_${ENV}_target"
+
 cat > "$UPSTREAM_FILE" <<EOF
 # 현재 활성 색: ${NEW}
 # Last updated: $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')
-upstream ${SERVICE}_${ENV} {
-    server ${NEW_CONTAINER}:${PORT} max_fails=1 fail_timeout=5s;
+map "" \$${TARGET_VAR} {
+    default "${NEW_CONTAINER}:${PORT}";
 }
 EOF
 
