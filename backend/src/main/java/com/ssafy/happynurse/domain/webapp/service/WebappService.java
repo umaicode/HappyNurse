@@ -1,9 +1,9 @@
 package com.ssafy.happynurse.domain.webapp.service;
 
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
-import com.ssafy.happynurse.domain.nurse.entity.Notification;
-import com.ssafy.happynurse.domain.nurse.entity.SourceType;
-import com.ssafy.happynurse.domain.nurse.repository.NotificationRepository;
+import com.ssafy.happynurse.domain.nurse.notification.entity.Notification;
+import com.ssafy.happynurse.domain.nurse.notification.entity.SourceType;
+import com.ssafy.happynurse.domain.nurse.notification.repository.NotificationRepository;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.entity.EncounterStatus;
 import com.ssafy.happynurse.domain.patient.entity.Patient;

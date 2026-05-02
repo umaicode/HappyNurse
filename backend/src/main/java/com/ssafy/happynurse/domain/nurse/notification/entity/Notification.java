@@ -1,4 +1,4 @@
-package com.ssafy.happynurse.domain.nurse.entity;
+package com.ssafy.happynurse.domain.nurse.notification.entity;
 
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
