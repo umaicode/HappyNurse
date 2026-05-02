@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
+
 import { useRouter } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 import { motion } from 'motion/react'
@@ -170,52 +170,22 @@ export function LoginForm() {
   return (
     <div className="fixed inset-0 flex w-full bg-white overflow-hidden font-sans">
       {/* Layer 1: Base */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          background: `linear-gradient(135deg,
-            var(--color-brand-surface) 0%,
-            var(--color-brand-surface) 12%,
-            #FFFFFF 35%,
-            #FFFFFF 65%,
-            var(--color-brand-surface) 88%,
-            var(--color-brand-surface) 100%
-          )`,
-        }}
-      />
+      <div className="absolute inset-0 z-0 bg-[linear-gradient(135deg,var(--color-brand-surface)_0%,var(--color-brand-surface)_12%,#FFFFFF_35%,#FFFFFF_65%,var(--color-brand-surface)_88%,var(--color-brand-surface)_100%)]" />
 
       {/* Layer 2: Center white highlight */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          background: `radial-gradient(ellipse 80% 65% at 50% 45%, #FFFFFF, transparent 72%)`,
-          opacity: 0.85,
-        }}
-      />
+      <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_80%_65%_at_50%_45%,#FFFFFF,transparent_72%)] opacity-85" />
 
       {/* Layer 3: Top-right brand-primary spotlight */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          background: `radial-gradient(ellipse 60% 50% at 92% 8%, var(--color-brand-primary), transparent 60%)`,
-          opacity: 0.25,
-        }}
-      />
+      <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_60%_50%_at_92%_8%,var(--color-brand-primary),transparent_60%)] opacity-25" />
 
       {/* Layer 4: Bottom-left sub-primary spotlight */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          background: `radial-gradient(ellipse 70% 55% at 8% 95%, var(--color-sub-primary), transparent 60%)`,
-          opacity: 0.2,
-        }}
-      />
+      <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_70%_55%_at_8%_95%,var(--color-sub-primary),transparent_60%)] opacity-20" />
 
       {/* Layer 5: Saturated blobs */}
-      <div className="absolute top-[-20%] left-[-12%] w-[55%] h-[55%] bg-[var(--color-brand-primary)]/22 rounded-full blur-[130px] z-1" />
-      <div className="absolute bottom-[-15%] right-[8%] w-[50%] h-[50%] bg-[var(--color-brand-primary)]/18 rounded-full blur-[150px] z-1" />
-      <div className="absolute top-[30%] right-[-15%] w-[42%] h-[42%] bg-[var(--color-sub-primary)]/16 rounded-full blur-[120px] z-1" />
-      <div className="absolute bottom-[25%] left-[10%] w-[28%] h-[28%] bg-[var(--color-brand-primary)]/12 rounded-full blur-[100px] z-1" />
+      <div className="absolute top-[-20%] left-[-12%] w-[55%] h-[55%] bg-brand-primary/22 rounded-full blur-[130px] z-1" />
+      <div className="absolute bottom-[-15%] right-[8%] w-[50%] h-[50%] bg-brand-primary/18 rounded-full blur-[150px] z-1" />
+      <div className="absolute top-[30%] right-[-15%] w-[42%] h-[42%] bg-sub-primary/16 rounded-full blur-[120px] z-1" />
+      <div className="absolute bottom-[25%] left-[10%] w-[28%] h-[28%] bg-brand-primary/12 rounded-full blur-[100px] z-1" />
 
       {/* Layer 6: Soft white veil */}
       <div className="absolute inset-0 z-2 bg-gradient-to-b from-white/15 via-transparent to-white/10" />
@@ -267,7 +237,8 @@ export function LoginForm() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="flex flex-col items-start"
             >
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src="/images/logo_ic.png"
                 alt=""
                 width={80}
@@ -276,11 +247,11 @@ export function LoginForm() {
               />
               <Heading
                 level="h1"
-                className="text-[var(--color-sub-primary)] leading-[1.2] mb-6 text-5xl"
+                className="text-sub-primary leading-[1.2] mb-6 text-5xl"
               >
                 간호 업무의
                 <br />
-                <span className="text-[var(--color-brand-primary)]">
+                <span className="text-brand-primary">
                   새로운 기준
                 </span>
               </Heading>
@@ -299,7 +270,8 @@ export function LoginForm() {
         {/* Right Panel: Login Form (50%) */}
         <div className="w-full md:w-1/2 flex flex-col items-center justify-center p-8 bg-white relative z-30 md:rounded-l-[60px] shadow-[-20px_0_50px_rgba(0,0,0,0.05)] border-l border-white/20">
           <div className="absolute top-10 right-12 hidden md:block">
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src="/images/logo_2.png"
               alt="해피너스"
               width={120}
@@ -318,7 +290,7 @@ export function LoginForm() {
                 }}
                 aria-hidden={step !== 2}
                 tabIndex={step === 2 ? 0 : -1}
-                className={`flex items-center gap-1.5 text-sm font-bold text-content-muted hover:text-[var(--color-brand-primary)] transition-opacity group ${
+                className={`flex items-center gap-1.5 text-sm font-bold text-content-muted hover:text-brand-primary transition-opacity group ${
                   step === 2 ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 }`}
               >
@@ -333,7 +305,7 @@ export function LoginForm() {
                 <div>
                   <Heading
                     level="h2"
-                    className="text-3xl font-bold text-[var(--color-sub-primary)] mb-3"
+                    className="text-3xl font-bold text-sub-primary mb-3"
                   >
                     접속 정보 선택
                   </Heading>
@@ -354,7 +326,7 @@ export function LoginForm() {
                         onValueChange={handleOrganizationChange}
                         disabled={organizationsQuery.isPending}
                       >
-                        <SelectTrigger className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus:border-[var(--color-brand-primary)] focus:ring-4 focus:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-bold text-content-primary transition-all">
+                        <SelectTrigger className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/5 rounded-2xl text-base font-bold text-content-primary transition-all">
                           <SelectValue
                             placeholder={
                               organizationsQuery.isPending
@@ -363,7 +335,7 @@ export function LoginForm() {
                             }
                           />
                         </SelectTrigger>
-                        <SelectContent className="z-[100] rounded-xl border-[var(--color-border-base)] shadow-xl">
+                        <SelectContent className="z-[100] rounded-xl border-border-base shadow-xl">
                           {organizationsQuery.data?.map((organization) => (
                             <SelectItem
                               key={organization.organizationId}
@@ -388,7 +360,7 @@ export function LoginForm() {
                         onValueChange={setWard}
                         disabled={!organizationId || wardsQuery.isPending}
                       >
-                        <SelectTrigger className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus:border-[var(--color-brand-primary)] focus:ring-4 focus:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-bold text-content-primary transition-all">
+                        <SelectTrigger className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/5 rounded-2xl text-base font-bold text-content-primary transition-all">
                           <SelectValue
                             placeholder={
                               !organizationId
@@ -399,7 +371,7 @@ export function LoginForm() {
                             }
                           />
                         </SelectTrigger>
-                        <SelectContent className="z-[100] rounded-xl border-[var(--color-border-base)] shadow-xl">
+                        <SelectContent className="z-[100] rounded-xl border-border-base shadow-xl">
                           {wardsQuery.data?.map((wardOption) => (
                             <SelectItem
                               key={wardOption.wardId}
@@ -417,7 +389,7 @@ export function LoginForm() {
                 <Button
                   onClick={() => setStep(2)}
                   disabled={!organizationId || !ward}
-                  className="w-full h-15 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--color-brand-primary)]/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full h-15 bg-brand-primary hover:bg-brand-hover text-white! font-bold text-lg rounded-2xl shadow-xl shadow-brand-primary/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   다음 단계
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -434,7 +406,7 @@ export function LoginForm() {
                 <div>
                   <Heading
                     level="h2"
-                    className="text-3xl font-bold text-[var(--color-sub-primary)] mb-3"
+                    className="text-3xl font-bold text-sub-primary mb-3"
                   >
                     환영합니다!
                   </Heading>
@@ -458,7 +430,7 @@ export function LoginForm() {
                         onChange={(event) =>
                           setEmployeeNumber(event.target.value)
                         }
-                        className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
+                        className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary/5 rounded-2xl text-base font-semibold transition-all"
                       />
                     </div>
                   </div>
@@ -476,7 +448,7 @@ export function LoginForm() {
                         placeholder="비밀번호를 입력하세요"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
-                        className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
+                        className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary/5 rounded-2xl text-base font-semibold transition-all"
                       />
                     </div>
                   </div>
@@ -491,7 +463,7 @@ export function LoginForm() {
                 <Button
                   type="submit"
                   disabled={loginMutation.isPending}
-                  className="w-full h-15 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--color-brand-primary)]/20 transition-all flex items-center justify-center gap-2"
+                  className="w-full h-15 bg-brand-primary hover:bg-brand-hover text-white! font-bold text-lg rounded-2xl shadow-xl shadow-brand-primary/20 transition-all flex items-center justify-center gap-2"
                 >
                   {loginMutation.isPending ? '로그인 중...' : '로그인'}
                 </Button>
