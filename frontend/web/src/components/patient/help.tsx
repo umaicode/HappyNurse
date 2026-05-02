@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronLeft, Mic } from "lucide-react";
-import { faqMock, symptomsMock } from "@/mockup/patient";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ChevronDown, ChevronLeft } from "lucide-react";
+import { getButtons, getFaq, submitSymptom } from "@/features/patient/api";
+import { usePatientStore } from "@/features/patient/stores/patient";
+import type { FaqItem, SymptomButton } from "@/features/patient/types/patient";
 
 type TabKey = "form" | "faq";
 
@@ -13,49 +15,87 @@ const genderLabel = (gender: string): string => {
   return "";
 };
 
+const genderChipClass = (gender: string): string => {
+  if (gender === "male") return "bg-blue-100 text-blue-700";
+  if (gender === "female") return "bg-pink-100 text-pink-700";
+  return "bg-patient-slate-surface text-patient-slate";
+};
+
 export default function Help() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const patientName = searchParams.get("name") ?? "";
-  const roomName = searchParams.get("roomName") ?? "";
-  const gender = searchParams.get("gender") ?? "";
-  const diseaseName = searchParams.get("diseaseName") ?? "";
-  const surgeryName = searchParams.get("surgeryName") ?? "";
-  const chiefComplaint = searchParams.get("chiefComplaint") ?? "";
-  const assignedNurseName = searchParams.get("assignedNurseName") ?? "";
-  const [selectedSymptom, setSelectedSymptom] = useState<string | null>(null);
+  const patient = usePatientStore((state) => state.patient);
+
+  useEffect(() => {
+    if (!patient) router.replace("/patient/verify");
+  }, [patient, router]);
+
+  const patientId = patient?.patientId ?? 0;
+  const patientName = patient?.patientName ?? "";
+  const roomName = patient?.roomName ?? "";
+  const gender = patient?.gender ?? "";
+  const diseaseName = patient?.diseaseName ?? "";
+  const surgeryName = patient?.surgeryName ?? "";
+  const chiefComplaint = patient?.chiefComplaint ?? "";
+  const assignedNurseName = patient?.assignedNurseName ?? "";
+  const [buttons, setButtons] = useState<SymptomButton[]>([]);
+  const [selectedButtonId, setSelectedButtonId] = useState<number | null>(null);
   const [directInput, setDirectInput] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("form");
-  const [openFaqId, setOpenFaqId] = useState<string | null>(null);
+  const [faqs, setFaqs] = useState<FaqItem[]>([]);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const faqs = faqMock;
+  useEffect(() => {
+    getButtons()
+      .then((list) =>
+        setButtons([...list].sort((a, b) => a.displayOrder - b.displayOrder)),
+      )
+      .catch(() => setErrorMessage("증상 버튼을 불러올 수 없습니다."));
+  }, []);
 
-  const toggleSymptom = (id: string) => {
-    setSelectedSymptom((prev) => (prev === id ? null : id));
+  useEffect(() => {
+    if (!patientId) return;
+    getFaq(patientId)
+      .then((res) => setFaqs(res.items))
+      .catch(() => {});
+  }, [patientId]);
+
+  const toggleSymptom = (buttonId: number) => {
+    setSelectedButtonId((prev) => (prev === buttonId ? null : buttonId));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const trimmedInput = directInput.trim();
-    if (!selectedSymptom && !trimmedInput) return;
+    if (selectedButtonId === null && !trimmedInput) return;
+    if (!patientId || submitting) return;
 
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, "0");
-    const minutes = String(now.getMinutes()).padStart(2, "0");
-    const sentAt = `${hours}:${minutes}`;
+    setSubmitting(true);
+    setErrorMessage("");
+    try {
+      // 백엔드에서 buttonId · symptomText 동시 전송을 허용하도록 수정 진행 중.
+      await submitSymptom(patientId, {
+        buttonId: selectedButtonId ?? undefined,
+        symptomText: trimmedInput || undefined,
+      });
 
-    const params = new URLSearchParams({
-      name: patientName,
-      roomName,
-      symptoms: selectedSymptom ?? "",
-      sentAt,
-      assignedNurseName,
-    });
-    if (trimmedInput) params.set("direct", trimmedInput);
-    router.push(`/patient/complete?${params.toString()}`);
+      const now = new Date();
+      const sentAt = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      const selectedLabel =
+        buttons.find((button) => button.buttonId === selectedButtonId)?.label ?? "";
+
+      const params = new URLSearchParams({ sentAt, symptoms: selectedLabel });
+      if (trimmedInput) params.set("direct", trimmedInput);
+      router.push(`/patient/complete?${params.toString()}`);
+    } catch {
+      setErrorMessage("증상 전송에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const hasRequest = !!selectedSymptom || !!directInput.trim();
+  const hasRequest = selectedButtonId !== null || !!directInput.trim();
 
   return (
     <div className="flex flex-1 min-h-0 flex-col gap-5 px-[22px] pt-5 pb-[50px]">
@@ -79,14 +119,16 @@ export default function Help() {
             <span className="text-[22px] font-extrabold tracking-tight text-patient-ink">
               {patientName}
             </span>
+            {gender ? (
+              <span
+                className={`rounded-full px-2 py-[2px] text-[16px] font-bold ${genderChipClass(gender)}`}
+              >
+                {genderLabel(gender)}
+              </span>
+            ) : null}
             {roomName ? (
               <span className="rounded-full bg-patient-slate-surface px-2 py-[2px] text-[16px] font-bold text-patient-slate">
                 {roomName}
-              </span>
-            ) : null}
-            {gender ? (
-              <span className="rounded-full bg-patient-slate-surface px-2 py-[2px] text-[16px] font-bold text-patient-slate">
-                {genderLabel(gender)}
               </span>
             ) : null}
           </div>
@@ -171,16 +213,16 @@ export default function Help() {
       {activeTab === "form" ? (
         <div className="flex flex-1 flex-col gap-[15px] overflow-hidden">
           <div className="grid grid-cols-2 gap-5 mx-2 mt-2">
-            {symptomsMock.map((symptom) => {
-              const isSelected = selectedSymptom === symptom.id;
+            {buttons.map((button) => {
+              const isSelected = selectedButtonId === button.buttonId;
               return (
                 <button
-                  key={symptom.id}
+                  key={button.buttonId}
                   type="button"
-                  onClick={() => toggleSymptom(symptom.id)}
+                  onClick={() => toggleSymptom(button.buttonId)}
                   className={`flex h-[62px] flex-col justify-center gap-0.5 rounded-xl px-3.5 py-3.5 text-left transition-all ${
                     isSelected
-                      ? "border border-transparent bg-[#ebf0f9] shadow-[0_4px_6px_rgba(0,0,0,0.13)]"
+                      ? "border border-transparent bg-[#d4e0f7] shadow-[0_4px_6px_rgba(0,0,0,0.13)]"
                       : "border border-transparent bg-white shadow-[0_2px_8px_rgba(0,0,0,0.13)]"
                   }`}
                 >
@@ -189,7 +231,7 @@ export default function Help() {
                       isSelected ? "text-patient-slate" : "text-patient-ink"
                     }`}
                   >
-                    {symptom.label}
+                    {button.label}
                   </span>
                   <span
                     className={`text-sm font-medium tracking-tight ${
@@ -198,7 +240,7 @@ export default function Help() {
                         : "text-patient-muted"
                     }`}
                   >
-                    {symptom.sub}
+                    {button.description}
                   </span>
                 </button>
               );
@@ -206,40 +248,24 @@ export default function Help() {
           </div>
 
           <div className="mt-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <label className="text-lg font-bold text-patient-sub">
-                그 외 증상
-              </label>
-              <button
-                type="button"
-                aria-label="음성으로 입력"
-                disabled={!!selectedSymptom}
-                className={`flex size-9 items-center justify-center rounded-full transition-colors ${
-                  selectedSymptom
-                    ? "cursor-not-allowed bg-[#e5e7eb] text-patient-fade"
-                    : "bg-patient-primary text-white hover:bg-[#0F1F7A]"
-                }`}
-              >
-                <Mic className="size-[18px]" strokeWidth={2.2} />
-              </button>
-            </div>
+            <label className="text-lg font-bold text-patient-sub">
+              그 외 증상
+            </label>
             <textarea
-              value={selectedSymptom ? "" : directInput}
+              value={directInput}
               onChange={(event) => setDirectInput(event.target.value)}
               placeholder="증상이나 필요한 도움을 입력해주세요"
-              disabled={!!selectedSymptom}
-              className={`min-h-[72px] w-full resize-none rounded-xl border px-3 py-2.5 text-lg font-medium leading-relaxed outline-none transition-colors ${
-                selectedSymptom
-                  ? "border-[#e0e2e6] bg-[#f3f4f6] text-patient-muted placeholder:text-patient-fade cursor-not-allowed"
-                  : "border-[#cdcfd7] bg-white text-patient-ink placeholder:text-patient-fade focus:border-patient-primary"
-              }`}
+              className="min-h-[72px] w-full resize-none rounded-xl border border-[#cdcfd7] bg-white px-3 py-2.5 text-lg font-medium leading-relaxed text-patient-ink placeholder:text-patient-fade outline-none transition-colors focus:border-patient-primary"
             />
+            {errorMessage ? (
+              <p className="text-sm font-bold text-red-500">{errorMessage}</p>
+            ) : null}
           </div>
 
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!hasRequest}
+            disabled={!hasRequest || submitting}
             className="mt-auto h-14 w-full rounded-[14px] bg-patient-primary text-[20px] font-bold tracking-tight text-white transition-colors hover:bg-[#0F1F7A] disabled:cursor-default disabled:bg-[#C8CBD4]"
           >
             간호사에게 전송
@@ -252,17 +278,17 @@ export default function Help() {
               등록된 FAQ가 없습니다.
             </p>
           ) : (
-            faqs.map((faq) => {
-              const isOpen = openFaqId === faq.id;
+            faqs.map((faq, index) => {
+              const isOpen = openFaqIndex === index;
               return (
                 <div
-                  key={faq.id}
+                  key={index}
                   className="shrink-0 overflow-hidden rounded-xl bg-[#F8F8F8] shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
                 >
                   <button
                     type="button"
                     onClick={() =>
-                      setOpenFaqId((prev) => (prev === faq.id ? null : faq.id))
+                      setOpenFaqIndex((prev) => (prev === index ? null : index))
                     }
                     className="flex w-full items-center gap-2.5 px-3.5 py-3 text-left"
                   >
