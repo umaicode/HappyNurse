@@ -25,7 +25,7 @@ public class DeviceController {
     private final DeviceService deviceService;
 
     @Operation(summary = "FCM 디바이스 토큰 등록",
-            description = "현재 로그인한 간호사의 활성 ward 에 디바이스 토큰을 UPSERT 등록한다")
+            description = "현재 로그인 한 간호사의 활성 ward 에 디바이스 토큰을 UPSERT 등록한다")
     @PostMapping("/fcm-token")
     public ResponseEntity<ApiResponse<FcmTokenRegisterResponse>> registerFcmToken(
             @AuthenticationPrincipal CustomUserDetails userDetails,
