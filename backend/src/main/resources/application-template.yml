@@ -62,3 +62,15 @@ app:
     enabled: false
   nfc-secret: ${NFC_SECRET}
   webapp-base-url: ${WEBAPP_BASE_URL}
+
+  # ─────────────────────────────────────────────
+  # Firebase Cloud Messaging (FCM)
+  # 사용법:
+  #   1. Firebase Console (Project Settings → Service accounts) 에서
+  #      "Generate new private key" 로 JSON 다운로드
+  #   2. src/main/resources/firebase/service-account.json 에 저장
+  #      (이 디렉토리는 .gitignore — git 에 올라가지 않음)
+  #   3. 팀원에게는 비공개 채널 (Notion private / 슬랙 DM) 로 키 파일 공유
+  # ─────────────────────────────────────────────
+  firebase:
+    credentials-path: classpath:firebase/service-account.json
