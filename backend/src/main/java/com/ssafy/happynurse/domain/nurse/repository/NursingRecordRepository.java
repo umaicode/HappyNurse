@@ -20,4 +20,11 @@ public interface NursingRecordRepository extends JpaRepository<NursingRecord, Lo
             """)
     List<EncounterDraftCount> countDraftByEncounterIds(
             @Param("encounterIds") Collection<Long> encounterIds);
+
+    @Query("""
+            SELECT nr FROM NursingRecord nr
+            JOIN FETCH nr.authorPractitioner
+            WHERE nr.encounter.encounterId = :encounterId
+            """)
+    List<NursingRecord> findAllByEncounterIdWithAuthor(@Param("encounterId") Long encounterId);
 }
