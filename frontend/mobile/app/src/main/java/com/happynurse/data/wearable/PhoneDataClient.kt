@@ -1,5 +1,4 @@
-// 워치 → 폰 DataLayer 송신
-package com.happynurse.wear.data.remote
+package com.happynurse.data.wearable
 
 import android.content.Context
 import com.google.android.gms.wearable.Wearable
@@ -9,7 +8,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class WearDataClient @Inject constructor(
+class PhoneDataClient @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     private val messageClient = Wearable.getMessageClient(context)

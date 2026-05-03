@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -21,13 +22,13 @@ android {
     }
 
     buildTypes {
-        // 지금은 애뮬레이터의 주소로 테스트
-        // 나중에 배포되면 실제 백엔드의 주소로 바꿔줘야함
+        // 실기기 배포 BASE_URL — debug=DEV, release=PROD
+        // 에뮬레이터에서 실행 시 AppModule 이 자동으로 http://10.0.2.2:8080/ 로 override
         debug {
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
+            buildConfigField("String", "BASE_URL", "\"https://k14e101.p.ssafy.io/dev/api/\"")
         }
         release {
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
+            buildConfigField("String", "BASE_URL", "\"https://k14e101.p.ssafy.io/api/\"")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -80,11 +81,6 @@ dependencies {
     ksp("com.google.dagger:hilt-compiler:2.59.2")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
-    // Room
-    implementation("androidx.room:room-runtime:2.6.0")
-    implementation("androidx.room:room-ktx:2.6.0")
-    ksp("androidx.room:room-compiler:2.6.0")
-
     // FCM
     implementation("com.google.firebase:firebase-messaging:23.3.1")
 
@@ -97,12 +93,6 @@ dependencies {
     // Kotlin Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
-    // WorkManager
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-    implementation("androidx.hilt:hilt-work:1.2.0")
-    ksp("androidx.hilt:hilt-compiler:1.2.0")
-
-    // Wear OS (폰-워치 DataLayer 통신)
-    implementation("androidx.wear:wear:1.3.0")
+    // Wear OS DataLayer (폰-워치 통신)
     implementation("com.google.android.gms:play-services-wearable:18.1.0")
 }
