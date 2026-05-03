@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-@Tag(name = "SSE", description = "간호사 실시간 알림 구독 API")
+@Tag(name = "SSE", description = "간호사 ward/개인 채널 실시간 알림 구독 API")
 @RestController
 @RequiredArgsConstructor
 public class SsePersonalController {
@@ -21,8 +21,8 @@ public class SsePersonalController {
 
     @Operation(
             summary = "간호사 SSE 구독 (개인 채널)",
-            description = "간호사 JWT 기반 개인 채널 구독. 본인 담당 환자 이벤트가 발송된다. " +
-                    "Step 2 이후 데스크 PC 용 ward 채널은 별도 엔드포인트(/sse/ward-subscribe)로 분리될 예정."
+            description = "간호사 JWT 기반 개인 채널 구독. 본인(assignedPractitionerId) 담당 알림이 발송된다. " +
+                    "ward 전체 알림 구독은 별도 엔드포인트 /sse/ward-subscribe 사용."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "SSE 스트림 연결 성공"),

@@ -3,6 +3,8 @@ package com.ssafy.happynurse.domain.nurse.notification.controller;
 import com.ssafy.happynurse.domain.nurse.notification.dto.NotificationListResponse;
 import com.ssafy.happynurse.domain.nurse.notification.service.NotificationQueryService;
 import com.ssafy.happynurse.global.security.CustomUserDetails;
+import com.ssafy.happynurse.global.response.ApiResponse;
+import org.springframework.http.ResponseEntity;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,9 +35,13 @@ class NotificationQueryControllerTest {
         NotificationListResponse expected = new NotificationListResponse(List.of(), null);
         when(service.findWardInbox(eq(1L), any(), any(), any())).thenReturn(expected);
 
-        NotificationListResponse actual = controller.getWardInbox(1L, null, null, null, principal);
+        ResponseEntity<ApiResponse<NotificationListResponse>> actual =
+                controller.getWardInbox(1L, null, null, null, principal);
 
-        assertThat(actual).isSameAs(expected);
+        assertThat(actual.getStatusCode().value()).isEqualTo(200);
+        assertThat(actual.getBody()).isNotNull();
+        assertThat(actual.getBody().isSuccess()).isTrue();
+        assertThat(actual.getBody().getData()).isSameAs(expected);
     }
 
     @Test
@@ -60,9 +66,13 @@ class NotificationQueryControllerTest {
         NotificationListResponse expected = new NotificationListResponse(List.of(), null);
         when(service.findPersonalInbox(eq(7L), any(), any(), any())).thenReturn(expected);
 
-        NotificationListResponse actual = controller.getPersonalInbox(null, null, null, principal);
+        ResponseEntity<ApiResponse<NotificationListResponse>> actual =
+                controller.getPersonalInbox(null, null, null, principal);
 
-        assertThat(actual).isSameAs(expected);
+        assertThat(actual.getStatusCode().value()).isEqualTo(200);
+        assertThat(actual.getBody()).isNotNull();
+        assertThat(actual.getBody().isSuccess()).isTrue();
+        assertThat(actual.getBody().getData()).isSameAs(expected);
     }
 
     private CustomUserDetails userWithWard(Long practitionerId, Long wardId) {
