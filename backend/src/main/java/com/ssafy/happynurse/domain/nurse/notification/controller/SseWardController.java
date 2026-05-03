@@ -2,13 +2,14 @@ package com.ssafy.happynurse.domain.nurse.notification.controller;
 
 import com.ssafy.happynurse.domain.nurse.notification.service.registry.WardEmitterRegistry;
 import com.ssafy.happynurse.global.security.CustomUserDetails;
+import com.ssafy.happynurse.global.exception.CustomException;
+import com.ssafy.happynurse.global.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,7 +43,7 @@ public class SseWardController {
     public SseEmitter subscribe(@AuthenticationPrincipal CustomUserDetails userDetails) {
         Long wardId = userDetails.getWardId();
         if (wardId == null) {
-            throw new AccessDeniedException("JWT 클레임에 wardId 없음 — ward 채널 구독 불가");
+            throw new CustomException(ErrorCode.ROLE_NOT_FOUND, "JWT 클레임에 wardId 없음 — ward 채널 구독 불가");
         }
         return wardEmitterRegistry.register(wardId);
     }

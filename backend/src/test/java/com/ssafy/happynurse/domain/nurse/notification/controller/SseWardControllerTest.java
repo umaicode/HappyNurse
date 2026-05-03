@@ -2,12 +2,12 @@ package com.ssafy.happynurse.domain.nurse.notification.controller;
 
 import com.ssafy.happynurse.domain.nurse.notification.service.registry.WardEmitterRegistry;
 import com.ssafy.happynurse.global.security.CustomUserDetails;
+import com.ssafy.happynurse.global.exception.CustomException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,12 +37,11 @@ class SseWardControllerTest {
     }
 
     @Test
-    void subscribe_nullWardId_throwsAccessDenied() {
+    void subscribe_nullWardId_throwsForbidden() {
         CustomUserDetails user = new CustomUserDetails(
                 10L, "N0010", "이승연", "NURSE", "session-1", 1L, null);
 
         assertThatThrownBy(() -> controller.subscribe(user))
-                .isInstanceOf(AccessDeniedException.class)
-                .hasMessageContaining("wardId");
+                .isInstanceOf(CustomException.class);
     }
 }
