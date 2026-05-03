@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 
 @Tag(name = "알림함", description = "병동/개인 알림함 조회 REST API (cursor 기반 페이지네이션)")
 @RestController
-@RequestMapping("/api/notifications")
+@RequestMapping("/notifications")
 @RequiredArgsConstructor
 public class NotificationQueryController {
 
