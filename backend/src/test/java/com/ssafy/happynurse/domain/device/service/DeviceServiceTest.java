@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.anyLong;
 
 @ExtendWith(MockitoExtension.class)
 class DeviceServiceTest {
@@ -91,6 +92,18 @@ class DeviceServiceTest {
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ROLE_NOT_FOUND);
 
+        verify(deviceRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("deviceType=web 이면 INVALID_INPUT_VALUE 거부")
+    void rejectsNonMobileDeviceType() {
+        assertThatThrownBy(() -> deviceService.registerFcmToken(
+                1L, 10L, new FcmTokenRegisterRequest("tokenA", DeviceType.web)))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT_VALUE);
+
+        verify(roleRepository, never()).findActiveByPractitionerIdAndWardId(anyLong(), anyLong());
         verify(deviceRepository, never()).save(any());
     }
 

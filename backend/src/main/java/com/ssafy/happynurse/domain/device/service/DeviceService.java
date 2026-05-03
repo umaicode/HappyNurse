@@ -2,6 +2,7 @@ package com.ssafy.happynurse.domain.device.service;
 
 import com.ssafy.happynurse.domain.common.entity.PractitionerDevice;
 import com.ssafy.happynurse.domain.common.entity.PractitionerRole;
+import com.ssafy.happynurse.domain.common.entity.DeviceType;
 import com.ssafy.happynurse.domain.common.repository.PractitionerDeviceRepository;
 import com.ssafy.happynurse.domain.common.repository.PractitionerRoleRepository;
 import com.ssafy.happynurse.domain.device.dto.FcmTokenRegisterRequest;
@@ -22,6 +23,13 @@ public class DeviceService {
 
     public FcmTokenRegisterResponse registerFcmToken(
             Long practitionerId, Long wardId, FcmTokenRegisterRequest request) {
+
+        DeviceType type = request.deviceType();
+        if (type != DeviceType.mobile && type != DeviceType.watch) {
+            throw new CustomException(
+                    ErrorCode.INVALID_INPUT_VALUE,
+                    "FCM 등록은 mobile/watch deviceType 만 허용 (요청 값: " + type + ")");
+        }
 
         PractitionerRole role = roleRepository
                 .findActiveByPractitionerIdAndWardId(practitionerId, wardId)
