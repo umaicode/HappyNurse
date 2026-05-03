@@ -55,7 +55,18 @@ public enum ErrorCode implements ResponseCode {
     // Symptom
     BUTTON_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 증상 버튼입니다."),
     SYMPTOM_INPUT_INVALID(HttpStatus.BAD_REQUEST, "버튼 또는 직접 입력 중 하나만 선택해야 합니다."),
-    PATIENT_ID_MISMATCH(HttpStatus.FORBIDDEN, "본인의 증상만 제출할 수 있습니다.");
+    PATIENT_ID_MISMATCH(HttpStatus.FORBIDDEN, "본인의 증상만 제출할 수 있습니다."),
+
+    // Nursing Record
+    NURSING_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "간호 기록을 찾을 수 없습니다."),
+    NURSING_RECORD_NOT_AUTHOR(HttpStatus.FORBIDDEN, "본인이 작성한 간호 기록만 수정할 수 있습니다."),
+
+    // Medication Administration
+    MEDICATION_ADMIN_NOT_FOUND(HttpStatus.NOT_FOUND, "투약 기록을 찾을 수 없습니다."),
+    MEDICATION_ADMIN_NOT_AUTHOR(HttpStatus.FORBIDDEN, "본인이 투약한 기록만 수정할 수 있습니다."),
+
+    // Record State
+    INVALID_RECORD_STATUS(HttpStatus.BAD_REQUEST, "현재 상태에서 처리할 수 없는 요청입니다.");
 
     private final HttpStatus status;
     private final String message;
