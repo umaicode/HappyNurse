@@ -66,6 +66,78 @@ class FirebaseFcmSenderTest {
                 .sendEachForMulticast(org.mockito.ArgumentMatchers.any());
     }
 
+    @Test
+    @DisplayName("UNREGISTERED 응답 토큰은 is_active=false")
+    void deactivatesTokensWithUnregisteredError() throws FirebaseMessagingException {
+        PractitionerDevice d1 = mockDevice(101L, "tokenA");
+        PractitionerDevice d2 = mockDevice(102L, "tokenB");
+        given(deviceRepository.findActiveByPractitionerId(1L)).willReturn(List.of(d1, d2));
+
+        SendResponse ok = mockSendResponse(true);
+        SendResponse failUnregistered = mockFailureResponse(MessagingErrorCode.UNREGISTERED);
+        BatchResponse batch = org.mockito.Mockito.mock(BatchResponse.class);
+        given(batch.getResponses()).willReturn(List.of(ok, failUnregistered));
+        given(batch.getSuccessCount()).willReturn(1);
+        given(batch.getFailureCount()).willReturn(1);
+        when(firebaseMessaging.sendEachForMulticast(org.mockito.ArgumentMatchers.any())).thenReturn(batch);
+
+        sender.sendToActiveDevicesOf(1L, env());
+
+        verify(d1).touchLastUsed();          // 성공 → 갱신
+        verify(d2).deactivate();              // UNREGISTERED → 비활성화
+        org.mockito.Mockito.verify(d2, org.mockito.Mockito.never()).touchLastUsed();
+    }
+
+    @Test
+    @DisplayName("INVALID_ARGUMENT, SENDER_ID_MISMATCH 도 비활성화")
+    void deactivatesAllTerminalErrors() throws FirebaseMessagingException {
+        PractitionerDevice d1 = mockDevice(101L, "tokenA");
+        PractitionerDevice d2 = mockDevice(102L, "tokenB");
+        given(deviceRepository.findActiveByPractitionerId(1L)).willReturn(List.of(d1, d2));
+
+        // ↓ 변수에 미리 할당 (stub 끝낸 후 사용)
+        SendResponse failInvalid = mockFailureResponse(MessagingErrorCode.INVALID_ARGUMENT);
+        SendResponse failMismatch = mockFailureResponse(MessagingErrorCode.SENDER_ID_MISMATCH);
+
+        BatchResponse batch = org.mockito.Mockito.mock(BatchResponse.class);
+        given(batch.getResponses()).willReturn(List.of(failInvalid, failMismatch));
+        given(batch.getSuccessCount()).willReturn(0);
+        given(batch.getFailureCount()).willReturn(2);
+        when(firebaseMessaging.sendEachForMulticast(org.mockito.ArgumentMatchers.any())).thenReturn(batch);
+
+        sender.sendToActiveDevicesOf(1L, env());
+
+        verify(d1).deactivate();
+        verify(d2).deactivate();
+    }
+
+    @Test
+    @DisplayName("QUOTA_EXCEEDED, UNAVAILABLE 등 일시적 에러는 비활성화 X")
+    void doesNotDeactivateOnTransientErrors() throws FirebaseMessagingException {
+        PractitionerDevice d1 = mockDevice(101L, "tokenA");
+        given(deviceRepository.findActiveByPractitionerId(1L)).willReturn(List.of(d1));
+
+        // ↓ 변수에 미리 할당
+        SendResponse failQuota = mockFailureResponse(MessagingErrorCode.QUOTA_EXCEEDED);
+
+        BatchResponse batch = org.mockito.Mockito.mock(BatchResponse.class);
+        given(batch.getResponses()).willReturn(List.of(failQuota));
+        when(firebaseMessaging.sendEachForMulticast(org.mockito.ArgumentMatchers.any())).thenReturn(batch);
+
+        sender.sendToActiveDevicesOf(1L, env());
+
+        org.mockito.Mockito.verify(d1, org.mockito.Mockito.never()).deactivate();
+    }
+
+    private SendResponse mockFailureResponse(MessagingErrorCode code) {
+        SendResponse r = org.mockito.Mockito.mock(SendResponse.class);
+        given(r.isSuccessful()).willReturn(false);
+        FirebaseMessagingException ex = org.mockito.Mockito.mock(FirebaseMessagingException.class);
+        given(ex.getMessagingErrorCode()).willReturn(code);
+        given(r.getException()).willReturn(ex);
+        return r;
+    }
+
     private NotificationEnvelope env() {
         return new NotificationEnvelope(
                 SourceType.self_report, 99L, 1L, 1L, 7L,

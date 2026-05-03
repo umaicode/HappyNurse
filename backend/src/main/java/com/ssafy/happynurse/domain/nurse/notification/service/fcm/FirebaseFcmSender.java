@@ -45,9 +45,32 @@ public class FirebaseFcmSender implements FcmSender {
             BatchResponse response = firebaseMessaging.sendEachForMulticast(message);
             log.info("[FCM] practitionerId={} 발송 결과: success={}, failure={}",
                     practitionerId, response.getSuccessCount(), response.getFailureCount());
-            // 응답 처리 (성공 토큰 last_used_at 갱신, 실패 토큰 비활성화) → Task 6 에서
+
+            List<SendResponse> responses = response.getResponses();
+            for (int i = 0; i < responses.size(); i++) {
+                SendResponse r = responses.get(i);
+                PractitionerDevice device = devices.get(i);
+                if (r.isSuccessful()) {
+                    device.touchLastUsed();
+                } else {
+                    handleFailure(device, r.getException());
+                }
+            }
         } catch (FirebaseMessagingException e) {
             log.warn("[FCM] practitionerId={} 발송 호출 자체 실패", practitionerId, e);
+        }
+    }
+
+    private void handleFailure(PractitionerDevice device, FirebaseMessagingException ex) {
+        MessagingErrorCode code = ex.getMessagingErrorCode();
+        if (code == MessagingErrorCode.UNREGISTERED
+                || code == MessagingErrorCode.INVALID_ARGUMENT
+                || code == MessagingErrorCode.SENDER_ID_MISMATCH) {
+            log.info("[FCM] 토큰 비활성화: deviceId={}, errorCode={}", device.getDeviceId(), code);
+            device.deactivate();
+        } else {
+            log.warn("[FCM] 일시적 발송 실패 (비활성화 X): deviceId={}, errorCode={}",
+                    device.getDeviceId(), code, ex);
         }
     }
 
