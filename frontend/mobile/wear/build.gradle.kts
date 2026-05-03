@@ -65,7 +65,4 @@ dependencies {
 
     // Kotlin Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-
-    // FCM (워치 알림)
-    implementation("com.google.firebase:firebase-messaging:23.3.1")
 }

@@ -1,35 +1,59 @@
-// 폰→워치 메시지 수신 서비스 — /notification, /session 경로의 DataLayer 메시지 처리
+// 폰 → 워치 메시지 수신 서비스. 수신한 페이로드를 WearEventBus 로 emit 해 ViewModel 이 collect
 package com.happynurse.wear.data.remote
 
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
+import com.happynurse.wear.data.notification.NotificationType
+import com.happynurse.wear.data.notification.WearEventBus
+import com.happynurse.wear.data.notification.WearNotification
+import com.happynurse.wear.data.notification.WearNotificationPayload
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.serialization.json.Json
+import java.nio.ByteBuffer
+import javax.inject.Inject
 
-// 폰에서 워치로 오는 메시지 수신 (알림_043 수액 알림, 알림_044 타이머 알람)
 @AndroidEntryPoint
 class WearDataListenerService : WearableListenerService() {
+
+    @Inject lateinit var eventBus: WearEventBus
 
     override fun onMessageReceived(messageEvent: MessageEvent) {
         super.onMessageReceived(messageEvent)
         when (messageEvent.path) {
-            "/notification/iv_alert" -> handleIvAlert(messageEvent.data)
-            "/notification/timer_alarm" -> handleTimerAlarm(messageEvent.data)
-            "/session/logout" -> handleLogout()
+            WearableMessagePaths.IV_ALERT ->
+                handleNotification(messageEvent.data, NotificationType.IV_ALERT)
+            WearableMessagePaths.TIMER_ALARM ->
+                handleNotification(messageEvent.data, NotificationType.TIMER_ALARM)
+            WearableMessagePaths.PATIENT_CALL ->
+                handleNotification(messageEvent.data, NotificationType.PATIENT_CALL)
+            WearableMessagePaths.TIMER_START ->
+                handleTimerStart(messageEvent.data)
+            WearableMessagePaths.SESSION_LOGOUT ->
+                handleLogout()
         }
     }
 
-    // 알림_043: 수액 알림 처리
-    private fun handleIvAlert(data: ByteArray) {
-        // TODO: 진동 + 화면 표시
+    private fun handleNotification(data: ByteArray, type: NotificationType) {
+        runCatching {
+            val payload = Json.decodeFromString<WearNotificationPayload>(data.decodeToString())
+            eventBus.emitNotification(
+                WearNotification(
+                    title = payload.title,
+                    patientName = payload.patientName,
+                    roomLocation = payload.roomLocation,
+                    type = type,
+                )
+            )
+        }
     }
 
-    // 알림_044: 타이머 알람 처리
-    private fun handleTimerAlarm(data: ByteArray) {
-        // TODO: 진동 + 화면 표시
+    private fun handleTimerStart(data: ByteArray) {
+        if (data.size != Long.SIZE_BYTES) return
+        val millis = ByteBuffer.wrap(data).long
+        eventBus.emitTimerStart(millis)
     }
 
-    // 회원_006: 폰 로그아웃 시 워치 세션 동시 해제
     private fun handleLogout() {
-        // TODO: 워치 로컬 세션 파기
+        // TODO 워치 로컬 세션 파기
     }
 }
