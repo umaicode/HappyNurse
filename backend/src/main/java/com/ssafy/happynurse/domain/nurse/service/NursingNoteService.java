@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -35,6 +36,7 @@ public class NursingNoteService {
     private final MedicationAdministrationRepository medicationAdministrationRepository;
 
     public List<NursingNoteItemResponse> getNursingNotes(Long encounterId,
+                                                        LocalDate date,
                                                         Long currentPractitionerId,
                                                         Long currentWardId) {
         Encounter encounter = encounterRepository.findById(encounterId)
@@ -44,8 +46,13 @@ public class NursingNoteService {
             throw new CustomException(ErrorCode.ENCOUNTER_NOT_IN_MY_WARD);
         }
 
-        List<NursingRecord> notes = nursingRecordRepository.findAllByEncounterIdWithAuthor(encounterId);
-        List<MedicationAdministration> meds = medicationAdministrationRepository.findAllByEncounterIdWithFetch(encounterId);
+        LocalDateTime dayStart = date.atStartOfDay();
+        LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
+
+        List<NursingRecord> notes = nursingRecordRepository
+                .findAllByEncounterIdAndDateWithAuthor(encounterId, dayStart, dayEnd);
+        List<MedicationAdministration> meds = medicationAdministrationRepository
+                .findAllByEncounterIdAndDateWithFetch(encounterId, dayStart, dayEnd);
 
         List<NursingNoteItemResponse> items = new ArrayList<>(notes.size() + meds.size());
         for (NursingRecord nr : notes) {

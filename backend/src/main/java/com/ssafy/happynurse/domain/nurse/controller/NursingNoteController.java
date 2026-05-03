@@ -9,13 +9,16 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Tag(name = "간호 기록", description = "간호 노트(STT 기록 + NFC 투약) 조회 API")
@@ -37,10 +40,12 @@ public class NursingNoteController {
     @GetMapping("/{encounterId}/nursing-notes")
     public ResponseEntity<ApiResponse<List<NursingNoteItemResponse>>> getNursingNotes(
             @Parameter(description = "입원 PK", example = "42") @PathVariable Long encounterId,
+            @Parameter(description = "조회 날짜", example = "2026-05-03")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         List<NursingNoteItemResponse> data = nursingNoteService.getNursingNotes(
-                encounterId, userDetails.getPractitionerId(), userDetails.getWardId());
+                encounterId, date, userDetails.getPractitionerId(), userDetails.getWardId());
         return ResponseEntity.ok(ApiResponse.ok("간호 기록 통합 조회에 성공했습니다.", data));
     }
 }
