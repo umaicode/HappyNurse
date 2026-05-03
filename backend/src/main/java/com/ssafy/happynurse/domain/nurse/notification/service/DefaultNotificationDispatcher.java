@@ -17,6 +17,8 @@ import com.ssafy.happynurse.domain.webapp.repository.PatientSelfReportRepository
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -33,6 +35,7 @@ public class DefaultNotificationDispatcher implements NotificationDispatcher {
     private final PatientSelfReportRepository patientSelfReportRepository;
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void dispatch(NotificationEnvelope envelope) {
         validate(envelope);
 
