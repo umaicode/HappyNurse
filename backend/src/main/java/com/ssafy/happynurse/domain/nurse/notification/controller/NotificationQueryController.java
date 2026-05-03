@@ -2,10 +2,11 @@ package com.ssafy.happynurse.domain.nurse.notification.controller;
 
 import com.ssafy.happynurse.domain.nurse.notification.dto.NotificationListResponse;
 import com.ssafy.happynurse.domain.nurse.notification.service.NotificationQueryService;
+import com.ssafy.happynurse.global.exception.CustomException;
+import com.ssafy.happynurse.global.exception.ErrorCode;
 import com.ssafy.happynurse.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,7 +31,7 @@ public class NotificationQueryController {
             @AuthenticationPrincipal CustomUserDetails principal) {
         Long jwtWardId = principal.getWardId();
         if (jwtWardId == null || !jwtWardId.equals(wardId)) {
-            throw new AccessDeniedException("wardId 권한 불일치");
+            throw new CustomException(ErrorCode.ROLE_NOT_FOUND, "wardId 권한 불일치");
         }
         return service.findWardInbox(wardId, since, before, limit);
     }

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.access.AccessDeniedException;
+import com.ssafy.happynurse.global.exception.CustomException;
 
 import java.util.List;
 
@@ -39,19 +39,19 @@ class NotificationQueryControllerTest {
     }
 
     @Test
-    void getWardInbox_throwsAccessDeniedWhenWardIdMismatch() {
+    void getWardInbox_throwsForbiddenWhenWardIdMismatch() {
         CustomUserDetails principal = userWithWard(2L, 1L);
 
         assertThatThrownBy(() -> controller.getWardInbox(999L, null, null, null, principal))
-                .isInstanceOf(AccessDeniedException.class);
+                .isInstanceOf(CustomException.class);
     }
 
     @Test
-    void getWardInbox_throwsAccessDeniedWhenJwtHasNoWardId() {
+    void getWardInbox_throwsForbiddenWhenJwtHasNoWardId() {
         CustomUserDetails principal = userWithWard(2L, null);
 
         assertThatThrownBy(() -> controller.getWardInbox(1L, null, null, null, principal))
-                .isInstanceOf(AccessDeniedException.class);
+                .isInstanceOf(CustomException.class);
     }
 
     @Test
