@@ -2,6 +2,7 @@ package com.ssafy.happynurse.domain.nurse.entity;
 
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.doctor.entity.MedicationOrder;
+import com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
 import com.ssafy.happynurse.domain.watch.entity.Medication;
@@ -59,11 +60,11 @@ public class MedicationAdministration {
     @Column(name = "dosage_unit", length = 16)
     private String dosageUnit; // 투약 단위
 
+    @Column(name = "tagging_id", nullable = false, length = 36)
+    private String taggingId; // NFC 태깅 묶음 ID (UUID, 같은 태깅에서 등록된 약은 동일 값)
+
     @Column(name = "nfc_tag_verified", nullable = false)
     private Boolean nfcTagVerified; // NFC 태깅 검증 여부
-
-    @Column(name = "tagging_id", nullable = false, length = 36)
-    private String taggingId;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

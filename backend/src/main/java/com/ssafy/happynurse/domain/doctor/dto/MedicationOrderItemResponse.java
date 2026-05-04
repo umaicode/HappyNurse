@@ -45,6 +45,12 @@ public record MedicationOrderItemResponse(
         Long prescriberId,
 
         @Schema(description = "처방 의사 이름", example = "이조은")
-        String prescriberName
+        String prescriberName,
+
+        @Schema(description = "오더 등록 시각", example = "2026-04-27T14:00:05")
+        LocalDateTime createdAt,
+
+        @Schema(description = "오더 마지막 수정 시각 (status 변경 시 자동 갱신)", example = "2026-04-27T15:30:12")
+        LocalDateTime updatedAt
 ) {
 }

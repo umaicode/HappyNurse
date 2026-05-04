@@ -57,7 +57,18 @@ public enum ErrorCode implements ResponseCode {
     SYMPTOM_INPUT_INVALID(HttpStatus.BAD_REQUEST, "버튼 또는 직접 입력 중 하나만 선택해야 합니다."),
     PATIENT_ID_MISMATCH(HttpStatus.FORBIDDEN, "본인의 증상만 제출할 수 있습니다."),
 
-    // Medication Verification / Administration
+    // Nursing Record
+    NURSING_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "간호 기록을 찾을 수 없습니다."),
+    NURSING_RECORD_NOT_AUTHOR(HttpStatus.FORBIDDEN, "본인이 작성한 간호 기록만 수정할 수 있습니다."),
+
+    // Medication Administration
+    MEDICATION_ADMIN_NOT_FOUND(HttpStatus.NOT_FOUND, "투약 기록을 찾을 수 없습니다."),
+    MEDICATION_ADMIN_NOT_AUTHOR(HttpStatus.FORBIDDEN, "본인이 투약한 기록만 수정할 수 있습니다."),
+
+    // Record State
+    INVALID_RECORD_STATUS(HttpStatus.BAD_REQUEST, "현재 상태에서 처리할 수 없는 요청입니다."),
+
+    // Medication Verification (NFC 흐름)
     NFC_TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "스캔한 NFC 태그를 찾을 수 없습니다."),
     NFC_TAG_NOT_MEDICATION(HttpStatus.BAD_REQUEST, "약물 NFC 태그가 아닙니다."),
     NFC_PAYLOAD_INVALID(HttpStatus.BAD_REQUEST, "NFC 페이로드 형식이 올바르지 않습니다."),
