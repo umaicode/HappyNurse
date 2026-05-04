@@ -1,15 +1,22 @@
 package com.ssafy.happynurse.domain.nurse.service;
 
+import com.ssafy.happynurse.domain.common.entity.Practitioner;
+import com.ssafy.happynurse.domain.common.repository.PractitionerRepository;
+import com.ssafy.happynurse.domain.nurse.dto.NursingRecordManualCreateRequest;
 import com.ssafy.happynurse.domain.nurse.dto.NursingRecordUpdateRequest;
 import com.ssafy.happynurse.domain.nurse.dto.NursingRecordWriteResponse;
 import com.ssafy.happynurse.domain.nurse.entity.NursingRecord;
 import com.ssafy.happynurse.domain.nurse.entity.RecordStatus;
 import com.ssafy.happynurse.domain.nurse.repository.NursingRecordRepository;
+import com.ssafy.happynurse.domain.patient.entity.Encounter;
+import com.ssafy.happynurse.domain.patient.repository.EncounterRepository;
 import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +24,48 @@ import org.springframework.transaction.annotation.Transactional;
 public class NursingRecordService {
 
     private final NursingRecordRepository nursingRecordRepository;
+    private final EncounterRepository encounterRepository;
+    private final PractitionerRepository practitionerRepository;
+
+    public NursingRecordWriteResponse createManual(NursingRecordManualCreateRequest request,
+                                                   Long currentPractitionerId) {
+        if (request.encounterId() == null) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        if (request.content() == null || request.content().isBlank()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        Encounter encounter = encounterRepository.findById(request.encounterId())
+                .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
+
+        Practitioner author = practitionerRepository.findById(currentPractitionerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PRACTITIONER_NOT_FOUND));
+
+        LocalDateTime now = LocalDateTime.now();
+        NursingRecord record = NursingRecord.of(
+                encounter.getPatient(),
+                encounter,
+                author,
+                RecordStatus.confirmed,
+                "",
+                null,
+                null,
+                null,
+                null,
+                request.content(),
+                now
+        );
+
+        NursingRecord saved = nursingRecordRepository.save(record);
+
+        return new NursingRecordWriteResponse(
+                saved.getNursingRecordId(),
+                saved.getStatus(),
+                saved.getFinalContent(),
+                saved.getConfirmedAt()
+        );
+    }
 
     public NursingRecordWriteResponse confirm(Long nursingRecordId, Long currentPractitionerId) {
         NursingRecord record = loadAndAuthorize(nursingRecordId, currentPractitionerId);

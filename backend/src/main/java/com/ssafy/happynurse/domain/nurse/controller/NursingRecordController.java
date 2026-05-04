@@ -1,5 +1,6 @@
 package com.ssafy.happynurse.domain.nurse.controller;
 
+import com.ssafy.happynurse.domain.nurse.dto.NursingRecordManualCreateRequest;
 import com.ssafy.happynurse.domain.nurse.dto.NursingRecordUpdateRequest;
 import com.ssafy.happynurse.domain.nurse.dto.NursingRecordWriteResponse;
 import com.ssafy.happynurse.domain.nurse.service.NursingRecordService;
@@ -20,13 +21,30 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "간호 기록", description = "간호 기록 확정·수정·삭제 API")
+@Tag(name = "간호 기록", description = "간호 기록 작성·확정·수정·삭제 API")
 @RestController
 @RequestMapping("/nursing-records")
 @RequiredArgsConstructor
 public class NursingRecordController {
 
     private final NursingRecordService nursingRecordService;
+
+    @Operation(summary = "간호 기록 수동 작성",
+            description = "음성 없이 직접 본문을 입력해 바로 confirmed 상태의 간호 기록을 생성. confirmedAt은 서버 시각으로 설정.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "작성 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "본문이 비어있거나 입력값이 잘못됨 — INVALID_INPUT_VALUE"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "입원 또는 의료진 없음 — ENCOUNTER_NOT_FOUND / PRACTITIONER_NOT_FOUND")
+    })
+    @PostMapping
+    public ResponseEntity<ApiResponse<NursingRecordWriteResponse>> createManual(
+            @RequestBody NursingRecordManualCreateRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        NursingRecordWriteResponse data = nursingRecordService.createManual(request, userDetails.getPractitionerId());
+        return ResponseEntity.ok(ApiResponse.ok("간호 기록을 작성했습니다.", data));
+    }
 
     @Operation(summary = "간호 기록 확정",
             description = "draft 상태의 간호 기록을 confirmed로 전환. finalContent=editContent 복사, confirmedAt=createdAt 복사.")

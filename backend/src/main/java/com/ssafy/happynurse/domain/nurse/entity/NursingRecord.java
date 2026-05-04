@@ -48,11 +48,11 @@ public class NursingRecord {
     @Column(nullable = false, length = 255)
     private String version; // 락
 
-    @Column(name = "audio_file_url", nullable = false, length = 512)
-    private String audioFileUrl; // 원본 음성 S3 url
+    @Column(name = "audio_file_url", length = 512)
+    private String audioFileUrl; // 원본 음성 S3 url (수동 입력 시 NULL)
 
-    @Column(name = "original_stt_content", nullable = false, columnDefinition = "TEXT")
-    private String originalSttContent; // 원본 STT 텍스트 (불변)
+    @Column(name = "original_stt_content", columnDefinition = "TEXT")
+    private String originalSttContent; // 원본 STT 텍스트 (불변, 수동 입력 시 NULL)
 
     @Column(name = "editor_state_json", columnDefinition = "JSON")
     private String editorStateJson; // 후보군 및 현재 상태 메타데이터
@@ -73,4 +73,30 @@ public class NursingRecord {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public static NursingRecord of(Patient patient,
+                                   Encounter encounter,
+                                   Practitioner authorPractitioner,
+                                   RecordStatus status,
+                                   String version,
+                                   String audioFileUrl,
+                                   String originalSttContent,
+                                   String editorStateJson,
+                                   String editContent,
+                                   String finalContent,
+                                   LocalDateTime confirmedAt) {
+        NursingRecord record = new NursingRecord();
+        record.patient = patient;
+        record.encounter = encounter;
+        record.authorPractitioner = authorPractitioner;
+        record.status = status;
+        record.version = version;
+        record.audioFileUrl = audioFileUrl;
+        record.originalSttContent = originalSttContent;
+        record.editorStateJson = editorStateJson;
+        record.editContent = editContent;
+        record.finalContent = finalContent;
+        record.confirmedAt = confirmedAt;
+        return record;
+    }
 }
