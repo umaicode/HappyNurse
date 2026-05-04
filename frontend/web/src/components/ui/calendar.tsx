@@ -2,10 +2,51 @@
 
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { DayPicker } from "react-day-picker";
+import {
+  DayPicker,
+  useDayPicker,
+  type MonthCaptionProps,
+} from "react-day-picker";
 
 import { cn } from "./utils";
 import { buttonVariants } from "./button";
+
+function InlineMonthCaption({ calendarMonth }: MonthCaptionProps) {
+  const { goToMonth, nextMonth, previousMonth, formatters } = useDayPicker();
+  const { formatCaption } = formatters;
+
+  return (
+    <div className="flex items-center justify-center gap-3 pt-1">
+      <button
+        type="button"
+        aria-label="Previous month"
+        disabled={!previousMonth}
+        onClick={() => previousMonth && goToMonth(previousMonth)}
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "size-7 p-0 opacity-60 hover:opacity-100 disabled:opacity-30",
+        )}
+      >
+        <ChevronLeft className="size-4" />
+      </button>
+      <span className="text-sm font-medium min-w-[7em] text-center">
+        {formatCaption(calendarMonth.date, undefined)}
+      </span>
+      <button
+        type="button"
+        aria-label="Next month"
+        disabled={!nextMonth}
+        onClick={() => nextMonth && goToMonth(nextMonth)}
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "size-7 p-0 opacity-60 hover:opacity-100 disabled:opacity-30",
+        )}
+      >
+        <ChevronRight className="size-4" />
+      </button>
+    </div>
+  );
+}
 
 function Calendar({
   className,
@@ -20,17 +61,8 @@ function Calendar({
       classNames={{
         months: "flex flex-col sm:flex-row gap-2",
         month: "flex flex-col gap-4",
-        month_caption: "flex justify-center pt-1 relative items-center w-full",
+        nav: "hidden",
         caption_label: "text-sm font-medium",
-        nav: "flex items-center gap-1",
-        button_previous: cn(
-          buttonVariants({ variant: "outline" }),
-          "size-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1",
-        ),
-        button_next: cn(
-          buttonVariants({ variant: "outline" }),
-          "size-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1",
-        ),
         month_grid: "w-full border-collapse",
         weekdays: "flex",
         weekday:
@@ -68,6 +100,7 @@ function Calendar({
           ) : (
             <ChevronRight className={cn("size-4", className)} {...props} />
           ),
+        MonthCaption: InlineMonthCaption,
       }}
       {...props}
     />
