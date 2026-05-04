@@ -1,6 +1,5 @@
 package com.ssafy.happynurse.domain.nurse.service;
 
-import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.common.repository.PractitionerRepository;
 import com.ssafy.happynurse.domain.nurse.dto.NursingRecordManualCreateRequest;
 import com.ssafy.happynurse.domain.nurse.dto.NursingRecordUpdateRequest;

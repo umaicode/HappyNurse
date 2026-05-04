@@ -1,6 +1,5 @@
 package com.ssafy.happynurse.domain.nurse.service;
 
-import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.common.repository.PractitionerRepository;
 import com.ssafy.happynurse.domain.nurse.dto.NursingRecordManualCreateRequest;
 import com.ssafy.happynurse.domain.nurse.dto.NursingRecordUpdateRequest;
@@ -154,7 +153,6 @@ class NursingRecordServiceTest {
     @Test
     @DisplayName("draft 확정 시 finalContent=editContent, confirmedAt=createdAt 복사")
     void confirm_성공() {
-        Practitioner author = createPractitioner(ME);
         LocalDateTime created = LocalDateTime.of(2026, 5, 3, 14, 30);
         NursingRecord record = createRecord(ID, ME, RecordStatus.draft, created, null,
                 "녹음 본문", null);
@@ -182,7 +180,6 @@ class NursingRecordServiceTest {
     @Test
     @DisplayName("타인이 작성한 기록 → NURSING_RECORD_NOT_AUTHOR")
     void confirm_실패_타작성자() {
-        Practitioner other = createPractitioner(OTHER);
         NursingRecord record = createRecord(ID, OTHER, RecordStatus.draft,
                 LocalDateTime.now(), null, "본문", null);
         given(nursingRecordRepository.findById(ID)).willReturn(Optional.of(record));
@@ -195,7 +192,6 @@ class NursingRecordServiceTest {
     @Test
     @DisplayName("draft가 아닌 상태 확정 시도 → INVALID_RECORD_STATUS")
     void confirm_실패_draft_아님() {
-        Practitioner author = createPractitioner(ME);
         NursingRecord record = createRecord(ID, ME, RecordStatus.confirmed,
                 LocalDateTime.now(), LocalDateTime.now(), null, "확정 본문");
         given(nursingRecordRepository.findById(ID)).willReturn(Optional.of(record));
@@ -208,7 +204,6 @@ class NursingRecordServiceTest {
     @Test
     @DisplayName("draft 상태에서 본문 수정 → editContent 갱신, status 유지")
     void update_성공_draft_본문() {
-        Practitioner author = createPractitioner(ME);
         NursingRecord before = createRecord(ID, ME, RecordStatus.draft,
                 LocalDateTime.now(), null, "원본", null);
         NursingRecord after = createRecord(ID, ME, RecordStatus.draft,
@@ -229,7 +224,6 @@ class NursingRecordServiceTest {
     @Test
     @DisplayName("confirmed 상태에서 본문 수정 → finalContent 갱신 + status=amended")
     void update_성공_confirmed_본문() {
-        Practitioner author = createPractitioner(ME);
         LocalDateTime confirmedAt = LocalDateTime.of(2026, 5, 3, 14, 0);
         NursingRecord before = createRecord(ID, ME, RecordStatus.confirmed,
                 LocalDateTime.now(), confirmedAt, null, "기존 확정본");
@@ -251,7 +245,6 @@ class NursingRecordServiceTest {
     @Test
     @DisplayName("confirmedAt만 수정 → updateConfirmedAt 호출, 본문 갱신 X")
     void update_성공_confirmedAt만() {
-        Practitioner author = createPractitioner(ME);
         LocalDateTime newAt = LocalDateTime.of(2026, 5, 3, 12, 0);
         NursingRecord before = createRecord(ID, ME, RecordStatus.confirmed,
                 LocalDateTime.now(), LocalDateTime.now(), null, "본문");
@@ -273,7 +266,6 @@ class NursingRecordServiceTest {
     @Test
     @DisplayName("content + confirmedAt 둘 다 수정")
     void update_성공_둘다() {
-        Practitioner author = createPractitioner(ME);
         LocalDateTime newAt = LocalDateTime.of(2026, 5, 3, 12, 0);
         NursingRecord before = createRecord(ID, ME, RecordStatus.confirmed,
                 LocalDateTime.now(), LocalDateTime.now(), null, "기존");
@@ -292,7 +284,6 @@ class NursingRecordServiceTest {
     @Test
     @DisplayName("빈 본문 수정 시도 → INVALID_INPUT_VALUE")
     void update_실패_본문_blank() {
-        Practitioner author = createPractitioner(ME);
         NursingRecord record = createRecord(ID, ME, RecordStatus.draft,
                 LocalDateTime.now(), null, "원본", null);
         given(nursingRecordRepository.findById(ID)).willReturn(Optional.of(record));
@@ -317,7 +308,6 @@ class NursingRecordServiceTest {
     @Test
     @DisplayName("update 시 타작성자 → NURSING_RECORD_NOT_AUTHOR")
     void update_실패_타작성자() {
-        Practitioner other = createPractitioner(OTHER);
         NursingRecord record = createRecord(ID, OTHER, RecordStatus.draft,
                 LocalDateTime.now(), null, "본문", null);
         given(nursingRecordRepository.findById(ID)).willReturn(Optional.of(record));
@@ -331,7 +321,6 @@ class NursingRecordServiceTest {
     @Test
     @DisplayName("delete 성공")
     void delete_성공() {
-        Practitioner author = createPractitioner(ME);
         NursingRecord record = createRecord(ID, ME, RecordStatus.draft,
                 LocalDateTime.now(), null, "본문", null);
         given(nursingRecordRepository.findById(ID)).willReturn(Optional.of(record));
@@ -354,7 +343,6 @@ class NursingRecordServiceTest {
     @Test
     @DisplayName("delete 시 타작성자 → NURSING_RECORD_NOT_AUTHOR")
     void delete_실패_타작성자() {
-        Practitioner other = createPractitioner(OTHER);
         NursingRecord record = createRecord(ID, OTHER, RecordStatus.draft,
                 LocalDateTime.now(), null, "본문", null);
         given(nursingRecordRepository.findById(ID)).willReturn(Optional.of(record));
@@ -365,13 +353,6 @@ class NursingRecordServiceTest {
     }
 
     // --- 헬퍼 ---
-
-    private Practitioner createPractitioner(Long id) {
-        Practitioner p = newInstance(Practitioner.class);
-        setField(p, "practitionerId", id);
-        setField(p, "name", "이조은");
-        return p;
-    }
 
     private Patient createPatient(Long id) {
         Patient p = newInstance(Patient.class);

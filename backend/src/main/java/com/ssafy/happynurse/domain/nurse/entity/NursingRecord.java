@@ -1,19 +1,14 @@
 package com.ssafy.happynurse.domain.nurse.entity;
 
-import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.nurseSTT.entity.NursingRecordCorrectionApplied;
 import com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus;
-import com.ssafy.happynurse.domain.patient.entity.Encounter;
-import com.ssafy.happynurse.domain.patient.entity.Patient;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
@@ -50,7 +45,7 @@ public class NursingRecord {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus status = RecordStatus.draft;
+    private RecordStatus status = RecordStatus.draft;
 
     @Column(name = "audio_file_url", length = 512)
     private String audioFileUrl; // 원본 음성 S3 URL
