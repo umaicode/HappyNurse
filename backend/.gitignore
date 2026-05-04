@@ -44,3 +44,6 @@ src/main/resources/firstbase/
 ### docs ###
 /docs/superpowers
 /sc
+
+## firebase
+src/main/resources/firebase/
