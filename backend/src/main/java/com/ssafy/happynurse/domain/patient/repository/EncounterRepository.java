@@ -4,6 +4,7 @@ import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.entity.EncounterStatus;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,6 +17,12 @@ import java.util.Optional;
 public interface EncounterRepository extends JpaRepository<Encounter, Long> {
 
     Optional<Encounter> findByPatientAndStatus(Patient patient, EncounterStatus status);
+
+    /**
+     * 환자 상세 페이지용 — encounter + room + ward + attendingPhysician 을 한 쿼리로 LEFT JOIN FETCH
+     */
+    @EntityGraph(attributePaths = {"room", "room.ward", "attendingPhysician"})
+    Optional<Encounter> findWithDetailsByPatientAndStatus(Patient patient, EncounterStatus status);
 
     @Query("""
             SELECT e FROM Encounter e

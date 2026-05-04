@@ -1,5 +1,6 @@
 package com.ssafy.happynurse.domain.nurseSTT.entity;
 
+import com.ssafy.happynurse.domain.nurse.entity.NursingRecord;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
