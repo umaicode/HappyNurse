@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import Auth from "@/components/patient/auth";
+import Nfc from "@/components/patient/nfc";
 
 export default function PatientPage() {
   return (
-    <Suspense fallback={null}>
-      <Auth />
+    <Suspense>
+      <Nfc />
     </Suspense>
   );
 }

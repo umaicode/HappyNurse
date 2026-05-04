@@ -2,7 +2,7 @@
 package com.happynurse.presentation.components
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -19,7 +19,7 @@ enum class BottomTab(val route: String, val label: String, val icon: ImageVector
     Patient("patient_list", "환자", Icons.Filled.People),
     Journal("journal", "일지", Icons.Filled.Book),
     Handover("handover", "인계", Icons.Filled.SwapHoriz),
-    Order("doctor_order", "의사오더", Icons.Filled.Assignment)
+    Order("doctor_order", "의사오더", Icons.AutoMirrored.Filled.Assignment)
 }
 
 @Composable
