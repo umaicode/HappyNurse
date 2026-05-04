@@ -7,7 +7,7 @@ import com.ssafy.happynurse.domain.nurse.dto.NursingRecordUpdateRequest;
 import com.ssafy.happynurse.domain.nurse.dto.NursingRecordWriteResponse;
 import com.ssafy.happynurse.domain.nurse.entity.NursingRecord;
 import com.ssafy.happynurse.domain.nurse.entity.NursingRecordFactory;
-import com.ssafy.happynurse.domain.nurse.entity.RecordStatus;
+import com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus;
 import com.ssafy.happynurse.domain.nurse.repository.NursingRecordRepository;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.repository.EncounterRepository;
@@ -39,11 +39,15 @@ public class NursingRecordService {
         Encounter encounter = encounterRepository.findById(request.encounterId())
                 .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
 
-        Practitioner author = practitionerRepository.findById(currentPractitionerId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PRACTITIONER_NOT_FOUND));
+        if (!practitionerRepository.existsById(currentPractitionerId)) {
+            throw new CustomException(ErrorCode.PRACTITIONER_NOT_FOUND);
+        }
 
         NursingRecord record = nursingRecordFactory.createManual(
-                encounter.getPatient(), encounter, author, request.content());
+                encounter.getPatient().getPatientId(),
+                encounter.getEncounterId(),
+                currentPractitionerId,
+                request.content());
 
         NursingRecord saved = nursingRecordRepository.save(record);
 
@@ -119,7 +123,7 @@ public class NursingRecordService {
         NursingRecord record = nursingRecordRepository.findById(nursingRecordId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NURSING_RECORD_NOT_FOUND));
 
-        if (!record.getAuthorPractitioner().getPractitionerId().equals(currentPractitionerId)) {
+        if (!record.getAuthorPractitionerId().equals(currentPractitionerId)) {
             throw new CustomException(ErrorCode.NURSING_RECORD_NOT_AUTHOR);
         }
         return record;

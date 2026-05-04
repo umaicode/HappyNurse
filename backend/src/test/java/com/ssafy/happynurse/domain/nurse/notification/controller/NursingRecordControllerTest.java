@@ -1,7 +1,7 @@
 package com.ssafy.happynurse.domain.nurse.notification.controller;
 
 import com.ssafy.happynurse.domain.nurse.dto.NursingRecordWriteResponse;
-import com.ssafy.happynurse.domain.nurse.entity.RecordStatus;
+import com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus;
 import com.ssafy.happynurse.domain.nurse.service.NursingRecordService;
 import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;

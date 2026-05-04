@@ -41,7 +41,7 @@ public interface MedicationAdministrationRepository
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             UPDATE MedicationAdministration ma
-            SET ma.status = com.ssafy.happynurse.domain.nurse.entity.RecordStatus.confirmed
+            SET ma.status = com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus.confirmed
             WHERE ma.taggingId = :taggingId
             """)
     int confirmByTaggingId(@Param("taggingId") String taggingId);

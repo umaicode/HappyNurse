@@ -1,12 +1,14 @@
 package com.ssafy.happynurse.domain.nurse.service;
 
+import com.ssafy.happynurse.domain.common.entity.Practitioner;
+import com.ssafy.happynurse.domain.common.repository.PractitionerRepository;
 import com.ssafy.happynurse.domain.doctor.entity.MedicationOrder;
 import com.ssafy.happynurse.domain.nurse.dto.MedicationItemResponse;
 import com.ssafy.happynurse.domain.nurse.dto.NursingNoteItemResponse;
 import com.ssafy.happynurse.domain.nurse.dto.NursingNoteItemType;
 import com.ssafy.happynurse.domain.nurse.entity.MedicationAdministration;
 import com.ssafy.happynurse.domain.nurse.entity.NursingRecord;
-import com.ssafy.happynurse.domain.nurse.entity.RecordStatus;
+import com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus;
 import com.ssafy.happynurse.domain.nurse.repository.MedicationAdministrationRepository;
 import com.ssafy.happynurse.domain.nurse.repository.NursingRecordRepository;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
@@ -34,6 +36,7 @@ public class NursingNoteService {
     private final EncounterRepository encounterRepository;
     private final NursingRecordRepository nursingRecordRepository;
     private final MedicationAdministrationRepository medicationAdministrationRepository;
+    private final PractitionerRepository practitionerRepository;
 
     public List<NursingNoteItemResponse> getNursingNotes(Long encounterId,
                                                         LocalDate date,
@@ -54,9 +57,16 @@ public class NursingNoteService {
         List<MedicationAdministration> meds = medicationAdministrationRepository
                 .findAllByEncounterIdAndDateWithFetch(encounterId, dayStart, dayEnd);
 
+        List<Long> authorIds = notes.stream()
+                .map(NursingRecord::getAuthorPractitionerId)
+                .distinct()
+                .toList();
+        Map<Long, Practitioner> authorById = practitionerRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(Practitioner::getPractitionerId, p -> p));
+
         List<NursingNoteItemResponse> items = new ArrayList<>(notes.size() + meds.size());
         for (NursingRecord nr : notes) {
-            items.add(toSttItem(nr, currentPractitionerId));
+            items.add(toSttItem(nr, currentPractitionerId, authorById));
         }
         addMedicationItems(meds, currentPractitionerId, items);
 
@@ -68,18 +78,22 @@ public class NursingNoteService {
         return items;
     }
 
-    private NursingNoteItemResponse toSttItem(NursingRecord nr, Long currentPractitionerId) {
+    private NursingNoteItemResponse toSttItem(NursingRecord nr,
+                                              Long currentPractitionerId,
+                                              Map<Long, Practitioner> authorById) {
         boolean confirmedOrAmended = nr.getStatus() != RecordStatus.draft;
         LocalDateTime occurredAt = confirmedOrAmended ? nr.getConfirmedAt() : nr.getCreatedAt();
         String content = confirmedOrAmended ? nr.getFinalContent() : nr.getEditContent();
-        boolean editable = nr.getAuthorPractitioner().getPractitionerId().equals(currentPractitionerId);
+        Long authorId = nr.getAuthorPractitionerId();
+        boolean editable = authorId.equals(currentPractitionerId);
+        Practitioner author = authorById.get(authorId);
 
         return new NursingNoteItemResponse(
                 NursingNoteItemType.STT_NOTE,
                 occurredAt,
                 nr.getStatus(),
-                nr.getAuthorPractitioner().getPractitionerId(),
-                nr.getAuthorPractitioner().getName(),
+                authorId,
+                author != null ? author.getName() : null,
                 editable,
                 nr.getNursingRecordId(),
                 content,

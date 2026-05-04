@@ -1,7 +1,7 @@
 package com.ssafy.happynurse.domain.nurse.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.ssafy.happynurse.domain.nurse.entity.RecordStatus;
+import com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;

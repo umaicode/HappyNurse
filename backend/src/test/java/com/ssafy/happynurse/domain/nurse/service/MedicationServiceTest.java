@@ -11,7 +11,7 @@ import com.ssafy.happynurse.domain.nurse.dto.MedicationAdministrationSaveRespons
 import com.ssafy.happynurse.domain.nurse.dto.MedicationVerifyRequest;
 import com.ssafy.happynurse.domain.nurse.dto.MedicationVerifyResponse;
 import com.ssafy.happynurse.domain.nurse.entity.MedicationAdministration;
-import com.ssafy.happynurse.domain.nurse.entity.RecordStatus;
+import com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus;
 import com.ssafy.happynurse.domain.nurse.repository.MedicationAdministrationRepository;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.entity.Patient;

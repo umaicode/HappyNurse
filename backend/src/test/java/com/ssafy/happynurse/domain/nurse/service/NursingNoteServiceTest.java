@@ -6,7 +6,7 @@ import com.ssafy.happynurse.domain.nurse.dto.NursingNoteItemResponse;
 import com.ssafy.happynurse.domain.nurse.dto.NursingNoteItemType;
 import com.ssafy.happynurse.domain.nurse.entity.MedicationAdministration;
 import com.ssafy.happynurse.domain.nurse.entity.NursingRecord;
-import com.ssafy.happynurse.domain.nurse.entity.RecordStatus;
+import com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus;
 import com.ssafy.happynurse.domain.nurse.repository.MedicationAdministrationRepository;
 import com.ssafy.happynurse.domain.nurse.repository.NursingRecordRepository;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
@@ -42,6 +42,8 @@ class NursingNoteServiceTest {
     NursingRecordRepository nursingRecordRepository;
     @Mock
     MedicationAdministrationRepository medicationAdministrationRepository;
+    @Mock
+    com.ssafy.happynurse.domain.common.repository.PractitionerRepository practitionerRepository;
     @InjectMocks
     NursingNoteService nursingNoteService;
 
@@ -297,7 +299,7 @@ class NursingNoteServiceTest {
                                               LocalDateTime createdAt, LocalDateTime confirmedAt) {
         NursingRecord nr = newInstance(NursingRecord.class);
         setField(nr, "nursingRecordId", id);
-        setField(nr, "authorPractitioner", author);
+        setField(nr, "authorPractitionerId", author.getPractitionerId());
         setField(nr, "status", status);
         setField(nr, "createdAt", createdAt);
         setField(nr, "confirmedAt", confirmedAt);

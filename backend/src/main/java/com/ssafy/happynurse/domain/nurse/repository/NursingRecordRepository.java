@@ -13,24 +13,23 @@ import java.util.List;
 public interface NursingRecordRepository extends JpaRepository<NursingRecord, Long> {
 
     @Query("""
-            SELECT nr.encounter.encounterId AS encounterId,
+            SELECT nr.encounterId AS encounterId,
                    COUNT(nr) AS cnt
             FROM NursingRecord nr
-            WHERE nr.encounter.encounterId IN :encounterIds
-              AND nr.status = com.ssafy.happynurse.domain.nurse.entity.RecordStatus.draft
-            GROUP BY nr.encounter.encounterId
+            WHERE nr.encounterId IN :encounterIds
+              AND nr.status = com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus.draft
+            GROUP BY nr.encounterId
             """)
     List<EncounterDraftCount> countDraftByEncounterIds(
             @Param("encounterIds") Collection<Long> encounterIds);
 
     @Query("""
             SELECT nr FROM NursingRecord nr
-            JOIN FETCH nr.authorPractitioner
-            WHERE nr.encounter.encounterId = :encounterId
+            WHERE nr.encounterId = :encounterId
               AND (
-                (nr.status = com.ssafy.happynurse.domain.nurse.entity.RecordStatus.draft
+                (nr.status = com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus.draft
                    AND nr.createdAt >= :dayStart AND nr.createdAt < :dayEnd)
-                OR (nr.status <> com.ssafy.happynurse.domain.nurse.entity.RecordStatus.draft
+                OR (nr.status <> com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus.draft
                    AND nr.confirmedAt >= :dayStart AND nr.confirmedAt < :dayEnd)
               )
             """)
@@ -42,7 +41,7 @@ public interface NursingRecordRepository extends JpaRepository<NursingRecord, Lo
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             UPDATE NursingRecord nr
-            SET nr.status = com.ssafy.happynurse.domain.nurse.entity.RecordStatus.confirmed,
+            SET nr.status = com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus.confirmed,
                 nr.finalContent = :finalContent,
                 nr.confirmedAt = :confirmedAt
             WHERE nr.nursingRecordId = :id
@@ -58,7 +57,7 @@ public interface NursingRecordRepository extends JpaRepository<NursingRecord, Lo
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             UPDATE NursingRecord nr
-            SET nr.status = com.ssafy.happynurse.domain.nurse.entity.RecordStatus.amended,
+            SET nr.status = com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus.amended,
                 nr.finalContent = :content
             WHERE nr.nursingRecordId = :id
             """)

@@ -6,7 +6,7 @@ import com.ssafy.happynurse.domain.nurse.dto.MedicationAdministrationWriteRespon
 import com.ssafy.happynurse.domain.nurse.dto.MedicationDosageUpdateRequest;
 import com.ssafy.happynurse.domain.nurse.dto.MedicationItemResponse;
 import com.ssafy.happynurse.domain.nurse.entity.MedicationAdministration;
-import com.ssafy.happynurse.domain.nurse.entity.RecordStatus;
+import com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus;
 import com.ssafy.happynurse.domain.nurse.repository.MedicationAdministrationRepository;
 import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;

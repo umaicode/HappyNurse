@@ -2,6 +2,7 @@ package com.ssafy.happynurse.domain.nurse.entity;
 
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.doctor.entity.MedicationOrder;
+import com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
 import com.ssafy.happynurse.domain.watch.entity.Medication;
