@@ -1,4 +1,4 @@
-// 음성 녹음 화면(워치) — Idle/Recording/Processing/Done/Error 상태별 버튼 UI
+// 타이머 STT 녹음 화면(워치) — 녹음 → 폰 송신 → 서버 STT → 폰 회신 → 타이머 시작
 package com.happynurse.wear.presentation.screens.recording
 
 import androidx.compose.foundation.layout.Arrangement
@@ -10,22 +10,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.Text
 
-// 음성STT_020~023: 제스처/버튼 녹음 시작/종료, 노이즈 캔슬링 후 폰 전송
 @Composable
-fun RecordingScreen(
-    navController: NavHostController,
-    viewModel: RecordingViewModel = hiltViewModel()
-) {
+fun RecordingScreen(viewModel: RecordingViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
 
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         when (uiState) {
             RecordingUiState.Idle -> {
@@ -35,12 +30,12 @@ fun RecordingScreen(
                 }
             }
             RecordingUiState.Recording -> {
-                Text("● 녹음 중...")
+                Text("녹음 중...")
                 Button(onClick = { viewModel.stopRecording() }) {
                     Text("녹음 종료")
                 }
             }
-            RecordingUiState.Processing -> {
+            RecordingUiState.Uploading -> {
                 Text("음성 전송 중...")
             }
             is RecordingUiState.Done -> {
