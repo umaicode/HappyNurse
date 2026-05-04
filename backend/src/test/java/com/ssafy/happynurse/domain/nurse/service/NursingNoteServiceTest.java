@@ -1,6 +1,7 @@
 package com.ssafy.happynurse.domain.nurse.service;
 
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
+import com.ssafy.happynurse.domain.common.repository.PractitionerRepository;
 import com.ssafy.happynurse.domain.doctor.entity.MedicationOrder;
 import com.ssafy.happynurse.domain.nurse.dto.NursingNoteItemResponse;
 import com.ssafy.happynurse.domain.nurse.dto.NursingNoteItemType;
@@ -43,7 +44,7 @@ class NursingNoteServiceTest {
     @Mock
     MedicationAdministrationRepository medicationAdministrationRepository;
     @Mock
-    com.ssafy.happynurse.domain.common.repository.PractitionerRepository practitionerRepository;
+    PractitionerRepository practitionerRepository;
     @InjectMocks
     NursingNoteService nursingNoteService;
 
