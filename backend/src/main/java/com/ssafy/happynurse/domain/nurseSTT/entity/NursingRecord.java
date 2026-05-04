@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -39,6 +41,7 @@ public class NursingRecord {
   @Column(name = "original_stt_content", columnDefinition = "TEXT")
   private String originalSttContent; // 원본 STT 텍스트 (불변)
 
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "editor_state_json", columnDefinition = "JSON")
   private String editorStateJson; // 후보군 및 현재 상태 메타데이터
 
