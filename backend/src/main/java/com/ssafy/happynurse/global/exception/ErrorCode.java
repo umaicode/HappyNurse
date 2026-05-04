@@ -76,7 +76,10 @@ public enum ErrorCode implements ResponseCode {
     MEDICATION_ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "처방 오더를 찾을 수 없습니다."),
     MEDICATION_ORDER_PATIENT_MISMATCH(HttpStatus.BAD_REQUEST, "처방 오더의 환자가 일치하지 않습니다."),
     MEDICATION_ALREADY_ADMINISTERED(HttpStatus.CONFLICT, "이미 투약 완료된(또는 활성 상태가 아닌) 처방입니다."),
-    MEDICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 약물을 찾을 수 없습니다.");
+    MEDICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 약물을 찾을 수 없습니다."),
+
+    // Simulator (HIS 발사기)
+    INVALID_SIMULATOR_KEY(HttpStatus.UNAUTHORIZED, "유효하지 않은 시뮬레이터 키입니다.");
 
     private final HttpStatus status;
     private final String message;
