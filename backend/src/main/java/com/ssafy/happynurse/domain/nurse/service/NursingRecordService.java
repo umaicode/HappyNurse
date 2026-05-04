@@ -6,6 +6,7 @@ import com.ssafy.happynurse.domain.nurse.dto.NursingRecordManualCreateRequest;
 import com.ssafy.happynurse.domain.nurse.dto.NursingRecordUpdateRequest;
 import com.ssafy.happynurse.domain.nurse.dto.NursingRecordWriteResponse;
 import com.ssafy.happynurse.domain.nurse.entity.NursingRecord;
+import com.ssafy.happynurse.domain.nurse.entity.NursingRecordFactory;
 import com.ssafy.happynurse.domain.nurse.entity.RecordStatus;
 import com.ssafy.happynurse.domain.nurse.repository.NursingRecordRepository;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
@@ -16,8 +17,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -26,6 +25,7 @@ public class NursingRecordService {
     private final NursingRecordRepository nursingRecordRepository;
     private final EncounterRepository encounterRepository;
     private final PractitionerRepository practitionerRepository;
+    private final NursingRecordFactory nursingRecordFactory;
 
     public NursingRecordWriteResponse createManual(NursingRecordManualCreateRequest request,
                                                    Long currentPractitionerId) {
@@ -42,20 +42,8 @@ public class NursingRecordService {
         Practitioner author = practitionerRepository.findById(currentPractitionerId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRACTITIONER_NOT_FOUND));
 
-        LocalDateTime now = LocalDateTime.now();
-        NursingRecord record = NursingRecord.of(
-                encounter.getPatient(),
-                encounter,
-                author,
-                RecordStatus.confirmed,
-                "",
-                null,
-                null,
-                null,
-                null,
-                request.content(),
-                now
-        );
+        NursingRecord record = nursingRecordFactory.createManual(
+                encounter.getPatient(), encounter, author, request.content());
 
         NursingRecord saved = nursingRecordRepository.save(record);
 

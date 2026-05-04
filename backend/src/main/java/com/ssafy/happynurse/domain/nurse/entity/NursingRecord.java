@@ -5,6 +5,8 @@ import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
@@ -23,8 +25,9 @@ import java.time.LocalDateTime;
         }
 )
 @Getter
-
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PACKAGE)
+@Builder(access = AccessLevel.PACKAGE)
 public class NursingRecord {
 
     @Id
@@ -78,29 +81,4 @@ public class NursingRecord {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public static NursingRecord of(Patient patient,
-                                   Encounter encounter,
-                                   Practitioner authorPractitioner,
-                                   RecordStatus status,
-                                   String version,
-                                   String audioFileUrl,
-                                   String originalSttContent,
-                                   String editorStateJson,
-                                   String editContent,
-                                   String finalContent,
-                                   LocalDateTime confirmedAt) {
-        NursingRecord record = new NursingRecord();
-        record.patient = patient;
-        record.encounter = encounter;
-        record.authorPractitioner = authorPractitioner;
-        record.status = status;
-        record.version = version;
-        record.audioFileUrl = audioFileUrl;
-        record.originalSttContent = originalSttContent;
-        record.editorStateJson = editorStateJson;
-        record.editContent = editContent;
-        record.finalContent = finalContent;
-        record.confirmedAt = confirmedAt;
-        return record;
-    }
 }

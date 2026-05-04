@@ -6,6 +6,7 @@ import com.ssafy.happynurse.domain.nurse.dto.NursingRecordManualCreateRequest;
 import com.ssafy.happynurse.domain.nurse.dto.NursingRecordUpdateRequest;
 import com.ssafy.happynurse.domain.nurse.dto.NursingRecordWriteResponse;
 import com.ssafy.happynurse.domain.nurse.entity.NursingRecord;
+import com.ssafy.happynurse.domain.nurse.entity.NursingRecordFactory;
 import com.ssafy.happynurse.domain.nurse.entity.RecordStatus;
 import com.ssafy.happynurse.domain.nurse.repository.NursingRecordRepository;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
@@ -42,6 +44,8 @@ class NursingRecordServiceTest {
     EncounterRepository encounterRepository;
     @Mock
     PractitionerRepository practitionerRepository;
+    @Spy
+    NursingRecordFactory nursingRecordFactory = new NursingRecordFactory();
     @InjectMocks
     NursingRecordService nursingRecordService;
 
