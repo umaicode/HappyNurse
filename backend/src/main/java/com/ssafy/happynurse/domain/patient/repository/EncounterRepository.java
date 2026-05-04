@@ -62,4 +62,19 @@ public interface EncounterRepository extends JpaRepository<Encounter, Long> {
     int unassignNurseWhereStillOwned(
             @Param("encounterIds") Collection<Long> encounterIds,
             @Param("nurseId") Long nurseId);
+
+    /**
+     * 환자의 현재(in_progress) 입원이 속한 ward_id 를 단일 쿼리로 조회.
+     * 알림 라우팅 시 envelope.wardId 채우는 용도.
+     *
+     * 도메인 규약(troubleshooting 2026-04-29): 입원 중 환자 정보는 encounter 가 진실원.
+     * 환자가 전실되어도 그 시점의 입원 컨텍스트가 wardId 의 진실원이다.
+     */
+    @Query("""                                                                                                                                          
+          SELECT e.room.ward.wardId                                                                                                                   
+          FROM Encounter e                                     
+          WHERE e.patient.patientId = :patientId                                                                                                      
+            AND e.status = com.ssafy.happynurse.domain.patient.entity.EncounterStatus.in_progress                                                     
+          """)
+    Optional<Long> findCurrentWardIdByPatientId(@Param("patientId") Long patientId);
 }

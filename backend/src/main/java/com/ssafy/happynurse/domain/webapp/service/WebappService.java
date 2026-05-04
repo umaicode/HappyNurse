@@ -1,9 +1,6 @@
 package com.ssafy.happynurse.domain.webapp.service;
 
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
-import com.ssafy.happynurse.domain.nurse.entity.Notification;
-import com.ssafy.happynurse.domain.nurse.entity.SourceType;
-import com.ssafy.happynurse.domain.nurse.repository.NotificationRepository;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.entity.EncounterStatus;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
@@ -41,7 +38,6 @@ public class WebappService {
     private final JwtTokenProvider jwtTokenProvider;
     private final QuickSymptomButtonRepository quickSymptomButtonRepository;
     private final PatientSelfReportRepository patientSelfReportRepository;
-    private final NotificationRepository notificationRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public NfcEntryResponse getPatientEntry(String token) {
@@ -140,10 +136,10 @@ public class WebappService {
         }
 
         Patient patient = patientRepository.findById(jwtPatientId)
-            .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
 
         Encounter encounter = encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)
-            .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
 
         QuickSymptomButton button = null;
         String symptomText;
@@ -161,21 +157,12 @@ public class WebappService {
             inputMethod = InputMethod.text;
         }
 
-        PatientSelfReport savedReport = patientSelfReportRepository.save(PatientSelfReport.create(patient, encounter, inputMethod, button, symptomText));
+        PatientSelfReport savedReport = patientSelfReportRepository.save(
+                PatientSelfReport.create(patient, encounter, inputMethod, button, symptomText));
 
         Practitioner assignedPractitioner = encounter.getAssignedPractitioner();
-        if (assignedPractitioner != null) {
-            notificationRepository.save(Notification.create(
-                    assignedPractitioner,
-                    SourceType.self_report,
-                    savedReport,
-                    patient,
-                    encounter.getName() + "님의 증상 알림",
-                    symptomText
-            ));
-        }
 
-        // 이벤트 발행 (트랜잭션 커밋 후 SseNotificationListener가 처리)
+        // 이벤트 발행 — SymptomSubmittedNotificationAdapter 가 트랜잭션 커밋 후 dispatcher 통해 알림 영속화 + 채널 발사
         eventPublisher.publishEvent(new SymptomSubmittedEvent(
                 assignedPractitioner != null ? assignedPractitioner.getPractitionerId() : null,
                 patient.getPatientId(),
