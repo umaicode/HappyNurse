@@ -1,5 +1,6 @@
 package com.ssafy.happynurse.domain.patient.dto;
 
+import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -25,9 +26,12 @@ public record PatientResonse(
         @Schema(description = "진료부서 코드") String departmentCode,
         @Schema(description = "병동명") String wardName,
         @Schema(description = "병실명") String roomName,
-        @Schema(description = "침상명") String bedName
+        @Schema(description = "침상명") String bedName,
+        @Schema(description = "담당 의사(주치의) PK", example = "6") Long attendingPhysicianId,
+        @Schema(description = "담당 의사(주치의) 이름", example = "이조은") String attendingPhysicianName
 ) {
     public static PatientResonse of(Patient patient, Encounter encounter) {
+        Practitioner doctor = encounter.getAttendingPhysician(); // nullable
         return new PatientResonse(
                 patient.getPatientId(),
                 patient.getIdentifierValue(),
@@ -45,7 +49,9 @@ public record PatientResonse(
                 encounter.getDepartmentCode(),
                 encounter.getRoom().getWard().getWardName(),
                 encounter.getRoom().getRoomName(),
-                encounter.getBedName()
+                encounter.getBedName(),
+                doctor != null ? doctor.getPractitionerId() : null,
+                doctor != null ? doctor.getName() : null
         );
     }
 }
