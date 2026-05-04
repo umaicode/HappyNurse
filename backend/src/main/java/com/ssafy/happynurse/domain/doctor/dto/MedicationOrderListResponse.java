@@ -5,6 +5,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
 public record MedicationOrderListResponse(
+        @Schema(description = "입원 PK", example = "42")
+        Long encounterId,
+
         @Schema(description = "환자 PK", example = "3")
         Long patientId,
 

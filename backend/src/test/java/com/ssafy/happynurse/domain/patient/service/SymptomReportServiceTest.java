@@ -17,14 +17,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class SymptomReportServiceTest {
@@ -40,12 +39,10 @@ class SymptomReportServiceTest {
 
     static final Long WARD_ID = 3L;
     static final Long PATIENT_ID = 1L;
-    static final LocalDate DATE = LocalDate.of(2026, 4, 29);
 
     @Test
-    @DisplayName("증상 보고 조회 성공 시 목록을 반환한다")
+    @DisplayName("증상 보고 조회 성공 시 환자의 모든 보고를 반환한다")
     void getSymptomsByPatientId_성공() {
-        // Given
         Patient patient = createPatient(PATIENT_ID, "이승연");
         Encounter encounter = createEncounterWithWard(patient, WARD_ID);
         QuickSymptomButton button = createButton(1L, "통증");
@@ -55,13 +52,11 @@ class SymptomReportServiceTest {
         given(patientRepository.findById(PATIENT_ID)).willReturn(Optional.of(patient));
         given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
                 .willReturn(Optional.of(encounter));
-        given(patientSelfReportRepository.findByPatientIdAndDate(eq(PATIENT_ID), any(), any()))
+        given(patientSelfReportRepository.findByPatientId(PATIENT_ID))
                 .willReturn(List.of(report));
 
-        // When
-        SymptomReportListResponse response = symptomReportService.getSymptomsByPatientId(PATIENT_ID, WARD_ID, DATE);
+        SymptomReportListResponse response = symptomReportService.getSymptomsByPatientId(PATIENT_ID, WARD_ID);
 
-        // Then
         assertThat(response.patientId()).isEqualTo(PATIENT_ID);
         assertThat(response.patientName()).isEqualTo("이승연");
         assertThat(response.totalCount()).isEqualTo(1);
@@ -72,7 +67,6 @@ class SymptomReportServiceTest {
     @Test
     @DisplayName("텍스트 직접 입력 증상 - buttonLabel은 null")
     void getSymptomsByPatientId_텍스트_입력() {
-        // Given
         Patient patient = createPatient(PATIENT_ID, "이승연");
         Encounter encounter = createEncounterWithWard(patient, WARD_ID);
         PatientSelfReport report = createReport(2L, InputMethod.text, null, "복부 불편감",
@@ -81,13 +75,11 @@ class SymptomReportServiceTest {
         given(patientRepository.findById(PATIENT_ID)).willReturn(Optional.of(patient));
         given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
                 .willReturn(Optional.of(encounter));
-        given(patientSelfReportRepository.findByPatientIdAndDate(eq(PATIENT_ID), any(), any()))
+        given(patientSelfReportRepository.findByPatientId(PATIENT_ID))
                 .willReturn(List.of(report));
 
-        // When
-        SymptomReportListResponse response = symptomReportService.getSymptomsByPatientId(PATIENT_ID, WARD_ID, DATE);
+        SymptomReportListResponse response = symptomReportService.getSymptomsByPatientId(PATIENT_ID, WARD_ID);
 
-        // Then
         assertThat(response.symptoms().get(0).buttonLabel()).isNull();
         assertThat(response.symptoms().get(0).symptomText()).isEqualTo("복부 불편감");
     }
@@ -97,7 +89,7 @@ class SymptomReportServiceTest {
     void getSymptomsByPatientId_실패_환자_없음() {
         given(patientRepository.findById(99L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> symptomReportService.getSymptomsByPatientId(99L, WARD_ID, DATE))
+        assertThatThrownBy(() -> symptomReportService.getSymptomsByPatientId(99L, WARD_ID))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PATIENT_NOT_FOUND);
     }
@@ -111,7 +103,7 @@ class SymptomReportServiceTest {
         given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
                 .willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> symptomReportService.getSymptomsByPatientId(PATIENT_ID, WARD_ID, DATE))
+        assertThatThrownBy(() -> symptomReportService.getSymptomsByPatientId(PATIENT_ID, WARD_ID))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ENCOUNTER_NOT_FOUND);
     }
@@ -120,19 +112,19 @@ class SymptomReportServiceTest {
     @DisplayName("다른 병동 환자 조회 → ENCOUNTER_NOT_IN_MY_WARD")
     void getSymptomsByPatientId_실패_다른_병동() {
         Patient patient = createPatient(PATIENT_ID, "이승연");
-        Encounter encounter = createEncounterWithWard(patient, 999L); // 다른 병동
+        Encounter encounter = createEncounterWithWard(patient, 999L);
 
         given(patientRepository.findById(PATIENT_ID)).willReturn(Optional.of(patient));
         given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
                 .willReturn(Optional.of(encounter));
 
-        assertThatThrownBy(() -> symptomReportService.getSymptomsByPatientId(PATIENT_ID, WARD_ID, DATE))
+        assertThatThrownBy(() -> symptomReportService.getSymptomsByPatientId(PATIENT_ID, WARD_ID))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ENCOUNTER_NOT_IN_MY_WARD);
     }
 
     @Test
-    @DisplayName("해당 날짜에 증상 보고가 없으면 빈 목록을 반환한다")
+    @DisplayName("환자에게 증상 보고가 없으면 빈 목록을 반환한다")
     void getSymptomsByPatientId_빈_목록() {
         Patient patient = createPatient(PATIENT_ID, "이승연");
         Encounter encounter = createEncounterWithWard(patient, WARD_ID);
@@ -140,10 +132,9 @@ class SymptomReportServiceTest {
         given(patientRepository.findById(PATIENT_ID)).willReturn(Optional.of(patient));
         given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
                 .willReturn(Optional.of(encounter));
-        given(patientSelfReportRepository.findByPatientIdAndDate(eq(PATIENT_ID), any(), any()))
-                .willReturn(List.of());
+        given(patientSelfReportRepository.findByPatientId(PATIENT_ID)).willReturn(List.of());
 
-        SymptomReportListResponse response = symptomReportService.getSymptomsByPatientId(PATIENT_ID, WARD_ID, DATE);
+        SymptomReportListResponse response = symptomReportService.getSymptomsByPatientId(PATIENT_ID, WARD_ID);
 
         assertThat(response.totalCount()).isEqualTo(0);
         assertThat(response.symptoms()).isEmpty();

@@ -39,6 +39,7 @@ out/
 ### Secrets ###
 src/main/resources/application.yml
 src/main/resources/CLAUDE.md
+src/main/resources/firstbase/
 
 ### docs ###
 /docs/superpowers

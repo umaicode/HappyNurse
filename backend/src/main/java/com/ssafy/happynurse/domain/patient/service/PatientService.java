@@ -27,7 +27,8 @@ public class PatientService {
                 .orElseThrow(() -> new CustomException(ErrorCode.PRACTITIONER_NOT_FOUND));
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
-        Encounter encounter = encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress)
+        Encounter encounter = encounterRepository
+                .findWithDetailsByPatientAndStatus(patient, EncounterStatus.in_progress)
                 .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
         return PatientResonse.of(patient, encounter);
     }
