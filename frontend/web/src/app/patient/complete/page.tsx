@@ -3,7 +3,7 @@ import Complete from "@/components/patient/complete";
 
 export default function CompletePage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense>
       <Complete />
     </Suspense>
   );
