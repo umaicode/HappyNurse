@@ -1,55 +1,67 @@
-// Hilt 모듈 — Retrofit 인스턴스와 API 싱글톤 제공
+// Hilt 모듈 — Retrofit(OkHttp + 토큰 인터셉터) 및 API/Repository 싱글톤 제공
 package com.happynurse.di
 
-import android.os.Build
-import com.happynurse.BuildConfig
+import com.happynurse.data.remote.api.AuthApi
+import com.happynurse.data.remote.api.FcmTokenApi
 import com.happynurse.data.remote.api.HappyNurseApi
 import com.happynurse.data.remote.api.NfcTokenApi
+import com.happynurse.data.remote.api.OrganizationApi
+import com.happynurse.data.repository.AuthRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.runBlocking
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class PublicRetrofit
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class AuthRetrofit
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    private const val EMULATOR_BASE_URL = "http://10.0.2.2:8080/"
+    // URL은 BuildConfig 대신 상수 문자열로 선언 — AGP 9.x + KSP 타이밍 이슈 회피
+    private const val BASE_URL = "https://k14e101.p.ssafy.io/dev/api/"
 
-    @Provides
-    @Singleton
-    fun provideRetrofit(): Retrofit {
-        val baseUrl = if (isRunningOnEmulator()) EMULATOR_BASE_URL else BuildConfig.BASE_URL
+    @Provides @Singleton
+    fun provideLoggingInterceptor(): HttpLoggingInterceptor =
+        HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
+
+    @Provides @Singleton @PublicRetrofit
+    fun providePublicRetrofit(logging: HttpLoggingInterceptor): Retrofit =
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(OkHttpClient.Builder().addInterceptor(logging).build())
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+    @Provides @Singleton @AuthRetrofit
+    fun provideAuthRetrofit(logging: HttpLoggingInterceptor, authRepository: AuthRepository): Retrofit {
+        val tokenInterceptor = Interceptor { chain ->
+            val token = runBlocking { authRepository.accessToken.firstOrNull() }
+            val req = if (token != null)
+                chain.request().newBuilder().header("Authorization", "Bearer $token").build()
+            else chain.request()
+            chain.proceed(req)
+        }
         return Retrofit.Builder()
-            .baseUrl(baseUrl)
+            .baseUrl(BASE_URL)
+            .client(OkHttpClient.Builder().addInterceptor(tokenInterceptor).addInterceptor(logging).build())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 
-    @Provides
-    @Singleton
-    fun provideHappyNurseApi(retrofit: Retrofit): HappyNurseApi =
-        retrofit.create(HappyNurseApi::class.java)
-
-    @Provides
-    @Singleton
-    fun provideNfcTokenApi(retrofit: Retrofit): NfcTokenApi =
-        retrofit.create(NfcTokenApi::class.java)
-
-    // 런타임 에뮬레이터 감지 — AVD 인 경우 호스트 머신 백엔드 (10.0.2.2) 로 가게 함
-    private fun isRunningOnEmulator(): Boolean {
-        return Build.FINGERPRINT.startsWith("generic") ||
-            Build.FINGERPRINT.startsWith("unknown") ||
-            Build.MODEL.contains("google_sdk") ||
-            Build.MODEL.contains("Emulator") ||
-            Build.MODEL.contains("Android SDK built for x86") ||
-            Build.MANUFACTURER.contains("Genymotion") ||
-            (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic")) ||
-            Build.PRODUCT == "google_sdk" ||
-            Build.PRODUCT == "sdk_gphone64_x86_64" ||
-            Build.HARDWARE.contains("ranchu")
-    }
+    @Provides @Singleton fun provideAuthApi(@PublicRetrofit r: Retrofit): AuthApi = r.create(AuthApi::class.java)
+    @Provides @Singleton fun provideOrganizationApi(@PublicRetrofit r: Retrofit): OrganizationApi = r.create(OrganizationApi::class.java)
+    @Provides @Singleton fun provideHappyNurseApi(@AuthRetrofit r: Retrofit): HappyNurseApi = r.create(HappyNurseApi::class.java)
+    @Provides @Singleton fun provideNfcTokenApi(@AuthRetrofit r: Retrofit): NfcTokenApi = r.create(NfcTokenApi::class.java)
+    @Provides @Singleton fun provideFcmTokenApi(@AuthRetrofit r: Retrofit): FcmTokenApi = r.create(FcmTokenApi::class.java)
 }
