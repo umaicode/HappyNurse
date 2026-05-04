@@ -2,6 +2,7 @@ package com.ssafy.happynurse.domain.nurse.notification.service.fcm;
 
 import com.ssafy.happynurse.domain.nurse.notification.api.NotificationEnvelope;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 /**
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
  * Step 3에서 Firebase Admin SDK 기반 구현으로 교체될 때 이 빈을 제거한다.
  */
 @Slf4j
+@Profile("test")
 @Component
 public class NoOpFcmSender implements FcmSender {
 
