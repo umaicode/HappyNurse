@@ -1,4 +1,4 @@
-package com.ssafy.happynurse.domain.nurse.controller;
+package com.ssafy.happynurse.domain.nurse.notification.controller;
 
 import com.ssafy.happynurse.domain.nurse.dto.MedicationAdministrationWriteResponse;
 import com.ssafy.happynurse.domain.nurse.dto.MedicationItemResponse;
