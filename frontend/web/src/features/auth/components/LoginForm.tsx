@@ -241,7 +241,7 @@ export function LoginForm() {
               <img
                 src="/images/logo_2.png"
                 alt="HAPPYNURSE"
-                className="object-contain mb-6 h-10 w-auto"
+                className="object-contain mb-6 h-8 w-auto"
               />
               <Heading
                 level="h1"

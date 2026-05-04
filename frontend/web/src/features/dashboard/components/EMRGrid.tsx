@@ -85,7 +85,9 @@ function buildHeaderFromApi(
     cc: detail.chiefComplaint,
     surgeryName: detail.surgeryName,
     diseaseName: detail.diseaseName,
-    roomBed: [detail.roomName, detail.bedName].filter(Boolean).join(" / "),
+    roomBed: [detail.roomName?.replace(/호$/, ""), detail.bedName]
+      .filter(Boolean)
+      .join("-"),
     birthday: formatBirthFull(detail.birthDate),
     phone: detail.phone,
   };
