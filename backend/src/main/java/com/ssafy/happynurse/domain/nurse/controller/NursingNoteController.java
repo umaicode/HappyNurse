@@ -29,7 +29,7 @@ public class NursingNoteController {
 
     private final NursingNoteService nursingNoteService;
 
-    @Operation(summary = "입원별 간호 기록 통합 조회",
+    @Operation(summary = "입원별 간호 기록 조회",
             description = "한 입원의 STT 간호 기록과 NFC 태깅 투약 기록을 통합해 반환합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
