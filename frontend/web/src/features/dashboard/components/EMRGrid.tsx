@@ -38,7 +38,7 @@ interface PatientHeader {
   cc: string;
   surgeryName: string;
   diseaseName: string;
-  address: string;
+  roomBed: string;
   birthday: string;
   phone: string;
 }
@@ -53,7 +53,7 @@ const EMPTY_HEADER: PatientHeader = {
   cc: "",
   surgeryName: "",
   diseaseName: "",
-  address: "",
+  roomBed: "",
   birthday: "",
   phone: "",
 };
@@ -85,7 +85,7 @@ function buildHeaderFromApi(
     cc: detail.chiefComplaint,
     surgeryName: detail.surgeryName,
     diseaseName: detail.diseaseName,
-    address: detail.address,
+    roomBed: [detail.roomName, detail.bedName].filter(Boolean).join(" / "),
     birthday: formatBirthFull(detail.birthDate),
     phone: detail.phone,
   };
@@ -550,7 +550,7 @@ export function EMRGrid({ patientId }: EMRGridProps) {
 
         {/* Patient Info Grid - Ultra Dense (마지막 value 컬럼은 1.5fr — 진료일/휴대폰 가독성 확보) */}
         <div className="grid grid-cols-[100px_1fr_100px_1fr_100px_1fr_100px_1.5fr] border border-[var(--color-border-base)] text-body-sm bg-[var(--color-surface-card)] rounded overflow-hidden shadow-sm">
-          {/* Row 1: Department · Doctor · Admission Date (1:1:1) */}
+          {/* Row 1: Department · Doctor · Birthday (1:1:1) */}
           <div className="col-span-8 grid grid-cols-3 border-b border-[var(--color-border-base)]">
             <div className="flex items-stretch border-r border-[var(--color-border-base)]">
               <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
@@ -580,33 +580,6 @@ export function EMRGrid({ patientId }: EMRGridProps) {
             </div>
             <div className="flex items-stretch">
               <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
-                입원일
-              </div>
-              <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
-                <EditableCell
-                  value={patientInfo.date}
-                  onUpdate={(val) => handleUpdatePatient("date", val)}
-                  className="font-mono font-bold text-[var(--color-content-secondary)] truncate w-full"
-                />
-              </div>
-            </div>
-          </div>
-          {/* Row 2: Address · Birthday · Phone (1:1:1) — Row 3 와 정렬 */}
-          <div className="col-span-8 grid grid-cols-3 border-b border-[var(--color-border-base)]">
-            <div className="flex items-stretch border-r border-[var(--color-border-base)]">
-              <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
-                주소
-              </div>
-              <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
-                <EditableCell
-                  value={patientInfo.address}
-                  onUpdate={(val) => handleUpdatePatient("address", val)}
-                  className="font-medium text-[var(--color-content-tertiary)] truncate w-full"
-                />
-              </div>
-            </div>
-            <div className="flex items-stretch border-r border-[var(--color-border-base)]">
-              <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
                 생년월일
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
@@ -615,6 +588,31 @@ export function EMRGrid({ patientId }: EMRGridProps) {
                   onUpdate={(val) =>
                     handleUpdatePatient("birthday", val)
                   }
+                  className="font-mono font-bold text-[var(--color-content-secondary)] truncate w-full"
+                />
+              </div>
+            </div>
+          </div>
+          {/* Row 2: Room/Bed (read-only) · Admission Date · Phone (1:1:1) — Row 3 와 정렬 */}
+          <div className="col-span-8 grid grid-cols-3 border-b border-[var(--color-border-base)]">
+            <div className="flex items-stretch border-r border-[var(--color-border-base)]">
+              <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+                호실/침대
+              </div>
+              <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
+                <span className="font-mono font-bold text-[var(--color-content-secondary)] truncate w-full">
+                  {patientInfo.roomBed}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-stretch border-r border-[var(--color-border-base)]">
+              <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+                입원일
+              </div>
+              <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
+                <EditableCell
+                  value={patientInfo.date}
+                  onUpdate={(val) => handleUpdatePatient("date", val)}
                   className="font-mono font-bold text-[var(--color-content-secondary)] truncate w-full"
                 />
               </div>
