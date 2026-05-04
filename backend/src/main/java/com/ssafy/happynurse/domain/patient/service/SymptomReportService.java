@@ -15,8 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -28,7 +26,7 @@ public class SymptomReportService {
     private final EncounterRepository encounterRepository;
     private final PatientSelfReportRepository patientSelfReportRepository;
 
-    public SymptomReportListResponse getSymptomsByPatientId(Long patientId, Long wardId, LocalDate date) {
+    public SymptomReportListResponse getSymptomsByPatientId(Long patientId, Long wardId) {
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
 
@@ -39,11 +37,7 @@ public class SymptomReportService {
             throw new CustomException(ErrorCode.ENCOUNTER_NOT_IN_MY_WARD);
         }
 
-        LocalDateTime dayStart = date.atStartOfDay();
-        LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
-
-        List<PatientSelfReport> reports = patientSelfReportRepository
-                .findByPatientIdAndDate(patientId, dayStart, dayEnd);
+        List<PatientSelfReport> reports = patientSelfReportRepository.findByPatientId(patientId);
 
         List<SymptomReportItemResponse> items = reports.stream()
                 .map(this::toItemResponse)
