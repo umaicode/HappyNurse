@@ -62,6 +62,9 @@ public class MedicationAdministration {
     @Column(name = "nfc_tag_verified", nullable = false)
     private Boolean nfcTagVerified; // NFC 태깅 검증 여부
 
+    @Column(name = "tagging_id", nullable = false, length = 36)
+    private String taggingId;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -69,4 +72,28 @@ public class MedicationAdministration {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public static MedicationAdministration ofVerifiedNfc(
+            Patient patient,
+            Encounter encounter,
+            Practitioner practitioner,
+            MedicationOrder medicationOrder,
+            Medication medication,
+            LocalDateTime effectiveDatetime,
+            String taggingId
+    ) {
+        MedicationAdministration ma = new MedicationAdministration();
+        ma.patient = patient;
+        ma.encounter = encounter;
+        ma.practitioner = practitioner;
+        ma.medicationOrder = medicationOrder;
+        ma.medication = medication;
+        ma.status = RecordStatus.confirmed;
+        ma.effectiveDatetime = effectiveDatetime;
+        ma.dosageQuantity = medicationOrder.getDose();
+        ma.dosageUnit = medicationOrder.getDoseUnit();
+        ma.nfcTagVerified = true;
+        ma.taggingId = taggingId;
+        return ma;
+    }
 }

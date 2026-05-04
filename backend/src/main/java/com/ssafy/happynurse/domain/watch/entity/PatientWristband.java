@@ -1,5 +1,6 @@
 package com.ssafy.happynurse.domain.watch.entity;
 
+import com.ssafy.happynurse.domain.nfc.entity.NfcTag;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
