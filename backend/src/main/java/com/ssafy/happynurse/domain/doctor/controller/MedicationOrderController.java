@@ -9,34 +9,33 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
-
-@Tag(name = "환자", description = "환자 API")
+@Tag(name = "의사 오더", description = "의사 오더 조회 API")
 @RestController
-@RequestMapping("/patient")
+@RequestMapping("/encounters")
 @RequiredArgsConstructor
 public class MedicationOrderController {
 
     private final MedicationOrderService medicationOrderService;
 
-    @Operation(summary = "환자별 의사 오더 조회", description = "환자 ID로 해당 환자의 의사 오더 목록을 조회합니다. 예시) 환자 ID : 2")
+    @Operation(summary = "입원별 의사 오더 조회",
+            description = "입원 ID로 해당 입원에 속한 의사 오더 전체를 dateWritten 내림차순으로 조회합니다. 응답은 createdAt·updatedAt도 포함하여 status 변경 시점을 노출합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "환자 없음")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "입원 없음 — ENCOUNTER_NOT_FOUND")
     })
-    @GetMapping("/{patientId}/orders")
+    @GetMapping("/{encounterId}/orders")
     public ResponseEntity<ApiResponse<MedicationOrderListResponse>> getOrders(
-            @Parameter(description = "환자 ID", example = "2") @PathVariable Long patientId,
-            @Parameter(description = "조회 날짜", example = "2026-04-25")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @Parameter(description = "입원 ID", example = "42") @PathVariable Long encounterId,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        MedicationOrderListResponse data = medicationOrderService.getOrdersByPatientId(patientId, date);
-        return ResponseEntity.ok(ApiResponse.ok("환자 오더 목록 조회에 성공했습니다.", data));
+        MedicationOrderListResponse data = medicationOrderService.getOrdersByEncounterId(encounterId);
+        return ResponseEntity.ok(ApiResponse.ok("입원별 의사 오더 조회에 성공했습니다.", data));
     }
 }

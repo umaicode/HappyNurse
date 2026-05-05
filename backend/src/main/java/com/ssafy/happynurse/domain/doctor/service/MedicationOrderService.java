@@ -4,16 +4,15 @@ import com.ssafy.happynurse.domain.doctor.dto.MedicationOrderItemResponse;
 import com.ssafy.happynurse.domain.doctor.dto.MedicationOrderListResponse;
 import com.ssafy.happynurse.domain.doctor.entity.MedicationOrder;
 import com.ssafy.happynurse.domain.doctor.repository.MedicationOrderRepository;
+import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
-import com.ssafy.happynurse.domain.patient.repository.PatientRepository;
+import com.ssafy.happynurse.domain.patient.repository.EncounterRepository;
 import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -22,22 +21,22 @@ import java.util.List;
 public class MedicationOrderService {
 
     private final MedicationOrderRepository medicationOrderRepository;
-    private final PatientRepository patientRepository;
+    private final EncounterRepository encounterRepository;
 
-    public MedicationOrderListResponse getOrdersByPatientId(Long patientId, LocalDate date) {
-        Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PATIENT_NOT_FOUND));
+    public MedicationOrderListResponse getOrdersByEncounterId(Long encounterId) {
+        Encounter encounter = encounterRepository.findById(encounterId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
 
-        LocalDateTime dayStart = date.atStartOfDay();
-        LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
+        Patient patient = encounter.getPatient();
 
-        List<MedicationOrder> orders = medicationOrderRepository.findByPatientIdAndDate(patientId, dayStart, dayEnd);
+        List<MedicationOrder> orders = medicationOrderRepository.findByEncounterId(encounterId);
 
         List<MedicationOrderItemResponse> items = orders.stream()
                 .map(this::toItemResponse)
                 .toList();
 
         return new MedicationOrderListResponse(
+                encounter.getEncounterId(),
                 patient.getPatientId(),
                 patient.getName(),
                 items.size(),
@@ -59,7 +58,9 @@ public class MedicationOrderService {
                 mo.getStatus(),
                 mo.getDateWritten(),
                 mo.getPrescriber().getPractitionerId(),
-                mo.getPrescriber().getName()
+                mo.getPrescriber().getName(),
+                mo.getCreatedAt(),
+                mo.getUpdatedAt()
         );
     }
 }

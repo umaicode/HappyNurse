@@ -19,13 +19,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = SymptomReportController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -53,7 +53,7 @@ class SymptomReportControllerTest {
     }
 
     @Test
-    @DisplayName("GET /patients/{patientId}/symptoms?date= - 조회 성공")
+    @DisplayName("GET /patients/{patientId}/symptoms - 조회 성공")
     void getSymptoms_성공() throws Exception {
         SymptomReportItemResponse item = new SymptomReportItemResponse(
                 1L, InputMethod.quick_button, "통증", "통증",
@@ -61,10 +61,9 @@ class SymptomReportControllerTest {
         SymptomReportListResponse response = new SymptomReportListResponse(
                 1L, "이승연", 1, List.of(item));
 
-        given(symptomReportService.getSymptomsByPatientId(eq(1L), eq(WARD_ID), eq(LocalDate.of(2026, 4, 29))))
-                .willReturn(response);
+        given(symptomReportService.getSymptomsByPatientId(1L, WARD_ID)).willReturn(response);
 
-        mockMvc.perform(get("/patients/1/symptoms").param("date", "2026-04-29"))
+        mockMvc.perform(get("/patients/1/symptoms"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.patientName").value("이승연"))
@@ -73,32 +72,32 @@ class SymptomReportControllerTest {
     }
 
     @Test
-    @DisplayName("GET /patients/{patientId}/symptoms?date= - 다른 병동 환자 → 403")
+    @DisplayName("GET /patients/{patientId}/symptoms - 다른 병동 환자 → 403")
     void getSymptoms_실패_다른_병동() throws Exception {
-        given(symptomReportService.getSymptomsByPatientId(eq(1L), eq(WARD_ID), any()))
+        given(symptomReportService.getSymptomsByPatientId(1L, WARD_ID))
                 .willThrow(new CustomException(ErrorCode.ENCOUNTER_NOT_IN_MY_WARD));
 
-        mockMvc.perform(get("/patients/1/symptoms").param("date", "2026-04-29"))
+        mockMvc.perform(get("/patients/1/symptoms"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("GET /patients/{patientId}/symptoms?date= - 환자 없으면 404")
+    @DisplayName("GET /patients/{patientId}/symptoms - 환자 없으면 404")
     void getSymptoms_실패_환자_없음() throws Exception {
-        given(symptomReportService.getSymptomsByPatientId(eq(99L), eq(WARD_ID), any()))
+        given(symptomReportService.getSymptomsByPatientId(99L, WARD_ID))
                 .willThrow(new CustomException(ErrorCode.PATIENT_NOT_FOUND));
 
-        mockMvc.perform(get("/patients/99/symptoms").param("date", "2026-04-29"))
+        mockMvc.perform(get("/patients/99/symptoms"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("GET /patients/{patientId}/symptoms?date= - 활성 입원 없으면 404")
+    @DisplayName("GET /patients/{patientId}/symptoms - 활성 입원 없으면 404")
     void getSymptoms_실패_입원_없음() throws Exception {
-        given(symptomReportService.getSymptomsByPatientId(eq(1L), eq(WARD_ID), any()))
+        given(symptomReportService.getSymptomsByPatientId(1L, WARD_ID))
                 .willThrow(new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
 
-        mockMvc.perform(get("/patients/1/symptoms").param("date", "2026-04-29"))
+        mockMvc.perform(get("/patients/1/symptoms"))
                 .andExpect(status().isNotFound());
     }
 }

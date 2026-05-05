@@ -8,11 +8,9 @@ import { client } from "@/lib/client";
 import type { Organization, WardSummary } from "../types/organization";
 
 export const getOrganizations = (): Promise<Organization[]> =>
-  client
-    .get("/organizations")
-    .then((response) => response.data?.data ?? response.data);
+  client.get("/organizations").then((response) => response.data);
 
 export const getWards = (organizationId: number): Promise<WardSummary[]> =>
   client
     .get(`/organizations/${organizationId}/wards`)
-    .then((response) => response.data?.data ?? response.data);
+    .then((response) => response.data);
