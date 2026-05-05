@@ -1,10 +1,63 @@
 from rapidfuzz import fuzz, process
+from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 class TermMapper:
-    def __init__(self):
-        # 테스트용 매핑 사전 (나중에 DB로 교체)
+    def __init__(self, db: Session = None):
+        self.db = db
+        self.exact_dict = {}
+        self.medical_terms = []
+
+        if db:
+            self._load_from_db()
+        else:
+            self._load_default()
+
+        print(f"매핑 사전 초기화: 정확 매칭 {len(self.exact_dict)}개, 퍼지 매칭 대상 {len(self.medical_terms)}개")
+
+    def _load_from_db(self):
+        """DB에서 매핑 사전 로드"""
+        try:
+            # 정확 매칭 사전 로드
+            rows = self.db.execute(text("""
+                SELECT stt_word, correct_word, stt_word_normalized
+                FROM quick_correction_dictionary
+                WHERE is_active = true
+            """)).fetchall()
+
+            for row in rows:
+                self.exact_dict[row[0]] = row[1]           # 원본 매칭
+                self.exact_dict[row[2]] = row[1]           # 정규화 매칭
+
+            # 퍼지 매칭 대상 (정식 용어 목록)
+            terms = self.db.execute(text("""
+                SELECT DISTINCT correct_word
+                FROM quick_correction_dictionary
+                WHERE is_active = true
+            """)).fetchall()
+
+            self.medical_terms = [row[0] for row in terms]
+
+            # suggestion 테이블에서도 추가
+            suggestions = self.db.execute(text("""
+                SELECT DISTINCT suggested_word
+                FROM quick_correction_suggestion
+                WHERE is_active = true
+            """)).fetchall()
+
+            for row in suggestions:
+                if row[0] not in self.medical_terms:
+                    self.medical_terms.append(row[0])
+
+            print("DB에서 매핑 사전 로드 완료")
+
+        except Exception as e:
+            print(f"DB 로드 실패, 기본 사전 사용: {e}")
+            self._load_default()
+
+    def _load_default(self):
+        """테스트용 기본 사전"""
         self.exact_dict = {
-            # STT 오인식 → 정식 용어
             "사무실": "3호실",
             "좌우실": "4호실",
             "세포트리악손": "세프트리악손",
@@ -20,7 +73,6 @@ class TermMapper:
             "유니티 피아": "유닛 피하",
         }
 
-        # 정식 의료 용어 목록 (퍼지 매칭 대상)
         self.medical_terms = [
             "아세트아미노펜", "세프트리악손", "푸로세미드", "라식스",
             "케토롤락", "디클로페낙", "이부프로펜", "멜록시캄",
@@ -30,28 +82,23 @@ class TermMapper:
             "1호실", "2호실", "3호실", "4호실", "5호실",
         ]
 
-        print(f"매핑 사전 초기화: 정확 매칭 {len(self.exact_dict)}개, 퍼지 매칭 대상 {len(self.medical_terms)}개")
-
     def exact_match(self, word: str) -> str | None:
-        """1차: 정확 매칭"""
-        # 원본으로 먼저 찾기
         if word in self.exact_dict:
             return self.exact_dict[word]
-        # 공백 제거 후 찾기
-        normalized = word.replace(" ", "")
+        normalized = word.replace(" ", "").lower()
         if normalized in self.exact_dict:
             return self.exact_dict[normalized]
         return None
 
     def fuzzy_match(self, word: str, threshold: int = 70) -> list:
-        """2차: 퍼지 매칭 - 유사한 후보 단어 제공"""
         normalized = word.replace(" ", "")
-        
+
+        # rapidfuzz 라이브러리
         matches = process.extract(
-            normalized,
-            self.medical_terms,
-            scorer=fuzz.ratio,
-            limit=3
+            normalized,         # 찾으려는 오타 단어 (예: "아세트아미노팬")
+            self.medical_terms, # 아까 __init__에서 만든 정답 단어 리스트
+            scorer=fuzz.ratio,  # 레벤슈타인 거리 기반의 알고리즘 사용
+            limit=3             # 다 찾지 말고, 제일 비슷한 거 딱 3개만 가져와!
         )
 
         candidates = []
@@ -65,14 +112,12 @@ class TermMapper:
         return candidates
 
     def process_text(self, text: str, medical_candidates: list) -> dict:
-        """전체 텍스트에 대해 매핑 처리"""
         corrected_text = text
         corrections = []
 
         for candidate in medical_candidates:
             word = candidate["word"]
 
-            # 1차: 정확 매칭
             exact_result = self.exact_match(word)
             if exact_result:
                 corrected_text = corrected_text.replace(word, exact_result)
@@ -85,26 +130,24 @@ class TermMapper:
                 print(f"  정확 매칭: {word} → {exact_result}")
                 continue
 
-            # 2차: 퍼지 매칭
+            # 퍼지 매칭
             fuzzy_results = self.fuzzy_match(word)
             if fuzzy_results:
-                # 최고 점수 후보로 자동 치환
                 best = fuzzy_results[0]
                 if best["confidence_score"] >= 0.85:
                     corrected_text = corrected_text.replace(word, best["suggested_word"])
                     corrections.append({
                         "original": word,
-                        "corrected": best["suggested_word"],
+                        "corrected": best["suggested_word"], # 문장 바꿈
                         "type": "fuzzy",
-                        "confidence": best["confidence_score"],
+                        "confidence": best["confidence_score"], # 후보는 적어줌
                         "candidates": fuzzy_results
                     })
                     print(f"  퍼지 매칭 (자동): {word} → {best['suggested_word']} ({best['confidence_score']})")
                 else:
-                    # 신뢰도 낮으면 후보만 제시
                     corrections.append({
                         "original": word,
-                        "corrected": None,
+                        "corrected": None,  # 문장 안바꿈
                         "type": "candidates",
                         "confidence": best["confidence_score"],
                         "candidates": fuzzy_results
@@ -115,4 +158,3 @@ class TermMapper:
             "corrected_text": corrected_text,
             "corrections": corrections
         }
-    
