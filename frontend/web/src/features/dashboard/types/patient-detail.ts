@@ -27,4 +27,8 @@ export interface PatientDetailResponse {
   wardName: string;
   roomName: string;
   bedName: string;
+
+  // 담당 의사(주치의)
+  attendingPhysicianId: number;
+  attendingPhysicianName: string;
 }
