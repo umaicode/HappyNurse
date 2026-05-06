@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from "react";
-import { Droplet, Clock, AlertTriangle } from "lucide-react";
+import { Droplet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PanelCard } from "./PanelCard";
 
@@ -114,38 +114,30 @@ export function IVTimerPanel() {
             const isWarning = remainingMinutes <= 60;
 
             return (
-              <PanelCard
-                key={item.id}
-                accentBorderClass={
-                  isWarning
-                    ? "border-l-4 border-l-status-warning border-status-warning/30"
-                    : undefined
-                }
-              >
+              <PanelCard key={item.id}>
+                {/* 1행: 환자명 + 호실 (좌) | 교체 임박 칩 (우) */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-baseline gap-2 min-w-0">
-                    <span className="text-[15px] text-content-primary leading-none truncate">
+                    <span className="text-body-sm font-bold text-content-primary truncate leading-none">
                       {item.patientName}
                     </span>
-                    <span className="text-body-micro font-mono text-content-muted shrink-0">
+                    <span className="text-body-micro font-mono font-medium text-content-tertiary shrink-0 leading-none">
                       {item.room}
                     </span>
                   </div>
                   {isWarning && (
-                    <span className="flex items-center gap-1 text-[11px] text-status-warning shrink-0">
-                      <AlertTriangle className="w-3 h-3" />
+                    <span className="px-1.5 py-0.5 rounded bg-status-warning text-white text-body-micro font-bold leading-none shrink-0">
                       교체 임박
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <Droplet className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                  <span className="text-body-micro text-content-secondary truncate">
-                    {item.fluidName}
-                  </span>
-                </div>
+                {/* 수액 이름 */}
+                <span className="text-body-sm font-bold text-content-primary truncate">
+                  {item.fluidName}
+                </span>
 
+                {/* 진행 막대바 */}
                 <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
                   <div
                     className={cn(
@@ -156,28 +148,24 @@ export function IVTimerPanel() {
                   />
                 </div>
 
-                <div className="flex flex-col gap-0.5 text-body-micro">
-                  <div className="flex items-center gap-1 text-content-secondary">
-                    <Clock
-                      className={cn(
-                        "w-3.5 h-3.5",
-                        isWarning ? "text-status-warning" : "text-content-muted",
-                      )}
-                    />
-                    <span>
-                      <span className="font-mono">{item.startedAt}</span>
-                      {" ~ 현재 "}
-                      <span>{formatDuration(elapsedMinutes)}</span>
-                      {" 경과"}
-                    </span>
+                {/* 시간 정보 */}
+                <div className="flex flex-col gap-0.5 text-body-sm">
+                  <div
+                    className={cn(
+                      isWarning ? "text-status-warning" : "text-content-secondary",
+                    )}
+                  >
+                    <span className="font-mono font-medium">{item.startedAt}</span>
+                    {" ~ 현재 "}
+                    <span className="font-medium">{formatDuration(elapsedMinutes)}</span>
+                    {" 경과"}
                   </div>
                   <div
                     className={cn(
-                      "pl-[18px]",
                       isWarning ? "text-status-warning" : "text-content-tertiary",
                     )}
                   >
-                    종료 예정 <span className="font-mono">{item.endsAt}</span>
+                    종료 예정 <span className="font-mono font-medium">{item.endsAt}</span>
                   </div>
                 </div>
               </PanelCard>

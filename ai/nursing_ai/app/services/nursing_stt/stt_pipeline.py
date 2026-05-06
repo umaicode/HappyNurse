@@ -1,6 +1,6 @@
-from app.services.clova_stt import ClovaSTTClient
-from app.services.morpheme import MorphemeAnalyzer
-from app.services.term_mapper import TermMapper
+from app.services.nursing_stt.clova_stt import ClovaSTTClient
+from app.services.nursing_stt.morpheme import MorphemeAnalyzer
+from app.services.nursing_stt.term_mapper import TermMapper
 from sqlalchemy.orm import Session
 
 class STTPipeline:

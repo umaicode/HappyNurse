@@ -192,13 +192,24 @@
 
       const file = fileInput.files[0];
       document.getElementById('uploadStatus').textContent = 'STT 처리 중...';
-      console.log(`파일: ${file.name}, 크기: ${file.size} bytes`);
 
       const formData = new FormData();
       formData.append('audio', file);
 
+      // 환자 정보 추가 (입력된 경우만)
+      const patientId = document.getElementById('patientId').value;
+      const encounterId = document.getElementById('encounterId').value;
+      const practitionerId = document.getElementById('practitionerId').value;
+
+      let url = 'http://localhost:8000/api/stt/recognize';
+      const params = [];
+      if (patientId) params.push(`patient_id=${patientId}`);
+      if (encounterId) params.push(`encounter_id=${encounterId}`);
+      if (practitionerId) params.push(`practitioner_id=${practitionerId}`);
+      if (params.length > 0) url += '?' + params.join('&');
+
       try {
-        const response = await fetch('http://localhost:8000/api/stt/recognize', {
+        const response = await fetch(url, {
           method: 'POST',
           body: formData
         });
@@ -210,15 +221,19 @@
           document.getElementById('originalText').textContent = data.original_text || '없음';
           document.getElementById('correctedText').textContent = data.corrected_text || '없음';
 
+          let info = '';
+          if (data.nursing_record_id) info += `기록 ID: ${data.nursing_record_id}\n`;
+          if (data.audio_url) info += `음성 파일: ${data.audio_url}\n`;
+
           if (data.corrections && data.corrections.length > 0) {
-            const corrList = data.corrections.map(c =>
+            info += data.corrections.map(c =>
               `${c.original} → ${c.corrected || '(후보: ' + c.candidates.map(cd => cd.suggested_word).join(', ') + ')'}`
             ).join('\n');
-            document.getElementById('corrections').textContent = corrList;
           } else {
-            document.getElementById('corrections').textContent = '교정 없음';
+            info += '교정 없음';
           }
 
+          document.getElementById('corrections').textContent = info;
           document.getElementById('uploadStatus').textContent = '인식 완료!';
         } else {
           document.getElementById('uploadStatus').textContent = '에러: ' + data.detail;

@@ -24,6 +24,19 @@ export const toIsoDate = (value: Date | string): string => {
   return `${year}-${month}-${day}`;
 };
 
+// 알림용 한국어 상대 시간 — "방금" / "N분 전" / "N시간 전" / "MM.dd HH:mm".
+export const formatRelativeTime = (value: Date | string): string => {
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return "";
+  const diffMs = Date.now() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return "방금";
+  if (diffMin < 60) return `${diffMin}분 전`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour}시간 전`;
+  return formatMonthDayHHmm(date);
+};
+
 // 두 줄 표시용 — { month: "MM", day: "DD", time: "HH:mm" }
 export const splitDateLabel = (
   value: Date | string,
