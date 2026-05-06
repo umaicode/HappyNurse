@@ -29,3 +29,9 @@ dist/
 # Env files
 .env
 .env.*
+
+# Uploads (음성 파일은 git에 안 올림)
+uploads/
+
+# Test files
+test.html

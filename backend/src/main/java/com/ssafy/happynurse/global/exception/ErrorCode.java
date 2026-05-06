@@ -64,6 +64,7 @@ public enum ErrorCode implements ResponseCode {
     // Medication Administration
     MEDICATION_ADMIN_NOT_FOUND(HttpStatus.NOT_FOUND, "투약 기록을 찾을 수 없습니다."),
     MEDICATION_ADMIN_NOT_AUTHOR(HttpStatus.FORBIDDEN, "본인이 투약한 기록만 수정할 수 있습니다."),
+    MEDICATION_ADMIN_NOT_IN_GROUP(HttpStatus.BAD_REQUEST, "해당 taggingId 그룹에 속하지 않은 medicationAdminId 입니다."),
 
     // Record State
     INVALID_RECORD_STATUS(HttpStatus.BAD_REQUEST, "현재 상태에서 처리할 수 없는 요청입니다."),
@@ -77,6 +78,12 @@ public enum ErrorCode implements ResponseCode {
     MEDICATION_ORDER_PATIENT_MISMATCH(HttpStatus.BAD_REQUEST, "처방 오더의 환자가 일치하지 않습니다."),
     MEDICATION_ALREADY_ADMINISTERED(HttpStatus.CONFLICT, "이미 투약 완료된(또는 활성 상태가 아닌) 처방입니다."),
     MEDICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 약물을 찾을 수 없습니다."),
+
+    // IV Infusion
+    IV_INFUSION_NOT_FOUND(HttpStatus.NOT_FOUND, "수액 정보를 찾을 수 없습니다."),
+    IV_RATE_INPUT_INVALID(HttpStatus.BAD_REQUEST, "주입 속도 입력이 올바르지 않습니다 (mL/hr 또는 gtt/min+patientType 중 하나만 채워야 합니다)."),
+    IV_INVALID_STATE(HttpStatus.BAD_REQUEST, "현재 수액 상태에서 처리할 수 없는 요청입니다."),
+    IV_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "해당 처방으로 진행 중인 수액이 이미 존재합니다. 먼저 종료해주세요."),
 
     // Simulator (HIS 발사기)
     INVALID_SIMULATOR_KEY(HttpStatus.UNAUTHORIZED, "유효하지 않은 시뮬레이터 키입니다.");

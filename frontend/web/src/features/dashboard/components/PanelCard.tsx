@@ -30,7 +30,7 @@ export function PanelCard({
     <div
       {...rest}
       className={cn(
-        "relative bg-white rounded-xl border border-border-base shadow-sm p-3 flex flex-col gap-2 transition-all hover:border-brand-primary/30",
+        "relative rounded-xl border border-border-base shadow-sm p-3 flex flex-col gap-2 transition-all hover:border-brand-primary/30",
         accentBorderClass,
         variantClass,
         className,

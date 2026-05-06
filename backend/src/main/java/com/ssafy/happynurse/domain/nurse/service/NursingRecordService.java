@@ -46,7 +46,8 @@ public class NursingRecordService {
                 encounter.getPatient().getPatientId(),
                 encounter.getEncounterId(),
                 currentPractitionerId,
-                request.content());
+                request.content(),
+                request.confirmedAt());
 
         NursingRecord saved = nursingRecordRepository.save(record);
 
@@ -66,15 +67,14 @@ public class NursingRecordService {
         }
 
         String finalContent = record.getEditContent();
-        var confirmedAt = record.getCreatedAt();
 
-        nursingRecordRepository.confirmDraft(nursingRecordId, finalContent, confirmedAt);
+        nursingRecordRepository.confirmDraft(nursingRecordId, finalContent);
 
         return new NursingRecordWriteResponse(
                 nursingRecordId,
                 RecordStatus.confirmed,
                 finalContent,
-                confirmedAt
+                record.getConfirmedAt()
         );
     }
 

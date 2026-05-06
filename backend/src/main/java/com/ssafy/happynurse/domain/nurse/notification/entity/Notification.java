@@ -2,6 +2,7 @@ package com.ssafy.happynurse.domain.nurse.notification.entity;
 
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
+import com.ssafy.happynurse.domain.watch.entity.IvInfusion;
 import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -35,6 +36,10 @@ public class Notification {
     private PatientSelfReport sourceSelfReport;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_iv_infusion_id")
+    private IvInfusion sourceIvInfusion; // sourceType=iv_alert 일 때만 채워짐
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id")
     private Patient patient; // 대상 환자
 
@@ -57,6 +62,23 @@ public class Notification {
         notification.title = title;
         notification.body = body;
 
+        return notification;
+    }
+
+    /** 수액 알림용 — sourceType=iv_alert 고정. */
+    public static Notification createForIvAlert(
+            Practitioner recipientPractitioner,
+            IvInfusion sourceIvInfusion,
+            Patient patient,
+            String title,
+            String body) {
+        Notification notification = new Notification();
+        notification.recipientPractitioner = recipientPractitioner;
+        notification.sourceType = SourceType.iv_alert;
+        notification.sourceIvInfusion = sourceIvInfusion;
+        notification.patient = patient;
+        notification.title = title;
+        notification.body = body;
         return notification;
     }
 }
