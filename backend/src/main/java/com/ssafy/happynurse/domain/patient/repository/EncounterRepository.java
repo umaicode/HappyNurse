@@ -27,6 +27,7 @@ public interface EncounterRepository extends JpaRepository<Encounter, Long> {
     @Query("""
             SELECT e FROM Encounter e
             JOIN FETCH e.room r
+            LEFT JOIN FETCH e.assignedPractitioner
             WHERE r.ward.wardId = :wardId
               AND e.status = com.ssafy.happynurse.domain.patient.entity.EncounterStatus.in_progress
             ORDER BY r.roomName ASC, e.bedName ASC, e.encounterId ASC
