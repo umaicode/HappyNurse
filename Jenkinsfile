@@ -80,6 +80,16 @@ pipeline {
                     echo "    backend  : ${env.CHANGED_BACKEND}"
                     echo "    ai       : ${env.CHANGED_AI}"
                     echo "    frontend : ${env.CHANGED_FRONTEND}"
+
+                    // ★ 시작 알림 (변경 있을 때만)
+                    def hasChanges = (env.CHANGED_BACKEND  == 'true' ||
+                                      env.CHANGED_AI       == 'true' ||
+                                      env.CHANGED_FRONTEND == 'true')
+                    if (hasChanges) {
+                        notifyMattermost('STARTED')
+                    } else {
+                        echo '[SKIP NOTIFY] No changes detected, skipping start notification'
+                    }
                 }
             }
         }
@@ -248,14 +258,29 @@ pipeline {
 def notifyMattermost(String result) {
     // ─── 색상 및 기본 상태 ───
     def isSuccess = (result == 'SUCCESS')
-    def color     = isSuccess ? '#2eb886' : '#e01e5a' // 초록 / 빨강
-    def envLabel  = env.DEPLOY_ENV.toUpperCase()
+    def isStarted = (result == 'STARTED')
+    def isFailure = (result == 'FAILURE')
 
-    // ─── 커스텀 이모지 및 큰 헤더 (초록/빨강 박스 안쪽) ───
-    def jenkinsEmoji = isSuccess ? ':jenkins_muscle:' : ':jenkins5:'
-    def headerText = isSuccess
-        ? "# ${jenkinsEmoji} ${envLabel} 배포 뿌슝빠슝"
-        : "# ${jenkinsEmoji} ${envLabel} 안되잖아 다시해"
+    def color
+    if (isSuccess)      color = '#2eb886'   // 초록
+    else if (isStarted) color = '#3aa3e3'   // 파랑
+    else                color = '#e01e5a'   // 빨강
+
+    def envLabel = env.DEPLOY_ENV.toUpperCase()
+
+    // ─── 커스텀 이모지 및 큰 헤더 ───
+    def jenkinsEmoji
+    def headerText
+    if (isSuccess) {
+        jenkinsEmoji = ':jenkins_muscle:'
+        headerText = "# ${jenkinsEmoji} ${envLabel} 배포 뿌슝빠슝"
+    } else if (isStarted) {
+        jenkinsEmoji = ':rocket:'   // 또는 :rocket: 같은 기본 이모지
+        headerText = "# ${jenkinsEmoji} ${envLabel} 배포 시작"
+    } else {
+        jenkinsEmoji = ':jenkins5:'
+        headerText = "# ${jenkinsEmoji} ${envLabel} 안되잖아 다시해"
+    }
 
     // ─── 트리거 정보 ───
     def cause = currentBuild.getBuildCauses()
@@ -288,38 +313,52 @@ def notifyMattermost(String result) {
     def commitSha     = env.GIT_COMMIT_SHORT ?: 'unknown'
     def branch        = env.GIT_BRANCH?.replaceFirst('^origin/', '') ?: env.DEPLOY_ENV
 
-    // ─── 빌드 시간 ───
-    def duration  = currentBuild.durationString.replaceFirst(/ and counting$/, '')
+    // ─── 빌드 시간 (시작 시엔 의미 없음) ───
+    def duration = isStarted ? '진행 중...' : currentBuild.durationString.replaceFirst(/ and counting$/, '')
 
     // ─── 빌드 URL ───
     def jenkinsUrl = env.BUILD_URL ?: "https://k14e101.p.ssafy.io/jenkins/job/${env.JOB_NAME}/${env.BUILD_NUMBER}/"
     def consoleUrl = "${jenkinsUrl}console"
 
-    // ─── title (소제목 영역) ───
+    // ─── title ───
     def title = "Build #${env.BUILD_NUMBER} (${branch})"
 
-    // ─── fields (2단 정렬, 깔끔한 영문 라벨 사용) ───
-    def fields = [
-        [title: 'Author',   value: commitAuthor,  short: true],
-        [title: 'Commit',   value: "`${commitSha}`", short: true],
-        [title: 'Changed',  value: changedText,   short: true],
-        [title: 'Branch',   value: "`${branch}`", short: true],
-        [title: 'Trigger',  value: triggerText,   short: true],
-        [title: 'Duration', value: duration,      short: true]
-    ]
+    // ─── fields (시작 알림은 Duration 대신 다른 정보) ───
+    def fields
+    if (isStarted) {
+        fields = [
+            [title: 'Author',   value: commitAuthor,    short: true],
+            [title: 'Commit',   value: "`${commitSha}`", short: true],
+            [title: 'Changed',  value: changedText,     short: true],
+            [title: 'Branch',   value: "`${branch}`",   short: true],
+            [title: 'Trigger',  value: triggerText,     short: true],
+            [title: 'Status',   value: '🚀 빌드 진행 중', short: true]
+        ]
+    } else {
+        fields = [
+            [title: 'Author',   value: commitAuthor,    short: true],
+            [title: 'Commit',   value: "`${commitSha}`", short: true],
+            [title: 'Changed',  value: changedText,     short: true],
+            [title: 'Branch',   value: "`${branch}`",   short: true],
+            [title: 'Trigger',  value: triggerText,     short: true],
+            [title: 'Duration', value: duration,        short: true]
+        ]
+    }
 
-    // ─── 메시지 본문 (박스 내부) ───
-    // 큰 글씨 헤더를 가장 위에 배치하고, 커밋 메시지를 인용구로 띄움
+    // ─── 메시지 본문 ───
     def text = "${headerText}\n\n> *${commitMsg}*\n\n"
 
     if (isSuccess) {
         text += '**Service Links**\n'
         if (env.DEPLOY_ENV == 'dev') {
-            text += '[Frontend](https://k14e101.p.ssafy.io/dev/)  |  [Swagger](https://k14e101.p.ssafy.io/dev/api/swagger-ui.html)  |  [AI](https://k14e101.p.ssafy.io/dev/ai/)'
+            text += '[Frontend](https://k14e101.p.ssafy.io/dev/)  |  [Swagger](https://k14e101.p.ssafy.io/dev/api/swagger-ui.html)  |  [AI Swagger](https://k14e101.p.ssafy.io/dev/ai/docs)'
         } else {
-            text += '[Frontend](https://k14e101.p.ssafy.io/)  |  [AI](https://k14e101.p.ssafy.io/ai/)'
+            text += '[Frontend](https://k14e101.p.ssafy.io/)  |  [AI Swagger](https://k14e101.p.ssafy.io/ai/docs)'
         }
+    } else if (isStarted) {
+        text += "👉 [실시간 빌드 로그 보기](${consoleUrl})"
     } else {
+        // FAILURE
         def errorLine = sh(
             script: """
                 BUILD_LOG=\$(curl -sS -k '${jenkinsUrl}consoleText' 2>/dev/null || true)
@@ -342,7 +381,6 @@ def notifyMattermost(String result) {
         attachments: [[
             fallback: "[${envLabel}] Build #${env.BUILD_NUMBER} ${result}",
             color: color,
-            // pretext 항목을 완전히 제거하여 박스 바깥의 글씨를 없앰
             title: title,
             title_link: jenkinsUrl,
             text: text,
