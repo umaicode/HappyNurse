@@ -35,18 +35,18 @@ Desktop.ini
 
 # =========================================================
 # mobile/  — Android (Kotlin, Gradle, Hilt)
-# Gradle 빌드 산출물
+# Gradle 빌드 산출물 (root + 하위 모듈 모두 포함 — app/.gradle 등)
 mobile/**/build/
 mobile/**/out/
 mobile/**/bin/
 mobile/**/generated/
-mobile/.gradle/
+mobile/**/.gradle/
 
-# 로컬 SDK 경로 / 캡처 / NDK
-mobile/local.properties
-mobile/captures/
-mobile/.externalNativeBuild/
-mobile/.cxx/
+# 로컬 SDK 경로 / 캡처 / NDK (root + 하위 모듈)
+mobile/**/local.properties
+mobile/**/captures/
+mobile/**/.externalNativeBuild/
+mobile/**/.cxx/
 
 # Android 시그니처 / 시크릿 (절대 커밋 금지)
 *.jks
