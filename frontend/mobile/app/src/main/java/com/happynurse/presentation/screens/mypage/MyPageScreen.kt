@@ -1,4 +1,4 @@
-// 마이페이지 탭 — 프로필 카드 + 담당 환자 리스트 + 로그아웃 버튼
+// 마이페이지 탭 — 프로필 카드 + 담당 환자 리스트 + 로그아웃 버튼 (실 API 연동)
 package com.happynurse.presentation.screens.mypage
 
 import androidx.compose.foundation.background
@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,7 +29,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.happynurse.core.sample.SampleData
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.happynurse.domain.model.Patient
 import com.happynurse.presentation.components.HnCard
 import com.happynurse.presentation.components.PageHeader
@@ -39,8 +41,11 @@ import com.happynurse.presentation.theme.HnColors
 fun MyPageScreen(
     onLogout: () -> Unit,
     onOpenPatient: (String) -> Unit,
+    vm: MyPageViewModel = hiltViewModel(),
 ) {
-    val mine = SampleData.patients.filter { it.nurse == "김소연" }
+    val profile by vm.profile.collectAsStateWithLifecycle()
+    val mine by vm.myPatients.collectAsStateWithLifecycle()
+
     Column(Modifier.fillMaxWidth()) {
         PageHeader(title = "마이페이지")
         LazyColumn(
@@ -51,9 +56,9 @@ fun MyPageScreen(
                 HnCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("김소연", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                            Text("삼성서울병원", fontSize = 12.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(top = 2.dp))
-                            Text("7W 병동 · 일반간호사", fontSize = 15.sp, color = HnColors.TextSecondary)
+                            Text(profile?.name ?: "-", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                            Text(profile?.organizationName ?: "-", fontSize = 12.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(top = 2.dp))
+                            Text("${profile?.wardName ?: "-"} 병동 · ${profile?.roleCode ?: "-"}", fontSize = 15.sp, color = HnColors.TextSecondary)
                         }
                         Box(
                             contentAlignment = Alignment.Center,
@@ -61,7 +66,7 @@ fun MyPageScreen(
                                 .size(36.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color(0xFFFDF4F4))
-                                .clickable(onClick = onLogout),
+                                .clickable { vm.logout(onLogout) },
                         ) {
                             Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = "로그아웃", tint = HnColors.Danger, modifier = Modifier.size(18.dp))
                         }

@@ -14,6 +14,11 @@ data class Note(
     val author: String,
     val text: String,
     val tags: List<String> = emptyList(),
+    val date: String = "2026-04-30",
+    val nursingRecordId: Long = 0L,
+    val type: String = "STT_NOTE",
+    val status: String = "draft",
+    val editable: Boolean = true,
 )
 
 enum class OrderKind { INJ, FLUID, ORDER, LIS, IMG, PILL }
@@ -29,6 +34,10 @@ data class Order(
     val status: String,
     val note: String,
     val dateWritten: String = "2026-04-30",
+    val medicationOrderId: Long = 0L,
+    val prescriberId: Long = 0L,
+    val prescriberName: String = "",
+    val route: String = "",
 )
 
 data class Patient(
@@ -52,6 +61,25 @@ data class Patient(
     val vitals: Vitals,
     val notes: List<Note>,
     val orders: List<Order>,
+    val patientId: Long = 0L,
+    val encounterId: Long = 0L,
+    val status: String = "",
+    val attendingPhysicianId: Long = 0L,
+    val phone: String = "",
+    val address: String = "",
+    val unconfirmedNursingCount: Int = 0,
+    val isMyPatient: Boolean = false,
+)
+
+data class NurseProfile(
+    val practitionerId: Long,
+    val name: String,
+    val employeeNumber: String,
+    val roleCode: String,
+    val wardId: Long,
+    val wardName: String,
+    val organizationId: Long,
+    val organizationName: String,
 )
 
 data class NurseAlarm(

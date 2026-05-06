@@ -17,7 +17,7 @@ object SampleData {
 
     val patients: List<Patient> = listOf(
         Patient(
-            id = "p1", name = "김가민", sex = "여", age = 36, birthdate = "1990-03-15",
+            id = "p1", name = "김가민", sex = "F", age = 36, birthdate = "1990-03-15",
             mrn = "SMC-MRN-0001", ward = "7W", room = "701", bed = "1",
             admittedOn = "2026-04-26", daysSince = 4, nurse = "김소연",
             department = "일반외과 (GS)", doctor = "최현웅",
@@ -40,7 +40,7 @@ object SampleData {
             ),
         ),
         Patient(
-            id = "p2", name = "이승연", sex = "남", age = 58, birthdate = "1968-11-07",
+            id = "p2", name = "이승연", sex = "M", age = 58, birthdate = "1968-11-07",
             mrn = "SMC-MRN-0014", ward = "7W", room = "701", bed = "2",
             admittedOn = "2026-04-25", daysSince = 5, nurse = "김소연",
             department = "일반외과 (GS)", doctor = "최현웅",
@@ -57,7 +57,7 @@ object SampleData {
             ),
         ),
         Patient(
-            id = "p3", name = "박서영", sex = "여", age = 42, birthdate = "1984-06-22",
+            id = "p3", name = "박서영", sex = "F", age = 42, birthdate = "1984-06-22",
             mrn = "SMC-MRN-0027", ward = "7W", room = "702", bed = "1",
             admittedOn = "2026-04-28", daysSince = 2, nurse = "김소연",
             department = "일반외과 (GS)", doctor = "최현웅",
@@ -72,7 +72,7 @@ object SampleData {
             ),
         ),
         Patient(
-            id = "p4", name = "최정현", sex = "남", age = 45, birthdate = "1981-02-18",
+            id = "p4", name = "최정현", sex = "M", age = 45, birthdate = "1981-02-18",
             mrn = "SMC-MRN-0038", ward = "7W", room = "703", bed = "1",
             admittedOn = "2026-04-29", daysSince = 1, nurse = "문현지",
             department = "정형외과 (OS)", doctor = "박재혁",
@@ -87,7 +87,7 @@ object SampleData {
             ),
         ),
         Patient(
-            id = "p5", name = "강민서", sex = "여", age = 29, birthdate = "1997-08-30",
+            id = "p5", name = "강민서", sex = "F", age = 29, birthdate = "1997-08-30",
             mrn = "SMC-MRN-0041", ward = "7W", room = "703", bed = "2",
             admittedOn = "2026-04-28", daysSince = 2, nurse = "문현지",
             department = "내과 (IM)", doctor = "김태영",

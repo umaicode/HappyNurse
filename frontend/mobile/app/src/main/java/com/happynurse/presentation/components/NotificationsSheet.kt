@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,10 +67,10 @@ fun NotificationsSheet(
             compareByDescending<Notif> { it.upcoming }.thenByDescending { it.minutesAgo },
         )
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 4.dp),
+                .padding(horizontal = 20.dp, vertical = 6.dp),
         ) {
             items(sorted, key = { it.id }) { NotifRow(it) }
             item { Spacer(Modifier.height(20.dp)) }
@@ -90,7 +91,13 @@ private fun NotifRow(n: Notif) {
         n.minutesAgo < 60 -> "${n.minutesAgo}분 전"
         else              -> n.time
     }
-    HnCard(padding = 12.dp) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(HnColors.SurfaceAlt)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+    ) {
         Row(verticalAlignment = Alignment.Top) {
             Box(
                 modifier = Modifier
@@ -108,7 +115,7 @@ private fun NotifRow(n: Notif) {
                     Spacer(Modifier.size(4.dp))
                     Text(n.room, fontSize = 12.sp, color = HnColors.TextSecondary)
                 }
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(6.dp))
                 Text(n.text, fontSize = 13.sp, color = HnColors.Text)
             }
             Text(

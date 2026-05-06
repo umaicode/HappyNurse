@@ -69,7 +69,7 @@ fun AlarmsScreen(
 private fun SubTabBar(active: String, onChange: (String) -> Unit) {
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-            listOf("nurse" to "워치타이머", "iv" to "수액타이머").forEach { (id, label) ->
+            listOf("nurse" to "전체 알림", "iv" to "수액타이머").forEach { (id, label) ->
                 val on = id == active
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
