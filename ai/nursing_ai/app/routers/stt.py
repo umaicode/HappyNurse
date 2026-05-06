@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from app.services.stt_pipeline import STTPipeline
+from app.services.nursing_stt.stt_pipeline import STTPipeline
 from app.database.db import get_db
 from sqlalchemy.orm import Session
 
