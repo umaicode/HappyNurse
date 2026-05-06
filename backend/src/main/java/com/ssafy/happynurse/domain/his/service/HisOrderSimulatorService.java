@@ -5,7 +5,10 @@ import com.ssafy.happynurse.domain.common.repository.PractitionerRepository;
 import com.ssafy.happynurse.domain.doctor.entity.MedicationOrder;
 import com.ssafy.happynurse.domain.doctor.entity.OrderStatus;
 import com.ssafy.happynurse.domain.doctor.repository.MedicationOrderRepository;
+import com.ssafy.happynurse.domain.his.dto.HisEncounterResponse;
+import com.ssafy.happynurse.domain.his.dto.HisNurseResponse;
 import com.ssafy.happynurse.domain.his.dto.HisOrderCreateRequest;
+import com.ssafy.happynurse.domain.his.dto.HisOrderItemResponse;
 import com.ssafy.happynurse.domain.his.dto.HisOrderUpdateRequest;
 import com.ssafy.happynurse.domain.his.event.MedicationOrderCreatedEvent;
 import com.ssafy.happynurse.domain.his.event.MedicationOrderUpdatedEvent;
@@ -24,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -110,5 +114,43 @@ public class HisOrderSimulatorService {
                 order.getMedicationOrderId(), order.getPatient().getName());
 
         return order.getMedicationOrderId();
+    }
+
+    public List<HisNurseResponse> getNurses() {
+        return encounterRepository.findDistinctAssignedPractitionersByInProgress()
+                .stream()
+                .map(p -> new HisNurseResponse(
+                        p.getPractitionerId(),
+                        p.getName(),
+                        p.getEmployeeNumber()))
+                .toList();
+    }
+
+    public List<HisEncounterResponse> getEncountersByNurse(Long nurseId) {
+        return encounterRepository.findInProgressByAssignedPractitioner(nurseId)
+                .stream()
+                .map(e -> new HisEncounterResponse(
+                        e.getEncounterId(),
+                        e.getPatient().getPatientId(),
+                        e.getName(),
+                        e.getRoom().getRoomName(),
+                        e.getBedName()))
+                .toList();
+    }
+
+    public List<HisOrderItemResponse> getOrdersByEncounter(Long encounterId) {
+        return medicationOrderRepository.findByEncounterId(encounterId)
+                .stream()
+                .map(o -> new HisOrderItemResponse(
+                        o.getMedicationOrderId(),
+                        o.getOrderType().name(),
+                        o.getOrderCode(),
+                        o.getOrderName(),
+                        o.getDose(),
+                        o.getFrequency(),
+                        o.getDoseUnit(),
+                        o.getRoute(),
+                        o.getRemarks()))
+                .toList();
     }
 }
