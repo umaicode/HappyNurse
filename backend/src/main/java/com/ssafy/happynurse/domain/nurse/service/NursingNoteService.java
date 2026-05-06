@@ -151,7 +151,7 @@ public class NursingNoteService {
                                               Long currentPractitionerId,
                                               Map<Long, Practitioner> authorById) {
         boolean confirmedOrAmended = nr.getStatus() != RecordStatus.draft;
-        LocalDateTime occurredAt = confirmedOrAmended ? nr.getConfirmedAt() : nr.getCreatedAt();
+        LocalDateTime occurredAt = nr.getConfirmedAt();
         String content = confirmedOrAmended ? nr.getFinalContent() : nr.getEditContent();
         Long authorId = nr.getAuthorPractitionerId();
         boolean editable = currentPractitionerId != null && authorId.equals(currentPractitionerId);
