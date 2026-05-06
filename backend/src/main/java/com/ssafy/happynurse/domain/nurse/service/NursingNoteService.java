@@ -78,6 +78,75 @@ public class NursingNoteService {
         return items;
     }
 
+    public List<NursingNoteItemResponse> getDraftNursingNotes(Long encounterId,
+                                                             Long currentPractitionerId,
+                                                             Long currentWardId) {
+        Encounter encounter = encounterRepository.findById(encounterId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ENCOUNTER_NOT_FOUND));
+
+        if (!encounter.getRoom().getWard().getWardId().equals(currentWardId)) {
+            throw new CustomException(ErrorCode.ENCOUNTER_NOT_IN_MY_WARD);
+        }
+
+        List<NursingRecord> notes = nursingRecordRepository.findAllDraftsByEncounterId(encounterId);
+        List<MedicationAdministration> meds = medicationAdministrationRepository
+                .findAllDraftsByEncounterIdWithFetch(encounterId);
+
+        List<Long> authorIds = notes.stream()
+                .map(NursingRecord::getAuthorPractitionerId)
+                .distinct()
+                .toList();
+        Map<Long, Practitioner> authorById = practitionerRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(Practitioner::getPractitionerId, p -> p));
+
+        List<NursingNoteItemResponse> items = new ArrayList<>(notes.size() + meds.size());
+        for (NursingRecord nr : notes) {
+            items.add(toSttItem(nr, currentPractitionerId, authorById));
+        }
+        addMedicationItems(meds, currentPractitionerId, items);
+
+        items.sort(Comparator
+                .comparing(NursingNoteItemResponse::occurredAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(NursingNoteItemResponse::type)
+                .thenComparing(this::secondaryId, Comparator.reverseOrder()));
+
+        return items;
+    }
+
+    public NursingNoteItemResponse buildSttItem(NursingRecord nr, Long currentPractitionerId) {
+        Long authorId = nr.getAuthorPractitionerId();
+        Practitioner author = practitionerRepository.findById(authorId).orElse(null);
+        Map<Long, Practitioner> authorById = author == null ? Map.of() : Map.of(authorId, author);
+        return toSttItem(nr, currentPractitionerId, authorById);
+    }
+
+    public NursingNoteItemResponse buildMedicationItem(List<MedicationAdministration> group,
+                                                       Long currentPractitionerId) {
+        if (group == null || group.isEmpty()) return null;
+
+        MedicationAdministration head = group.get(0);
+        boolean editable = currentPractitionerId != null
+                && head.getPractitioner().getPractitionerId().equals(currentPractitionerId);
+
+        List<MedicationItemResponse> medItems = group.stream()
+                .map(this::toMedicationItem)
+                .toList();
+
+        return new NursingNoteItemResponse(
+                NursingNoteItemType.MEDICATION,
+                head.getEffectiveDatetime(),
+                head.getStatus(),
+                head.getPractitioner().getPractitionerId(),
+                head.getPractitioner().getName(),
+                editable,
+                null,
+                null,
+                head.getTaggingId(),
+                head.getNfcTagVerified(),
+                medItems
+        );
+    }
+
     private NursingNoteItemResponse toSttItem(NursingRecord nr,
                                               Long currentPractitionerId,
                                               Map<Long, Practitioner> authorById) {
@@ -85,7 +154,7 @@ public class NursingNoteService {
         LocalDateTime occurredAt = confirmedOrAmended ? nr.getConfirmedAt() : nr.getCreatedAt();
         String content = confirmedOrAmended ? nr.getFinalContent() : nr.getEditContent();
         Long authorId = nr.getAuthorPractitionerId();
-        boolean editable = authorId.equals(currentPractitionerId);
+        boolean editable = currentPractitionerId != null && authorId.equals(currentPractitionerId);
         Practitioner author = authorById.get(authorId);
 
         return new NursingNoteItemResponse(
@@ -115,26 +184,8 @@ public class NursingNoteService {
                         Collectors.toList()));
 
         grouped.forEach((taggingId, group) -> {
-            MedicationAdministration head = group.get(0);
-            boolean editable = head.getPractitioner().getPractitionerId().equals(currentPractitionerId);
-
-            List<MedicationItemResponse> medItems = group.stream()
-                    .map(this::toMedicationItem)
-                    .toList();
-
-            sink.add(new NursingNoteItemResponse(
-                    NursingNoteItemType.MEDICATION,
-                    head.getEffectiveDatetime(),
-                    head.getStatus(),
-                    head.getPractitioner().getPractitionerId(),
-                    head.getPractitioner().getName(),
-                    editable,
-                    null,
-                    null,
-                    taggingId,
-                    head.getNfcTagVerified(),
-                    medItems
-            ));
+            NursingNoteItemResponse item = buildMedicationItem(group, currentPractitionerId);
+            if (item != null) sink.add(item);
         });
     }
 
