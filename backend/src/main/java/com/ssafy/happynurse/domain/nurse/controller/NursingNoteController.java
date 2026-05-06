@@ -1,4 +1,4 @@
-package com.ssafy.happynurse.domain.nurse.notification.controller;
+package com.ssafy.happynurse.domain.nurse.controller;
 
 import com.ssafy.happynurse.domain.nurse.dto.NursingNoteItemResponse;
 import com.ssafy.happynurse.domain.nurse.service.NursingNoteService;
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 
-@Tag(name = "간호 기록", description = "간호 노트(STT 기록 + NFC 투약) 조회 API")
+@Tag(name = "간호 기록", description = "간호 기록(STT 기록 + NFC 투약) 조회 API")
 @RestController
 @RequestMapping("/encounters")
 @RequiredArgsConstructor
@@ -39,13 +39,32 @@ public class NursingNoteController {
     })
     @GetMapping("/{encounterId}/nursing-notes")
     public ResponseEntity<ApiResponse<List<NursingNoteItemResponse>>> getNursingNotes(
-            @Parameter(description = "입원 PK", example = "42") @PathVariable Long encounterId,
-            @Parameter(description = "조회 날짜", example = "2026-05-03")
+            @Parameter(description = "입원 PK", example = "1") @PathVariable Long encounterId,
+            @Parameter(description = "조회 날짜", example = "2026-04-30")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         List<NursingNoteItemResponse> data = nursingNoteService.getNursingNotes(
                 encounterId, date, userDetails.getPractitionerId(), userDetails.getWardId());
         return ResponseEntity.ok(ApiResponse.ok("간호 기록 통합 조회에 성공했습니다.", data));
+    }
+
+    @Operation(summary = "입원별 미확정(draft) 간호 기록 조회",
+            description = "한 입원의 STT/NFC 투약 기록 중 status=draft 인 항목을 날짜 무관하게 통합 반환합니다. "
+                        + "응답 항목에는 STT는 nursingRecordId, NFC 투약은 taggingId 가 포함됩니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "본인 병동 외 입원 — ENCOUNTER_NOT_IN_MY_WARD"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "입원 없음 — ENCOUNTER_NOT_FOUND")
+    })
+    @GetMapping("/{encounterId}/nursing-notes/drafts")
+    public ResponseEntity<ApiResponse<List<NursingNoteItemResponse>>> getDraftNursingNotes(
+            @Parameter(description = "입원 PK", example = "1") @PathVariable Long encounterId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        List<NursingNoteItemResponse> data = nursingNoteService.getDraftNursingNotes(
+                encounterId, userDetails.getPractitionerId(), userDetails.getWardId());
+        return ResponseEntity.ok(ApiResponse.ok("입원별 미확정 간호 기록 조회에 성공했습니다.", data));
     }
 }

@@ -111,50 +111,59 @@ class TermMapper:
 
         return candidates
 
-    def process_text(self, text: str, medical_candidates: list) -> dict:
-        corrected_text = text
-        corrections = []
+    def find_dictionary_matches(self, text: str) -> list:
+        """텍스트에서 매핑 사전에 있는 오인식 단어를 직접 검색"""
+        matches = []
+        text_normalized = text.replace(" ", "").lower()
 
-        for candidate in medical_candidates:
-            word = candidate["word"]
-
-            exact_result = self.exact_match(word)
-            if exact_result:
-                corrected_text = corrected_text.replace(word, exact_result)
-                corrections.append({
-                    "original": word,
-                    "corrected": exact_result,
-                    "type": "exact",
-                    "confidence": 1.0
+        for stt_word, correct_word in self.exact_dict.items():
+            # 원본 텍스트에서 검색
+            idx = text.find(stt_word)
+            if idx != -1 and stt_word != correct_word:
+                matches.append({
+                    "word": stt_word,
+                    "start": idx,
+                    "end": idx + len(stt_word),
+                    "normalized": stt_word.replace(" ", "").lower()
                 })
-                print(f"  정확 매칭: {word} → {exact_result}")
                 continue
 
-            # 퍼지 매칭
-            fuzzy_results = self.fuzzy_match(word)
-            if fuzzy_results:
-                best = fuzzy_results[0]
-                if best["confidence_score"] >= 0.85:
-                    corrected_text = corrected_text.replace(word, best["suggested_word"])
-                    corrections.append({
-                        "original": word,
-                        "corrected": best["suggested_word"], # 문장 바꿈
-                        "type": "fuzzy",
-                        "confidence": best["confidence_score"], # 후보는 적어줌
-                        "candidates": fuzzy_results
+            # 정규화된 텍스트에서도 검색
+            stt_normalized = stt_word.replace(" ", "").lower()
+            norm_idx = text_normalized.find(stt_normalized)
+            if norm_idx != -1 and stt_word != correct_word:
+                # 원본 텍스트에서의 실제 위치 찾기
+                original_word = self._find_original_span(text, norm_idx, len(stt_normalized))
+                if original_word:
+                    matches.append({
+                        "word": original_word["word"],
+                        "start": original_word["start"],
+                        "end": original_word["end"],
+                        "normalized": stt_normalized
                     })
-                    print(f"  퍼지 매칭 (자동): {word} → {best['suggested_word']} ({best['confidence_score']})")
-                else:
-                    corrections.append({
-                        "original": word,
-                        "corrected": None,  # 문장 안바꿈
-                        "type": "candidates",
-                        "confidence": best["confidence_score"],
-                        "candidates": fuzzy_results
-                    })
-                    print(f"  퍼지 매칭 (후보 제시): {word} → {fuzzy_results}")
 
-        return {
-            "corrected_text": corrected_text,
-            "corrections": corrections
-        }
+        return matches
+
+    def _find_original_span(self, text: str, norm_start: int, norm_len: int) -> dict | None:
+        """정규화 위치를 원본 텍스트 위치로 변환"""
+        char_count = 0
+        real_start = None
+        real_end = None
+
+        for i, ch in enumerate(text):
+            if ch == " ":
+                continue
+            if char_count == norm_start:
+                real_start = i
+            char_count += 1
+            if char_count == norm_start + norm_len:
+                real_end = i + 1
+                break
+
+        if real_start is not None and real_end is not None:
+            return {
+                "word": text[real_start:real_end],
+                "start": real_start,
+                "end": real_end
+            }
+        return None

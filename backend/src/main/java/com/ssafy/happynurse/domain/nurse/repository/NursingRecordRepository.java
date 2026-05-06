@@ -38,6 +38,13 @@ public interface NursingRecordRepository extends JpaRepository<NursingRecord, Lo
             @Param("dayStart") LocalDateTime dayStart,
             @Param("dayEnd") LocalDateTime dayEnd);
 
+    @Query("""
+            SELECT nr FROM NursingRecord nr
+            WHERE nr.encounterId = :encounterId
+              AND nr.status = com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus.draft
+            """)
+    List<NursingRecord> findAllDraftsByEncounterId(@Param("encounterId") Long encounterId);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             UPDATE NursingRecord nr
