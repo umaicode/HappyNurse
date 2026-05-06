@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────
 FROM python:3.12-slim AS builder
 
+
 WORKDIR /app
 
 # 빌드에 필요한 C 라이브러리 (kiwipiepy 등 일부 패키지가 C 확장 컴파일)
@@ -26,7 +27,7 @@ WORKDIR /app
 # kiwipiepy 런타임 의존 라이브러리 (최소)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        libgomp1 && \
+        libgomp1 ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
 # non-root 유저
