@@ -83,10 +83,7 @@ public enum ErrorCode implements ResponseCode {
     IV_INFUSION_NOT_FOUND(HttpStatus.NOT_FOUND, "수액 정보를 찾을 수 없습니다."),
     IV_RATE_INPUT_INVALID(HttpStatus.BAD_REQUEST, "주입 속도 입력이 올바르지 않습니다 (mL/hr 또는 gtt/min+patientType 중 하나만 채워야 합니다)."),
     IV_INVALID_STATE(HttpStatus.BAD_REQUEST, "현재 수액 상태에서 처리할 수 없는 요청입니다."),
-    IV_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "해당 처방으로 진행 중인 수액이 이미 존재합니다. 먼저 종료해주세요."),
-
-    // Simulator (HIS 발사기)
-    INVALID_SIMULATOR_KEY(HttpStatus.UNAUTHORIZED, "유효하지 않은 시뮬레이터 키입니다.");
+    IV_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "해당 처방으로 진행 중인 수액이 이미 존재합니다. 먼저 종료해주세요.");
 
     private final HttpStatus status;
     private final String message;
