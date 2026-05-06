@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Slf4j
@@ -119,6 +120,7 @@ public class HisOrderSimulatorService {
     public List<HisNurseResponse> getNurses() {
         return encounterRepository.findDistinctAssignedPractitionersByInProgress()
                 .stream()
+                .sorted(Comparator.comparing(Practitioner::getPractitionerId))
                 .map(p -> new HisNurseResponse(
                         p.getPractitionerId(),
                         p.getName(),

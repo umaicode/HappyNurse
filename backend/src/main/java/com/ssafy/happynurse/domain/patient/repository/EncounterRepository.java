@@ -87,12 +87,12 @@ public interface EncounterRepository extends JpaRepository<Encounter, Long> {
 
     /**
      * HIS 발사기 — in_progress 입원에 담당 간호사로 배정된 Practitioner DISTINCT 목록.
+     * ORDER BY는 PostgreSQL DISTINCT 제약으로 제외 — 호출측에서 Java 정렬.
      */
     @Query("""
             SELECT DISTINCT e.assignedPractitioner FROM Encounter e
             WHERE e.status = com.ssafy.happynurse.domain.patient.entity.EncounterStatus.in_progress
               AND e.assignedPractitioner IS NOT NULL
-            ORDER BY e.assignedPractitioner.practitionerId ASC
             """)
     List<Practitioner> findDistinctAssignedPractitionersByInProgress();
 

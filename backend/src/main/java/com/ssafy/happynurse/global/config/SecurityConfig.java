@@ -77,7 +77,7 @@ public class SecurityConfig {
         // HIS 시뮬레이터 — 로컬 발사기 허용
         CorsConfiguration simConfig = new CorsConfiguration();
         simConfig.addAllowedOriginPattern("*");
-        simConfig.setAllowedMethods(List.of("POST", "PATCH", "OPTIONS"));
+        simConfig.setAllowedMethods(List.of("GET", "POST", "PATCH", "OPTIONS"));
         simConfig.setAllowedHeaders(List.of("*"));
         simConfig.setMaxAge(3600L);
         source.registerCorsConfiguration("/his/**", simConfig);

@@ -11,7 +11,7 @@ public class SimulatorCorsConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/his/**")
                 .allowedOrigins("*")
-                .allowedMethods("POST", "PATCH", "OPTIONS")
+                .allowedMethods("GET", "POST", "PATCH", "OPTIONS")
                 .allowedHeaders("*")
                 .maxAge(3600);
     }
