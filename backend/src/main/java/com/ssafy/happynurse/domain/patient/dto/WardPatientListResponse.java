@@ -31,6 +31,18 @@ public record WardPatientListResponse(
         long unconfirmedNursingCount,
 
         @Schema(description = "현재 로그인 간호사의 담당 여부 (Redis 저장 기준, 시프트 교대 후에도 보존)", example = "true")
-        boolean isMyPatient
+        boolean isMyPatient,
+
+        @Schema(description = "담당 간호사 PK (미배정 시 null)", example = "12", nullable = true)
+        Long assignedNurseId,
+
+        @Schema(description = "담당 간호사 이름 (미배정 시 null)", example = "이수정", nullable = true)
+        String assignedNurseName,
+
+        @Schema(description = "주 증상", example = "복통", nullable = true)
+        String chiefComplaint,
+
+        @Schema(description = "수술명", example = "충수절제술", nullable = true)
+        String surgeryName
 ) {
 }
