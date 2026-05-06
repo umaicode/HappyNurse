@@ -3,36 +3,33 @@
 import { useMemo } from "react";
 import { Loader2, MessageSquare } from "lucide-react";
 import { useSymptomReports } from "../hooks/useSymptomReports";
-import { splitDateLabel, toIsoDate } from "@/lib/time";
+import { formatHHmm, toIsoDate } from "@/lib/time";
 
 type AlertsTabProps = {
   patientId: number | null;
-  // 'yyyy-MM-dd' — null 이면 전체 보기 (필터 비활성).
-  filterDate: string | null;
+  // 'yyyy-MM-dd' — EMRGrid 에서 단일 일자만 내려옴.
+  date: string;
 };
 
-export function AlertsTab({ patientId, filterDate }: AlertsTabProps) {
+export function AlertsTab({ patientId, date }: AlertsTabProps) {
   const { data, isPending, isError } = useSymptomReports(patientId);
   const symptoms = useMemo(() => {
     const list = data?.symptoms ?? [];
-    const filtered =
-      filterDate === null
-        ? list
-        : list.filter(
-            (symptom) => toIsoDate(symptom.submittedAt) === filterDate,
-          );
+    const filtered = list.filter(
+      (symptom) => toIsoDate(symptom.submittedAt) === date,
+    );
     // submittedAt asc — 오래된 게 위, 최신이 아래.
     return [...filtered].sort(
       (a, b) =>
         new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime(),
     );
-  }, [data, filterDate]);
+  }, [data, date]);
 
   return (
     <div className="flex-1 overflow-auto bg-surface-card min-h-0 relative text-body-base">
       <div className="min-w-[700px] flex flex-col h-full">
         <div className="grid grid-cols-[110px_1fr] gap-2 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-extrabold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
-          <div className="text-center border-r border-border-base/50">생성 시간</div>
+          <div className="text-center border-r border-border-base/50">시간</div>
           <div className="pl-2">증상</div>
         </div>
 
@@ -44,40 +41,28 @@ export function AlertsTab({ patientId, filterDate }: AlertsTabProps) {
           ) : isError ? (
             <EmptyMessage>호출 내역을 불러오지 못했습니다</EmptyMessage>
           ) : symptoms.length === 0 ? (
-            <EmptyMessage>
-              {filterDate === null
-                ? "표시할 호출이 없습니다"
-                : "이 날짜에 표시할 호출이 없습니다"}
-            </EmptyMessage>
+            <EmptyMessage>이 날짜에 표시할 호출이 없습니다</EmptyMessage>
           ) : (
-            symptoms.map((symptom) => {
-              const dateLabel = splitDateLabel(symptom.submittedAt);
-              return (
-                <div
-                  key={symptom.selfReportId}
-                  className="grid grid-cols-[110px_1fr] gap-2 px-4 py-3 border-b border-border-base/50 items-start hover:bg-surface-hover/30 transition-all text-body-sm text-content-secondary"
-                >
-                  <div className="text-center font-mono">
-                    <div className="text-body-xs font-bold text-content-primary leading-tight">
-                      {dateLabel.month}.{dateLabel.day}
-                    </div>
-                    <div className="text-[15px] font-extrabold text-content-primary leading-tight mt-0.5">
-                      {dateLabel.time}
-                    </div>
-                  </div>
-                  <div className="pl-2 pt-1">
-                    {symptom.buttonLabel && (
-                      <span className="inline-block px-1.5 py-0.5 mr-1.5 text-[11px] font-bold rounded bg-brand-surface text-brand-primary leading-none align-middle">
-                        {symptom.buttonLabel}
-                      </span>
-                    )}
-                    <span className="font-medium text-content-primary whitespace-pre-wrap break-words">
-                      {symptom.symptomText}
-                    </span>
-                  </div>
+            symptoms.map((symptom) => (
+              <div
+                key={symptom.selfReportId}
+                className="grid grid-cols-[110px_1fr] gap-2 px-4 py-3 border-b border-border-base/50 items-start hover:bg-surface-hover/30 transition-all text-body-sm text-content-secondary"
+              >
+                <div className="text-center font-mono font-extrabold text-[15px] text-content-primary pt-0.5">
+                  {formatHHmm(symptom.submittedAt)}
                 </div>
-              );
-            })
+                <div className="pl-2 pt-1">
+                  {symptom.buttonLabel && (
+                    <span className="inline-block px-1.5 py-0.5 mr-1.5 text-[11px] font-bold rounded bg-brand-surface text-brand-primary leading-none align-middle">
+                      {symptom.buttonLabel}
+                    </span>
+                  )}
+                  <span className="font-medium text-content-primary whitespace-pre-wrap break-words">
+                    {symptom.symptomText}
+                  </span>
+                </div>
+              </div>
+            ))
           )}
         </div>
       </div>

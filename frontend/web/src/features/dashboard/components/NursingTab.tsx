@@ -4,7 +4,7 @@ import { Plus, Loader2 } from "lucide-react";
 import * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { formatHHmm, splitDateLabel } from "@/lib/time";
+import { formatHHmm } from "@/lib/time";
 import { Button } from "@/components/ui/button";
 import { useNursingNotes } from "../hooks/useNursingNotes";
 import {
@@ -16,22 +16,28 @@ import {
 import {
   useConfirmMedicationGroup,
   useDeleteMedicationGroup,
+  useUpdateMedicationGroup,
 } from "../hooks/useMedicationAdministrationMutations";
 import {
   NOTE_TYPE_LABEL,
   NOTE_TYPE_TONE,
-  RECORD_STATUS_LABEL,
-  RECORD_STATUS_TONE,
   type MedicationItem,
   type NursingNoteItem,
 } from "../types/nursing-note";
+// mockup: 투약 컬럼 시각 검증. API 데이터 충분해지면 import 와 fallback 제거.
+import { MOCK_NURSING_NOTES } from "@/mockup/nursing-notes";
 
 type NursingTabProps = {
   encounterId: number | null;
   // ISO date (yyyy-MM-dd) — 백엔드 필수 파라미터, EMRGrid 의 selectedDate 에서 변환
-  date: string | null;
+  date: string;
   currentUser: string;
   myRecordsOnly: boolean;
+  // EMRGrid 헤더의 "편집" 토글 — 꺼져 있으면 동작 컬럼은 draft 행의 "확정"만 노출.
+  isEditMode: boolean;
+  // 사이드바의 "확정 전 기록" 항목 클릭 시 해당 record 로 자동 스크롤. 한 번 처리 후 onFocusHandled 호출.
+  focusRecordId?: number | null;
+  onFocusHandled?: () => void;
 };
 
 export function NursingTab({
@@ -39,13 +45,17 @@ export function NursingTab({
   date,
   currentUser,
   myRecordsOnly,
+  isEditMode,
+  focusRecordId,
+  onFocusHandled,
 }: NursingTabProps) {
   const { data, isPending, isError } = useNursingNotes(encounterId, date);
-  const notes = data ?? [];
 
   // 백엔드는 occurredAt desc 로 내려주지만, 화면은 시간 asc (오래된 위 / 최신 아래) 로 표시 후
   // 현재 시각 근처 카드를 가운데로 자동 스크롤한다 (PatientAlerts 와 동일 패턴).
+  // mockup fallback — 실 응답 비었을 때만 노출.
   const filteredNotes = useMemo(() => {
+    const notes = !!data && data.length === 0 ? MOCK_NURSING_NOTES : (data ?? []);
     return notes
       .filter((note) => {
         if (myRecordsOnly && note.authorName !== currentUser) return false;
@@ -55,24 +65,42 @@ export function NursingTab({
         (a, b) =>
           new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime(),
       );
-  }, [notes, myRecordsOnly, currentUser]);
+  }, [data, myRecordsOnly, currentUser]);
 
   const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (filteredNotes.length === 0) return;
-    const now = Date.now();
-    const closest = filteredNotes.reduce((best, note) => {
-      const distance = Math.abs(new Date(note.occurredAt).getTime() - now);
-      const bestDistance = Math.abs(new Date(best.occurredAt).getTime() - now);
-      return distance < bestDistance ? note : best;
-    }, filteredNotes[0]);
-    const element = itemRefs.current.get(rowKey(closest));
-    if (element) {
-      element.scrollIntoView({ block: "center" });
+    // focusRecordId 가 있으면 그 행 우선, 없으면 현재 시각 근처 카드를 가운데로.
+    let target: HTMLDivElement | null | undefined = null;
+    if (focusRecordId != null) {
+      const focused = filteredNotes.find(
+        (note) =>
+          note.type === "STT_NOTE" && note.nursingRecordId === focusRecordId,
+      );
+      if (focused) {
+        target = itemRefs.current.get(rowKey(focused));
+      }
     }
-  }, [filteredNotes]);
+    if (!target) {
+      const now = Date.now();
+      const closest = filteredNotes.reduce((best, note) => {
+        const distance = Math.abs(new Date(note.occurredAt).getTime() - now);
+        const bestDistance = Math.abs(
+          new Date(best.occurredAt).getTime() - now,
+        );
+        return distance < bestDistance ? note : best;
+      }, filteredNotes[0]);
+      target = itemRefs.current.get(rowKey(closest));
+    }
+    if (target) {
+      target.scrollIntoView({ block: "center" });
+    }
+    if (focusRecordId != null) {
+      onFocusHandled?.();
+    }
+  }, [filteredNotes, focusRecordId, onFocusHandled]);
 
   // 인라인 추가 — `+` 버튼 호버/클릭 시 폼이 그 위치에 펼쳐진다.
   // 백엔드 NursingRecordManualCreateRequest 는 { encounterId, content } 만 받으므로 시각은 서버 자동.
@@ -85,12 +113,11 @@ export function NursingTab({
     >
       <div className="min-w-[800px] flex flex-col h-full">
         {/* Header Row */}
-        <div className="grid grid-cols-[110px_1fr_80px_110px_120px_120px] gap-4 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-extrabold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
+        <div className="grid grid-cols-[90px_1fr_70px_90px_110px] gap-4 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-extrabold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
           <div className="border-r border-border-base pr-4 text-center">시간</div>
           <div className="border-r border-border-base pr-4">기록 내용</div>
           <div className="border-r border-border-base pr-4 text-center">구분</div>
           <div className="border-r border-border-base pr-4 h-full flex items-center justify-center">기록자</div>
-          <div className="text-center border-r border-border-base pr-4">상태</div>
           <div className="text-center">동작</div>
         </div>
 
@@ -98,8 +125,6 @@ export function NursingTab({
         <div className="flex flex-col flex-1 pb-10">
           {encounterId === null ? (
             <EmptyState message="환자를 선택하면 간호 기록이 표시됩니다." />
-          ) : date === null ? (
-            <EmptyState message="간호 기록 전체 보기는 백엔드 endpoint 추가 후 활성화됩니다. 날짜를 선택해주세요." />
           ) : isPending ? (
             <LoadingState />
           ) : isError ? (
@@ -125,7 +150,7 @@ export function NursingTab({
                     <NoteRow
                       note={note}
                       encounterId={encounterId}
-                      isDateView={date !== null}
+                      isEditMode={isEditMode}
                       rowRef={(element) => {
                         if (element) itemRefs.current.set(key, element);
                         else itemRefs.current.delete(key);
@@ -151,7 +176,7 @@ export function NursingTab({
               {filteredNotes.length === 0 && (
                 <EmptyState
                   message={
-                    notes.length === 0
+                    (data?.length ?? 0) === 0
                       ? "등록된 간호 기록이 없습니다."
                       : "필터 조건에 맞는 기록이 없습니다."
                   }
@@ -169,6 +194,79 @@ function rowKey(note: NursingNoteItem): string {
   return note.type === "STT_NOTE"
     ? `stt-${note.nursingRecordId}`
     : `med-${note.taggingId}`;
+}
+
+// ISO datetime 의 HH:mm 만 새 값으로 교체 (날짜/초/타임존 보존).
+function replaceTimeInIso(originalIso: string, hhmm: string): string {
+  const tIndex = originalIso.indexOf("T");
+  if (tIndex === -1) return `${originalIso}T${hhmm}:00`;
+  return (
+    originalIso.substring(0, tIndex + 1) + hhmm + originalIso.substring(tIndex + 6)
+  );
+}
+
+// "H:m" / "1:" / "" 등 부분 입력을 "HH:mm" 으로 정규화. 숫자 외 또는 공란 → "00".
+function normalizeHHmm(value: string): string {
+  const [hRaw, mRaw] = value.split(":");
+  const h = (hRaw ?? "").padStart(2, "0") || "00";
+  const m = (mRaw ?? "").padStart(2, "0") || "00";
+  return `${h}:${m}`;
+}
+
+function TimeInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const [hour, minute] = (() => {
+    const parts = value.split(":");
+    return [parts[0] ?? "", parts[1] ?? ""];
+  })();
+
+  const update = (h: string, m: string) => {
+    onChange(`${h}:${m}`);
+  };
+
+  const cellClass =
+    "w-9 text-center bg-transparent focus:outline-none font-mono font-extrabold text-[15px] text-content-primary";
+
+  return (
+    <div className="flex items-center justify-center gap-0.5 w-full leading-tight border border-border-base rounded px-1 py-1 bg-white focus-within:ring-1 focus-within:ring-content-primary/20">
+      <input
+        type="text"
+        inputMode="numeric"
+        maxLength={2}
+        value={hour}
+        placeholder="HH"
+        onFocus={(event) => event.target.select()}
+        onChange={(event) => {
+          const digits = event.target.value.replace(/\D/g, "");
+          if (digits.length > 0 && parseInt(digits, 10) > 23) return;
+          update(digits, minute);
+        }}
+        onBlur={() => update(hour ? hour.padStart(2, "0") : "00", minute)}
+        className={cellClass}
+      />
+      <span className="font-mono font-bold text-content-muted">:</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        maxLength={2}
+        value={minute}
+        placeholder="mm"
+        onFocus={(event) => event.target.select()}
+        onChange={(event) => {
+          const digits = event.target.value.replace(/\D/g, "");
+          if (digits.length > 0 && parseInt(digits, 10) > 59) return;
+          update(hour, digits);
+        }}
+        onBlur={() => update(hour, minute ? minute.padStart(2, "0") : "00")}
+        className={cellClass}
+      />
+    </div>
+  );
 }
 
 function BetweenRowAdd({ onClick }: { onClick: () => void }) {
@@ -214,7 +312,7 @@ function InlineAddForm({
   };
 
   return (
-    <div className="grid grid-cols-[110px_1fr_80px_110px_120px_120px] gap-4 px-4 py-2 border-y border-brand-primary/10 bg-brand-surface/30 items-center shadow-inner">
+    <div className="grid grid-cols-[90px_1fr_70px_90px_110px] gap-4 px-4 py-2 border-y border-brand-primary/10 bg-brand-surface/30 items-center shadow-inner">
       <div className="text-center text-body-micro font-mono text-content-muted">
         자동
       </div>
@@ -234,26 +332,27 @@ function InlineAddForm({
       <div className="text-body-sm text-content-tertiary font-bold truncate text-center">
         {currentUser}
       </div>
-      <div className="text-center text-body-micro text-content-muted">-</div>
-      <div className="flex gap-1.5 justify-center">
-        <button
-          type="button"
+      <div className="flex gap-1 justify-center">
+        <Button
+          variant="neutral"
+          size="sm"
+          className="h-7 px-2.5 rounded text-body-micro font-bold"
           onClick={handleSubmit}
           disabled={createMutation.isPending || !content.trim()}
-          className="px-3 py-1.5 bg-brand-primary text-white text-[11px] font-bold rounded shadow-sm hover:bg-brand-hover disabled:opacity-50 transition-colors whitespace-nowrap"
         >
           {createMutation.isPending ? "추가 중..." : "추가"}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="neutral"
+          size="sm"
+          className="h-7 px-2.5 rounded text-body-micro font-bold"
           onClick={() => {
             setContent("");
             onClose();
           }}
-          className="px-3 py-1.5 bg-white border border-border-base text-[11px] font-bold rounded shadow-sm hover:bg-surface-hover transition-colors whitespace-nowrap"
         >
           취소
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -262,44 +361,116 @@ function InlineAddForm({
 function NoteRow({
   note,
   encounterId,
-  isDateView,
+  isEditMode,
   rowRef,
 }: {
   note: NursingNoteItem;
   encounterId: number;
-  // 특정 날짜로 조회 중이면 시간만 (HH:mm), 전체 조회면 날짜+시간 (MM.dd / HH:mm)
-  isDateView: boolean;
+  // 편집 모드 (수정/삭제 노출 여부). false 면 draft 행의 "확정"만.
+  isEditMode: boolean;
   rowRef?: (element: HTMLDivElement | null) => void;
 }) {
   const isMedication = note.type === "MEDICATION";
-  const dateLabel = splitDateLabel(note.occurredAt);
 
-  // STT_NOTE 한정 인라인 편집 — MEDICATION 은 시각/용량 모달이 별도라 여기선 편집 X.
+  // STT_NOTE: content + occurredAt / MEDICATION: dosageQuantity + effectiveDatetime
   const [isEditing, setIsEditing] = useState(false);
   const [draftContent, setDraftContent] = useState("");
-  const updateMutation = useUpdateNursingRecord(encounterId);
+  const [draftTime, setDraftTime] = useState(""); // "HH:mm" 형식
+  const [medicationDrafts, setMedicationDrafts] = useState<
+    Record<number, number>
+  >({});
+  const updateNoteMutation = useUpdateNursingRecord(encounterId);
+  const updateMedicationMutation = useUpdateMedicationGroup(encounterId);
 
   const startEdit = () => {
-    if (note.type !== "STT_NOTE") return;
-    setDraftContent(note.content);
+    setDraftTime(formatHHmm(note.occurredAt));
+    if (note.type === "STT_NOTE") {
+      setDraftContent(note.content);
+    } else {
+      setMedicationDrafts(
+        Object.fromEntries(
+          note.medications.map((medication) => [
+            medication.medicationAdminId,
+            medication.dosageQuantity,
+          ]),
+        ),
+      );
+    }
     setIsEditing(true);
   };
 
   const cancelEdit = () => {
     setIsEditing(false);
     setDraftContent("");
+    setDraftTime("");
+    setMedicationDrafts({});
   };
 
   const submitEdit = () => {
-    if (note.type !== "STT_NOTE") return;
-    const trimmed = draftContent.trim();
-    if (!trimmed) return;
-    updateMutation.mutate(
-      { nursingRecordId: note.nursingRecordId, request: { content: trimmed } },
+    const originalTime = formatHHmm(note.occurredAt);
+    const normalizedTime = normalizeHHmm(draftTime);
+    const timeChanged = normalizedTime !== originalTime;
+    const newOccurredAt = timeChanged
+      ? replaceTimeInIso(note.occurredAt, normalizedTime)
+      : null;
+
+    if (note.type === "STT_NOTE") {
+      const trimmed = draftContent.trim();
+      const contentChanged = trimmed !== note.content;
+      if (!trimmed) return;
+      if (!contentChanged && !timeChanged) {
+        cancelEdit();
+        return;
+      }
+      updateNoteMutation.mutate(
+        {
+          nursingRecordId: note.nursingRecordId,
+          request: {
+            ...(contentChanged ? { content: trimmed } : {}),
+            // 백엔드 명세상 시간 필드는 confirmedAt — UI 의 시간 컬럼이 confirmedAt 에 매핑됨.
+            ...(newOccurredAt ? { confirmedAt: newOccurredAt } : {}),
+          },
+        },
+        {
+          onSuccess: () => {
+            setIsEditing(false);
+            setDraftContent("");
+            setDraftTime("");
+          },
+        },
+      );
+      return;
+    }
+    // MEDICATION — 변경된 약물 + 시간 (effectiveDatetime).
+    const changedMeds = note.medications
+      .filter(
+        (medication) =>
+          medicationDrafts[medication.medicationAdminId] !== undefined &&
+          medicationDrafts[medication.medicationAdminId] !==
+            medication.dosageQuantity,
+      )
+      .map((medication) => ({
+        medicationAdminId: medication.medicationAdminId,
+        dosageQuantity: medicationDrafts[medication.medicationAdminId],
+        dosageUnit: medication.dosageUnit,
+      }));
+    if (changedMeds.length === 0 && !timeChanged) {
+      cancelEdit();
+      return;
+    }
+    updateMedicationMutation.mutate(
+      {
+        taggingId: note.taggingId,
+        request: {
+          ...(changedMeds.length > 0 ? { medications: changedMeds } : {}),
+          ...(newOccurredAt ? { effectiveDatetime: newOccurredAt } : {}),
+        },
+      },
       {
         onSuccess: () => {
           setIsEditing(false);
-          setDraftContent("");
+          setDraftTime("");
+          setMedicationDrafts({});
         },
       },
     );
@@ -309,26 +480,19 @@ function NoteRow({
     <div
       ref={rowRef}
       className={cn(
-        "grid grid-cols-[110px_1fr_80px_110px_120px_120px] gap-4 px-4 py-2 border-b border-border-base/50 items-start hover:bg-surface-hover/40 transition-all relative",
+        "grid grid-cols-[90px_1fr_70px_90px_110px] gap-4 px-4 py-2 border-b border-border-base/50 items-start hover:bg-surface-hover/40 transition-all relative",
         note.status === "draft" &&
           "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-brand-primary/30",
         isEditing && "bg-brand-surface/15",
       )}
     >
-      {/* 시간 */}
+      {/* 시간 — 편집 모드에선 HH : mm 분리 입력. STT_NOTE = confirmedAt / MEDICATION = effectiveDatetime 으로 PATCH. */}
       <div className="py-1.5 border-r border-border-base/50 pr-4 min-w-0">
-        {isDateView ? (
+        {isEditing ? (
+          <TimeInput value={draftTime} onChange={setDraftTime} />
+        ) : (
           <div className="w-full text-center font-mono font-extrabold text-[15px] text-content-primary leading-[1.6]">
             {formatHHmm(note.occurredAt)}
-          </div>
-        ) : (
-          <div className="text-center font-mono">
-            <div className="text-body-xs font-bold text-content-primary leading-tight">
-              {dateLabel.month}.{dateLabel.day}
-            </div>
-            <div className="text-[15px] font-extrabold text-content-primary leading-tight mt-0.5">
-              {dateLabel.time}
-            </div>
           </div>
         )}
       </div>
@@ -336,7 +500,17 @@ function NoteRow({
       {/* 기록 내용 */}
       <div className="min-w-0 pr-6 border-r border-border-base/50 py-1.5 relative">
         {isMedication ? (
-          <MedicationContent note={note} />
+          <MedicationContent
+            note={note}
+            isEditing={isEditing}
+            drafts={medicationDrafts}
+            onChangeDraft={(medicationAdminId, value) =>
+              setMedicationDrafts((prev) => ({
+                ...prev,
+                [medicationAdminId]: value,
+              }))
+            }
+          />
         ) : isEditing ? (
           <textarea
             autoFocus
@@ -378,47 +552,49 @@ function NoteRow({
         <span className="truncate font-bold">{note.authorName}</span>
       </div>
 
-      {/* 상태 */}
-      <div className="pt-1.5 h-full flex items-center justify-center border-r border-border-base/50 pr-4">
-        <span
-          className={cn(
-            "text-body-xs font-semibold",
-            RECORD_STATUS_TONE[note.status] ?? "text-status-neutral",
-          )}
-        >
-          {RECORD_STATUS_LABEL[note.status] ?? note.status}
-        </span>
-      </div>
-
-      {/* 동작 */}
-      <div className="pt-1 h-full flex items-center justify-center gap-1.5 flex-wrap">
+      {/* 동작 — 확정은 위, 수정/삭제는 아래 줄 */}
+      <div className="pt-1 h-full flex flex-col items-center justify-center gap-1">
         {note.editable ? (
-          isMedication ? (
-            <MedicationActions note={note} encounterId={encounterId} />
-          ) : isEditing ? (
-            <>
+          isEditing ? (
+            <div className="flex gap-1">
               <Button
-                variant="brand"
+                variant="neutral"
                 size="sm"
-                className="h-7 px-2.5 rounded text-body-micro"
-                disabled={updateMutation.isPending || !draftContent.trim()}
+                className="h-7 px-2.5 rounded text-body-micro font-bold"
+                disabled={
+                  isMedication
+                    ? updateMedicationMutation.isPending
+                    : updateNoteMutation.isPending || !draftContent.trim()
+                }
                 onClick={submitEdit}
               >
-                {updateMutation.isPending ? "저장 중..." : "완료"}
+                {(isMedication
+                  ? updateMedicationMutation.isPending
+                  : updateNoteMutation.isPending)
+                  ? "저장 중..."
+                  : "완료"}
               </Button>
               <Button
-                variant="brandOutline"
+                variant="neutral"
                 size="sm"
-                className="h-7 px-2.5 rounded text-body-micro"
+                className="h-7 px-2.5 rounded text-body-micro font-bold"
                 onClick={cancelEdit}
               >
                 취소
               </Button>
-            </>
+            </div>
+          ) : isMedication ? (
+            <MedicationActions
+              note={note}
+              encounterId={encounterId}
+              isEditMode={isEditMode}
+              onStartEdit={startEdit}
+            />
           ) : (
             <SttNoteActions
               note={note as Extract<NursingNoteItem, { type: "STT_NOTE" }>}
               encounterId={encounterId}
+              isEditMode={isEditMode}
               onStartEdit={startEdit}
             />
           )
@@ -433,10 +609,12 @@ function NoteRow({
 function SttNoteActions({
   note,
   encounterId,
+  isEditMode,
   onStartEdit,
 }: {
   note: Extract<NursingNoteItem, { type: "STT_NOTE" }>;
   encounterId: number;
+  isEditMode: boolean;
   onStartEdit: () => void;
 }) {
   const confirmMutation = useConfirmNursingRecord(encounterId);
@@ -444,38 +622,32 @@ function SttNoteActions({
 
   return (
     <>
-      {note.status === "draft" && (
-        <Button
-          variant="brand"
-          size="sm"
-          className="h-7 px-2.5 rounded text-body-micro"
-          disabled={confirmMutation.isPending}
-          onClick={() => confirmMutation.mutate(note.nursingRecordId)}
-        >
-          확정
-        </Button>
+      {note.status === "draft" && <ConfirmButton onClick={() => confirmMutation.mutate(note.nursingRecordId)} disabled={confirmMutation.isPending} />}
+      {isEditMode && (
+        <div className="flex gap-1">
+          <Button
+            variant="neutral"
+            size="sm"
+            className="h-7 px-2.5 rounded text-body-micro font-bold"
+            onClick={onStartEdit}
+          >
+            수정
+          </Button>
+          <Button
+            variant="neutral"
+            size="sm"
+            className="h-7 px-2.5 rounded text-body-micro font-bold"
+            disabled={deleteMutation.isPending}
+            onClick={() => {
+              if (window.confirm("이 기록을 삭제하시겠습니까?")) {
+                deleteMutation.mutate(note.nursingRecordId);
+              }
+            }}
+          >
+            삭제
+          </Button>
+        </div>
       )}
-      <Button
-        variant="brandOutline"
-        size="sm"
-        className="h-7 px-2.5 rounded text-body-micro"
-        onClick={onStartEdit}
-      >
-        수정
-      </Button>
-      <Button
-        variant="brandOutline"
-        size="sm"
-        className="h-7 px-2.5 rounded text-body-micro"
-        disabled={deleteMutation.isPending}
-        onClick={() => {
-          if (window.confirm("이 기록을 삭제하시겠습니까?")) {
-            deleteMutation.mutate(note.nursingRecordId);
-          }
-        }}
-      >
-        삭제
-      </Button>
     </>
   );
 }
@@ -483,40 +655,66 @@ function SttNoteActions({
 function MedicationActions({
   note,
   encounterId,
+  isEditMode,
+  onStartEdit,
 }: {
   note: Extract<NursingNoteItem, { type: "MEDICATION" }>;
   encounterId: number;
+  isEditMode: boolean;
+  onStartEdit: () => void;
 }) {
   const confirmMutation = useConfirmMedicationGroup(encounterId);
   const deleteMutation = useDeleteMedicationGroup(encounterId);
 
   return (
     <>
-      {note.status === "draft" && (
-        <Button
-          variant="brand"
-          size="sm"
-          className="h-7 px-2.5 rounded text-body-micro"
-          disabled={confirmMutation.isPending}
-          onClick={() => confirmMutation.mutate(note.taggingId)}
-        >
-          확정
-        </Button>
+      {note.status === "draft" && <ConfirmButton onClick={() => confirmMutation.mutate(note.taggingId)} disabled={confirmMutation.isPending} />}
+      {isEditMode && (
+        <div className="flex gap-1">
+          <Button
+            variant="neutral"
+            size="sm"
+            className="h-7 px-2.5 rounded text-body-micro font-bold"
+            onClick={onStartEdit}
+          >
+            수정
+          </Button>
+          <Button
+            variant="neutral"
+            size="sm"
+            className="h-7 px-2.5 rounded text-body-micro font-bold"
+            disabled={deleteMutation.isPending}
+            onClick={() => {
+              if (window.confirm("이 투약 기록을 삭제하시겠습니까?")) {
+                deleteMutation.mutate(note.taggingId);
+              }
+            }}
+          >
+            삭제
+          </Button>
+        </div>
       )}
-      <Button
-        variant="brandOutline"
-        size="sm"
-        className="h-7 px-2.5 rounded text-body-micro"
-        disabled={deleteMutation.isPending}
-        onClick={() => {
-          if (window.confirm("이 투약 그룹을 취소하시겠습니까?")) {
-            deleteMutation.mutate(note.taggingId);
-          }
-        }}
-      >
-        취소
-      </Button>
     </>
+  );
+}
+
+function ConfirmButton({
+  onClick,
+  disabled,
+}: {
+  onClick: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <Button
+      variant="neutral"
+      size="sm"
+      className="h-7 px-2.5 rounded text-body-micro font-bold"
+      onClick={onClick}
+      disabled={disabled}
+    >
+      확정
+    </Button>
   );
 }
 
@@ -530,35 +728,80 @@ function SttContent({ content }: { content: string }) {
 
 function MedicationContent({
   note,
+  isEditing,
+  drafts,
+  onChangeDraft,
 }: {
   note: Extract<NursingNoteItem, { type: "MEDICATION" }>;
+  isEditing: boolean;
+  drafts: Record<number, number>;
+  onChangeDraft: (medicationAdminId: number, value: number) => void;
 }) {
   return (
-    <ul className="px-1.5 py-1 flex flex-col gap-1">
+    <ul className="flex flex-col gap-1.5">
       {note.medications.map((medication) => (
-        <MedicationRow key={medication.medicationAdminId} medication={medication} />
+        <MedicationRow
+          key={medication.medicationAdminId}
+          medication={medication}
+          isEditing={isEditing}
+          draftValue={drafts[medication.medicationAdminId]}
+          onChangeDraft={(value) =>
+            onChangeDraft(medication.medicationAdminId, value)
+          }
+        />
       ))}
     </ul>
   );
 }
 
-function MedicationRow({ medication }: { medication: MedicationItem }) {
+function MedicationRow({
+  medication,
+  isEditing,
+  draftValue,
+  onChangeDraft,
+}: {
+  medication: MedicationItem;
+  isEditing: boolean;
+  draftValue: number | undefined;
+  onChangeDraft: (value: number) => void;
+}) {
   return (
-    <li className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-body-sm">
-      <span className="font-mono font-bold text-brand-primary text-body-xs">
-        {medication.productCode}
-      </span>
-      <span className="font-bold text-content-primary">{medication.productName}</span>
-      <span className="text-content-muted">·</span>
-      <span className="font-mono font-semibold text-content-primary">
-        {medication.dosageQuantity}
-      </span>
-      <span className="text-content-muted">{medication.dosageUnit}</span>
-      <span className="text-content-muted">·</span>
-      <span className="font-mono font-semibold text-content-primary">{medication.frequency}</span>
-      <span className="text-content-muted">회</span>
-      <span className="text-content-muted">·</span>
-      <span className="font-semibold text-content-primary">{medication.route}</span>
+    <li className="flex flex-col gap-0.5 px-2 py-1.5 rounded bg-brand-surface/30 border-l-2 border-brand-primary/30">
+      <div className="flex items-baseline gap-2 min-w-0">
+        <span className="font-bold text-content-primary text-body-sm truncate">
+          {medication.productName}
+        </span>
+        <span className="font-mono text-body-micro text-content-muted shrink-0">
+          {medication.productCode}
+        </span>
+      </div>
+      <div className="flex items-baseline gap-1.5 text-body-xs">
+        {isEditing ? (
+          <input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="any"
+            value={draftValue ?? medication.dosageQuantity}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              if (!Number.isFinite(next) || next < 0) return;
+              onChangeDraft(next);
+            }}
+            className="w-16 px-1.5 py-0.5 rounded bg-white border border-brand-primary/40 font-mono font-bold text-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/30"
+          />
+        ) : (
+          <span className="font-mono font-bold text-brand-primary">
+            {medication.dosageQuantity}
+          </span>
+        )}
+        <span className="text-content-muted font-medium">{medication.dosageUnit}</span>
+        <span className="text-border-base">·</span>
+        <span className="font-mono font-bold text-content-primary">{medication.frequency}</span>
+        <span className="text-content-muted">회</span>
+        <span className="text-border-base">·</span>
+        <span className="font-bold text-content-secondary">{medication.route}</span>
+      </div>
     </li>
   );
 }

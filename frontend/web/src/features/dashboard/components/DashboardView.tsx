@@ -4,10 +4,15 @@ import { useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PatientSidebar } from "@/features/patient/components/PatientSidebar";
 import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
-import { EMRGrid } from "./EMRGrid";
+import { EMRGrid, type EMRTab } from "./EMRGrid";
 import { RightPanel } from "./RightPanel";
 import { AssignPatientModal } from "./AssignPatientModal";
 import { usePatientDetail } from "../hooks/usePatientDetail";
+// mockup: "문현지" 환자의 unconfirmedNursingCount override (시연용). 백엔드 합의 후 제거.
+import {
+  MOCK_UNCONFIRMED_COUNT,
+  MOCK_UNCONFIRMED_PATIENT_NAME,
+} from "@/mockup/nursing-notes";
 
 export function DashboardView() {
   const [isLeftOpen, setIsLeftOpen] = useState(true);
@@ -17,11 +22,22 @@ export function DashboardView() {
   const [overridePatientId, setOverridePatientId] = useState<number | null>(
     null,
   );
+  const [activeTab, setActiveTab] = useState<EMRTab>("nursing");
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const [focusRecordId, setFocusRecordId] = useState<number | null>(null);
   // 첫 데이터 로드 시 자동으로 담당 환자 모달을 한 번 띄우기 위한 플래그.
   const [hasCheckedAssignment, setHasCheckedAssignment] = useState(false);
 
   const wardPatientsQuery = useWardPatients();
-  const patients = wardPatientsQuery.data ?? [];
+  const patients = useMemo(() => {
+    const list = wardPatientsQuery.data ?? [];
+    // 시연용 — "문현지" 환자의 unconfirmedNursingCount 를 mockup draft 개수로 override.
+    return list.map((patient) =>
+      patient.name === MOCK_UNCONFIRMED_PATIENT_NAME
+        ? { ...patient, unconfirmedNursingCount: MOCK_UNCONFIRMED_COUNT }
+        : patient,
+    );
+  }, [wardPatientsQuery.data]);
 
   // 담당 환자 우선, 없으면 첫 환자, 환자 자체가 없으면 null.
   const fallbackPatientId = useMemo<number | null>(() => {
@@ -73,16 +89,33 @@ export function DashboardView() {
             selectedPatientId={selectedPatientId}
             onSelectPatient={setOverridePatientId}
             onOpenAssignModal={() => setIsAssignOpen(true)}
+            selectedDate={selectedDate}
+            onJumpToUnconfirmed={(patientId, recordId) => {
+              setOverridePatientId(patientId);
+              setActiveTab("nursing");
+              setFocusRecordId(recordId);
+            }}
           />
         }
-        mainGrid={<EMRGrid patientId={selectedPatientId} />}
+        mainGrid={
+          <EMRGrid
+            patientId={selectedPatientId}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            selectedDate={selectedDate}
+            onChangeSelectedDate={setSelectedDate}
+            focusRecordId={focusRecordId}
+            onFocusHandled={() => setFocusRecordId(null)}
+          />
+        }
         actionPanel={<RightPanel encounterId={selectedEncounterId} />}
       />
-      <AssignPatientModal
-        patients={patients}
-        isOpen={isAssignOpen}
-        onClose={() => setIsAssignOpen(false)}
-      />
+      {isAssignOpen && (
+        <AssignPatientModal
+          patients={patients}
+          onClose={() => setIsAssignOpen(false)}
+        />
+      )}
     </>
   );
 }
