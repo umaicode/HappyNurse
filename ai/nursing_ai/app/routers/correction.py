@@ -22,6 +22,15 @@ class DictionaryApproveRequest(BaseModel):
     correct_word: str = Field(..., description="정식 용어", example="세프트리악손")
     category: str = Field("other", description="카테고리 (medication/symptom/body_part/procedure/vital/other)")
 
+class QuickCorrectionAnalyzeRequest(BaseModel):
+    nursing_record_id: int = Field(..., description="간호 기록 ID")
+    content: str = Field(..., description="분석할 텍스트 (editContent 또는 finalContent)")
+
+class QuickCorrectionWord(BaseModel):
+    original: str = Field(..., description="원본 단어")
+    start: int = Field(..., description="텍스트 내 시작 위치")
+    end: int = Field(..., description="텍스트 내 끝 위치")
+    candidates: list = Field(..., description="교정 후보 목록 (최대 3개)")
 
 
 # === 1. 수정 이력 저장 ===
@@ -145,6 +154,122 @@ async def apply_correction(
 
     except Exception as e:
         db.rollback()
+        print(f"에러: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# === 1-2. 퀵요청 ===
+@router.post(
+    "/correction/analyze",
+    summary="퀵수정 후보 분석",
+    description="""
+간호기록 텍스트를 분석하여 교정 가능한 의료 용어와 후보를 반환합니다.
+
+프론트엔드에서 이 결과를 사용해 해당 단어에 밑줄을 표시하고,
+클릭 시 후보 드롭다운을 보여줍니다.
+    """
+)
+
+@router.post(
+    "/correction/analyze",
+    summary="퀵수정 후보 분석",
+    description="""
+간호기록 텍스트를 분석하여 교정 가능한 의료 용어와 후보를 반환합니다.
+
+프론트엔드에서 이 결과를 사용해 해당 단어에 밑줄을 표시하고,
+클릭 시 후보 드롭다운을 보여줍니다.
+    """
+)
+async def analyze_quick_corrections(
+    req: QuickCorrectionAnalyzeRequest,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        from app.services.nursing_stt.morpheme import MorphemeAnalyzer
+        from app.services.nursing_stt.term_mapper import TermMapper
+
+        morpheme = MorphemeAnalyzer()
+        mapper = TermMapper(db=db)
+
+        # 방법 1: 형태소 분석으로 미등록어 추출
+        morpheme_candidates = morpheme.extract_medical_candidates(req.content)
+
+        # 방법 2: 매핑 사전에서 직접 텍스트 검색
+        dict_matches = mapper.find_dictionary_matches(req.content)
+
+        # 두 결과 합치기 (중복 제거)
+        all_candidates = []
+        seen_positions = set()
+
+        for match in dict_matches:
+            key = (match["start"], match["end"])
+            if key not in seen_positions:
+                seen_positions.add(key)
+                all_candidates.append(match)
+
+        for candidate in morpheme_candidates:
+            key = (candidate["start"], candidate["end"])
+            if key not in seen_positions:
+                seen_positions.add(key)
+                all_candidates.append(candidate)
+
+        # 교정 후보 생성
+        corrections = []
+        for candidate in all_candidates:
+            word = candidate["word"]
+            start = candidate["start"]
+            end = candidate["end"]
+
+            # 1차: 정확 매칭
+            exact_result = mapper.exact_match(word)
+            if exact_result:
+                if exact_result == word:
+                    continue
+                corrections.append({
+                    "original": word,
+                    "start": start,
+                    "end": end,
+                    "candidates": [
+                        {"word": exact_result, "confidence": 1.0, "type": "exact"},
+                        {"word": word, "confidence": 0.0, "type": "original"}
+                    ]
+                })
+                continue
+
+            # 2차: 퍼지 매칭
+            fuzzy_results = mapper.fuzzy_match(word, threshold=60)
+            if fuzzy_results:
+                filtered = [fr for fr in fuzzy_results if fr["suggested_word"] != word]
+                if not filtered:
+                    continue
+
+                candidate_list = []
+                for fr in filtered[:3]:
+                    candidate_list.append({
+                        "word": fr["suggested_word"],
+                        "confidence": fr["confidence_score"],
+                        "type": "fuzzy"
+                    })
+                candidate_list.append({
+                    "word": word,
+                    "confidence": 0.0,
+                    "type": "original"
+                })
+                corrections.append({
+                    "original": word,
+                    "start": start,
+                    "end": end,
+                    "candidates": candidate_list
+                })
+
+        return {
+            "success": True,
+            "nursing_record_id": req.nursing_record_id,
+            "correction_count": len(corrections),
+            "corrections": corrections
+        }
+
+    except Exception as e:
         print(f"에러: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
