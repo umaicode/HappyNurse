@@ -37,7 +37,7 @@ RUN groupadd -r fastapi && useradd -r -g fastapi -m -d /home/fastapi fastapi
 COPY --from=builder /root/.local /home/fastapi/.local
 
 # 소스 복사
-COPY --chown=fastapi:fastapi nursing-stt ./nursing-stt
+COPY --chown=fastapi:fastapi nursing_ai ./nursing_ai
 
 USER fastapi
 ENV PATH=/home/fastapi/.local/bin:$PATH
@@ -46,7 +46,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 EXPOSE 8000
 
-# nursing-stt/app/main.py 에 FastAPI 인스턴스 `app`이 있다고 가정
+# nursing_ai/app/main.py 에 FastAPI 인스턴스 `app`이 있다고 가정
 # 실제 엔트리가 다르면 이 명령 수정
-WORKDIR /app/nursing-stt
+WORKDIR /app/nursing_ai
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
