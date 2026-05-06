@@ -2,15 +2,11 @@
 
 import {
   Calendar as CalendarIcon,
-  ChevronDown,
-  Edit2,
   ChevronLeft,
   ChevronRight,
-  Check,
   AlertCircle,
 } from "lucide-react";
-import * as React from "react";
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { format, addDays, subDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useAuthStore } from "@/features/auth/stores/auth";
@@ -93,130 +89,42 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { NursingTab } from "./NursingTab";
 import { OrderTab } from "./OrderTab";
 import { AlertsTab } from "./AlertsTab";
 
-function SearchableSelect({
-  value,
-  onSelect,
-  options,
-  placeholder = "선택하세요",
-  searchPlaceholder = "검색...",
-  className = "",
-  trigger,
-  width = "200px",
-}: {
-  value: string;
-  onSelect: (val: string) => void;
-  options: string[];
-  placeholder?: string;
-  searchPlaceholder?: string;
-  className?: string;
-  trigger?: React.ReactNode;
-  width?: string;
-}) {
-  const [open, setOpen] = React.useState(false);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        {trigger ? (
-          <div className="cursor-pointer">{trigger}</div>
-        ) : (
-          <button
-            type="button"
-            role="combobox"
-            aria-expanded={open}
-            className={cn(
-              "flex h-9 items-center justify-between gap-2 rounded-md border border-border-base bg-surface-card px-3 py-2 text-body-sm text-content-primary font-bold transition-all outline-none hover:border-border-hover focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 min-w-[130px] cursor-pointer shadow-sm",
-              className,
-            )}
-          >
-            <span className="truncate">
-              {value || placeholder}
-            </span>
-            <ChevronDown className="size-4 shrink-0 text-content-muted" />
-          </button>
-        )}
-      </PopoverTrigger>
-      <PopoverContent
-        style={{ width }}
-        className="p-0 z-[100] shadow-xl border border-border-base bg-surface-card"
-        align="start"
-        sideOffset={4}
-      >
-        <Command className="border-none">
-          <CommandInput
-            placeholder={searchPlaceholder}
-            className="h-9 border-none focus:ring-0"
-          />
-          <CommandList className="max-h-[300px] overflow-y-auto p-1">
-            <CommandEmpty className="py-2 text-body-xs text-center text-content-muted">
-              검색 결과가 없습니다.
-            </CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option}
-                  value={option}
-                  onSelect={(currentValue) => {
-                    const selectedOption =
-                      options.find(
-                        (o) =>
-                          o.toLowerCase() ===
-                          currentValue.toLowerCase(),
-                      ) || currentValue;
-                    onSelect(selectedOption);
-                    setOpen(false);
-                  }}
-                  className="flex items-center gap-2 px-2 py-1.5 text-body-sm rounded-sm cursor-pointer data-[selected=true]:bg-brand-surface data-[selected=true]:text-brand-primary transition-colors"
-                >
-                  <Check
-                    className={cn(
-                      "size-4 shrink-0",
-                      value === option
-                        ? "opacity-100"
-                        : "opacity-0",
-                    )}
-                  />
-                  {option}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
+export type EMRTab = "nursing" | "order" | "alerts" | "handover";
 
 interface EMRGridProps {
   patientId: number | null;
+  // Controlled — DashboardView 가 보유.
+  activeTab: EMRTab;
+  onTabChange: (tab: EMRTab) => void;
+  selectedDate: Date;
+  onChangeSelectedDate: (date: Date) => void;
+  // 사이드바의 "확정 전 기록" 항목 클릭 시 NursingTab 이 해당 record 로 자동 스크롤.
+  focusRecordId: number | null;
+  onFocusHandled?: () => void;
 }
 
-export function EMRGrid({ patientId }: EMRGridProps) {
+export function EMRGrid({
+  patientId,
+  activeTab,
+  onTabChange,
+  selectedDate,
+  onChangeSelectedDate,
+  focusRecordId,
+  onFocusHandled,
+}: EMRGridProps) {
   const currentUser = useAuthStore((state) => state.user?.name ?? "");
   const patientDetailQuery = usePatientDetail(patientId);
 
-  const [activeTab, setActiveTab] = useState<"nursing" | "order" | "alerts" | "handover">("nursing");
   const [myRecordsOnly, setMyRecordsOnly] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
-  const [isShowAll, setIsShowAll] = useState(false);
-  // null 이면 "전체 보기" — OrderTab/AlertsTab 클라 사이드 날짜 필터를 끄고, NursingTab 은 백엔드 endpoint 부재로 안내 메시지를 띄운다.
-  const filterDate: string | null = isShowAll
-    ? null
-    : format(selectedDate, "yyyy-MM-dd");
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  const dateIso = useMemo(() => format(selectedDate, "yyyy-MM-dd"), [selectedDate]);
 
   // 헤더는 API 응답을 그대로 표시한다 (수정 불가).
   const patientInfo: PatientHeader = useMemo(
@@ -255,10 +163,7 @@ export function EMRGrid({ patientId }: EMRGridProps) {
           <div className="flex items-center gap-2">
             <div className="flex items-center bg-surface-card border border-border-base rounded shadow-sm overflow-hidden">
               <button
-                onClick={() => {
-                  setSelectedDate((prev) => subDays(prev, 1));
-                  setIsShowAll(false);
-                }}
+                onClick={() => onChangeSelectedDate(subDays(selectedDate, 1))}
                 className="p-1.5 hover:bg-surface-hover text-content-muted hover:text-content-primary transition-colors border-r border-border-base"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -266,7 +171,10 @@ export function EMRGrid({ patientId }: EMRGridProps) {
 
               <Popover>
                 <PopoverTrigger asChild>
-                  <div className="flex items-center gap-2 px-3 py-1 cursor-pointer hover:bg-surface-hover transition-colors">
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 px-3 py-1 cursor-pointer hover:bg-surface-hover transition-colors"
+                  >
                     <CalendarIcon className="w-4 h-4 text-brand-primary" />
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-body-base font-mono font-bold text-content-primary">
@@ -280,7 +188,7 @@ export function EMRGrid({ patientId }: EMRGridProps) {
                         )
                       </span>
                     </div>
-                  </div>
+                  </button>
                 </PopoverTrigger>
                 <PopoverContent
                   className="w-auto p-0"
@@ -291,36 +199,19 @@ export function EMRGrid({ patientId }: EMRGridProps) {
                     selected={selectedDate}
                     onSelect={(date) => {
                       if (!date) return;
-                      setSelectedDate(date);
-                      setIsShowAll(false);
+                      onChangeSelectedDate(date);
                     }}
                   />
                 </PopoverContent>
               </Popover>
 
               <button
-                onClick={() => {
-                  setSelectedDate((prev) => addDays(prev, 1));
-                  setIsShowAll(false);
-                }}
+                onClick={() => onChangeSelectedDate(addDays(selectedDate, 1))}
                 className="p-1.5 hover:bg-surface-hover text-content-muted hover:text-content-primary transition-colors border-l border-border-base"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setIsShowAll((prev) => !prev)}
-              className={cn(
-                "h-9 px-3 rounded-md border text-body-xs font-bold shadow-sm transition-colors",
-                isShowAll
-                  ? "bg-brand-primary text-white border-brand-primary"
-                  : "bg-surface-card text-content-secondary border-border-base hover:bg-surface-hover",
-              )}
-            >
-              전체
-            </button>
 
             {/* TODO Phase 1-5: 행별 편집/확정/삭제 UI 가 NursingTab 안으로 들어오면 여기에 전역 편집 토글 다시 배치 */}
           </div>
@@ -435,7 +326,7 @@ export function EMRGrid({ patientId }: EMRGridProps) {
         {/* Tab Menu - Nursing Record, Doctor Order */}
         <div className="flex items-center gap-1 px-4 mb-1 border-b border-border-base bg-white/50">
           <button
-            onClick={() => setActiveTab("nursing")}
+            onClick={() => onTabChange("nursing")}
             className={cn(
               "px-4 py-2 text-body-base font-bold transition-all border-b-2",
               activeTab === "nursing"
@@ -446,7 +337,7 @@ export function EMRGrid({ patientId }: EMRGridProps) {
             간호 기록
           </button>
           <button
-            onClick={() => setActiveTab("order")}
+            onClick={() => onTabChange("order")}
             className={cn(
               "px-4 py-2 text-body-base font-bold transition-all border-b-2",
               activeTab === "order"
@@ -457,7 +348,7 @@ export function EMRGrid({ patientId }: EMRGridProps) {
             의사 오더
           </button>
           <button
-            onClick={() => setActiveTab("alerts")}
+            onClick={() => onTabChange("alerts")}
             className={cn(
               "px-4 py-2 text-body-base font-bold transition-all border-b-2",
               activeTab === "alerts"
@@ -469,18 +360,32 @@ export function EMRGrid({ patientId }: EMRGridProps) {
           </button>
 
           {activeTab === "nursing" && (
-            <div className="ml-auto flex items-center gap-2">
-              <Checkbox
-                id="my-records-only"
-                checked={myRecordsOnly}
-                onCheckedChange={(checked) => setMyRecordsOnly(checked === true)}
-              />
-              <label
-                htmlFor="my-records-only"
-                className="cursor-pointer select-none text-body-sm font-semibold text-content-tertiary hover:text-content-primary transition-colors"
+            <div className="ml-auto flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="my-records-only"
+                  checked={myRecordsOnly}
+                  onCheckedChange={(checked) => setMyRecordsOnly(checked === true)}
+                />
+                <label
+                  htmlFor="my-records-only"
+                  className="cursor-pointer select-none text-body-sm font-semibold text-content-tertiary hover:text-content-primary transition-colors"
+                >
+                  내 기록만 보기
+                </label>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditMode((prev) => !prev)}
+                className={cn(
+                  "h-7 px-3 rounded-md border text-body-sm font-semibold transition-colors",
+                  isEditMode
+                    ? "bg-brand-primary text-white border-brand-primary"
+                    : "bg-surface-card text-content-tertiary border-border-base hover:bg-surface-hover hover:text-content-primary",
+                )}
               >
-                내 기록만 보기
-              </label>
+                편집
+              </button>
             </div>
           )}
 
@@ -490,17 +395,20 @@ export function EMRGrid({ patientId }: EMRGridProps) {
           {activeTab === "nursing" ? (
             <NursingTab
               encounterId={patientDetailQuery.data?.encounterId ?? null}
-              date={filterDate}
+              date={dateIso}
               currentUser={currentUser}
               myRecordsOnly={myRecordsOnly}
+              isEditMode={isEditMode}
+              focusRecordId={focusRecordId}
+              onFocusHandled={onFocusHandled}
             />
           ) : activeTab === "order" ? (
             <OrderTab
               encounterId={patientDetailQuery.data?.encounterId ?? null}
-              filterDate={filterDate}
+              date={dateIso}
             />
           ) : activeTab === "alerts" ? (
-            <AlertsTab patientId={patientId} filterDate={filterDate} />
+            <AlertsTab patientId={patientId} date={dateIso} />
           ) : (
             /* AI Handover Placeholder */
             <div className="flex-1 flex flex-col items-center justify-center bg-surface-base/30 space-y-4">

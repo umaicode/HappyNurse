@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PatientSidebar } from "@/features/patient/components/PatientSidebar";
 import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
-import { EMRGrid } from "./EMRGrid";
+import { EMRGrid, type EMRTab } from "./EMRGrid";
 import { RightPanel } from "./RightPanel";
 import { AssignPatientModal } from "./AssignPatientModal";
 import { usePatientDetail } from "../hooks/usePatientDetail";
@@ -17,6 +17,9 @@ export function DashboardView() {
   const [overridePatientId, setOverridePatientId] = useState<number | null>(
     null,
   );
+  const [activeTab, setActiveTab] = useState<EMRTab>("nursing");
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const [focusRecordId, setFocusRecordId] = useState<number | null>(null);
   // 첫 데이터 로드 시 자동으로 담당 환자 모달을 한 번 띄우기 위한 플래그.
   const [hasCheckedAssignment, setHasCheckedAssignment] = useState(false);
 
@@ -73,16 +76,33 @@ export function DashboardView() {
             selectedPatientId={selectedPatientId}
             onSelectPatient={setOverridePatientId}
             onOpenAssignModal={() => setIsAssignOpen(true)}
+            selectedDate={selectedDate}
+            onJumpToUnconfirmed={(patientId, recordId) => {
+              setOverridePatientId(patientId);
+              setActiveTab("nursing");
+              setFocusRecordId(recordId);
+            }}
           />
         }
-        mainGrid={<EMRGrid patientId={selectedPatientId} />}
+        mainGrid={
+          <EMRGrid
+            patientId={selectedPatientId}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            selectedDate={selectedDate}
+            onChangeSelectedDate={setSelectedDate}
+            focusRecordId={focusRecordId}
+            onFocusHandled={() => setFocusRecordId(null)}
+          />
+        }
         actionPanel={<RightPanel encounterId={selectedEncounterId} />}
       />
-      <AssignPatientModal
-        patients={patients}
-        isOpen={isAssignOpen}
-        onClose={() => setIsAssignOpen(false)}
-      />
+      {isAssignOpen && (
+        <AssignPatientModal
+          patients={patients}
+          onClose={() => setIsAssignOpen(false)}
+        />
+      )}
     </>
   );
 }
