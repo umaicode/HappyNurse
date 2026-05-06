@@ -38,4 +38,28 @@ public class PractitionerDevice {
     @Column(name = "last_used_at")
     private LocalDateTime lastUsedAt;
 
+    public static PractitionerDevice create(PractitionerRole role, String fcmToken, DeviceType deviceType) {
+        PractitionerDevice device = new PractitionerDevice();
+        device.practitionerRole = role;
+        device.fcmToken = fcmToken;
+        device.deviceType = deviceType;
+        device.isActive = true;
+        LocalDateTime now = LocalDateTime.now();
+        device.registeredAt = now;
+        device.lastUsedAt = now;
+        return device;
+    }
+
+    public void activate() {
+        this.isActive = true;
+    }
+
+    public void deactivate() {
+        this.isActive = false;
+    }
+
+    public void touchLastUsed() {
+        this.lastUsedAt = LocalDateTime.now();
+    }
+
 }

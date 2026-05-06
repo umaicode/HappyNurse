@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from "react";
-import { Droplet, Clock, AlertTriangle } from "lucide-react";
+import { Droplet } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PanelCard } from "./PanelCard";
 
 type IVTimerItem = {
   id: number;
@@ -86,16 +87,21 @@ export function IVTimerPanel() {
     return () => clearInterval(interval);
   }, []);
 
+  // startedAt desc — 최근에 시작된 수액이 위.
+  const sortedTimers = [...MOCK_IV_TIMERS].sort(
+    (a, b) => parseTimeToMinutes(b.startedAt) - parseTimeToMinutes(a.startedAt),
+  );
+
   return (
-    <div className="flex flex-col h-full bg-[var(--color-surface-base)]">
+    <div className="flex flex-col h-full bg-surface-base">
       <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2.5">
-        {MOCK_IV_TIMERS.length === 0 ? (
+        {sortedTimers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-content-muted gap-2 opacity-30">
             <Droplet className="w-6 h-6" />
-            <p className="text-[11px] font-medium">진행 중인 수액 없음</p>
+            <p className="text-[11px]">진행 중인 수액 없음</p>
           </div>
         ) : (
-          MOCK_IV_TIMERS.map((item) => {
+          sortedTimers.map((item) => {
             const startMinutes = parseTimeToMinutes(item.startedAt);
             const endMinutes = parseTimeToMinutes(item.endsAt);
             const totalMinutes = Math.max(1, endMinutes - startMinutes);
@@ -108,39 +114,30 @@ export function IVTimerPanel() {
             const isWarning = remainingMinutes <= 60;
 
             return (
-              <div
-                key={item.id}
-                className={cn(
-                  "relative bg-white rounded-xl border shadow-sm p-3 flex flex-col gap-2 transition-all",
-                  isWarning
-                    ? "border-l-4 border-l-amber-500 border-amber-500/30"
-                    : "border-border-base",
-                )}
-              >
+              <PanelCard key={item.id}>
+                {/* 1행: 환자명 + 호실 (좌) | 교체 임박 칩 (우) */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-[13px] font-black text-content-primary truncate">
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <span className="text-body-sm font-bold text-content-primary truncate leading-none">
                       {item.patientName}
                     </span>
-                    <span className="text-[11px] font-mono font-bold text-content-muted shrink-0">
+                    <span className="text-body-micro font-mono font-medium text-content-tertiary shrink-0 leading-none">
                       {item.room}
                     </span>
                   </div>
                   {isWarning && (
-                    <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 shrink-0">
-                      <AlertTriangle className="w-3 h-3" />
+                    <span className="px-1.5 py-0.5 rounded bg-status-warning text-white text-body-micro font-bold leading-none shrink-0">
                       교체 임박
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <Droplet className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                  <span className="text-[12px] font-semibold text-content-secondary truncate">
-                    {item.fluidName}
-                  </span>
-                </div>
+                {/* 수액 이름 */}
+                <span className="text-body-sm font-bold text-content-primary truncate">
+                  {item.fluidName}
+                </span>
 
+                {/* 진행 막대바 */}
                 <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
                   <div
                     className={cn(
@@ -151,31 +148,27 @@ export function IVTimerPanel() {
                   />
                 </div>
 
-                <div className="flex flex-col gap-0.5 text-[12px]">
-                  <div className="flex items-center gap-1 text-content-secondary">
-                    <Clock
-                      className={cn(
-                        "w-3.5 h-3.5",
-                        isWarning ? "text-amber-600" : "text-content-muted",
-                      )}
-                    />
-                    <span className="font-medium">
-                      <span className="font-mono font-bold">{item.startedAt}</span>
-                      {" ~ 현재 "}
-                      <span className="font-bold">{formatDuration(elapsedMinutes)}</span>
-                      {" 경과"}
-                    </span>
+                {/* 시간 정보 */}
+                <div className="flex flex-col gap-0.5 text-body-sm">
+                  <div
+                    className={cn(
+                      isWarning ? "text-status-warning" : "text-content-secondary",
+                    )}
+                  >
+                    <span className="font-mono font-medium">{item.startedAt}</span>
+                    {" ~ 현재 "}
+                    <span className="font-medium">{formatDuration(elapsedMinutes)}</span>
+                    {" 경과"}
                   </div>
                   <div
                     className={cn(
-                      "pl-[18px] font-medium",
-                      isWarning ? "text-amber-600" : "text-content-tertiary",
+                      isWarning ? "text-status-warning" : "text-content-tertiary",
                     )}
                   >
-                    종료 예정 <span className="font-mono font-bold">{item.endsAt}</span>
+                    종료 예정 <span className="font-mono font-medium">{item.endsAt}</span>
                   </div>
                 </div>
-              </div>
+              </PanelCard>
             );
           })
         )}

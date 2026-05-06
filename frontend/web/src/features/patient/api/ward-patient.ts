@@ -11,13 +11,11 @@ import type {
 } from "../types/ward-patient";
 
 export const getWardPatients = (): Promise<WardPatient[]> =>
-  client
-    .get("/wards/me/patients")
-    .then((response) => response.data?.data ?? response.data);
+  client.get("/wards/me/patients").then((response) => response.data);
 
 export const assignMyPatients = (
   encounterIds: number[],
 ): Promise<AssignMyPatientsResponse> =>
   client
     .put("/practitioners/me/patients", { encounterIds })
-    .then((response) => response.data?.data ?? response.data);
+    .then((response) => response.data);

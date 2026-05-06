@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Patient Webapp", description = "환자 웹앱 API")
+@Tag(name = "환자 웹앱", description = "환자 웹앱 API")
 @RestController
 @RequiredArgsConstructor
 public class FaqController {

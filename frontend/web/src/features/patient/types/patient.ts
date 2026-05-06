@@ -24,22 +24,34 @@ export interface PatientQuery {
   search?: string;
 }
 
-export interface Room {
-  id: string;
-  name: string;
-  capacity: number;
-  patients: Patient[];
+export interface SymptomButton {
+  buttonId: number;
+  label: string;
+  description: string;
+  displayOrder: number;
 }
 
-export interface Ward {
-  id: string;
-  name: string;
-  rooms: Room[];
+// [환자용 웹앱] 증상 제출 (POST /patients/{patientId}/symptoms)
+// buttonId 와 symptomText 중 하나만 채워서 전송한다.
+export interface SymptomSubmitRequest {
+  buttonId?: number;
+  symptomText?: string;
 }
 
-// [환자용 웹앱] NFC 진입 응답
-export interface PatientNfc {
-  patientId: number;
-  patientName: string;
-  roomName: string;
+export interface SymptomSubmitResponse {
+  selfReportId: number;
+  submittedAt: string;
+}
+
+// [환자용 웹앱] FAQ 조회 (GET /patients/{patientId}/faq)
+export interface FaqItem {
+  intentLabel: string;
+  question: string;
+  answer: string;
+}
+
+export interface FaqListResponse {
+  diseaseName: string;
+  matchedFaqDisease: string | null;
+  items: FaqItem[];
 }

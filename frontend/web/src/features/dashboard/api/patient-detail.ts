@@ -9,6 +9,4 @@ import type { PatientDetailResponse } from "../types/patient-detail";
 export const getPatientDetail = (
   patientId: number,
 ): Promise<PatientDetailResponse> =>
-  client
-    .get(`/patient/${patientId}`)
-    .then((response) => response.data?.data ?? response.data);
+  client.get(`/patient/${patientId}`).then((response) => response.data);

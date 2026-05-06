@@ -48,9 +48,11 @@ export const devTokenStorage = {
   },
 }
 
-const isPatientRoute = () =>
-  typeof window !== 'undefined' &&
-  window.location.pathname.startsWith('/patient')
+const isPatientRoute = () => {
+  if (typeof window === 'undefined') return false
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? ''
+  return window.location.pathname.startsWith(`${basePath}/patient`)
+}
 
 // DEV 한정: localStorage 토큰을 Authorization 헤더로 주입. 환자 라우트는 제외.
 client.interceptors.request.use((config) => {
@@ -94,7 +96,18 @@ const redirectToLogin = () => {
 }
 
 client.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const body = response.data
+    if (
+      body &&
+      typeof body === 'object' &&
+      'success' in body &&
+      'data' in body
+    ) {
+      response.data = (body as { data: unknown }).data
+    }
+    return response
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as RetryConfig | undefined
     const status = error.response?.status

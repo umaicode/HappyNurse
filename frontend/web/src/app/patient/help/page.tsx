@@ -3,7 +3,7 @@ import Help from "@/components/patient/help";
 
 export default function HelpPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense>
       <Help />
     </Suspense>
   );

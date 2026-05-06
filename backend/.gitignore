@@ -39,7 +39,12 @@ out/
 ### Secrets ###
 src/main/resources/application.yml
 src/main/resources/CLAUDE.md
+src/main/resources/firstbase/
+src/main/resources/data.sql
 
 ### docs ###
 /docs/superpowers
 /sc
+
+## firebase
+src/main/resources/firebase/

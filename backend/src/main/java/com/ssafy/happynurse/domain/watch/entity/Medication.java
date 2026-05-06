@@ -36,8 +36,4 @@ public class Medication {
 
     @Column(name = "atc_code_name", length = 100)
     private String atcCodeName; // ATC코드 명칭
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "nfc_tag_id")
-    private NfcTag nfcTag;
 }

@@ -53,8 +53,10 @@ public class SecurityConfig {
                     "/api/swagger-ui/**", "/api/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/nfc/patients/**").permitAll()    // 환자 NFC 진입
                 .requestMatchers("/patients/verify").permitAll()    // 환자 본인 확인
+                .requestMatchers("/patients/dev-verify").permitAll()    // 환자 dev 버전 본인 확인
                 .requestMatchers("/nfc/redirect").permitAll()       // NFC 진입 redirect
-                .requestMatchers(HttpMethod.GET, "/organizations").permitAll()           // 로그인 화면 병원 목록
+                    .requestMatchers("/his/**").permitAll()         // HIS 시뮬레이터 (API key로 별도 인증)
+                    .requestMatchers(HttpMethod.GET, "/organizations").permitAll()           // 로그인 화면 병원 목록
                 .requestMatchers(HttpMethod.GET, "/organizations/*/wards").permitAll()   // 로그인 화면 병동 목록
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, cookieName),
@@ -70,13 +72,22 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+
+        // HIS 시뮬레이터 — 로컬 발사기 허용
+        CorsConfiguration simConfig = new CorsConfiguration();
+        simConfig.addAllowedOriginPattern("*");
+        simConfig.setAllowedMethods(List.of("GET", "POST", "PATCH", "OPTIONS"));
+        simConfig.setAllowedHeaders(List.of("*"));
+        simConfig.setMaxAge(3600L);
+        source.registerCorsConfiguration("/his/**", simConfig);
+
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:3000", "https://K14e101.p.ssafy.io"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }

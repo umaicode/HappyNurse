@@ -59,4 +59,6 @@ app:
     enabled: false
   nfc-secret: ${NFC_SECRET}
   webapp-base-url: ${WEBAPP_BASE_URL}
-  
+
+firebase:
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH:file:/app/firebase/service-account.json}

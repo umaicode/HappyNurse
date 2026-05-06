@@ -1,8 +1,9 @@
 "use client";
 
-import { Search, LogOut, ChevronRight, Settings } from "lucide-react";
+import { Search, LogOut, ChevronRight, Settings, Loader2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,7 +11,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useAuthStore } from "@/features/auth/stores/auth";
+import { useNursingNotes } from "@/features/dashboard/hooks/useNursingNotes";
+import { formatHHmm } from "@/lib/time";
 import {
   formatBirthShort,
   formatGenderShort,
@@ -24,6 +32,10 @@ interface PatientSidebarProps {
   selectedPatientId: number | null;
   onSelectPatient: (patientId: number) => void;
   onOpenAssignModal?: () => void;
+  // EMRGrid 와 공유하는 일자 — 확정 전 기록 popover 안에서 동일 일자로 fetch.
+  selectedDate: Date;
+  // 확정 전 기록 항목 클릭 시 — 환자 선택 + 간호기록 탭 점프 + focus.
+  onJumpToUnconfirmed?: (patientId: number, recordId: number) => void;
 }
 
 export function PatientSidebar({
@@ -32,6 +44,8 @@ export function PatientSidebar({
   selectedPatientId,
   onSelectPatient,
   onOpenAssignModal,
+  selectedDate,
+  onJumpToUnconfirmed,
 }: PatientSidebarProps) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
@@ -142,7 +156,9 @@ export function PatientSidebar({
                         patient={patient}
                         isActive={selectedPatientId === patient.patientId}
                         isDuplicate={duplicateNames[patient.name] > 1}
+                        selectedDate={selectedDate}
                         onClick={() => onSelectPatient(patient.patientId)}
+                        onJumpToUnconfirmed={onJumpToUnconfirmed}
                       />
                     ))}
                   </div>
@@ -224,26 +240,38 @@ interface PatientItemProps {
   patient: WardPatient;
   isActive: boolean;
   isDuplicate: boolean;
+  // 담당 환자 영역에서만 전달 — 둘 다 있을 때만 카운트 뱃지가 popover 트리거로 동작.
+  selectedDate?: Date;
   onClick: () => void;
+  onJumpToUnconfirmed?: (patientId: number, recordId: number) => void;
 }
 
 function PatientItem({
   patient,
   isActive,
   isDuplicate,
+  selectedDate,
   onClick,
+  onJumpToUnconfirmed,
 }: PatientItemProps) {
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const popoverEnabled =
+    onJumpToUnconfirmed !== undefined && selectedDate !== undefined;
+
   return (
-    <button
-      onClick={onClick}
+    <div
       className={cn(
-        "flex items-center justify-between w-full px-4 py-2.5 text-left transition-colors relative border-b border-border-subtle/20",
+        "flex items-center justify-between w-full text-left transition-colors relative border-b border-border-subtle/20",
         isActive
           ? "bg-[var(--color-brand-surface)]/60 border-l-[4px] border-l-[var(--color-brand-primary)]"
           : "hover:bg-slate-50 bg-white border-l-[4px] border-l-transparent",
       )}
     >
-      <div className="flex flex-col gap-1 min-w-0 flex-1">
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex flex-col gap-1 min-w-0 flex-1 px-4 py-2.5 text-left"
+      >
         <div className="flex items-center gap-3">
           <div className="relative inline-block shrink-0">
             <span
@@ -276,15 +304,125 @@ function PatientItem({
             <span>{formatBirthShort(patient.birthDate)}</span>
           </div>
         </div>
-      </div>
+      </button>
       {patient.unconfirmedNursingCount > 0 && (
-        <span
-          title={`확정 전 기록 ${patient.unconfirmedNursingCount}건`}
-          className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-[var(--color-brand-surface)] text-[var(--color-brand-primary)] text-[11px] font-bold rounded-full shrink-0 ml-2"
-        >
-          {patient.unconfirmedNursingCount}
-        </span>
+        popoverEnabled ? (
+          <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                title={`확정 전 기록 ${patient.unconfirmedNursingCount}건`}
+                className="flex items-center justify-center min-w-[22px] h-5 px-1.5 mr-3 bg-status-warning-surface text-status-warning text-[11px] font-bold rounded-full shrink-0 hover:bg-status-warning hover:text-white transition-colors"
+              >
+                {patient.unconfirmedNursingCount}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              side="right"
+              align="start"
+              sideOffset={8}
+              className="w-72 p-0 z-[100] shadow-xl border border-border-base bg-white"
+            >
+              <UnconfirmedNotesContent
+                patient={patient}
+                selectedDate={selectedDate as Date}
+                onJump={(recordId) => {
+                  (onJumpToUnconfirmed as (patientId: number, recordId: number) => void)(
+                    patient.patientId,
+                    recordId,
+                  );
+                  setIsPopoverOpen(false);
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+        ) : (
+          <span
+            title={`확정 전 기록 ${patient.unconfirmedNursingCount}건`}
+            className="flex items-center justify-center min-w-[22px] h-5 px-1.5 mr-3 bg-[var(--color-brand-surface)] text-[var(--color-brand-primary)] text-[11px] font-bold rounded-full shrink-0"
+          >
+            {patient.unconfirmedNursingCount}
+          </span>
+        )
       )}
-    </button>
+    </div>
+  );
+}
+
+function UnconfirmedNotesContent({
+  patient,
+  selectedDate,
+  onJump,
+}: {
+  patient: WardPatient;
+  selectedDate: Date;
+  onJump: (recordId: number) => void;
+}) {
+  const dateIso = format(selectedDate, "yyyy-MM-dd");
+  const { data, isPending, isError } = useNursingNotes(
+    patient.encounterId,
+    dateIso,
+  );
+  // 간호 기록(STT_NOTE) 의 draft 만 — 백엔드 응답이 같은 일자만 내려주므로 selectedDate 기준.
+  const draftNotes = useMemo(() => {
+    return (data ?? [])
+      .filter(
+        (note): note is Extract<typeof note, { type: "STT_NOTE" }> =>
+          note.type === "STT_NOTE" && note.status === "draft",
+      )
+      .sort(
+        (a, b) =>
+          new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime(),
+      );
+  }, [data]);
+
+  return (
+    <>
+      <div className="px-3 py-2 border-b border-border-base flex items-center justify-between">
+        <span className="text-body-sm font-bold text-content-primary truncate">
+          {patient.name} · 확정 전 기록
+        </span>
+        <span className="text-body-micro font-mono text-content-tertiary shrink-0 ml-2">
+          {dateIso}
+        </span>
+      </div>
+      <div className="max-h-[360px] overflow-y-auto">
+        {isPending ? (
+          <div className="flex flex-col items-center justify-center py-8 gap-2 text-content-muted">
+            <Loader2 className="size-4 animate-spin" />
+            <p className="text-body-micro">불러오는 중...</p>
+          </div>
+        ) : isError ? (
+          <div className="px-4 py-8 text-center text-body-xs font-medium text-content-muted">
+            기록을 불러오지 못했습니다
+          </div>
+        ) : draftNotes.length === 0 ? (
+          <div className="px-4 py-8 text-center text-body-xs font-medium text-content-muted">
+            이 날짜에 확정 전 간호기록이 없습니다
+          </div>
+        ) : (
+          draftNotes.map((note) => (
+            <button
+              key={note.nursingRecordId}
+              type="button"
+              onClick={() => onJump(note.nursingRecordId)}
+              className="flex flex-col w-full px-3 py-2 hover:bg-surface-hover transition-colors text-left border-b border-border-subtle/50 last:border-b-0 gap-0.5"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-body-xs font-bold text-content-primary shrink-0">
+                  {formatHHmm(note.occurredAt)}
+                </span>
+                <span className="text-body-micro text-content-muted truncate">
+                  {note.authorName}
+                </span>
+              </div>
+              <p className="text-body-xs text-content-secondary line-clamp-2 leading-snug">
+                {note.content}
+              </p>
+            </button>
+          ))
+        )}
+      </div>
+    </>
   );
 }
