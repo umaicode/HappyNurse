@@ -7,6 +7,7 @@ import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
 import { EMRGrid } from "./EMRGrid";
 import { RightPanel } from "./RightPanel";
 import { AssignPatientModal } from "./AssignPatientModal";
+import { usePatientDetail } from "../hooks/usePatientDetail";
 
 export function DashboardView() {
   const [isLeftOpen, setIsLeftOpen] = useState(true);
@@ -40,6 +41,10 @@ export function DashboardView() {
     return fallbackPatientId;
   }, [overridePatientId, fallbackPatientId, patients]);
 
+  // 같은 patientId 로 EMRGrid 도 usePatientDetail 을 호출한다 — TanStack Query 캐시 공유로 fetch 는 한 번만 일어난다.
+  const patientDetailQuery = usePatientDetail(selectedPatientId);
+  const selectedEncounterId = patientDetailQuery.data?.encounterId ?? null;
+
   // 데이터 로드 직후 한 번만: 담당 환자가 한 명도 없으면 모달 자동 오픈.
   if (
     !hasCheckedAssignment &&
@@ -71,7 +76,7 @@ export function DashboardView() {
           />
         }
         mainGrid={<EMRGrid patientId={selectedPatientId} />}
-        actionPanel={<RightPanel />}
+        actionPanel={<RightPanel encounterId={selectedEncounterId} />}
       />
       <AssignPatientModal
         patients={patients}

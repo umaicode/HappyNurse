@@ -64,6 +64,7 @@ public enum ErrorCode implements ResponseCode {
     // Medication Administration
     MEDICATION_ADMIN_NOT_FOUND(HttpStatus.NOT_FOUND, "투약 기록을 찾을 수 없습니다."),
     MEDICATION_ADMIN_NOT_AUTHOR(HttpStatus.FORBIDDEN, "본인이 투약한 기록만 수정할 수 있습니다."),
+    MEDICATION_ADMIN_NOT_IN_GROUP(HttpStatus.BAD_REQUEST, "해당 taggingId 그룹에 속하지 않은 medicationAdminId 입니다."),
 
     // Record State
     INVALID_RECORD_STATUS(HttpStatus.BAD_REQUEST, "현재 상태에서 처리할 수 없는 요청입니다."),

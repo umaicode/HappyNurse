@@ -21,7 +21,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 
-@Tag(name = "Patient Webapp", description = "환자 웹앱 API")
+@Tag(name = "환자 웹앱", description = "환자 웹앱 API")
 @RestController
 @RequiredArgsConstructor
 public class WebappController {

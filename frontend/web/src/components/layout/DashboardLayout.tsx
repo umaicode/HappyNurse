@@ -129,7 +129,7 @@ export function DashboardLayout({
         <Popover open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
             <button
-              className="group flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-white transition-all hover:scale-110 hover:shadow-[0_8px_30px_rgb(21,40,159,0.3)] active:scale-90 outline-none shadow-2xl"
+              className="group flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-white transition-shadow hover:shadow-[0_8px_30px_rgb(21,40,159,0.3)] outline-none shadow-2xl"
               aria-label="Quick Actions"
             >
               <Plus
@@ -151,10 +151,10 @@ export function DashboardLayout({
                 <button
                   key={action.id}
                   onClick={() => handleActionClick(action.id)}
-                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-[var(--color-surface-hover)] transition-all text-left group/action active:scale-95"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-[var(--color-surface-hover)] transition-colors text-left group/action"
                 >
                   <div
-                    className={`flex h-8 w-8 items-center justify-center rounded-full bg-surface-base border border-border-subtle group-hover/action:scale-110 transition-transform ${action.color}`}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full bg-surface-base border border-border-subtle ${action.color}`}
                   >
                     <action.icon className="h-4 w-4" />
                   </div>

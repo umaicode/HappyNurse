@@ -219,7 +219,8 @@ export default function Help() {
       </div>
 
       {activeTab === "form" ? (
-        <div className="flex flex-1 flex-col gap-[15px] overflow-hidden">
+        <div className="flex flex-1 min-h-0 flex-col gap-[15px]">
+          <div className="flex flex-1 min-h-0 flex-col gap-[15px] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="grid grid-cols-2 gap-5 mx-2 mt-2">
             {buttons.map((button) => {
               const isSelected = selectedButtonId === button.buttonId;
@@ -269,12 +270,13 @@ export default function Help() {
               <p className="text-sm font-bold text-red-500">{errorMessage}</p>
             ) : null}
           </div>
+          </div>
 
           <button
             type="button"
             onClick={handleSubmit}
             disabled={!hasRequest || submitting}
-            className="mt-auto h-14 w-full rounded-[14px] bg-patient-primary text-[20px] font-bold tracking-tight text-white transition-colors hover:bg-[#0F1F7A] disabled:cursor-default disabled:bg-[#C8CBD4]"
+            className="shrink-0 h-14 w-full rounded-[14px] bg-patient-primary text-[20px] font-bold tracking-tight text-white transition-colors hover:bg-[#0F1F7A] disabled:cursor-default disabled:bg-[#C8CBD4]"
           >
             간호사에게 전송
           </button>
