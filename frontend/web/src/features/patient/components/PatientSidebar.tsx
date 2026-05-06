@@ -19,11 +19,6 @@ import {
 import { useAuthStore } from "@/features/auth/stores/auth";
 import { useNursingNotes } from "@/features/dashboard/hooks/useNursingNotes";
 import { formatHHmm } from "@/lib/time";
-// mockup: popover 시연용. 실 응답이 비고 환자 이름이 "문현지" 일 때만 fallback. 백엔드 합의 후 제거.
-import {
-  MOCK_NURSING_NOTES,
-  MOCK_UNCONFIRMED_PATIENT_NAME,
-} from "@/mockup/nursing-notes";
 import {
   formatBirthShort,
   formatGenderShort,
@@ -369,13 +364,8 @@ function UnconfirmedNotesContent({
     dateIso,
   );
   // 간호 기록(STT_NOTE) 의 draft 만 — 백엔드 응답이 같은 일자만 내려주므로 selectedDate 기준.
-  // mockup: "문현지" + 실 응답 비었을 때 MOCK_NURSING_NOTES fallback (시연용).
   const draftNotes = useMemo(() => {
-    const real = data ?? [];
-    const useMock =
-      real.length === 0 && patient.name === MOCK_UNCONFIRMED_PATIENT_NAME;
-    const source = useMock ? MOCK_NURSING_NOTES : real;
-    return source
+    return (data ?? [])
       .filter(
         (note): note is Extract<typeof note, { type: "STT_NOTE" }> =>
           note.type === "STT_NOTE" && note.status === "draft",
@@ -384,7 +374,7 @@ function UnconfirmedNotesContent({
         (a, b) =>
           new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime(),
       );
-  }, [data, patient.name]);
+  }, [data]);
 
   return (
     <>

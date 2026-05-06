@@ -114,14 +114,7 @@ export function IVTimerPanel() {
             const isWarning = remainingMinutes <= 60;
 
             return (
-              <PanelCard
-                key={item.id}
-                accentBorderClass={
-                  isWarning
-                    ? "border-l-4 border-l-status-warning border-status-warning/30 bg-status-warning-surface/30"
-                    : undefined
-                }
-              >
+              <PanelCard key={item.id}>
                 {/* 1행: 환자명 + 호실 (좌) | 교체 임박 칩 (우) */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-baseline gap-2 min-w-0">

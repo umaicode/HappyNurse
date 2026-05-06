@@ -8,11 +8,6 @@ import { EMRGrid, type EMRTab } from "./EMRGrid";
 import { RightPanel } from "./RightPanel";
 import { AssignPatientModal } from "./AssignPatientModal";
 import { usePatientDetail } from "../hooks/usePatientDetail";
-// mockup: "문현지" 환자의 unconfirmedNursingCount override (시연용). 백엔드 합의 후 제거.
-import {
-  MOCK_UNCONFIRMED_COUNT,
-  MOCK_UNCONFIRMED_PATIENT_NAME,
-} from "@/mockup/nursing-notes";
 
 export function DashboardView() {
   const [isLeftOpen, setIsLeftOpen] = useState(true);
@@ -29,15 +24,7 @@ export function DashboardView() {
   const [hasCheckedAssignment, setHasCheckedAssignment] = useState(false);
 
   const wardPatientsQuery = useWardPatients();
-  const patients = useMemo(() => {
-    const list = wardPatientsQuery.data ?? [];
-    // 시연용 — "문현지" 환자의 unconfirmedNursingCount 를 mockup draft 개수로 override.
-    return list.map((patient) =>
-      patient.name === MOCK_UNCONFIRMED_PATIENT_NAME
-        ? { ...patient, unconfirmedNursingCount: MOCK_UNCONFIRMED_COUNT }
-        : patient,
-    );
-  }, [wardPatientsQuery.data]);
+  const patients = wardPatientsQuery.data ?? [];
 
   // 담당 환자 우선, 없으면 첫 환자, 환자 자체가 없으면 null.
   const fallbackPatientId = useMemo<number | null>(() => {

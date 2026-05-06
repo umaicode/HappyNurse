@@ -23,8 +23,6 @@ import {
 } from "@/features/dashboard/types/order";
 import { useOrders } from "../hooks/useOrders";
 import { formatMonthDayHHmm } from "@/lib/time";
-// mockup: 변경 뱃지/구분 필터 시각 검증. API 데이터 충분해지면 import 와 fallback 제거.
-import { MOCK_MEDICATION_ORDER_LIST } from "@/mockup/orders";
 
 type STTPanelProps = {
   encounterId: number | null;
@@ -46,16 +44,10 @@ export function STTPanel({ encounterId }: STTPanelProps) {
   const [filterType, setFilterType] = useState<OrderType | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
 
-  // mockup — 환자 이름이 "문현지" 일 때만 노출 (검증용).
-  const useMock = data?.patientName === "문현지";
-  const patientName = useMock
-    ? MOCK_MEDICATION_ORDER_LIST.patientName
-    : (data?.patientName ?? "");
+  const patientName = data?.patientName ?? "";
 
   const filteredOrders = useMemo(() => {
-    const orders = useMock
-      ? MOCK_MEDICATION_ORDER_LIST.orders
-      : (data?.orders ?? []);
+    const orders = data?.orders ?? [];
     const filtered =
       filterType === null
         ? orders
@@ -65,7 +57,7 @@ export function STTPanel({ encounterId }: STTPanelProps) {
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
-  }, [data, useMock, filterType]);
+  }, [data, filterType]);
 
   return (
     <div className="flex flex-col h-full bg-surface-base">
@@ -159,12 +151,7 @@ export function STTPanel({ encounterId }: STTPanelProps) {
             return (
               <PanelCard
                 key={order.medicationOrderId}
-                accentBorderClass={
-                  isChanged
-                    ? "border-l-4 border-l-brand-primary border-brand-primary/20 bg-brand-surface/20"
-                    : undefined
-                }
-                variantClass={isCompleted ? "opacity-70 bg-slate-50/50" : undefined}
+                variantClass={isCompleted ? "opacity-70" : undefined}
               >
                 {/* 1행: 타입 라벨 + (변경 칩) | 시간 */}
                 <div className="flex items-center justify-between gap-2">
