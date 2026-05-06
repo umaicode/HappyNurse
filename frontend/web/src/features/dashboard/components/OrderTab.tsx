@@ -9,35 +9,35 @@ import {
   ORDER_STATUS_TONE,
   ORDER_TYPE_LABEL,
 } from "@/features/dashboard/types/order";
-import { splitDateLabel, toIsoDate } from "@/lib/time";
+import { formatHHmm, toIsoDate } from "@/lib/time";
 
 type OrderTabProps = {
   encounterId: number | null;
-  // 'yyyy-MM-dd' — null 이면 전체 보기 (필터 비활성).
-  filterDate: string | null;
+  // 'yyyy-MM-dd' — EMRGrid 에서 단일 일자만 내려옴.
+  date: string;
 };
 
-export function OrderTab({ encounterId, filterDate }: OrderTabProps) {
+export function OrderTab({ encounterId, date }: OrderTabProps) {
   const { data, isPending, isError } = useOrders(encounterId);
+
   const orders = useMemo(() => {
     const list = data?.orders ?? [];
-    const filtered =
-      filterDate === null
-        ? list
-        : list.filter((order) => toIsoDate(order.createdAt) === filterDate);
+    const filtered = list.filter(
+      (order) => toIsoDate(order.createdAt) === date,
+    );
     // createdAt asc — 오래된 게 위, 최신이 아래.
     return [...filtered].sort(
       (a, b) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
-  }, [data, filterDate]);
+  }, [data, date]);
 
   return (
     <div className="flex-1 overflow-auto bg-surface-card min-h-0 relative text-body-base">
       <div className="min-w-[1100px] flex flex-col h-full">
         {/* Header Row */}
         <div className="grid grid-cols-[110px_80px_100px_1fr_220px_70px_50px_60px_70px_90px] gap-2 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-extrabold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
-          <div className="text-center border-r border-border-base/50">생성 시간</div>
+          <div className="text-center border-r border-border-base/50">시간</div>
           <div className="border-r border-border-base/50 pl-2">구분</div>
           <div className="border-r border-border-base/50 pl-2">처방코드</div>
           <div className="border-r border-border-base/50 pl-2">처방명칭</div>
@@ -58,28 +58,15 @@ export function OrderTab({ encounterId, filterDate }: OrderTabProps) {
           ) : isError ? (
             <EmptyState message="오더를 불러오지 못했습니다." />
           ) : orders.length === 0 ? (
-            <EmptyState
-              message={
-                filterDate === null
-                  ? "등록된 의사 오더가 없습니다."
-                  : "이 날짜에 등록된 의사 오더가 없습니다."
-              }
-            />
+            <EmptyState message="이 날짜에 등록된 의사 오더가 없습니다." />
           ) : (
-            orders.map((order) => {
-              const dateLabel = splitDateLabel(order.createdAt);
-              return (
+            orders.map((order) => (
               <div
                 key={order.medicationOrderId}
                 className="grid grid-cols-[110px_80px_100px_1fr_220px_70px_50px_60px_70px_90px] gap-2 px-4 py-3 border-b border-border-base/50 items-center hover:bg-surface-hover/30 transition-all text-body-sm text-content-secondary"
               >
-                <div className="text-center font-mono">
-                  <div className="text-body-xs font-bold text-content-primary leading-tight">
-                    {dateLabel.month}.{dateLabel.day}
-                  </div>
-                  <div className="text-[15px] font-extrabold text-content-primary leading-tight mt-0.5">
-                    {dateLabel.time}
-                  </div>
+                <div className="text-center font-mono font-extrabold text-[15px] text-content-primary">
+                  {formatHHmm(order.createdAt)}
                 </div>
                 <div className="pl-2 font-bold text-content-tertiary">
                   {ORDER_TYPE_LABEL[order.orderType] ?? order.orderType}
@@ -112,8 +99,7 @@ export function OrderTab({ encounterId, filterDate }: OrderTabProps) {
                   </span>
                 </div>
               </div>
-              );
-            })
+            ))
           )}
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import {
   Dialog,
@@ -21,8 +21,8 @@ import { useAssignMyPatients } from "@/features/patient/hooks/useWardPatients";
 import type { WardPatient } from "@/features/patient/types/ward-patient";
 
 interface AssignPatientModalProps {
+  // 부모에서 `{isAssignOpen && <AssignPatientModal ... />}` 로 조건부 렌더 — 매번 mount 시 useState 초기값으로 자동 reset.
   patients: WardPatient[];
-  isOpen: boolean;
   onClose: () => void;
 }
 
@@ -30,31 +30,20 @@ type RoomCheckedState = boolean | "indeterminate";
 
 export function AssignPatientModal({
   patients,
-  isOpen,
   onClose,
 }: AssignPatientModalProps) {
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [searchQuery, setSearchQuery] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-
-  const assignMutation = useAssignMyPatients();
-
-  const initiallyAssignedIds = useMemo(() => {
+  // mount 시 1회 — patients 의 isMyPatient 들로 초기 선택값. 이후엔 사용자 선택만 유지.
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(() => {
     const set = new Set<number>();
     patients.forEach((patient) => {
       if (patient.isMyPatient) set.add(patient.encounterId);
     });
     return set;
-  }, [patients]);
+  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // 모달이 열릴 때마다 현재 담당 상태와 검색어를 초기화한다.
-  useEffect(() => {
-    if (isOpen) {
-      setSelectedIds(new Set(initiallyAssignedIds));
-      setSearchQuery("");
-      setErrorMessage("");
-    }
-  }, [isOpen, initiallyAssignedIds]);
+  const assignMutation = useAssignMyPatients();
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
@@ -118,7 +107,7 @@ export function AssignPatientModal({
 
   return (
     <Dialog
-      open={isOpen}
+      open
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
