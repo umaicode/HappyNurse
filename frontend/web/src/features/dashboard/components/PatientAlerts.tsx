@@ -16,16 +16,12 @@ import { cn } from "@/lib/utils";
 import { PanelCard } from "./PanelCard";
 import { useMyNotifications } from "../hooks/useNotifications";
 import {
-  SOURCE_TYPE_BORDER,
-  SOURCE_TYPE_ICON_BG,
   SOURCE_TYPE_LABEL,
   SOURCE_TYPE_TONE,
   type NotificationListItem,
   type SourceType,
 } from "../types/notification";
 import { formatRelativeTime } from "@/lib/time";
-// mockup: PatientAlerts 시연용. 실 응답 비었을 때 fallback. 검증 후 제거.
-import { MOCK_NOTIFICATIONS } from "@/mockup/notifications";
 
 const SOURCE_TYPE_ICON: Record<SourceType, LucideIcon> = {
   self_report: Bell,
@@ -39,11 +35,9 @@ export function PatientAlerts() {
   const { data, isPending, isError } = useMyNotifications();
 
   // createdAt desc — 최신이 위. 정렬은 시간순 고정 (요구사항).
-  // mockup 합치기 — 실 응답에 self_report 만 있어도 다른 sourceType 시연 위해 항상 합쳐 노출.
-  // 검증 끝나면 MOCK_NOTIFICATIONS import 와 spread 만 제거.
   const sorted = useMemo<NotificationListItem[]>(() => {
-    const real = data?.items ?? [];
-    return [...real, ...MOCK_NOTIFICATIONS].sort(
+    const items = data?.items ?? [];
+    return [...items].sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
@@ -76,22 +70,13 @@ function NotificationCard({ alert }: { alert: NotificationListItem }) {
       : AlertCircle;
   const label = SOURCE_TYPE_LABEL[sourceType] ?? alert.sourceType;
   const tone = SOURCE_TYPE_TONE[sourceType] ?? "text-content-tertiary";
-  const borderClass = SOURCE_TYPE_BORDER[sourceType];
-  const iconBg = SOURCE_TYPE_ICON_BG[sourceType] ?? "bg-surface-hover text-content-muted";
 
   return (
-    <PanelCard accentBorderClass={borderClass}>
-      {/* 1행: 아이콘 + 라벨 (좌) / 상대시간 (우) */}
+    <PanelCard>
+      {/* 1행: 아이콘 + 라벨 (좌) / 상대시간 (우) — 색은 라벨/아이콘 글자색에만 */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <div
-            className={cn(
-              "flex items-center justify-center w-6 h-6 rounded-md shrink-0",
-              iconBg,
-            )}
-          >
-            <Icon className="w-3.5 h-3.5" />
-          </div>
+          <Icon className={cn("w-4 h-4 shrink-0", tone)} />
           <span
             className={cn(
               "text-body-sm font-semibold tracking-tight shrink-0 leading-none",
