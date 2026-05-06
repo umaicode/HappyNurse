@@ -23,20 +23,32 @@ class FcmTokenRegistrar @Inject constructor(
 
     fun registerCurrentToken() {
         FirebaseMessaging.getInstance().token
-            .addOnSuccessListener { token -> register(token) }
+            .addOnSuccessListener { token ->
+                Log.d(TAG, "현재 토큰 = $token")
+                register(token)
+            }
             .addOnFailureListener { Log.w(TAG, "토큰 발급 실패", it) }
     }
 
     fun handleNewToken(token: String) {
+        Log.d(TAG, "갱신 토큰 = $token")
         register(token)
     }
 
     private fun register(token: String) {
         scope.launch {
-            if (authRepository.accessToken.firstOrNull() == null) return@launch
+            if (authRepository.accessToken.firstOrNull() == null) {
+                Log.d(TAG, "로그인 전 — 백엔드 등록 보류")
+                return@launch
+            }
             runCatching {
                 val res = api.registerFcmToken(FcmTokenRegisterRequest(token, "mobile"))
-                if (!res.isSuccessful) Log.w(TAG, "FCM 등록 실패: ${res.code()}")
+                val body = res.body()
+                if (res.isSuccessful && body?.success == true) {
+                    Log.d(TAG, "FCM 등록 성공: deviceId=${body.data?.deviceId}")
+                } else {
+                    Log.w(TAG, "FCM 등록 실패: code=${res.code()} msg=${body?.message}")
+                }
             }.onFailure { Log.w(TAG, "FCM 등록 예외", it) }
         }
     }
