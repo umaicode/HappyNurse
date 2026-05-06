@@ -13,6 +13,7 @@ import com.happynurse.domain.model.OrderKind
 import com.happynurse.domain.model.Patient
 import com.happynurse.domain.model.Vitals
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.Period
 import java.time.format.DateTimeFormatter
@@ -104,15 +105,17 @@ fun PatientDetailDto.toDomain(): Patient = Patient(
 )
 
 fun NursingNoteDto.toDomain(): Note {
-    val odt = runCatching { OffsetDateTime.parse(occurredAt) }.getOrNull()
-    val time = odt?.format(DateTimeFormatter.ofPattern("HH:mm")).orEmpty()
-    val date = odt?.toLocalDate()?.toString().orEmpty()
+    val ldt: LocalDateTime? = runCatching { OffsetDateTime.parse(occurredAt).toLocalDateTime() }.getOrNull()
+        ?: runCatching { LocalDateTime.parse(occurredAt) }.getOrNull()
+    val time = ldt?.format(DateTimeFormatter.ofPattern("HH:mm")).orEmpty()
+    val date = ldt?.toLocalDate()?.toString().orEmpty()
     val tag = if (type == "MEDICATION") "투약" else "STT"
     val text = content
         ?: medications.orEmpty().joinToString { "${it.productName.orEmpty()} ${it.dosageQuantity.orEmpty()}".trim() }
+    val author = authorName?.takeIf { it.isNotBlank() }?.let { "$it 간호사" }.orEmpty()
     return Note(
         time = time,
-        author = authorName.orEmpty(),
+        author = author,
         text = text,
         tags = listOf(tag),
         date = date,
