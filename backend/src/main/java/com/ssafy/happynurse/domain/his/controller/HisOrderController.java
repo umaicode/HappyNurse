@@ -41,20 +41,20 @@ public class HisOrderController {
                 ApiResponse.ok("의사 오더 변경 성공", new HisOrderResponse(orderId)));
     }
 
-    @GetMapping("/nurses")
+    @GetMapping({"/nurses", "/nurses/"})
     public ResponseEntity<ApiResponse<List<HisNurseResponse>>> getNurses() {
         return ResponseEntity.ok(
                 ApiResponse.ok("간호사 목록 조회 성공", hisOrderSimulatorService.getNurses()));
     }
 
-    @GetMapping("/nurses/{nurseId}/encounters")
+    @GetMapping({"/nurses/{nurseId}/encounters", "/nurses/{nurseId}/encounters/"})
     public ResponseEntity<ApiResponse<List<HisEncounterResponse>>> getEncounters(
             @PathVariable Long nurseId) {
         return ResponseEntity.ok(
                 ApiResponse.ok("담당 환자 목록 조회 성공", hisOrderSimulatorService.getEncountersByNurse(nurseId)));
     }
 
-    @GetMapping("/encounters/{encounterId}/orders")
+    @GetMapping({"/encounters/{encounterId}/orders", "/encounters/{encounterId}/orders/"})
     public ResponseEntity<ApiResponse<List<HisOrderItemResponse>>> getOrders(
             @PathVariable Long encounterId) {
         return ResponseEntity.ok(
