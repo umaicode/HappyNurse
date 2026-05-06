@@ -20,14 +20,14 @@ public class NursingRecordCorrectionApplied {
   private Long appliedId;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "nursing_record_id2", nullable = false)
+  @JoinColumn(name = "nursing_record_id", nullable = false)
   private NursingRecord nursingRecord;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "suggestion_id2", nullable = false)
+  @JoinColumn(name = "suggestion_id", nullable = false)
   private QuickCorrectionSuggestion suggestion;
 
-  @Column(name = "practitioner_id2", nullable = false)
+  @Column(name = "practitioner_id", nullable = false)
   private Long practitionerId;
 
   @Column(name = "original_word", nullable = false, length = 100)

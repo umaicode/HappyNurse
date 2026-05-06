@@ -239,11 +239,9 @@ export function LoginForm() {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/images/logo_ic.png"
-                alt=""
-                width={80}
-                height={80}
-                className="object-contain mb-6"
+                src="/images/logo_2.png"
+                alt="HAPPYNURSE"
+                className="object-contain mb-6 h-8 w-auto"
               />
               <Heading
                 level="h1"

@@ -1,91 +1,91 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from "react";
-import { Info } from "lucide-react";
-import { INITIAL_PATIENT_ALERTS } from "@/mockup/emr-data";
-import type { PatientAlert } from "@/features/dashboard/types/alert";
-
-function parseTimeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(":").map(Number);
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return 0;
-  return hours * 60 + minutes;
-}
-
-function getCurrentMinutes(): number {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
-}
+import { useMemo } from "react";
+import { Info, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { PanelCard } from "./PanelCard";
+import { useMyNotifications } from "../hooks/useNotifications";
+import {
+  SOURCE_TYPE_LABEL,
+  SOURCE_TYPE_TONE,
+  type NotificationListItem,
+  type SourceType,
+} from "../types/notification";
+import { formatMonthDayHHmm } from "@/lib/time";
 
 export function PatientAlerts() {
-  const sorted = useMemo<PatientAlert[]>(
-    () =>
-      [...INITIAL_PATIENT_ALERTS].sort(
-        (a, b) => parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time),
-      ),
-    [],
-  );
+  const { data, isPending, isError } = useMyNotifications();
 
-  const itemRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
-
-  useEffect(() => {
-    if (sorted.length === 0) return;
-    const nowMinutes = getCurrentMinutes();
-    const closest = sorted.reduce((best, alert) => {
-      const distance = Math.abs(parseTimeToMinutes(alert.time) - nowMinutes);
-      const bestDistance = Math.abs(parseTimeToMinutes(best.time) - nowMinutes);
-      return distance < bestDistance ? alert : best;
-    }, sorted[0]);
-    const element = itemRefs.current.get(closest.id);
-    if (element) {
-      element.scrollIntoView({ block: "center" });
-    }
-  }, [sorted]);
+  // createdAt desc — 최신이 위. 자동 스크롤 없음.
+  const sorted = useMemo<NotificationListItem[]>(() => {
+    const items = data?.items ?? [];
+    return [...items].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [data]);
 
   return (
-    <div className="flex flex-col h-full bg-[var(--color-surface-base)]">
+    <div className="flex flex-col h-full bg-surface-base">
       <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2.5">
-        {sorted.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-content-muted gap-2 opacity-30">
-            <Info className="w-6 h-6" />
-            <p className="text-[11px] font-medium">표시할 알림 없음</p>
-          </div>
+        {isPending ? (
+          <LoadingState />
+        ) : isError ? (
+          <EmptyState>알림을 불러오지 못했습니다</EmptyState>
+        ) : sorted.length === 0 ? (
+          <EmptyState>표시할 알림 없음</EmptyState>
         ) : (
-          sorted.map((alert) => (
-            <div
-              key={alert.id}
-              ref={(element) => {
-                if (element) itemRefs.current.set(alert.id, element);
-                else itemRefs.current.delete(alert.id);
-              }}
-              className="relative bg-white rounded-xl border border-border-base shadow-sm p-3 flex flex-col gap-2 transition-all hover:border-[var(--color-brand-primary)]/30"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[13px] font-black text-content-primary truncate">
-                    {alert.patientName}
-                  </span>
-                  <span className="text-[11px] font-mono font-bold text-content-muted shrink-0">
-                    {alert.room}
+          sorted.map((alert) => {
+            const tone =
+              SOURCE_TYPE_TONE[alert.sourceType as SourceType] ??
+              "text-content-tertiary";
+            const label =
+              SOURCE_TYPE_LABEL[alert.sourceType as SourceType] ??
+              alert.sourceType;
+            return (
+              <PanelCard key={alert.notificationId}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <span className="text-[15px] text-content-primary leading-none truncate">
+                      {alert.patientName ?? "환자 미지정"}
+                    </span>
+                    <span className={cn("text-body-micro shrink-0", tone)}>
+                      {label}
+                    </span>
+                  </div>
+                  <span className="text-body-base font-mono text-content-primary shrink-0 leading-none">
+                    {formatMonthDayHHmm(alert.createdAt)}
                   </span>
                 </div>
-                <span className="text-[11px] font-mono font-bold text-content-muted shrink-0">
-                  {alert.time}
-                </span>
-              </div>
 
-              <div className="flex items-center gap-1.5">
-                <span className="text-[12px] font-bold text-content-tertiary">
-                  {alert.category}
-                </span>
-              </div>
-
-              <p className="text-[13px] leading-relaxed text-content-secondary break-words">
-                {alert.message}
-              </p>
-            </div>
-          ))
+                {alert.body && (
+                  <p className="text-[15px] leading-relaxed text-content-primary break-words">
+                    {alert.body}
+                  </p>
+                )}
+              </PanelCard>
+            );
+          })
         )}
       </div>
+    </div>
+  );
+}
+
+function EmptyState({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-10 text-content-muted gap-2 opacity-50">
+      <Info className="w-6 h-6" />
+      <p className="text-body-micro">{children}</p>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="flex flex-col items-center justify-center py-10 text-content-muted gap-2">
+      <Loader2 className="w-5 h-5 animate-spin" />
+      <p className="text-body-micro">불러오는 중...</p>
     </div>
   );
 }

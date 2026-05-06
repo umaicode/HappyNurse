@@ -1,827 +1,581 @@
 'use client'
 
+import { Plus, Loader2 } from "lucide-react";
 import * as React from "react";
-import { useState, useRef, useEffect } from "react";
-import { Check, Plus, AlertCircle } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { DrugInfo, NursingRecord } from "../types/record";
-import { MEDICAL_SUGGESTIONS } from "@/mockup/medical-dictionary";
-
-function NfcDrugContent({
-  drug,
-  editable,
-  onChange,
-}: {
-  drug: DrugInfo;
-  editable: boolean;
-  onChange: (patch: Partial<DrugInfo>) => void;
-}) {
-  const valueInputBase =
-    "bg-white border border-[var(--color-border-base)] rounded px-1.5 py-0.5 shadow-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-primary)]/20 focus:border-[var(--color-brand-primary)] transition-colors";
-
-  const divider = (
-    <span className="text-border-base select-none">·</span>
-  );
-
-  return (
-    <div className="px-1.5 py-1 flex flex-wrap items-baseline gap-x-1 gap-y-1 text-body-sm">
-      {editable ? (
-        <input
-          value={drug.code}
-          onChange={(e) => onChange({ code: e.target.value })}
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            valueInputBase,
-            "w-[96px] text-[14px] font-mono font-bold text-[var(--color-brand-primary)]",
-          )}
-        />
-      ) : (
-        <span className="text-[14px] font-mono font-bold text-[var(--color-brand-primary)]">
-          {drug.code}
-        </span>
-      )}
-      {editable ? (
-        <input
-          value={drug.name}
-          onChange={(e) => onChange({ name: e.target.value })}
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            valueInputBase,
-            "min-w-[160px] flex-1 text-[13px] font-bold text-content-primary",
-          )}
-        />
-      ) : (
-        <span className="text-[13px] font-bold text-content-primary">
-          {drug.name}
-        </span>
-      )}
-
-      {divider}
-
-      <span className="text-content-muted font-bold">1회 투여량</span>
-      {editable ? (
-        <input
-          value={drug.dose}
-          onChange={(e) => onChange({ dose: e.target.value })}
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            valueInputBase,
-            "w-14 text-content-primary font-semibold",
-          )}
-        />
-      ) : (
-        <span className="text-content-primary font-semibold">
-          {drug.dose}
-        </span>
-      )}
-      <span className="text-content-muted">{drug.unit}</span>
-
-      {divider}
-
-      <span className="text-content-muted font-bold">횟수</span>
-      {editable ? (
-        <input
-          value={drug.frequency}
-          onChange={(e) => onChange({ frequency: e.target.value })}
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            valueInputBase,
-            "w-10 text-content-primary font-semibold",
-          )}
-        />
-      ) : (
-        <span className="text-content-primary font-semibold">
-          {drug.frequency}
-        </span>
-      )}
-      <span className="text-content-muted">회</span>
-
-      {divider}
-
-      <span className="text-content-muted font-bold">용법</span>
-      {editable ? (
-        <input
-          value={drug.method}
-          onChange={(e) => onChange({ method: e.target.value })}
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            valueInputBase,
-            "w-16 text-content-primary font-semibold",
-          )}
-        />
-      ) : (
-        <span className="text-content-primary font-semibold">
-          {drug.method}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function WordWithSuggestion({
-  word,
-  onReplace,
-  enabled = true,
-}: {
-  word: string;
-  onReplace: (newWord: string) => void;
-  enabled?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-
-  const cleanWord = word.replace(/[.,]$/g, "");
-  const currentSuggestions = MEDICAL_SUGGESTIONS[cleanWord];
-
-  // 제안이 없거나 편집 불가 상태면 평문으로 렌더
-  if (!enabled || !currentSuggestions) return <>{word} </>;
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <span
-          onClick={(e) => e.stopPropagation()}
-          className="cursor-pointer border-b-[1.5px] border-dotted border-[var(--color-brand-primary)]/40 hover:bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] transition-all px-0.5 rounded-sm font-bold mx-0.5"
-        >
-          {word}
-        </span>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-48 p-1.5 z-[120] bg-white border border-border-base shadow-xl rounded-lg"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-        data-quick-edit-popover=""
-      >
-        <div className="text-[10px] font-bold text-content-muted uppercase tracking-wider px-2 py-1 border-b border-border-subtle mb-1 flex items-center justify-between">
-          <span>수정 제안 (AI)</span>
-          <AlertCircle className="size-3" />
-        </div>
-        <div className="flex flex-col gap-0.5">
-          {currentSuggestions.map((suggestion) => (
-            <button
-              key={suggestion}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                // 현재 단어의 clean 부분을 제안으로 치환. 팝오버는 유지.
-                onReplace(word.replace(cleanWord, suggestion));
-              }}
-              className="flex items-center justify-between w-full px-2 py-1.5 text-body-sm font-bold text-content-secondary hover:bg-[var(--color-brand-surface)] hover:text-[var(--color-brand-primary)] rounded transition-all text-left group"
-            >
-              <span>{suggestion}</span>
-              <Check className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function TimePicker({
-  value,
-  onSelect,
-  onClose,
-  className = "",
-}: {
-  value: string;
-  onSelect: (val: string) => void;
-  onClose?: () => void;
-  className?: string;
-}) {
-  const [open, setOpen] = React.useState(false);
-  const [hour, minute] = (value || "00:00").split(":");
-
-  const hours = Array.from({ length: 24 }).map((_, i) =>
-    i.toString().padStart(2, "0"),
-  );
-  const minutes = Array.from({ length: 60 }).map((_, i) =>
-    i.toString().padStart(2, "0"),
-  );
-
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (!newOpen && onClose) {
-      onClose(); // 팝업이 닫힐 때만 정렬 실행
-    }
-  };
-
-  const handleTimeChange = (
-    e: React.MouseEvent,
-    newHour: string,
-    newMinute: string,
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onSelect(`${newHour}:${newMinute}`);
-  };
-
-  return (
-    <Popover open={open} onOpenChange={handleOpenChange} modal={true}>
-      <PopoverTrigger asChild>
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            "flex items-center bg-[var(--color-surface-card)] px-2 py-1 rounded border border-[var(--color-border-base)] shadow-sm w-[72px] shrink-0 focus-within:ring-2 focus-within:ring-[var(--color-brand-primary)]/10 focus-within:border-[var(--color-brand-primary)] transition-all cursor-pointer",
-            className,
-          )}
-        >
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => {
-              const val = e.target.value.replace(/[^\d:]/g, "");
-              if (val.length <= 5) onSelect(val);
-            }}
-            onFocus={(e) => {
-              e.stopPropagation();
-              setOpen(true);
-            }}
-            className="bg-transparent border-none outline-none w-full text-center text-[13px] font-mono font-bold text-[var(--color-content-primary)] focus:text-[var(--color-brand-primary)] transition-colors cursor-pointer p-0 placeholder:text-[var(--color-content-muted)]"
-            placeholder="00:00"
-            maxLength={5}
-          />
-        </div>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-[140px] p-0 z-[110] bg-[var(--color-surface-card)] border border-[var(--color-border-base)] shadow-xl"
-        align="start"
-        sideOffset={4}
-        onFocusOutside={(e) => e.preventDefault()} // 내부 포커스 유지
-      >
-        <div
-          className="flex h-[200px] divide-x border-border-subtle"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <ScrollArea className="flex-1">
-            <div className="flex flex-col p-1">
-              <div className="px-2 py-1 text-[10px] font-bold text-content-muted uppercase tracking-wider sticky top-0 bg-white z-10">
-                Hour
-              </div>
-              {hours.map((h) => (
-                <button
-                  key={h}
-                  onClick={(e) =>
-                    handleTimeChange(e, h, minute || "00")
-                  }
-                  className={cn(
-                    "px-2 py-1.5 text-sm font-mono rounded-sm text-left transition-colors",
-                    hour === h
-                      ? "bg-[var(--color-brand-surface)] text-[var(--color-brand-primary)] font-bold"
-                      : "hover:bg-surface-hover text-content-secondary",
-                  )}
-                >
-                  {h}
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
-          <ScrollArea className="flex-1">
-            <div className="flex flex-col p-1">
-              <div className="px-2 py-1 text-[10px] font-bold text-content-muted uppercase tracking-wider sticky top-0 bg-white z-10">
-                Min
-              </div>
-              {minutes.map((m) => (
-                <button
-                  key={m}
-                  onClick={(e) =>
-                    handleTimeChange(e, hour || "00", m)
-                  }
-                  className={cn(
-                    "px-2 py-1.5 text-sm font-mono rounded-sm text-left transition-colors",
-                    minute === m
-                      ? "bg-[var(--color-brand-surface)] text-[var(--color-brand-primary)] font-bold"
-                      : "hover:bg-surface-hover text-content-secondary",
-                  )}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
+import { formatHHmm, splitDateLabel } from "@/lib/time";
+import { Button } from "@/components/ui/button";
+import { useNursingNotes } from "../hooks/useNursingNotes";
+import {
+  useConfirmNursingRecord,
+  useCreateNursingRecord,
+  useDeleteNursingRecord,
+  useUpdateNursingRecord,
+} from "../hooks/useNursingRecordMutations";
+import {
+  useConfirmMedicationGroup,
+  useDeleteMedicationGroup,
+} from "../hooks/useMedicationAdministrationMutations";
+import {
+  NOTE_TYPE_LABEL,
+  NOTE_TYPE_TONE,
+  RECORD_STATUS_LABEL,
+  RECORD_STATUS_TONE,
+  type MedicationItem,
+  type NursingNoteItem,
+} from "../types/nursing-note";
 
 type NursingTabProps = {
-  records: NursingRecord[];
+  encounterId: number | null;
+  // ISO date (yyyy-MM-dd) — 백엔드 필수 파라미터, EMRGrid 의 selectedDate 에서 변환
+  date: string | null;
   currentUser: string;
   myRecordsOnly: boolean;
-  selectedTimeHour: number | null;
-  isGlobalEditing: boolean;
-  patientId: string;
-  onAddRecord: (record: NursingRecord) => void;
-  onUpdateRecord: (id: number, updates: Partial<NursingRecord>) => void;
-  onDeleteRecord: (id: number) => void;
 };
 
 export function NursingTab({
-  records,
+  encounterId,
+  date,
   currentUser,
   myRecordsOnly,
-  selectedTimeHour,
-  isGlobalEditing,
-  patientId,
-  onAddRecord,
-  onUpdateRecord,
-  onDeleteRecord,
 }: NursingTabProps) {
-  const [newRecordText, setNewRecordText] = useState("");
-  const [newRecordTime, setNewRecordTime] = useState("");
-  const [inlineAddIndex, setInlineAddIndex] = useState<number | null>(null);
+  const { data, isPending, isError } = useNursingNotes(encounterId, date);
+  const notes = data ?? [];
 
-  // Refs for auto-scroll
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const recordRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
-
-  // Per-row inline edit state
-  const [editingRecordId, setEditingRecordId] = useState<number | null>(null);
-  // 편집 중인 행의 임시 상태. "완료" 누를 때만 records에 반영된다.
-  const [draftRecord, setDraftRecord] = useState<NursingRecord | null>(null);
-
-  const recordPasses = (record: NursingRecord) => {
-    if (selectedTimeHour !== null) {
-      const hour = parseInt(record.time.split(":")[0], 10);
-      if (hour < selectedTimeHour) return false;
-    }
-    if (myRecordsOnly && record.writer !== currentUser) return false;
-    return true;
-  };
-
-  const filteredRecords = records.filter(recordPasses);
-
-  // Auto-scroll to bottom when records change, tab mounts, or patient changes
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!scrollContainerRef.current) return;
-      scrollContainerRef.current.scrollTo({
-        top: scrollContainerRef.current.scrollHeight,
-        behavior: "smooth",
-      });
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [records.length, patientId]);
-
-  // 전역 편집 종료 시 행 편집 상태도 초기화
-  useEffect(() => {
-    if (!isGlobalEditing) {
-      setEditingRecordId(null);
-      setDraftRecord(null);
-    }
-  }, [isGlobalEditing]);
-
-  const enterEdit = (record: NursingRecord) => {
-    setDraftRecord({
-      ...record,
-      drug: record.drug ? { ...record.drug } : undefined,
-    });
-    setEditingRecordId(record.id);
-  };
-
-  const commitEdit = () => {
-    if (draftRecord) {
-      onUpdateRecord(draftRecord.id, draftRecord);
-    }
-    setDraftRecord(null);
-    setEditingRecordId(null);
-  };
-
-  const handleDelete = (id: number) => {
-    if (window.confirm("이 기록을 삭제하시겠습니까?")) {
-      onDeleteRecord(id);
-      if (editingRecordId === id) {
-        setEditingRecordId(null);
-        setDraftRecord(null);
-      }
-    }
-  };
-
-  const handleAddRecord = () => {
-    if (!newRecordText.trim()) return;
-    const now = new Date();
-
-    // Use manually entered time or current time
-    let time = newRecordTime.trim();
-    if (!time || !/^\d{2}:\d{2}$/.test(time)) {
-      time = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
-    }
-
-    const newRecord: NursingRecord = {
-      id: Date.now(),
-      time,
-      category: "간호기록",
-      content: newRecordText.trim(),
-      status: "completed",
-      writer: currentUser,
-      isConfirmed: true,
-    };
-
-    onAddRecord(newRecord);
-    setNewRecordText("");
-    setNewRecordTime("");
-    setInlineAddIndex(null);
-  };
-
-  const handleStartInlineAdd = (index: number) => {
-    setInlineAddIndex(index);
-    setNewRecordText("");
-
-    if (filteredRecords.length > 0) {
-      if (index === 0) {
-        const firstTime = filteredRecords[0].time;
-        const [h, m] = firstTime.split(":").map(Number);
-        let totalMin = h * 60 + m - 5;
-        if (totalMin < 0) totalMin = 0;
-        setNewRecordTime(
-          `${Math.floor(totalMin / 60)
-            .toString()
-            .padStart(
-              2,
-              "0",
-            )}:${(totalMin % 60).toString().padStart(2, "0")}`,
-        );
-      } else if (index === filteredRecords.length) {
-        const lastTime =
-          filteredRecords[filteredRecords.length - 1].time;
-        const [h, m] = lastTime.split(":").map(Number);
-        let totalMin = h * 60 + m + 5;
-        if (totalMin > 1439) totalMin = 1439;
-        setNewRecordTime(
-          `${Math.floor(totalMin / 60)
-            .toString()
-            .padStart(
-              2,
-              "0",
-            )}:${(totalMin % 60).toString().padStart(2, "0")}`,
-        );
-      } else {
-        const t1 = filteredRecords[index - 1].time;
-        const t2 = filteredRecords[index].time;
-        const [h1, m1] = t1.split(":").map(Number);
-        const [h2, m2] = t2.split(":").map(Number);
-        const total1 = h1 * 60 + m1;
-        const total2 = h2 * 60 + m2;
-        const mid = Math.floor((total1 + total2) / 2);
-        setNewRecordTime(
-          `${Math.floor(mid / 60)
-            .toString()
-            .padStart(
-              2,
-              "0",
-            )}:${(mid % 60).toString().padStart(2, "0")}`,
-        );
-      }
-    } else {
-      const now = new Date();
-      setNewRecordTime(
-        `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`,
+  // 백엔드는 occurredAt desc 로 내려주지만, 화면은 시간 asc (오래된 위 / 최신 아래) 로 표시 후
+  // 현재 시각 근처 카드를 가운데로 자동 스크롤한다 (PatientAlerts 와 동일 패턴).
+  const filteredNotes = useMemo(() => {
+    return notes
+      .filter((note) => {
+        if (myRecordsOnly && note.authorName !== currentUser) return false;
+        return true;
+      })
+      .sort(
+        (a, b) =>
+          new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime(),
       );
+  }, [notes, myRecordsOnly, currentUser]);
+
+  const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (filteredNotes.length === 0) return;
+    const now = Date.now();
+    const closest = filteredNotes.reduce((best, note) => {
+      const distance = Math.abs(new Date(note.occurredAt).getTime() - now);
+      const bestDistance = Math.abs(new Date(best.occurredAt).getTime() - now);
+      return distance < bestDistance ? note : best;
+    }, filteredNotes[0]);
+    const element = itemRefs.current.get(rowKey(closest));
+    if (element) {
+      element.scrollIntoView({ block: "center" });
     }
-  };
+  }, [filteredNotes]);
+
+  // 인라인 추가 — `+` 버튼 호버/클릭 시 폼이 그 위치에 펼쳐진다.
+  // 백엔드 NursingRecordManualCreateRequest 는 { encounterId, content } 만 받으므로 시각은 서버 자동.
+  const [inlineAddIndex, setInlineAddIndex] = useState<number | null>(null);
 
   return (
     <div
       ref={scrollContainerRef}
-      className="flex-1 overflow-auto bg-[var(--color-surface-card)] min-h-0 relative text-body-base"
+      className="flex-1 overflow-auto bg-surface-card min-h-0 relative text-body-base"
     >
       <div className="min-w-[800px] flex flex-col h-full">
-        {/* Header Row - Solid & Slim */}
-        <div className="grid grid-cols-[80px_1fr_110px_140px] gap-4 px-4 py-1.5 bg-[var(--color-surface-hover)] border-b border-[var(--color-border-base)] text-body-sm font-extrabold text-[var(--color-content-secondary)] sticky top-0 z-20 tracking-tight shadow-sm">
-          <div className="border-r border-[var(--color-border-base)] pr-4 text-center">
-            시간
-          </div>
-          <div className="border-r border-[var(--color-border-base)] pr-4">
-            기록 내용
-          </div>
-          <div className="border-r border-[var(--color-border-base)] pr-4 h-full flex items-center justify-center">
-            기록자
-          </div>
-          <div className="text-center"></div>
+        {/* Header Row */}
+        <div className="grid grid-cols-[110px_1fr_80px_110px_120px_120px] gap-4 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-extrabold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
+          <div className="border-r border-border-base pr-4 text-center">시간</div>
+          <div className="border-r border-border-base pr-4">기록 내용</div>
+          <div className="border-r border-border-base pr-4 text-center">구분</div>
+          <div className="border-r border-border-base pr-4 h-full flex items-center justify-center">기록자</div>
+          <div className="text-center border-r border-border-base pr-4">상태</div>
+          <div className="text-center">동작</div>
         </div>
 
-        {/* Records */}
+        {/* Body */}
         <div className="flex flex-col flex-1 pb-10">
-          {filteredRecords.map((record, index) => {
-            const isMine = record.writer === currentUser;
-            const canEditThisRow = isMine;
-            const isEditingRow =
-              editingRecordId === record.id &&
-              canEditThisRow &&
-              !isGlobalEditing;
+          {encounterId === null ? (
+            <EmptyState message="환자를 선택하면 간호 기록이 표시됩니다." />
+          ) : date === null ? (
+            <EmptyState message="간호 기록 전체 보기는 백엔드 endpoint 추가 후 활성화됩니다. 날짜를 선택해주세요." />
+          ) : isPending ? (
+            <LoadingState />
+          ) : isError ? (
+            <EmptyState message="간호 기록을 불러오지 못했습니다." />
+          ) : (
+            <>
+              {filteredNotes.map((note, index) => {
+                const key = rowKey(note);
+                return (
+                  <React.Fragment key={key}>
+                    <BetweenRowAdd
+                      onClick={() => setInlineAddIndex(index)}
+                    />
 
-            return (
-              <React.Fragment key={record.id}>
-                {/* Plus button between rows */}
-                <div className="relative group/between h-0 z-30">
-                  <div
-                    className="absolute inset-x-0 -top-2 h-4 flex items-center justify-center opacity-0 group-hover/between:opacity-100 transition-opacity cursor-pointer overflow-visible"
-                    onClick={() => handleStartInlineAdd(index)}
-                  >
-                    <div className="w-full h-[1px] bg-[var(--color-brand-primary)]/20" />
-                    <div className="absolute size-5 rounded-full bg-[var(--color-brand-primary)] text-white flex items-center justify-center shadow-sm hover:scale-110 transition-transform">
-                      <Plus className="size-3.5" />
-                    </div>
-                  </div>
-                </div>
-
-                {inlineAddIndex === index && (
-                  <div className="grid grid-cols-[80px_1fr_110px_140px] gap-4 px-4 py-2 border-y border-[var(--color-brand-primary)]/10 bg-[var(--color-brand-surface)]/30 items-center shadow-inner">
-                    {/* Time Column */}
-                    <div className="flex justify-center border-r border-brand-primary/10 pr-4">
-                      <TimePicker
-                        value={newRecordTime}
-                        onSelect={setNewRecordTime}
-                        className="h-8 w-full bg-white border-brand-primary/10 shadow-xs"
+                    {inlineAddIndex === index && encounterId !== null && (
+                      <InlineAddForm
+                        encounterId={encounterId}
+                        currentUser={currentUser}
+                        onClose={() => setInlineAddIndex(null)}
                       />
-                    </div>
+                    )}
 
-                    {/* Content Column */}
-                    <div className="pr-4 border-r border-brand-primary/10">
-                      <textarea
-                        autoFocus
-                        placeholder="새로운 간호 기록을 입력하세요..."
-                        value={newRecordText}
-                        onChange={(e) => setNewRecordText(e.target.value)}
-                        className="w-full bg-white border border-brand-primary/10 rounded px-2 py-1.5 text-body-sm min-h-[40px] focus:outline-none focus:ring-1 focus:ring-brand-primary/20 transition-all resize-none shadow-xs"
-                        rows={1}
-                      />
-                    </div>
+                    <NoteRow
+                      note={note}
+                      encounterId={encounterId}
+                      isDateView={date !== null}
+                      rowRef={(element) => {
+                        if (element) itemRefs.current.set(key, element);
+                        else itemRefs.current.delete(key);
+                      }}
+                    />
+                  </React.Fragment>
+                );
+              })}
 
-                    {/* Writer Column - Perfectly Aligned */}
-                    <div className="text-body-sm text-[var(--color-content-tertiary)] font-bold truncate h-full border-r border-brand-primary/10 pr-4 flex items-center justify-center">
-                      <div className="flex items-center justify-center w-full gap-1 px-1.5 py-1">
-                        <span className="truncate">{currentUser}</span>
-                      </div>
-                    </div>
-
-                    {/* Actions Column */}
-                    <div className="flex gap-1.5 justify-center">
-                      <button
-                        onClick={handleAddRecord}
-                        disabled={!newRecordText.trim()}
-                        className="px-3 py-1.5 bg-[var(--color-brand-primary)] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[var(--color-brand-hover)] disabled:opacity-50 transition-colors whitespace-nowrap"
-                      >
-                        추가
-                      </button>
-                      <button
-                        onClick={() => setInlineAddIndex(null)}
-                        className="px-3 py-1.5 bg-white border border-border-base text-[11px] font-bold rounded shadow-sm hover:bg-surface-hover transition-colors whitespace-nowrap"
-                      >
-                        취소
-                      </button>
-                    </div>
-                  </div>
+              {/* 마지막 행 아래 */}
+              <BetweenRowAdd
+                onClick={() => setInlineAddIndex(filteredNotes.length)}
+              />
+              {inlineAddIndex === filteredNotes.length &&
+                encounterId !== null && (
+                  <InlineAddForm
+                    encounterId={encounterId}
+                    currentUser={currentUser}
+                    onClose={() => setInlineAddIndex(null)}
+                  />
                 )}
 
-                <div
-                  ref={(el) => {
-                    recordRefs.current[record.id] = el;
-                  }}
-                  className={cn(
-                    "grid grid-cols-[80px_1fr_110px_140px] gap-4 px-4 py-1 border-b border-[var(--color-border-base)]/50 items-start hover:bg-[var(--color-surface-hover)]/40 transition-all group relative",
-                    isEditingRow &&
-                      "bg-[var(--color-brand-surface)]/20 hover:bg-[var(--color-brand-surface)]/20 shadow-inner",
-                    !record.isConfirmed &&
-                      "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-[var(--color-brand-primary)]/30",
-                  )}
-                >
-                  {/* Time Column */}
-                  <div className="pt-0.5 border-r border-[var(--color-border-base)]/50 pr-4 min-w-0">
-                    {isEditingRow ? (
-                      <TimePicker
-                        value={draftRecord?.time ?? record.time}
-                        onSelect={(newTime) => {
-                          if (draftRecord)
-                            setDraftRecord({
-                              ...draftRecord,
-                              time: newTime,
-                            });
-                        }}
-                        className="w-full border-transparent bg-surface-base/50 shadow-none px-1 h-7 hover:bg-white hover:border-border-subtle transition-all"
-                      />
-                    ) : (
-                      <div className="w-full text-center font-mono font-bold text-[var(--color-content-primary)] h-7 flex items-center justify-center text-[13px]">
-                        {record.time}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Content Column */}
-                  <div className="min-w-0 pr-6 border-r border-[var(--color-border-base)]/50 py-1.5 relative">
-                    {record.source === "nfc" && record.drug ? (
-                      <NfcDrugContent
-                        drug={
-                          (isEditingRow && draftRecord?.drug
-                            ? draftRecord.drug
-                            : record.drug) as DrugInfo
-                        }
-                        editable={isEditingRow}
-                        onChange={(patch) => {
-                          if (!draftRecord?.drug) return;
-                          setDraftRecord({
-                            ...draftRecord,
-                            drug: { ...draftRecord.drug, ...patch },
-                          });
-                        }}
-                      />
-                    ) : isEditingRow ? (
-                      <div className="relative px-1.5 py-1 bg-surface-base/30 rounded focus-within:bg-white focus-within:ring-1 focus-within:ring-brand-primary/20 transition-all">
-                        <textarea
-                          autoFocus={editingRecordId === record.id}
-                          ref={(el) => {
-                            if (el) {
-                              el.style.height = "auto";
-                              el.style.height = `${el.scrollHeight}px`;
-                            }
-                          }}
-                          value={draftRecord?.content ?? record.content}
-                          onChange={(e) => {
-                            if (draftRecord)
-                              setDraftRecord({
-                                ...draftRecord,
-                                content: e.target.value,
-                              });
-                            e.target.style.height = "auto";
-                            e.target.style.height = `${e.target.scrollHeight}px`;
-                          }}
-                          className="w-full bg-transparent text-body-sm leading-[1.6] text-content-primary resize-none outline-none overflow-hidden block p-0 m-0 min-h-[1.6em]"
-                          rows={1}
-                        />
-                      </div>
-                    ) : (
-                      <div className="relative text-body-sm leading-[1.6] text-content-secondary whitespace-pre-wrap px-1.5 py-1 min-h-[1.6em] break-all">
-                        {record.content
-                          .split(" ")
-                          .map((word, wordIdx) => (
-                            <React.Fragment key={wordIdx}>
-                              <WordWithSuggestion
-                                word={word}
-                                enabled={!record.isConfirmed && isMine}
-                                onReplace={(newWord) => {
-                                  const words = record.content.split(" ");
-                                  words[wordIdx] = newWord;
-                                  onUpdateRecord(record.id, {
-                                    content: words.join(" "),
-                                  });
-                                }}
-                              />
-                            </React.Fragment>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Writer Column — 로그인 사용자 기준 자동 기입, 수정 불가 */}
-                  <div className="text-body-sm text-[var(--color-content-tertiary)] font-bold pt-1.5 truncate h-full border-r border-[var(--color-border-base)]/50 pr-4 flex items-center justify-center">
-                    <div className="flex items-center justify-center w-full gap-1 px-1.5 py-1">
-                      <span className="truncate">{record.writer}</span>
-                    </div>
-                  </div>
-
-                  {/* Actions Column */}
-                  <div className="pt-1 h-full flex items-center justify-center gap-1.5">
-                    {isMine ? (
-                      canEditThisRow && (
-                        <>
-                          {isGlobalEditing ? (
-                            <Button
-                              variant="brandOutline"
-                              size="sm"
-                              className="h-7 px-2.5 rounded text-[12px]"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(record.id);
-                              }}
-                            >
-                              삭제
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="brandOutline"
-                              size="sm"
-                              className="h-7 px-2.5 rounded text-[12px]"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (editingRecordId === record.id) {
-                                  commitEdit();
-                                } else {
-                                  enterEdit(record);
-                                }
-                              }}
-                            >
-                              {editingRecordId === record.id ? "완료" : "수정"}
-                            </Button>
-                          )}
-                          {!record.isConfirmed && !isGlobalEditing && (
-                            <Button
-                              variant="brand"
-                              size="sm"
-                              className="h-7 px-2.5 rounded text-[12px]"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // draft가 있으면 같이 커밋 + 확정 처리
-                                if (
-                                  editingRecordId === record.id &&
-                                  draftRecord
-                                ) {
-                                  onUpdateRecord(record.id, {
-                                    ...draftRecord,
-                                    isConfirmed: true,
-                                  });
-                                  setDraftRecord(null);
-                                  setEditingRecordId(null);
-                                } else {
-                                  onUpdateRecord(record.id, {
-                                    isConfirmed: true,
-                                  });
-                                }
-                              }}
-                            >
-                              확정
-                            </Button>
-                          )}
-                        </>
-                      )
-                    ) : (
-                      !record.isConfirmed && (
-                        <div className="px-3 py-1.5 text-[11px] font-bold text-content-muted bg-slate-100 border border-border-subtle rounded-md whitespace-nowrap opacity-70 cursor-not-allowed">
-                          확정 대기
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
-              </React.Fragment>
-            );
-          })}
-
-          <div className="relative group/between h-0 z-30">
-            <div
-              className="absolute inset-x-0 -top-2 h-4 flex items-center justify-center opacity-0 group-hover/between:opacity-100 transition-opacity cursor-pointer overflow-visible"
-              onClick={() => handleStartInlineAdd(filteredRecords.length)}
-            >
-              <div className="w-full h-[1px] bg-[var(--color-brand-primary)]/20" />
-              <div className="absolute size-5 rounded-full bg-[var(--color-brand-primary)] text-white flex items-center justify-center shadow-sm hover:scale-110 transition-transform">
-                <Plus className="size-3.5" />
-              </div>
-            </div>
-          </div>
-
-          {inlineAddIndex === filteredRecords.length && (
-            <div className="grid grid-cols-[80px_1fr_110px_140px] gap-4 px-4 py-2 border-y border-[var(--color-brand-primary)]/10 bg-[var(--color-brand-surface)]/30 items-center shadow-inner">
-              <div className="flex justify-center border-r border-brand-primary/10 pr-4">
-                <TimePicker
-                  value={newRecordTime}
-                  onSelect={setNewRecordTime}
-                  className="h-8 w-full bg-white border-brand-primary/10 shadow-xs"
+              {filteredNotes.length === 0 && (
+                <EmptyState
+                  message={
+                    notes.length === 0
+                      ? "등록된 간호 기록이 없습니다."
+                      : "필터 조건에 맞는 기록이 없습니다."
+                  }
                 />
-              </div>
-              <div className="pr-4 border-r border-brand-primary/10">
-                <textarea
-                  autoFocus
-                  placeholder="새로운 기록을 입력하세요..."
-                  value={newRecordText}
-                  onChange={(e) => setNewRecordText(e.target.value)}
-                  className="w-full bg-white border border-brand-primary/10 rounded px-2 py-1.5 text-body-sm min-h-[40px] focus:outline-none focus:ring-1 focus:ring-brand-primary/20 transition-all resize-none shadow-xs"
-                  rows={1}
-                />
-              </div>
-              <div className="text-body-sm text-[var(--color-content-tertiary)] font-bold truncate h-full border-r border-brand-primary/10 pr-4 flex items-center justify-center">
-                <div className="flex items-center justify-center w-full gap-1 px-1.5 py-1">
-                  <span className="truncate">{currentUser}</span>
-                </div>
-              </div>
-              <div className="flex gap-1.5 justify-center">
-                <button
-                  onClick={handleAddRecord}
-                  disabled={!newRecordText.trim()}
-                  className="px-3 py-1.5 bg-[var(--color-brand-primary)] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[var(--color-brand-hover)] disabled:opacity-50 transition-colors whitespace-nowrap"
-                >
-                  추가
-                </button>
-                <button
-                  onClick={() => setInlineAddIndex(null)}
-                  className="px-3 py-1.5 bg-white border border-border-base text-[11px] font-bold rounded shadow-sm hover:bg-surface-hover transition-colors whitespace-nowrap"
-                >
-                  취소
-                </button>
-              </div>
-            </div>
+              )}
+            </>
           )}
-
-          <div className="h-20" />
         </div>
       </div>
+    </div>
+  );
+}
+
+function rowKey(note: NursingNoteItem): string {
+  return note.type === "STT_NOTE"
+    ? `stt-${note.nursingRecordId}`
+    : `med-${note.taggingId}`;
+}
+
+function BetweenRowAdd({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="relative group/between h-0 z-30">
+      <div
+        className="absolute inset-x-0 -top-2 h-4 flex items-center justify-center opacity-0 group-hover/between:opacity-100 transition-opacity cursor-pointer overflow-visible"
+        onClick={onClick}
+      >
+        <div className="w-full h-[1px] bg-brand-primary/20" />
+        <div className="absolute size-5 rounded-full bg-brand-primary text-white flex items-center justify-center shadow-sm hover:scale-110 transition-transform">
+          <Plus className="size-3.5" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InlineAddForm({
+  encounterId,
+  currentUser,
+  onClose,
+}: {
+  encounterId: number;
+  currentUser: string;
+  onClose: () => void;
+}) {
+  const [content, setContent] = useState("");
+  const createMutation = useCreateNursingRecord(encounterId);
+
+  const handleSubmit = () => {
+    const trimmed = content.trim();
+    if (!trimmed) return;
+    createMutation.mutate(
+      { encounterId, content: trimmed },
+      {
+        onSuccess: () => {
+          setContent("");
+          onClose();
+        },
+      },
+    );
+  };
+
+  return (
+    <div className="grid grid-cols-[110px_1fr_80px_110px_120px_120px] gap-4 px-4 py-2 border-y border-brand-primary/10 bg-brand-surface/30 items-center shadow-inner">
+      <div className="text-center text-body-micro font-mono text-content-muted">
+        자동
+      </div>
+      <div className="pr-4">
+        <textarea
+          autoFocus
+          placeholder="새 간호 기록 본문을 입력하세요..."
+          value={content}
+          onChange={(event) => setContent(event.target.value)}
+          rows={1}
+          className="w-full bg-white border border-brand-primary/10 rounded px-2 py-1.5 text-body-sm focus:outline-none focus:ring-1 focus:ring-brand-primary/20 transition-all resize-none shadow-xs"
+        />
+      </div>
+      <div className="text-center text-body-xs font-semibold text-content-tertiary">
+        {NOTE_TYPE_LABEL.STT_NOTE}
+      </div>
+      <div className="text-body-sm text-content-tertiary font-bold truncate text-center">
+        {currentUser}
+      </div>
+      <div className="text-center text-body-micro text-content-muted">-</div>
+      <div className="flex gap-1.5 justify-center">
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={createMutation.isPending || !content.trim()}
+          className="px-3 py-1.5 bg-brand-primary text-white text-[11px] font-bold rounded shadow-sm hover:bg-brand-hover disabled:opacity-50 transition-colors whitespace-nowrap"
+        >
+          {createMutation.isPending ? "추가 중..." : "추가"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setContent("");
+            onClose();
+          }}
+          className="px-3 py-1.5 bg-white border border-border-base text-[11px] font-bold rounded shadow-sm hover:bg-surface-hover transition-colors whitespace-nowrap"
+        >
+          취소
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NoteRow({
+  note,
+  encounterId,
+  isDateView,
+  rowRef,
+}: {
+  note: NursingNoteItem;
+  encounterId: number;
+  // 특정 날짜로 조회 중이면 시간만 (HH:mm), 전체 조회면 날짜+시간 (MM.dd / HH:mm)
+  isDateView: boolean;
+  rowRef?: (element: HTMLDivElement | null) => void;
+}) {
+  const isMedication = note.type === "MEDICATION";
+  const dateLabel = splitDateLabel(note.occurredAt);
+
+  // STT_NOTE 한정 인라인 편집 — MEDICATION 은 시각/용량 모달이 별도라 여기선 편집 X.
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftContent, setDraftContent] = useState("");
+  const updateMutation = useUpdateNursingRecord(encounterId);
+
+  const startEdit = () => {
+    if (note.type !== "STT_NOTE") return;
+    setDraftContent(note.content);
+    setIsEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setDraftContent("");
+  };
+
+  const submitEdit = () => {
+    if (note.type !== "STT_NOTE") return;
+    const trimmed = draftContent.trim();
+    if (!trimmed) return;
+    updateMutation.mutate(
+      { nursingRecordId: note.nursingRecordId, request: { content: trimmed } },
+      {
+        onSuccess: () => {
+          setIsEditing(false);
+          setDraftContent("");
+        },
+      },
+    );
+  };
+
+  return (
+    <div
+      ref={rowRef}
+      className={cn(
+        "grid grid-cols-[110px_1fr_80px_110px_120px_120px] gap-4 px-4 py-2 border-b border-border-base/50 items-start hover:bg-surface-hover/40 transition-all relative",
+        note.status === "draft" &&
+          "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-brand-primary/30",
+        isEditing && "bg-brand-surface/15",
+      )}
+    >
+      {/* 시간 */}
+      <div className="py-1.5 border-r border-border-base/50 pr-4 min-w-0">
+        {isDateView ? (
+          <div className="w-full text-center font-mono font-extrabold text-[15px] text-content-primary leading-[1.6]">
+            {formatHHmm(note.occurredAt)}
+          </div>
+        ) : (
+          <div className="text-center font-mono">
+            <div className="text-body-xs font-bold text-content-primary leading-tight">
+              {dateLabel.month}.{dateLabel.day}
+            </div>
+            <div className="text-[15px] font-extrabold text-content-primary leading-tight mt-0.5">
+              {dateLabel.time}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 기록 내용 */}
+      <div className="min-w-0 pr-6 border-r border-border-base/50 py-1.5 relative">
+        {isMedication ? (
+          <MedicationContent note={note} />
+        ) : isEditing ? (
+          <textarea
+            autoFocus
+            value={draftContent}
+            onChange={(event) => setDraftContent(event.target.value)}
+            ref={(element) => {
+              if (element) {
+                element.style.height = "auto";
+                element.style.height = `${element.scrollHeight}px`;
+              }
+            }}
+            onInput={(event) => {
+              const target = event.currentTarget;
+              target.style.height = "auto";
+              target.style.height = `${target.scrollHeight}px`;
+            }}
+            className="w-full bg-white border border-brand-primary/30 rounded px-2 py-1.5 text-body-sm leading-[1.6] text-content-primary resize-none focus:outline-none focus:ring-1 focus:ring-brand-primary/20 shadow-xs"
+            rows={1}
+          />
+        ) : (
+          <SttContent content={note.content} />
+        )}
+      </div>
+
+      {/* 구분 */}
+      <div className="pt-1.5 h-full flex items-center justify-center border-r border-border-base/50 pr-4">
+        <span
+          className={cn(
+            "text-body-xs font-semibold",
+            NOTE_TYPE_TONE[note.type] ?? "text-content-tertiary",
+          )}
+        >
+          {NOTE_TYPE_LABEL[note.type] ?? note.type}
+        </span>
+      </div>
+
+      {/* 기록자 */}
+      <div className="text-body-sm text-content-tertiary pt-1.5 truncate h-full border-r border-border-base/50 pr-4 flex items-center justify-center">
+        <span className="truncate font-bold">{note.authorName}</span>
+      </div>
+
+      {/* 상태 */}
+      <div className="pt-1.5 h-full flex items-center justify-center border-r border-border-base/50 pr-4">
+        <span
+          className={cn(
+            "text-body-xs font-semibold",
+            RECORD_STATUS_TONE[note.status] ?? "text-status-neutral",
+          )}
+        >
+          {RECORD_STATUS_LABEL[note.status] ?? note.status}
+        </span>
+      </div>
+
+      {/* 동작 */}
+      <div className="pt-1 h-full flex items-center justify-center gap-1.5 flex-wrap">
+        {note.editable ? (
+          isMedication ? (
+            <MedicationActions note={note} encounterId={encounterId} />
+          ) : isEditing ? (
+            <>
+              <Button
+                variant="brand"
+                size="sm"
+                className="h-7 px-2.5 rounded text-body-micro"
+                disabled={updateMutation.isPending || !draftContent.trim()}
+                onClick={submitEdit}
+              >
+                {updateMutation.isPending ? "저장 중..." : "완료"}
+              </Button>
+              <Button
+                variant="brandOutline"
+                size="sm"
+                className="h-7 px-2.5 rounded text-body-micro"
+                onClick={cancelEdit}
+              >
+                취소
+              </Button>
+            </>
+          ) : (
+            <SttNoteActions
+              note={note as Extract<NursingNoteItem, { type: "STT_NOTE" }>}
+              encounterId={encounterId}
+              onStartEdit={startEdit}
+            />
+          )
+        ) : (
+          <span className="text-[11px] text-content-muted">-</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SttNoteActions({
+  note,
+  encounterId,
+  onStartEdit,
+}: {
+  note: Extract<NursingNoteItem, { type: "STT_NOTE" }>;
+  encounterId: number;
+  onStartEdit: () => void;
+}) {
+  const confirmMutation = useConfirmNursingRecord(encounterId);
+  const deleteMutation = useDeleteNursingRecord(encounterId);
+
+  return (
+    <>
+      {note.status === "draft" && (
+        <Button
+          variant="brand"
+          size="sm"
+          className="h-7 px-2.5 rounded text-body-micro"
+          disabled={confirmMutation.isPending}
+          onClick={() => confirmMutation.mutate(note.nursingRecordId)}
+        >
+          확정
+        </Button>
+      )}
+      <Button
+        variant="brandOutline"
+        size="sm"
+        className="h-7 px-2.5 rounded text-body-micro"
+        onClick={onStartEdit}
+      >
+        수정
+      </Button>
+      <Button
+        variant="brandOutline"
+        size="sm"
+        className="h-7 px-2.5 rounded text-body-micro"
+        disabled={deleteMutation.isPending}
+        onClick={() => {
+          if (window.confirm("이 기록을 삭제하시겠습니까?")) {
+            deleteMutation.mutate(note.nursingRecordId);
+          }
+        }}
+      >
+        삭제
+      </Button>
+    </>
+  );
+}
+
+function MedicationActions({
+  note,
+  encounterId,
+}: {
+  note: Extract<NursingNoteItem, { type: "MEDICATION" }>;
+  encounterId: number;
+}) {
+  const confirmMutation = useConfirmMedicationGroup(encounterId);
+  const deleteMutation = useDeleteMedicationGroup(encounterId);
+
+  return (
+    <>
+      {note.status === "draft" && (
+        <Button
+          variant="brand"
+          size="sm"
+          className="h-7 px-2.5 rounded text-body-micro"
+          disabled={confirmMutation.isPending}
+          onClick={() => confirmMutation.mutate(note.taggingId)}
+        >
+          확정
+        </Button>
+      )}
+      <Button
+        variant="brandOutline"
+        size="sm"
+        className="h-7 px-2.5 rounded text-body-micro"
+        disabled={deleteMutation.isPending}
+        onClick={() => {
+          if (window.confirm("이 투약 그룹을 취소하시겠습니까?")) {
+            deleteMutation.mutate(note.taggingId);
+          }
+        }}
+      >
+        취소
+      </Button>
+    </>
+  );
+}
+
+function SttContent({ content }: { content: string }) {
+  return (
+    <div className="text-body-sm font-medium leading-[1.6] text-content-primary whitespace-pre-wrap break-all">
+      {content}
+    </div>
+  );
+}
+
+function MedicationContent({
+  note,
+}: {
+  note: Extract<NursingNoteItem, { type: "MEDICATION" }>;
+}) {
+  return (
+    <ul className="px-1.5 py-1 flex flex-col gap-1">
+      {note.medications.map((medication) => (
+        <MedicationRow key={medication.medicationAdminId} medication={medication} />
+      ))}
+    </ul>
+  );
+}
+
+function MedicationRow({ medication }: { medication: MedicationItem }) {
+  return (
+    <li className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-body-sm">
+      <span className="font-mono font-bold text-brand-primary text-body-xs">
+        {medication.productCode}
+      </span>
+      <span className="font-bold text-content-primary">{medication.productName}</span>
+      <span className="text-content-muted">·</span>
+      <span className="font-mono font-semibold text-content-primary">
+        {medication.dosageQuantity}
+      </span>
+      <span className="text-content-muted">{medication.dosageUnit}</span>
+      <span className="text-content-muted">·</span>
+      <span className="font-mono font-semibold text-content-primary">{medication.frequency}</span>
+      <span className="text-content-muted">회</span>
+      <span className="text-content-muted">·</span>
+      <span className="font-semibold text-content-primary">{medication.route}</span>
+    </li>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center flex-1 gap-2 py-16 text-content-muted">
+      <p className="text-body-sm font-bold">{message}</p>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="flex flex-col items-center justify-center flex-1 gap-2 py-16 text-content-muted">
+      <Loader2 className="w-6 h-6 animate-spin opacity-60" />
+      <p className="text-body-sm">불러오는 중...</p>
     </div>
   );
 }
