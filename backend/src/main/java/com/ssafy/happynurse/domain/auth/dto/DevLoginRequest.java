@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 
 @Schema(description = "개발용 로그인 요청 (사원번호만으로 로그인)")
 public record DevLoginRequest(
-        @Schema(description = "사원번호 (data.sql 시드 기준 EMP-001)", example = "EMP-001")
+        @Schema(description = "사원번호", example = "admin")
         @NotBlank(message = "사원번호는 필수입니다.")
         String employeeNumber
 ) {

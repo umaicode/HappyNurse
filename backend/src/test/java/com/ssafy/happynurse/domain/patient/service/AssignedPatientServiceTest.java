@@ -2,7 +2,6 @@ package com.ssafy.happynurse.domain.patient.service;
 
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.common.repository.PractitionerRepository;
-import com.ssafy.happynurse.domain.patient.cache.AssignedPatientsCache;
 import com.ssafy.happynurse.domain.patient.dto.AssignedPatientUpdateRequest;
 import com.ssafy.happynurse.domain.patient.dto.AssignedPatientUpdateResponse;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
@@ -37,11 +36,10 @@ class AssignedPatientServiceTest {
 
     @Mock EncounterRepository encounterRepository;
     @Mock PractitionerRepository practitionerRepository;
-    @Mock AssignedPatientsCache assignedPatientsCache;
     @InjectMocks AssignedPatientService assignedPatientService;
 
     @Test
-    @DisplayName("updateMyAssignedPatients - 신규 할당 + 이전 담당 해제 동시 처리, Redis 갱신")
+    @DisplayName("updateMyAssignedPatients - 신규 할당 + 이전 담당 해제 동시 처리")
     void update_신규할당_이전해제_동시처리() {
         Long me = 99L;
         Long wardId = 3L;
@@ -68,7 +66,6 @@ class AssignedPatientServiceTest {
 
         verify(encounterRepository).assignNurseToEncounters(eq(nurseRef), eq(Set.of(100L, 101L)));
         verify(encounterRepository).unassignNurseWhereStillOwned(eq(List.of(202L, 203L)), eq(me));
-        verify(assignedPatientsCache).write(eq(me), eq(wardId), eq(Set.of(100L, 101L)));
     }
 
     @Test
@@ -92,7 +89,6 @@ class AssignedPatientServiceTest {
         verify(encounterRepository, never()).findAllByIdInAndWardAndInProgress(any(), anyLong());
         verify(encounterRepository, never()).assignNurseToEncounters(any(), anyCollection());
         verify(encounterRepository).unassignNurseWhereStillOwned(eq(List.of(301L)), eq(me));
-        verify(assignedPatientsCache).write(eq(me), eq(wardId), eq(Set.of()));
     }
 
     @Test
@@ -113,7 +109,6 @@ class AssignedPatientServiceTest {
 
         verify(encounterRepository, never()).assignNurseToEncounters(any(), anyCollection());
         verify(encounterRepository, never()).unassignNurseWhereStillOwned(anyCollection(), anyLong());
-        verify(assignedPatientsCache, never()).write(anyLong(), anyLong(), anyCollection());
     }
 
     @Test
@@ -188,7 +183,6 @@ class AssignedPatientServiceTest {
         ArgumentCaptor<Collection<Long>> idsCaptor = ArgumentCaptor.forClass(Collection.class);
         verify(encounterRepository).assignNurseToEncounters(eq(nurseRefA), idsCaptor.capture());
         assertThat(idsCaptor.getValue()).containsExactly(100L);
-        verify(assignedPatientsCache).write(eq(me), eq(wardId), eq(Set.of(100L)));
     }
 
     // ──── 헬퍼 ────

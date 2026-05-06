@@ -89,7 +89,7 @@ public class MedicationAdministration {
         ma.practitioner = practitioner;
         ma.medicationOrder = medicationOrder;
         ma.medication = medication;
-        ma.status = RecordStatus.confirmed;
+        ma.status = RecordStatus.draft;
         ma.effectiveDatetime = effectiveDatetime;
         ma.dosageQuantity = medicationOrder.getDose();
         ma.dosageUnit = medicationOrder.getDoseUnit();

@@ -1,9 +1,8 @@
 package com.ssafy.happynurse.domain.nurse.service;
 
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
-import com.ssafy.happynurse.domain.nurse.dto.MedicationAdministrationUpdateRequest;
 import com.ssafy.happynurse.domain.nurse.dto.MedicationAdministrationWriteResponse;
-import com.ssafy.happynurse.domain.nurse.dto.MedicationDosageUpdateRequest;
+import com.ssafy.happynurse.domain.nurse.dto.MedicationDosageEditItem;
 import com.ssafy.happynurse.domain.nurse.entity.MedicationAdministration;
 import com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus;
 import com.ssafy.happynurse.domain.nurse.repository.MedicationAdministrationRepository;
@@ -109,28 +108,8 @@ class MedicationAdministrationServiceTest {
     }
 
     @Test
-    @DisplayName("effectiveDatetime만 수정 → 그룹 일괄 갱신")
-    void update_성공_시각만() {
-        Practitioner nurse = createPractitioner(ME);
-        Medication m = createMedication(101L, "PC1", "약A");
-        LocalDateTime original = LocalDateTime.of(2026, 5, 3, 14, 0);
-        LocalDateTime newTime = LocalDateTime.of(2026, 5, 3, 16, 0);
-
-        given(medicationAdministrationRepository.findAllByTaggingId(TAG))
-                .willReturn(List.of(createAdmin(31L, nurse, m, TAG, original, RecordStatus.draft, true)))
-                .willReturn(List.of(createAdmin(31L, nurse, m, TAG, newTime, RecordStatus.draft, true)));
-
-        MedicationAdministrationWriteResponse response = medicationAdministrationService.update(
-                TAG, new MedicationAdministrationUpdateRequest(newTime, null), ME);
-
-        verify(medicationAdministrationRepository).updateEffectiveDatetimeByTaggingId(TAG, newTime);
-        verify(medicationAdministrationRepository, never()).updateDosage(anyLong(), any(), anyString());
-        assertThat(response.effectiveDatetime()).isEqualTo(newTime);
-    }
-
-    @Test
-    @DisplayName("dosage만 수정 → 단건씩 갱신")
-    void update_성공_dosage만() {
+    @DisplayName("updateMedicationGroup dosage만 → 단건씩 dosageQuantity 갱신")
+    void updateMedicationGroup_성공_dosage만() {
         Practitioner nurse = createPractitioner(ME);
         Medication m1 = createMedication(101L, "PC1", "약A");
         Medication m2 = createMedication(102L, "PC2", "약B");
@@ -139,93 +118,107 @@ class MedicationAdministrationServiceTest {
                 createAdmin(31L, nurse, m1, TAG, LocalDateTime.now(), RecordStatus.draft, true),
                 createAdmin(32L, nurse, m2, TAG, LocalDateTime.now(), RecordStatus.draft, true)
         );
-        given(medicationAdministrationRepository.findAllByTaggingId(TAG))
-                .willReturn(group)
-                .willReturn(group);
+        given(medicationAdministrationRepository.findAllByTaggingId(TAG)).willReturn(group);
 
-        MedicationAdministrationUpdateRequest request = new MedicationAdministrationUpdateRequest(
-                null,
-                List.of(
-                        new MedicationDosageUpdateRequest(31L, new BigDecimal("1.500"), "tab"),
-                        new MedicationDosageUpdateRequest(32L, new BigDecimal("500"), "mL")
-                )
-        );
+        medicationAdministrationService.updateMedicationGroup(TAG, List.of(
+                new MedicationDosageEditItem(31L, new BigDecimal("1.500")),
+                new MedicationDosageEditItem(32L, new BigDecimal("500"))
+        ), null, ME);
 
-        medicationAdministrationService.update(TAG, request, ME);
-
-        verify(medicationAdministrationRepository).updateDosage(31L, new BigDecimal("1.500"), "tab");
-        verify(medicationAdministrationRepository).updateDosage(32L, new BigDecimal("500"), "mL");
+        verify(medicationAdministrationRepository).updateDosageQuantity(31L, new BigDecimal("1.500"));
+        verify(medicationAdministrationRepository).updateDosageQuantity(32L, new BigDecimal("500"));
         verify(medicationAdministrationRepository, never()).updateEffectiveDatetimeByTaggingId(anyString(), any());
     }
 
     @Test
-    @DisplayName("effectiveDatetime + dosage 둘 다 수정")
-    void update_성공_둘다() {
+    @DisplayName("updateMedicationGroup confirmedAt만 → 그룹 일괄 effectiveDatetime 갱신")
+    void updateMedicationGroup_성공_시각만() {
         Practitioner nurse = createPractitioner(ME);
         Medication m = createMedication(101L, "PC1", "약A");
-        LocalDateTime newTime = LocalDateTime.of(2026, 5, 3, 16, 0);
+        LocalDateTime newTime = LocalDateTime.of(2026, 5, 4, 10, 0);
 
-        List<MedicationAdministration> group = List.of(
-                createAdmin(31L, nurse, m, TAG, LocalDateTime.now(), RecordStatus.draft, true)
-        );
         given(medicationAdministrationRepository.findAllByTaggingId(TAG))
-                .willReturn(group)
-                .willReturn(group);
+                .willReturn(List.of(createAdmin(31L, nurse, m, TAG, LocalDateTime.now(),
+                        RecordStatus.confirmed, true)));
 
-        MedicationAdministrationUpdateRequest request = new MedicationAdministrationUpdateRequest(
-                newTime,
-                List.of(new MedicationDosageUpdateRequest(31L, new BigDecimal("2.000"), "mg"))
-        );
-
-        medicationAdministrationService.update(TAG, request, ME);
+        medicationAdministrationService.updateMedicationGroup(TAG, null, newTime, ME);
 
         verify(medicationAdministrationRepository).updateEffectiveDatetimeByTaggingId(TAG, newTime);
-        verify(medicationAdministrationRepository).updateDosage(31L, new BigDecimal("2.000"), "mg");
+        verify(medicationAdministrationRepository, never()).updateDosageQuantity(anyLong(), any());
     }
 
     @Test
-    @DisplayName("그룹 외 medicationAdminId 포함 → INVALID_INPUT_VALUE")
-    void update_실패_그룹_외_medicationAdminId() {
+    @DisplayName("updateMedicationGroup dosage + confirmedAt 둘 다 → 둘 다 갱신")
+    void updateMedicationGroup_성공_둘다() {
+        Practitioner nurse = createPractitioner(ME);
+        Medication m = createMedication(101L, "PC1", "약A");
+        LocalDateTime newTime = LocalDateTime.of(2026, 5, 4, 10, 0);
+
+        given(medicationAdministrationRepository.findAllByTaggingId(TAG))
+                .willReturn(List.of(createAdmin(31L, nurse, m, TAG, LocalDateTime.now(),
+                        RecordStatus.confirmed, true)));
+
+        medicationAdministrationService.updateMedicationGroup(TAG,
+                List.of(new MedicationDosageEditItem(31L, new BigDecimal("2.000"))),
+                newTime, ME);
+
+        verify(medicationAdministrationRepository).updateDosageQuantity(31L, new BigDecimal("2.000"));
+        verify(medicationAdministrationRepository).updateEffectiveDatetimeByTaggingId(TAG, newTime);
+    }
+
+    @Test
+    @DisplayName("updateMedicationGroup 그룹 외 medicationAdminId → MEDICATION_ADMIN_NOT_IN_GROUP")
+    void updateMedicationGroup_실패_그룹_외() {
         Practitioner nurse = createPractitioner(ME);
         Medication m = createMedication(101L, "PC1", "약A");
         given(medicationAdministrationRepository.findAllByTaggingId(TAG))
                 .willReturn(List.of(createAdmin(31L, nurse, m, TAG, LocalDateTime.now(),
                         RecordStatus.draft, true)));
 
-        MedicationAdministrationUpdateRequest request = new MedicationAdministrationUpdateRequest(
-                null,
-                List.of(new MedicationDosageUpdateRequest(999L, new BigDecimal("1.0"), "mg"))
-        );
-
-        assertThatThrownBy(() -> medicationAdministrationService.update(TAG, request, ME))
+        assertThatThrownBy(() -> medicationAdministrationService.updateMedicationGroup(TAG,
+                List.of(new MedicationDosageEditItem(999L, new BigDecimal("1.0"))), null, ME))
                 .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT_VALUE);
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MEDICATION_ADMIN_NOT_IN_GROUP);
 
-        verify(medicationAdministrationRepository, never()).updateDosage(anyLong(), any(), anyString());
+        verify(medicationAdministrationRepository, never()).updateDosageQuantity(anyLong(), any());
     }
 
     @Test
-    @DisplayName("update 시 그룹 없음 → MEDICATION_ADMIN_NOT_FOUND")
-    void update_실패_없음() {
+    @DisplayName("updateMedicationGroup medications 와 confirmedAt 둘 다 비어있음 → INVALID_INPUT_VALUE")
+    void updateMedicationGroup_실패_둘다_비어있음() {
+        assertThatThrownBy(() -> medicationAdministrationService.updateMedicationGroup(
+                TAG, List.of(), null, ME))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT_VALUE);
+
+        assertThatThrownBy(() -> medicationAdministrationService.updateMedicationGroup(
+                TAG, null, null, ME))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT_VALUE);
+    }
+
+    @Test
+    @DisplayName("updateMedicationGroup 그룹 없음 → MEDICATION_ADMIN_NOT_FOUND")
+    void updateMedicationGroup_실패_없음() {
         given(medicationAdministrationRepository.findAllByTaggingId(TAG)).willReturn(List.of());
 
-        assertThatThrownBy(() -> medicationAdministrationService.update(
-                TAG, new MedicationAdministrationUpdateRequest(LocalDateTime.now(), null), ME))
+        assertThatThrownBy(() -> medicationAdministrationService.updateMedicationGroup(TAG,
+                List.of(new MedicationDosageEditItem(31L, new BigDecimal("1.0"))), null, ME))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MEDICATION_ADMIN_NOT_FOUND);
     }
 
     @Test
-    @DisplayName("update 시 타인 투약 → MEDICATION_ADMIN_NOT_AUTHOR")
-    void update_실패_타작성자() {
+    @DisplayName("updateMedicationGroup 타인 투약 → MEDICATION_ADMIN_NOT_AUTHOR")
+    void updateMedicationGroup_실패_타작성자() {
         Practitioner other = createPractitioner(OTHER);
         Medication m = createMedication(101L, "PC1", "약A");
         given(medicationAdministrationRepository.findAllByTaggingId(TAG))
                 .willReturn(List.of(createAdmin(31L, other, m, TAG, LocalDateTime.now(),
                         RecordStatus.draft, true)));
 
-        assertThatThrownBy(() -> medicationAdministrationService.update(
-                TAG, new MedicationAdministrationUpdateRequest(LocalDateTime.now(), null), ME))
+        assertThatThrownBy(() -> medicationAdministrationService.updateMedicationGroup(TAG,
+                List.of(new MedicationDosageEditItem(31L, new BigDecimal("1.0"))), null, ME))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MEDICATION_ADMIN_NOT_AUTHOR);
     }
