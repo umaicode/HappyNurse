@@ -2,7 +2,6 @@ package com.ssafy.happynurse.domain.patient.service;
 
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.common.repository.PractitionerRepository;
-import com.ssafy.happynurse.domain.patient.cache.AssignedPatientsCache;
 import com.ssafy.happynurse.domain.patient.dto.AssignedPatientUpdateRequest;
 import com.ssafy.happynurse.domain.patient.dto.AssignedPatientUpdateResponse;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
@@ -27,7 +26,6 @@ public class AssignedPatientService {
 
     private final EncounterRepository encounterRepository;
     private final PractitionerRepository practitionerRepository;
-    private final AssignedPatientsCache assignedPatientsCache;
 
     public AssignedPatientUpdateResponse updateMyAssignedPatients(
             Long practitionerId,
@@ -69,8 +67,6 @@ public class AssignedPatientService {
         if (!releasedIds.isEmpty()) {
             encounterRepository.unassignNurseWhereStillOwned(releasedIds, practitionerId);
         }
-
-        assignedPatientsCache.write(practitionerId, wardId, requested);
 
         return new AssignedPatientUpdateResponse(
                 List.copyOf(requested),
