@@ -1,9 +1,8 @@
 package com.ssafy.happynurse.domain.nurse.service;
 
 import com.ssafy.happynurse.domain.doctor.entity.MedicationOrder;
-import com.ssafy.happynurse.domain.nurse.dto.MedicationAdministrationUpdateRequest;
 import com.ssafy.happynurse.domain.nurse.dto.MedicationAdministrationWriteResponse;
-import com.ssafy.happynurse.domain.nurse.dto.MedicationDosageUpdateRequest;
+import com.ssafy.happynurse.domain.nurse.dto.MedicationDosageEditItem;
 import com.ssafy.happynurse.domain.nurse.dto.MedicationItemResponse;
 import com.ssafy.happynurse.domain.nurse.entity.MedicationAdministration;
 import com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus;
@@ -14,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -38,35 +38,37 @@ public class MedicationAdministrationService {
         return toResponse(taggingId, refreshed);
     }
 
-    public MedicationAdministrationWriteResponse update(String taggingId,
-                                                        MedicationAdministrationUpdateRequest request,
-                                                        Long currentPractitionerId) {
-        List<MedicationAdministration> group = loadGroupAndAuthorize(taggingId, currentPractitionerId);
-
-        if (request.effectiveDatetime() != null) {
-            medicationAdministrationRepository.updateEffectiveDatetimeByTaggingId(
-                    taggingId, request.effectiveDatetime());
+    public void updateMedicationGroup(String taggingId,
+                                      List<MedicationDosageEditItem> items,
+                                      LocalDateTime confirmedAt,
+                                      Long currentPractitionerId) {
+        boolean hasItems = items != null && !items.isEmpty();
+        if (!hasItems && confirmedAt == null) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        if (request.medications() != null && !request.medications().isEmpty()) {
+        List<MedicationAdministration> group = loadGroupAndAuthorize(taggingId, currentPractitionerId);
+
+        if (hasItems) {
             Set<Long> groupIds = group.stream()
                     .map(MedicationAdministration::getMedicationAdminId)
                     .collect(Collectors.toSet());
 
-            for (MedicationDosageUpdateRequest item : request.medications()) {
+            for (MedicationDosageEditItem item : items) {
                 if (!groupIds.contains(item.medicationAdminId())) {
-                    throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+                    throw new CustomException(ErrorCode.MEDICATION_ADMIN_NOT_IN_GROUP);
                 }
             }
 
-            for (MedicationDosageUpdateRequest item : request.medications()) {
-                medicationAdministrationRepository.updateDosage(
-                        item.medicationAdminId(), item.dosageQuantity(), item.dosageUnit());
+            for (MedicationDosageEditItem item : items) {
+                medicationAdministrationRepository.updateDosageQuantity(
+                        item.medicationAdminId(), item.dosageQuantity());
             }
         }
 
-        List<MedicationAdministration> refreshed = medicationAdministrationRepository.findAllByTaggingId(taggingId);
-        return toResponse(taggingId, refreshed);
+        if (confirmedAt != null) {
+            medicationAdministrationRepository.updateEffectiveDatetimeByTaggingId(taggingId, confirmedAt);
+        }
     }
 
     public void delete(String taggingId, Long currentPractitionerId) {

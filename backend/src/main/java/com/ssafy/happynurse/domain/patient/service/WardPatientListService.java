@@ -2,7 +2,6 @@ package com.ssafy.happynurse.domain.patient.service;
 
 import com.ssafy.happynurse.domain.nurse.repository.EncounterDraftCount;
 import com.ssafy.happynurse.domain.nurse.repository.NursingRecordRepository;
-import com.ssafy.happynurse.domain.patient.cache.AssignedPatientsCache;
 import com.ssafy.happynurse.domain.patient.dto.WardPatientListResponse;
 import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.repository.EncounterRepository;
@@ -24,7 +23,6 @@ public class WardPatientListService {
 
     private final EncounterRepository encounterRepository;
     private final NursingRecordRepository nursingRecordRepository;
-    private final AssignedPatientsCache assignedPatientsCache;
 
     public List<WardPatientListResponse> listWardPatients(Long wardId, Long currentPractitionerId) {
         List<Encounter> encounters = encounterRepository.findInProgressByWard(wardId);
@@ -44,7 +42,11 @@ public class WardPatientListService {
                         EncounterDraftCount::getEncounterId,
                         EncounterDraftCount::getCnt));
 
-        Set<Long> mySelection = resolveMySelection(currentPractitionerId, wardId);
+        Set<Long> mySelection = encounterRepository
+                .findInProgressByWardAndAssignedPractitioner(wardId, currentPractitionerId)
+                .stream()
+                .map(Encounter::getEncounterId)
+                .collect(Collectors.toSet());
 
         return encounters.stream()
                 .map(e -> toResponse(
@@ -52,19 +54,6 @@ public class WardPatientListService {
                         draftCountMap.getOrDefault(e.getEncounterId(), 0L),
                         mySelection.contains(e.getEncounterId())))
                 .toList();
-    }
-
-    private Set<Long> resolveMySelection(Long practitionerId, Long wardId) {
-        return assignedPatientsCache.read(practitionerId, wardId)
-                .orElseGet(() -> {
-                    Set<Long> seed = encounterRepository
-                            .findInProgressByWardAndAssignedPractitioner(wardId, practitionerId)
-                            .stream()
-                            .map(Encounter::getEncounterId)
-                            .collect(Collectors.toSet());
-                    assignedPatientsCache.write(practitionerId, wardId, seed);
-                    return seed;
-                });
     }
 
     private WardPatientListResponse toResponse(Encounter e, long unconfirmedNursingCount, boolean isMyPatient) {

@@ -24,8 +24,6 @@ import {
   type MedicationItem,
   type NursingNoteItem,
 } from "../types/nursing-note";
-// mockup: 투약 컬럼 시각 검증. API 데이터 충분해지면 import 와 fallback 제거.
-import { MOCK_NURSING_NOTES } from "@/mockup/nursing-notes";
 
 type NursingTabProps = {
   encounterId: number | null;
@@ -53,10 +51,8 @@ export function NursingTab({
 
   // 백엔드는 occurredAt desc 로 내려주지만, 화면은 시간 asc (오래된 위 / 최신 아래) 로 표시 후
   // 현재 시각 근처 카드를 가운데로 자동 스크롤한다 (PatientAlerts 와 동일 패턴).
-  // mockup fallback — 실 응답 비었을 때만 노출.
   const filteredNotes = useMemo(() => {
-    const notes = !!data && data.length === 0 ? MOCK_NURSING_NOTES : (data ?? []);
-    return notes
+    return (data ?? [])
       .filter((note) => {
         if (myRecordsOnly && note.authorName !== currentUser) return false;
         return true;

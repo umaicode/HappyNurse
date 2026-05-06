@@ -43,8 +43,8 @@ export const SOURCE_TYPE_LABEL: Record<SourceType, string> = {
 };
 
 export const SOURCE_TYPE_TONE: Record<SourceType, string> = {
-  self_report: "text-status-active",
-  iv_alert: "text-status-danger",
+  self_report: "text-status-danger",
+  iv_alert: "text-status-active",
   timer: "text-status-warning",
   order_change: "text-status-success",
   vital_alert: "text-status-danger-strong",

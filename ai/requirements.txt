@@ -8,3 +8,4 @@ rapidfuzz
 sqlalchemy
 psycopg2-binary
 pydub
+PyJWT

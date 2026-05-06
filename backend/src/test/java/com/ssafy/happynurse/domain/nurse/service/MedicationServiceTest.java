@@ -270,7 +270,7 @@ class MedicationServiceTest {
         List<MedicationAdministration> saved = captor.getValue();
         assertThat(saved).hasSize(3);
         assertThat(saved).allMatch(MedicationAdministration::getNfcTagVerified);
-        assertThat(saved).allMatch(ma -> ma.getStatus() == RecordStatus.confirmed);
+        assertThat(saved).allMatch(ma -> ma.getStatus() == RecordStatus.draft);
         assertThat(saved).allMatch(ma -> ma.getEffectiveDatetime() != null);
 
         // 같은 호출 내 모든 row 의 taggingId 가 동일하고, 응답의 taggingId 와 일치
