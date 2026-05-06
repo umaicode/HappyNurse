@@ -33,6 +33,18 @@ public interface MedicationAdministrationRepository
             JOIN FETCH ma.practitioner
             JOIN FETCH ma.medication
             LEFT JOIN FETCH ma.medicationOrder
+            WHERE ma.encounter.encounterId = :encounterId
+              AND ma.status = com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus.draft
+            ORDER BY ma.taggingId ASC, ma.medicationAdminId ASC
+            """)
+    List<MedicationAdministration> findAllDraftsByEncounterIdWithFetch(
+            @Param("encounterId") Long encounterId);
+
+    @Query("""
+            SELECT ma FROM MedicationAdministration ma
+            JOIN FETCH ma.practitioner
+            JOIN FETCH ma.medication
+            LEFT JOIN FETCH ma.medicationOrder
             WHERE ma.taggingId = :taggingId
             ORDER BY ma.medicationAdminId ASC
             """)
@@ -49,22 +61,21 @@ public interface MedicationAdministrationRepository
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             UPDATE MedicationAdministration ma
+            SET ma.dosageQuantity = :dosageQuantity
+            WHERE ma.medicationAdminId = :medicationAdminId
+            """)
+    int updateDosageQuantity(@Param("medicationAdminId") Long medicationAdminId,
+                             @Param("dosageQuantity") BigDecimal dosageQuantity);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE MedicationAdministration ma
             SET ma.effectiveDatetime = :effectiveDatetime
             WHERE ma.taggingId = :taggingId
             """)
     int updateEffectiveDatetimeByTaggingId(
             @Param("taggingId") String taggingId,
             @Param("effectiveDatetime") LocalDateTime effectiveDatetime);
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-            UPDATE MedicationAdministration ma
-            SET ma.dosageQuantity = :dosageQuantity, ma.dosageUnit = :dosageUnit
-            WHERE ma.medicationAdminId = :medicationAdminId
-            """)
-    int updateDosage(@Param("medicationAdminId") Long medicationAdminId,
-                     @Param("dosageQuantity") BigDecimal dosageQuantity,
-                     @Param("dosageUnit") String dosageUnit);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM MedicationAdministration ma WHERE ma.taggingId = :taggingId")
