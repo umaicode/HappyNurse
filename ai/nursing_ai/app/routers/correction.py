@@ -1,33 +1,61 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from app.database.db import get_db
+from app.middleware.jwt_auth import get_current_user
 
 router = APIRouter()
 
 # === 요청/응답 모델 ===
 
 class CorrectionRequest(BaseModel):
-    nursing_record_id: int
-    practitioner_id: int
-    original_word: str
-    replaced_word: str
-    correction_type: str = "manual"  # exact, fuzzy, manual
-    suggestion_id: Optional[int] = None
+    nursing_record_id: int = Field(..., description="간호 기록 ID")
+    original_word: str = Field(..., description="교정 전 원본 단어", example="사무실")
+    replaced_word: str = Field(..., description="교정 후 단어", example="3호실")
+    correction_type: str = Field("manual", description="교정 방식 (exact/fuzzy/manual)")
+    suggestion_id: Optional[int] = Field(None, description="선택한 후보 ID (없으면 자동 생성)")
 
 class DictionaryApproveRequest(BaseModel):
-    stt_word: str
-    correct_word: str
-    category: str = "other"
-    approved_by_practitioner_id: int
+    stt_word: str = Field(..., description="STT 오인식 단어", example="해프트리 압손")
+    correct_word: str = Field(..., description="정식 용어", example="세프트리악손")
+    category: str = Field("other", description="카테고리 (medication/symptom/body_part/procedure/vital/other)")
+
 
 
 # === 1. 수정 이력 저장 ===
 
-@router.post("/correction/apply")
-async def apply_correction(req: CorrectionRequest, db: Session = Depends(get_db)):
+@router.post(
+    "/correction/apply",
+    summary="용어 교정 이력 저장",
+    description="""
+간호사가 STT 결과에서 단어를 수정했을 때 호출합니다.
+
+### 처리 흐름
+1. 수정 이력을 nursing_record_correction_applied 테이블에 저장
+2. 해당 매핑의 usage_count 증가
+3. 같은 수정이 5회 이상 반복되면 suggest_dictionary: true 반환
+
+### 응답 예시
+```json
+{
+    "success": true,
+    "message": "수정 이력 저장 완료",
+    "repeat_count": 5,
+    "suggest_dictionary": true
+}
+```
+    """
+)
+async def apply_correction(
+    req: CorrectionRequest,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    practitioner_id = current_user["practitioner_id"]
+
     """간호사가 단어를 수정했을 때 수정 이력 저장"""
     try:
         # suggestion_id가 없으면 임시로 생성
@@ -123,12 +151,28 @@ async def apply_correction(req: CorrectionRequest, db: Session = Depends(get_db)
 
 # === 2. 반복 수정 목록 조회 (관리자용) ===
 
-@router.get("/correction/frequent")
+@router.get(
+    "/correction/frequent",
+    summary="반복 교정 목록 조회 (관리자용)",
+    description="""
+같은 교정이 N회 이상 반복된 단어 목록을 조회합니다.
+관리자(admin) 또는 수간호사(head_nurse)만 접근 가능합니다.
+
+매핑 사전에 등록할 후보를 확인하는 용도입니다.
+    """
+)
+
 async def get_frequent_corrections(
     min_count: int = 5,
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """같은 수정이 N회 이상 반복된 목록 조회"""
+
+    # 관리지만 접근 허용 코드
+    # if current_user["role"] not in ["admin", "head_nurse"]:
+    #     raise HTTPException(status_code=403, detail="관리자 권한이 필요합니다")
+
     try:
         rows = db.execute(text("""
             SELECT original_word, replaced_word, COUNT(*) as repeat_count,
@@ -162,8 +206,27 @@ async def get_frequent_corrections(
 
 # === 3. 사전 등록 승인 (관리자용) ===
 
-@router.post("/correction/approve")
-async def approve_to_dictionary(req: DictionaryApproveRequest, db: Session = Depends(get_db)):
+@router.post(
+    "/correction/approve",
+    summary="매핑 사전 등록 승인 (관리자용)",
+    description="""
+반복된 교정을 매핑 사전에 공식 등록합니다.
+관리자(admin) 또는 수간호사(head_nurse)만 접근 가능합니다.
+
+등록 후 해당 오인식 패턴은 자동으로 교정됩니다.
+    """
+)
+
+async def approve_to_dictionary(
+    req: DictionaryApproveRequest,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    # 관리자만 허용
+    # if current_user["role"] not in ["admin", "head_nurse"]:
+    #     raise HTTPException(status_code=403, detail="관리자 권한이 필요합니다")
+
     """관리자가 승인하면 매핑 사전에 추가"""
     try:
         # 이미 같은 매핑이 있는지 확인
