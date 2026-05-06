@@ -12,6 +12,8 @@ import com.ssafy.happynurse.domain.nurse.notification.service.registry.PersonalE
 import com.ssafy.happynurse.domain.nurse.notification.service.registry.WardEmitterRegistry;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
 import com.ssafy.happynurse.domain.patient.repository.PatientRepository;
+import com.ssafy.happynurse.domain.watch.entity.IvInfusion;
+import com.ssafy.happynurse.domain.watch.repository.IvInfusionRepository;
 import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
 import com.ssafy.happynurse.domain.webapp.repository.PatientSelfReportRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,7 @@ public class DefaultNotificationDispatcher implements NotificationDispatcher {
     private final PractitionerRepository practitionerRepository;
     private final PatientRepository patientRepository;
     private final PatientSelfReportRepository patientSelfReportRepository;
+    private final IvInfusionRepository ivInfusionRepository;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -88,8 +91,7 @@ public class DefaultNotificationDispatcher implements NotificationDispatcher {
 
     /**
      * envelope → Notification 엔티티 변환.
-     * Step 1에서는 self_report 만 sourceSelfReport FK 채움.
-     * 나머지 SourceType은 해당 도메인 담당자가 source FK 컬럼 추가 시 분기 보강.
+     * SourceType 별로 source FK 컬럼이 다르므로 분기 처리. (수액 추가 완료)
      */
     private Notification toEntity(NotificationEnvelope env) {
         Practitioner recipient = practitionerRepository.findById(env.assignedPractitionerId())
@@ -100,6 +102,13 @@ public class DefaultNotificationDispatcher implements NotificationDispatcher {
                 : patientRepository.findById(env.patientId())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Patient not found: " + env.patientId()));
+
+        if (env.sourceType() == SourceType.iv_alert && env.sourceEntityId() != null) {
+            IvInfusion ivInfusion = ivInfusionRepository.findById(env.sourceEntityId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "IvInfusion not found: " + env.sourceEntityId()));
+            return Notification.createForIvAlert(recipient, ivInfusion, patient, env.title(), env.body());
+        }
 
         PatientSelfReport selfReport = (env.sourceType() == SourceType.self_report && env.sourceEntityId() != null)
                 ? patientSelfReportRepository.findById(env.sourceEntityId())
