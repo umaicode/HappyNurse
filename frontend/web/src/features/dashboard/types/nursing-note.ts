@@ -75,6 +75,8 @@ export const RECORD_STATUS_TONE: Record<RecordStatus, string> = {
 export interface NursingRecordManualCreateRequest {
   encounterId: number;
   content: string;
+  // 미지정 시 서버 현재 시각으로 저장. 기록 사이에 끼워 넣을 때는 prev/next 사이 값을 계산해 전달.
+  confirmedAt?: string;
 }
 
 export interface NursingRecordUpdateRequest {

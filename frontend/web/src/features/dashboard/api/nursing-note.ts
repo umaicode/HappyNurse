@@ -23,6 +23,14 @@ export const getNursingNotes = (
     .get(`/encounters/${encounterId}/nursing-notes`, { params: { date } })
     .then((response) => response.data);
 
+// 한 입원의 status=draft 항목만 통합 반환 (날짜 무관). STT 는 nursingRecordId, 투약은 taggingId 포함.
+export const getDraftNursingNotes = (
+  encounterId: number,
+): Promise<NursingNoteItem[]> =>
+  client
+    .get(`/encounters/${encounterId}/nursing-notes/drafts`)
+    .then((response) => response.data);
+
 export const createNursingRecord = (
   request: NursingRecordManualCreateRequest,
 ): Promise<NursingRecordWriteResponse> =>

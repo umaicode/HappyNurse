@@ -3,7 +3,6 @@
 import { Search, LogOut, ChevronRight, Settings, Loader2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,8 +16,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useAuthStore } from "@/features/auth/stores/auth";
-import { useNursingNotes } from "@/features/dashboard/hooks/useNursingNotes";
-import { formatHHmm } from "@/lib/time";
+import { useDraftNursingNotes } from "@/features/dashboard/hooks/useDraftNursingNotes";
+import { formatMonthDayHHmm } from "@/lib/time";
 import {
   formatBirthShort,
   formatGenderShort,
@@ -32,10 +31,12 @@ interface PatientSidebarProps {
   selectedPatientId: number | null;
   onSelectPatient: (patientId: number) => void;
   onOpenAssignModal?: () => void;
-  // EMRGrid 와 공유하는 일자 — 확정 전 기록 popover 안에서 동일 일자로 fetch.
-  selectedDate: Date;
-  // 확정 전 기록 항목 클릭 시 — 환자 선택 + 간호기록 탭 점프 + focus.
-  onJumpToUnconfirmed?: (patientId: number, recordId: number) => void;
+  // 확정 전 기록 항목 클릭 시 — 환자 선택 + 간호기록 탭 점프 + focus + 해당 일자로 이동.
+  onJumpToUnconfirmed?: (
+    patientId: number,
+    recordId: number,
+    occurredAt: string,
+  ) => void;
 }
 
 export function PatientSidebar({
@@ -44,7 +45,6 @@ export function PatientSidebar({
   selectedPatientId,
   onSelectPatient,
   onOpenAssignModal,
-  selectedDate,
   onJumpToUnconfirmed,
 }: PatientSidebarProps) {
   const router = useRouter();
@@ -156,7 +156,6 @@ export function PatientSidebar({
                         patient={patient}
                         isActive={selectedPatientId === patient.patientId}
                         isDuplicate={duplicateNames[patient.name] > 1}
-                        selectedDate={selectedDate}
                         onClick={() => onSelectPatient(patient.patientId)}
                         onJumpToUnconfirmed={onJumpToUnconfirmed}
                       />
@@ -240,23 +239,37 @@ interface PatientItemProps {
   patient: WardPatient;
   isActive: boolean;
   isDuplicate: boolean;
-  // 담당 환자 영역에서만 전달 — 둘 다 있을 때만 카운트 뱃지가 popover 트리거로 동작.
-  selectedDate?: Date;
   onClick: () => void;
-  onJumpToUnconfirmed?: (patientId: number, recordId: number) => void;
+  // 담당 환자 영역에서만 전달 — 있을 때만 카운트 뱃지가 popover 트리거로 동작.
+  onJumpToUnconfirmed?: (
+    patientId: number,
+    recordId: number,
+    occurredAt: string,
+  ) => void;
 }
 
 function PatientItem({
   patient,
   isActive,
   isDuplicate,
-  selectedDate,
   onClick,
   onJumpToUnconfirmed,
 }: PatientItemProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const popoverEnabled =
-    onJumpToUnconfirmed !== undefined && selectedDate !== undefined;
+  const popoverEnabled = onJumpToUnconfirmed !== undefined;
+
+  // 담당 환자 영역에 한해 /drafts 응답으로 뱃지 숫자를 직접 계산.
+  // 백엔드의 WardPatient.unconfirmedNursingCount 가 실제 /drafts 응답과 어긋나는 케이스가 있어
+  // popover 와 같은 데이터로 통일한다. 같은 queryKey 라 popover 열 때 재요청은 일어나지 않는다.
+  // editable === true 인 항목 = 현재 로그인 간호사가 작성한 기록만 (백엔드 판단).
+  const draftQuery = useDraftNursingNotes(
+    popoverEnabled ? patient.encounterId : null,
+  );
+  const draftCount = popoverEnabled
+    ? (draftQuery.data ?? []).filter(
+        (note) => note.type === "STT_NOTE" && note.editable,
+      ).length
+    : patient.unconfirmedNursingCount;
 
   return (
     <div
@@ -305,70 +318,71 @@ function PatientItem({
           </div>
         </div>
       </button>
-      {patient.unconfirmedNursingCount > 0 && (
-        popoverEnabled ? (
-          <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                title={`확정 전 기록 ${patient.unconfirmedNursingCount}건`}
-                className="flex items-center justify-center min-w-[22px] h-5 px-1.5 mr-3 bg-status-warning-surface text-status-warning text-[11px] font-bold rounded-full shrink-0 hover:bg-status-warning hover:text-white transition-colors"
-              >
-                {patient.unconfirmedNursingCount}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              side="right"
-              align="start"
-              sideOffset={8}
-              className="w-72 p-0 z-[100] shadow-xl border border-border-base bg-white"
+      {popoverEnabled ? (
+        // 담당 환자 영역: 본인 작성 draft 가 0건이어도 항상 노출 (0 도 표시).
+        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              title={`확정 전 기록 ${draftCount}건`}
+              className={cn(
+                "flex items-center justify-center min-w-[22px] h-5 px-1.5 mr-3 text-[11px] font-bold rounded-full shrink-0 transition-colors",
+                draftCount > 0
+                  ? "bg-status-warning-surface text-status-warning hover:bg-status-warning hover:text-white"
+                  : "bg-surface-hover text-content-muted hover:bg-border-base",
+              )}
             >
-              <UnconfirmedNotesContent
-                patient={patient}
-                selectedDate={selectedDate as Date}
-                onJump={(recordId) => {
-                  (onJumpToUnconfirmed as (patientId: number, recordId: number) => void)(
-                    patient.patientId,
-                    recordId,
-                  );
-                  setIsPopoverOpen(false);
-                }}
-              />
-            </PopoverContent>
-          </Popover>
-        ) : (
-          <span
-            title={`확정 전 기록 ${patient.unconfirmedNursingCount}건`}
-            className="flex items-center justify-center min-w-[22px] h-5 px-1.5 mr-3 bg-[var(--color-brand-surface)] text-[var(--color-brand-primary)] text-[11px] font-bold rounded-full shrink-0"
+              {draftCount}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="right"
+            align="start"
+            sideOffset={8}
+            className="w-72 p-0 z-[100] shadow-xl border border-border-base bg-white"
           >
-            {patient.unconfirmedNursingCount}
-          </span>
-        )
-      )}
+            <UnconfirmedNotesContent
+              patient={patient}
+              onJump={(recordId, occurredAt) => {
+                (onJumpToUnconfirmed as (
+                  patientId: number,
+                  recordId: number,
+                  occurredAt: string,
+                ) => void)(patient.patientId, recordId, occurredAt);
+                setIsPopoverOpen(false);
+              }}
+            />
+          </PopoverContent>
+        </Popover>
+      ) : draftCount > 0 ? (
+        // 전체 환자 영역: 카운트 > 0 일 때만 정적 뱃지.
+        <span
+          title={`확정 전 기록 ${draftCount}건`}
+          className="flex items-center justify-center min-w-[22px] h-5 px-1.5 mr-3 bg-[var(--color-brand-surface)] text-[var(--color-brand-primary)] text-[11px] font-bold rounded-full shrink-0"
+        >
+          {draftCount}
+        </span>
+      ) : null}
     </div>
   );
 }
 
 function UnconfirmedNotesContent({
   patient,
-  selectedDate,
   onJump,
 }: {
   patient: WardPatient;
-  selectedDate: Date;
-  onJump: (recordId: number) => void;
+  onJump: (recordId: number, occurredAt: string) => void;
 }) {
-  const dateIso = format(selectedDate, "yyyy-MM-dd");
-  const { data, isPending, isError } = useNursingNotes(
-    patient.encounterId,
-    dateIso,
-  );
-  // 간호 기록(STT_NOTE) 의 draft 만 — 백엔드 응답이 같은 일자만 내려주므로 selectedDate 기준.
+  // /encounters/{id}/nursing-notes/drafts — 입원 단위 모든 일자의 draft 를 통합 반환.
+  const { data, isPending, isError } = useDraftNursingNotes(patient.encounterId);
+  // 현재 popover UI 는 STT_NOTE 만 렌더링 (MEDICATION draft 는 별도 디자인 필요).
+  // editable === true → 현재 로그인 간호사가 작성한 기록만 (백엔드 판단).
   const draftNotes = useMemo(() => {
     return (data ?? [])
       .filter(
         (note): note is Extract<typeof note, { type: "STT_NOTE" }> =>
-          note.type === "STT_NOTE" && note.status === "draft",
+          note.type === "STT_NOTE" && note.editable,
       )
       .sort(
         (a, b) =>
@@ -382,9 +396,11 @@ function UnconfirmedNotesContent({
         <span className="text-body-sm font-bold text-content-primary truncate">
           {patient.name} · 확정 전 기록
         </span>
-        <span className="text-body-micro font-mono text-content-tertiary shrink-0 ml-2">
-          {dateIso}
-        </span>
+        {draftNotes.length > 0 && (
+          <span className="text-body-micro font-mono text-content-tertiary shrink-0 ml-2">
+            {draftNotes.length}건
+          </span>
+        )}
       </div>
       <div className="max-h-[360px] overflow-y-auto">
         {isPending ? (
@@ -398,19 +414,19 @@ function UnconfirmedNotesContent({
           </div>
         ) : draftNotes.length === 0 ? (
           <div className="px-4 py-8 text-center text-body-xs font-medium text-content-muted">
-            이 날짜에 확정 전 간호기록이 없습니다
+            확정 전 간호기록이 없습니다
           </div>
         ) : (
           draftNotes.map((note) => (
             <button
               key={note.nursingRecordId}
               type="button"
-              onClick={() => onJump(note.nursingRecordId)}
+              onClick={() => onJump(note.nursingRecordId, note.occurredAt)}
               className="flex flex-col w-full px-3 py-2 hover:bg-surface-hover transition-colors text-left border-b border-border-subtle/50 last:border-b-0 gap-0.5"
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="font-mono text-body-xs font-bold text-content-primary shrink-0">
-                  {formatHHmm(note.occurredAt)}
+                  {formatMonthDayHHmm(note.occurredAt)}
                 </span>
                 <span className="text-body-micro text-content-muted truncate">
                   {note.authorName}

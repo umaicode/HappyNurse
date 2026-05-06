@@ -4,7 +4,7 @@ import { Plus, Loader2 } from "lucide-react";
 import * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { formatHHmm } from "@/lib/time";
+import { formatHHmm, toIsoDate } from "@/lib/time";
 import { Button } from "@/components/ui/button";
 import { useNursingNotes } from "../hooks/useNursingNotes";
 import {
@@ -139,6 +139,11 @@ export function NursingTab({
                       <InlineAddForm
                         encounterId={encounterId}
                         currentUser={currentUser}
+                        date={date}
+                        prevOccurredAt={
+                          index > 0 ? filteredNotes[index - 1].occurredAt : null
+                        }
+                        nextOccurredAt={note.occurredAt}
                         onClose={() => setInlineAddIndex(null)}
                       />
                     )}
@@ -165,6 +170,13 @@ export function NursingTab({
                   <InlineAddForm
                     encounterId={encounterId}
                     currentUser={currentUser}
+                    date={date}
+                    prevOccurredAt={
+                      filteredNotes.length > 0
+                        ? filteredNotes[filteredNotes.length - 1].occurredAt
+                        : null
+                    }
+                    nextOccurredAt={null}
                     onClose={() => setInlineAddIndex(null)}
                   />
                 )}
@@ -190,6 +202,47 @@ function rowKey(note: NursingNoteItem): string {
   return note.type === "STT_NOTE"
     ? `stt-${note.nursingRecordId}`
     : `med-${note.taggingId}`;
+}
+
+// "yyyy-MM-ddTHH:mm:ss" 로컬 ISO (타임존/밀리초 없음). 백엔드 confirmedAt 포맷.
+function formatLocalIsoDateTime(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+// 인라인 추가 시 confirmedAt 결정:
+// - 두 기록 사이: prev/next 사이 랜덤
+// - 맨 위 (next 만 있음): selectedDate 00:00 ~ next 사이 랜덤
+// - 맨 아래 + 오늘: undefined (서버 현재 시각으로 저장 → 정렬 보존)
+// - 맨 아래 + 다른 날짜 (목록 비어있을 때 포함): prev(있으면) ~ selectedDate 23:59:59 사이 랜덤
+function computeNewConfirmedAt(
+  selectedDate: string,
+  prevOccurredAt: string | null,
+  nextOccurredAt: string | null,
+): string | undefined {
+  // 맨 아래 (= next 없음).
+  if (nextOccurredAt === null) {
+    if (selectedDate === toIsoDate(new Date())) {
+      // 오늘 + 맨 아래 → 서버 현재 시각.
+      return undefined;
+    }
+    const startMs = prevOccurredAt
+      ? new Date(prevOccurredAt).getTime()
+      : new Date(`${selectedDate}T00:00:00`).getTime();
+    const endMs = new Date(`${selectedDate}T23:59:59`).getTime();
+    return formatLocalIsoDateTime(new Date(randomBetween(startMs, endMs)));
+  }
+  // 사이 또는 맨 위.
+  const startMs = prevOccurredAt
+    ? new Date(prevOccurredAt).getTime()
+    : new Date(`${selectedDate}T00:00:00`).getTime();
+  const endMs = new Date(nextOccurredAt).getTime();
+  return formatLocalIsoDateTime(new Date(randomBetween(startMs, endMs)));
+}
+
+function randomBetween(startMs: number, endMs: number): number {
+  if (endMs <= startMs) return startMs;
+  return startMs + Math.random() * (endMs - startMs);
 }
 
 // ISO datetime 의 HH:mm 만 새 값으로 교체 (날짜/초/타임존 보존).
@@ -284,10 +337,18 @@ function BetweenRowAdd({ onClick }: { onClick: () => void }) {
 function InlineAddForm({
   encounterId,
   currentUser,
+  date,
+  prevOccurredAt,
+  nextOccurredAt,
   onClose,
 }: {
   encounterId: number;
   currentUser: string;
+  // 현재 NursingTab 의 selectedDate (yyyy-MM-dd) — 오늘인지 판별 + fallback 경계 계산용.
+  date: string;
+  // 삽입 위치 기준의 이전/다음 기록 시각 (ISO datetime). 끝이면 null.
+  prevOccurredAt: string | null;
+  nextOccurredAt: string | null;
   onClose: () => void;
 }) {
   const [content, setContent] = useState("");
@@ -296,8 +357,17 @@ function InlineAddForm({
   const handleSubmit = () => {
     const trimmed = content.trim();
     if (!trimmed) return;
+    const confirmedAt = computeNewConfirmedAt(
+      date,
+      prevOccurredAt,
+      nextOccurredAt,
+    );
     createMutation.mutate(
-      { encounterId, content: trimmed },
+      {
+        encounterId,
+        content: trimmed,
+        ...(confirmedAt ? { confirmedAt } : {}),
+      },
       {
         onSuccess: () => {
           setContent("");

@@ -19,6 +19,8 @@ const invalidateNotesFor = (
   queryClient.invalidateQueries({
     queryKey: ["encounter", encounterId, "nursing-notes"] as const,
   });
+  // 사이드바 뱃지(unconfirmedNursingCount) 동기화 — wardPatients 응답에 카운트가 포함됨.
+  queryClient.invalidateQueries({ queryKey: ["ward", "me", "patients"] });
 };
 
 export const useCreateNursingRecord = (encounterId: number | null) => {

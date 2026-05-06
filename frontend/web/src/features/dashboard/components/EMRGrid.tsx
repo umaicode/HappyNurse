@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  Pencil,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { format, addDays, subDays } from "date-fns";
@@ -90,6 +91,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NursingTab } from "./NursingTab";
 import { OrderTab } from "./OrderTab";
@@ -374,18 +376,19 @@ export function EMRGrid({
                   내 기록만 보기
                 </label>
               </div>
-              <button
+              <Button
                 type="button"
-                onClick={() => setIsEditMode((prev) => !prev)}
+                variant={isEditMode ? "brand" : "neutral"}
+                size="sm"
                 className={cn(
-                  "h-7 px-3 rounded-md border text-body-sm font-semibold transition-colors",
-                  isEditMode
-                    ? "bg-brand-primary text-white border-brand-primary"
-                    : "bg-surface-card text-content-tertiary border-border-base hover:bg-surface-hover hover:text-content-primary",
+                  "h-7 px-2.5 rounded text-body-micro font-bold",
+                  isEditMode && "text-white hover:text-white",
                 )}
+                onClick={() => setIsEditMode((prev) => !prev)}
               >
+                <Pencil className="size-3.5" />
                 편집
-              </button>
+              </Button>
             </div>
           )}
 
