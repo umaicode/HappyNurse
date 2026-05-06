@@ -48,7 +48,7 @@ export type NursingNoteItem = SttNoteItem | MedicationNoteItem;
 
 // type 한글 라벨 (UI 표시용).
 export const NOTE_TYPE_LABEL: Record<NursingNoteType, string> = {
-  STT_NOTE: "간호 기록",
+  STT_NOTE: "음성",
   MEDICATION: "투약",
 };
 
