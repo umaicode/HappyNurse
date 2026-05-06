@@ -15,7 +15,11 @@ const TABS: { id: TabType; label: string; icon: typeof ClipboardList }[] = [
   { id: 'iv-timer', label: '수액 타이머', icon: Droplet },
 ];
 
-export function RightPanel() {
+interface RightPanelProps {
+  encounterId: number | null;
+}
+
+export function RightPanel({ encounterId }: RightPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>('orders');
 
   return (
@@ -45,7 +49,7 @@ export function RightPanel() {
       </div>
 
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'orders' && <STTPanel />}
+        {activeTab === 'orders' && <STTPanel encounterId={encounterId} />}
         {activeTab === 'alerts' && <PatientAlerts />}
         {activeTab === 'iv-timer' && <IVTimerPanel />}
       </div>
