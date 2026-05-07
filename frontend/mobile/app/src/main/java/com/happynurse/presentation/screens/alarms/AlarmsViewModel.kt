@@ -10,6 +10,8 @@ import com.happynurse.data.repository.IvRepository
 import com.happynurse.data.repository.NotificationRepository
 import com.happynurse.data.repository.PatientRepository
 import com.happynurse.domain.model.IVTimer
+import com.happynurse.domain.model.Notif
+import com.happynurse.domain.model.NotifCategory
 import com.happynurse.domain.model.NurseAlarm
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +41,10 @@ class AlarmsViewModel @Inject constructor(
     private val _alarms = MutableStateFlow<List<NurseAlarm>>(emptyList())
     val alarms: StateFlow<List<NurseAlarm>> = _alarms.asStateFlow()
 
+    // 벨 아이콘 시트용 — 같은 응답을 Notif 모델로 한 번 더 변환해 노출
+    private val _notifs = MutableStateFlow<List<Notif>>(emptyList())
+    val notifs: StateFlow<List<Notif>> = _notifs.asStateFlow()
+
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading.asStateFlow()
 
@@ -47,19 +53,20 @@ class AlarmsViewModel @Inject constructor(
 
     // init refresh 제거 — 화면 진입 시마다 LaunchedEffect 가 호출 (담당환자 변경 후 stale 방지)
 
-    // IN_PROGRESS 만 노출 + 본인 담당 환자 (isMyPatient=true) 의 IV 만 client-side filter.
-    // 백엔드에 assignedTo=me 필터 endpoint 가 없어 두 호출 후 patientId 로 join.
+    // 본인 담당 환자 patientId 집합 — IV 보드 / 알림 둘 다 client-side filter 에 사용
+    private suspend fun loadMyPatientIds(): Set<Long> =
+        patientRepository.getMyWardPatients().getOrNull()
+            ?.filter { it.isMyPatient }
+            ?.map { it.patientId }
+            ?.toSet()
+            ?: emptySet()
+
+    // IN_PROGRESS 만 노출 + 본인 담당 환자 의 IV 만 client-side filter.
     fun refreshIvBoard() {
         viewModelScope.launch {
             val wardId = authRepository.wardId.firstOrNull() ?: return@launch
             _loading.value = true
-            // 1) 본인 담당 환자 patientId 집합
-            val myPatientIds: Set<Long> = patientRepository.getMyWardPatients().getOrNull()
-                ?.filter { it.isMyPatient }
-                ?.map { it.patientId }
-                ?.toSet()
-                ?: emptySet()
-            // 2) 병동 IV 보드 → 담당 환자 IV 만 추림. 담당 정보 없으면 안전하게 빈 목록.
+            val myPatientIds = loadMyPatientIds()
             ivRepository.getByWard(wardId, status = "IN_PROGRESS").fold(
                 onSuccess = { list ->
                     val filtered = list.filter { it.patientId in myPatientIds }
@@ -72,19 +79,49 @@ class AlarmsViewModel @Inject constructor(
         }
     }
 
-    // 병동 알림함 — wardId 기반. limit 50 으로 첫 페이지만 (스크롤 시 cursor 페이지네이션은 후속)
+    // 병동 알림함 — wardId 기반 + 본인 담당 환자 patientId 만 client-side filter.
+    // 같은 응답을 NurseAlarm (전체알람 탭) + Notif (벨 시트) 두 모델로 변환.
     fun refreshAlarms() {
         viewModelScope.launch {
             val wardId = authRepository.wardId.firstOrNull() ?: return@launch
+            val myPatientIds = loadMyPatientIds()
             notificationRepository.getWard(wardId, limit = 50).fold(
                 onSuccess = { res ->
-                    _alarms.value = res.items.map { it.toNurseAlarm() }
+                    val mine = res.items.filter { it.patientId != null && it.patientId in myPatientIds }
+                    _alarms.value = mine.map { it.toNurseAlarm() }
+                    _notifs.value = mine.map { it.toNotif() }
                     _error.value = null
                 },
                 onFailure = { _error.value = it.message ?: "알림 조회 실패" },
             )
         }
     }
+}
+
+// 서버 알림 → 벨 시트용 Notif 변환. sourceType 으로 category 매핑.
+private fun NotificationListItemResponse.toNotif(): Notif {
+    val instant = parseInstantOrNull(createdAt) ?: java.time.Instant.now()
+    val now = java.time.Instant.now()
+    val minutesAgo = ((now.epochSecond - instant.epochSecond) / 60).toInt().coerceAtLeast(0)
+    val zoned = instant.atZone(ZoneId.systemDefault())
+    val time = zoned.format(DateTimeFormatter.ofPattern("HH:mm"))
+    val cat = when (sourceType) {
+        "iv_alert" -> NotifCategory.FLUID
+        "self_report", "order_change" -> NotifCategory.REQUEST
+        "vital_alert", "timer" -> NotifCategory.WATCH
+        else -> NotifCategory.REQUEST
+    }
+    return Notif(
+        id = notificationId.toString(),
+        category = cat,
+        patient = patientName ?: "",
+        room = "",  // 알림 응답에 roomName 없음
+        text = listOfNotNull(title, body).joinToString(" — ").ifBlank { sourceType ?: "" },
+        time = time,
+        minutesAgo = minutesAgo,
+        unread = false,    // 백엔드 read 상태 endpoint 부재
+        upcoming = false,  // 모두 발생한 이벤트
+    )
 }
 
 // 서버 알림 → 화면 모델 변환. 시각은 createdAt 기준 HH:mm / yyyy-MM-dd 분리.
