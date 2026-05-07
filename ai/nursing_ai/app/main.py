@@ -18,8 +18,8 @@ app = FastAPI(
 - **피드백 루프**: 간호사 수정 이력을 학습하여 매핑 정확도 향상
 
 ### 인증
-- Spring Boot에서 발급한 JWT 토큰을 `Authorization: Bearer {token}` 헤더에 포함
-- 오른쪽 위 **Authorize** 버튼을 클릭하여 토큰 입력
+- **운영(브라우저)**: Spring Boot 로그인 시 발급되는 HttpOnly 쿠키 `ACCESS_TOKEN`이 자동 전송됨
+- **Swagger/Postman 테스트**: 우상단 **Authorize** 버튼에 JWT를 입력하면 `Authorization: Bearer {token}` 헤더로 호출 가능
     """,
     version="1.0.0",
     swagger_ui_parameters={"persistAuthorization": True},
@@ -37,7 +37,9 @@ cors_origins = [
     o.strip()
     for o in os.getenv(
         "CORS_ALLOWED_ORIGINS",
-        "http://localhost:5173,http://localhost:3000",
+        "http://localhost:5173,"
+        "http://localhost:3000,"
+        "https://k14e101.p.ssafy.io",
     ).split(",")
     if o.strip()
 ]

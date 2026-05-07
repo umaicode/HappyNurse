@@ -2,7 +2,8 @@ import os
 import base64
 import jwt
 from dotenv import load_dotenv
-from fastapi import Cookie, Header, HTTPException
+from fastapi import Cookie, Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 load_dotenv()
 
@@ -10,6 +11,11 @@ JWT_SECRET_BASE64 = os.getenv("JWT_SECRET_KEY")
 JWT_SECRET = base64.b64decode(JWT_SECRET_BASE64)
 JWT_ALGORITHM = "HS256"
 COOKIE_NAME = "ACCESS_TOKEN"
+
+bearer_scheme = HTTPBearer(
+    auto_error=False,
+    description="Swagger/Postman 테스트용. 실제 프론트엔드는 HttpOnly 쿠키(ACCESS_TOKEN)로 인증.",
+)
 
 
 def verify_token(token: str) -> dict:
@@ -34,12 +40,12 @@ def verify_token(token: str) -> dict:
 
 async def get_current_user(
     access_token: str | None = Cookie(default=None, alias=COOKIE_NAME),
-    authorization: str | None = Header(default=None),
+    bearer: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> dict:
-    """쿠키(ACCESS_TOKEN) 우선, Authorization 헤더 fallback으로 JWT 추출 후 검증"""
+    """Bearer 헤더(Swagger 테스트용) 우선, 없으면 HttpOnly 쿠키(ACCESS_TOKEN) fallback."""
     token: str | None = None
-    if authorization and authorization.lower().startswith("bearer "):
-        token = authorization.split(" ", 1)[1].strip()
+    if bearer is not None:
+        token = bearer.credentials
     elif access_token:
         token = access_token
 
