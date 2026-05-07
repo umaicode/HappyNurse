@@ -8,16 +8,12 @@ import { formatHHmm, toIsoDate } from "@/lib/time";
 import { Button } from "@/components/ui/button";
 import { useNursingNotes } from "../hooks/useNursingNotes";
 import {
-  useConfirmNursingRecord,
+  useConfirmNursingNoteItem,
   useCreateNursingRecord,
-  useDeleteNursingRecord,
+  useDeleteNursingNoteItem,
   useUpdateNursingRecord,
 } from "../hooks/useNursingRecordMutations";
-import {
-  useConfirmMedicationGroup,
-  useDeleteMedicationGroup,
-  useUpdateMedicationGroup,
-} from "../hooks/useMedicationAdministrationMutations";
+import { useUpdateMedicationGroup } from "../hooks/useMedicationAdministrationMutations";
 import {
   NOTE_TYPE_LABEL,
   NOTE_TYPE_TONE,
@@ -149,6 +145,8 @@ export function NursingTab({
                     )}
 
                     <NoteRow
+                      // isEditMode 토글 시 row 를 자연 remount 시켜 작성 중 draft state 도 같이 초기화 (사용자 의도).
+                      key={`${key}-${isEditMode ? "edit" : "view"}`}
                       note={note}
                       encounterId={encounterId}
                       isEditMode={isEditMode}
@@ -278,11 +276,13 @@ function TimeInput({
     onChange(`${h}:${m}`);
   };
 
+  // display 모드 시간 셀 (`text-[15px] font-extrabold leading-[1.6]`) 과 글자 크기/높이 동일하게.
+  // 너비는 글자 2자 폭에 맞춰 좁게 — w-9 처럼 넓으면 가운데 정렬에서 양 끝으로 벌어져 보임.
   const cellClass =
-    "w-9 text-center bg-transparent focus:outline-none font-mono font-extrabold text-[15px] text-content-primary";
+    "w-6 text-center bg-transparent focus:outline-none font-mono font-extrabold text-[15px] leading-[1.6] text-content-primary";
 
   return (
-    <div className="flex items-center justify-center gap-0.5 w-full leading-tight border border-border-base rounded px-1 py-1 bg-white focus-within:ring-1 focus-within:ring-content-primary/20">
+    <div className="flex items-center justify-center gap-0.5 w-full border border-border-base rounded bg-white focus-within:ring-1 focus-within:ring-content-primary/20">
       <input
         type="text"
         inputMode="numeric"
@@ -298,7 +298,7 @@ function TimeInput({
         onBlur={() => update(hour ? hour.padStart(2, "0") : "00", minute)}
         className={cellClass}
       />
-      <span className="font-mono font-bold text-content-muted">:</span>
+      <span className="font-mono font-bold text-[15px] leading-[1.6] text-content-muted">:</span>
       <input
         type="text"
         inputMode="numeric"
@@ -354,19 +354,23 @@ function InlineAddForm({
   const [content, setContent] = useState("");
   const createMutation = useCreateNursingRecord(encounterId);
 
+  // 폼 마운트 시점에 시각 한 번만 결정 — 좌측 셀 표시값과 submit 송신값을 같은 값으로 맞춘다.
+  // undefined 면 "오늘 + 맨 아래" 케이스 — 서버 현재 시각으로 저장되며, 표시는 마운트 시점 now 로 미리 보여준다.
+  const [plannedConfirmedAt] = useState<string | undefined>(() =>
+    computeNewConfirmedAt(date, prevOccurredAt, nextOccurredAt),
+  );
+  const [displayHHmm] = useState<string>(() =>
+    plannedConfirmedAt ? formatHHmm(plannedConfirmedAt) : formatHHmm(new Date()),
+  );
+
   const handleSubmit = () => {
     const trimmed = content.trim();
     if (!trimmed) return;
-    const confirmedAt = computeNewConfirmedAt(
-      date,
-      prevOccurredAt,
-      nextOccurredAt,
-    );
     createMutation.mutate(
       {
         encounterId,
         content: trimmed,
-        ...(confirmedAt ? { confirmedAt } : {}),
+        ...(plannedConfirmedAt ? { confirmedAt: plannedConfirmedAt } : {}),
       },
       {
         onSuccess: () => {
@@ -379,8 +383,8 @@ function InlineAddForm({
 
   return (
     <div className="grid grid-cols-[90px_1fr_70px_90px_110px] gap-4 px-4 py-2 border-y border-brand-primary/10 bg-brand-surface/30 items-center shadow-inner">
-      <div className="text-center text-body-micro font-mono text-content-muted">
-        자동
+      <div className="text-center text-body-sm font-mono font-bold text-content-secondary">
+        {displayHHmm}
       </div>
       <div className="pr-4">
         <textarea
@@ -438,7 +442,8 @@ function NoteRow({
 }) {
   const isMedication = note.type === "MEDICATION";
 
-  // STT_NOTE: content + occurredAt / MEDICATION: dosageQuantity + effectiveDatetime
+  // STT_NOTE: content + occurredAt / MEDICATION: dosageQuantity + confirmedAt
+  // 헤더 "편집" 토글 변화 시 NoteRow 가 key 변경으로 remount 되므로 isEditing 도 자연 초기화됨.
   const [isEditing, setIsEditing] = useState(false);
   const [draftContent, setDraftContent] = useState("");
   const [draftTime, setDraftTime] = useState(""); // "HH:mm" 형식
@@ -507,7 +512,7 @@ function NoteRow({
       );
       return;
     }
-    // MEDICATION — 변경된 약물 + 시간 (effectiveDatetime).
+    // MEDICATION — 변경된 약물(약별 1회 투여량) + 그룹 시각(confirmedAt).
     const changedMeds = note.medications
       .filter(
         (medication) =>
@@ -518,7 +523,6 @@ function NoteRow({
       .map((medication) => ({
         medicationAdminId: medication.medicationAdminId,
         dosageQuantity: medicationDrafts[medication.medicationAdminId],
-        dosageUnit: medication.dosageUnit,
       }));
     if (changedMeds.length === 0 && !timeChanged) {
       cancelEdit();
@@ -529,7 +533,7 @@ function NoteRow({
         taggingId: note.taggingId,
         request: {
           ...(changedMeds.length > 0 ? { medications: changedMeds } : {}),
-          ...(newOccurredAt ? { effectiveDatetime: newOccurredAt } : {}),
+          ...(newOccurredAt ? { confirmedAt: newOccurredAt } : {}),
         },
       },
       {
@@ -552,7 +556,7 @@ function NoteRow({
         isEditing && "bg-brand-surface/15",
       )}
     >
-      {/* 시간 — 편집 모드에선 HH : mm 분리 입력. STT_NOTE = confirmedAt / MEDICATION = effectiveDatetime 으로 PATCH. */}
+      {/* 시간 — 편집 모드에선 HH : mm 분리 입력. STT_NOTE / MEDICATION 모두 body 의 confirmedAt 키로 송신. */}
       <div className="py-1.5 border-r border-border-base/50 pr-4 min-w-0">
         {isEditing ? (
           <TimeInput value={draftTime} onChange={setDraftTime} />
@@ -683,8 +687,8 @@ function SttNoteActions({
   isEditMode: boolean;
   onStartEdit: () => void;
 }) {
-  const confirmMutation = useConfirmNursingRecord(encounterId);
-  const deleteMutation = useDeleteNursingRecord(encounterId);
+  const confirmMutation = useConfirmNursingNoteItem(encounterId);
+  const deleteMutation = useDeleteNursingNoteItem(encounterId);
 
   return (
     <>
@@ -729,8 +733,8 @@ function MedicationActions({
   isEditMode: boolean;
   onStartEdit: () => void;
 }) {
-  const confirmMutation = useConfirmMedicationGroup(encounterId);
-  const deleteMutation = useDeleteMedicationGroup(encounterId);
+  const confirmMutation = useConfirmNursingNoteItem(encounterId);
+  const deleteMutation = useDeleteNursingNoteItem(encounterId);
 
   return (
     <>
