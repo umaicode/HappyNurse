@@ -76,11 +76,13 @@ export function DashboardView() {
             selectedPatientId={selectedPatientId}
             onSelectPatient={setOverridePatientId}
             onOpenAssignModal={() => setIsAssignOpen(true)}
-            selectedDate={selectedDate}
-            onJumpToUnconfirmed={(patientId, recordId) => {
+            onJumpToUnconfirmed={(patientId, recordId, occurredAt) => {
               setOverridePatientId(patientId);
               setActiveTab("nursing");
               setFocusRecordId(recordId);
+              // popover 는 일자 무관 draft 를 보여주므로, 다른 일자 항목을 클릭해도
+              // NursingTab 이 그 날짜로 이동하도록 selectedDate 를 함께 맞춘다.
+              setSelectedDate(new Date(occurredAt));
             }}
           />
         }

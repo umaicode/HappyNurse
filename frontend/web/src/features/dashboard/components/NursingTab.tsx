@@ -4,26 +4,23 @@ import { Plus, Loader2 } from "lucide-react";
 import * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { formatHHmm } from "@/lib/time";
+import { formatHHmm, toIsoDate } from "@/lib/time";
 import { Button } from "@/components/ui/button";
 import { useNursingNotes } from "../hooks/useNursingNotes";
 import {
-  useConfirmNursingRecord,
+  useConfirmNursingNoteItem,
   useCreateNursingRecord,
-  useDeleteNursingRecord,
+  useDeleteNursingNoteItem,
   useUpdateNursingRecord,
 } from "../hooks/useNursingRecordMutations";
-import {
-  useConfirmMedicationGroup,
-  useDeleteMedicationGroup,
-  useUpdateMedicationGroup,
-} from "../hooks/useMedicationAdministrationMutations";
+import { useUpdateMedicationGroup } from "../hooks/useMedicationAdministrationMutations";
 import {
   NOTE_TYPE_LABEL,
   NOTE_TYPE_TONE,
   type MedicationItem,
   type NursingNoteItem,
 } from "../types/nursing-note";
+import { QuickCorrectionPanel } from "./QuickCorrectionPanel";
 
 type NursingTabProps = {
   encounterId: number | null;
@@ -139,11 +136,18 @@ export function NursingTab({
                       <InlineAddForm
                         encounterId={encounterId}
                         currentUser={currentUser}
+                        date={date}
+                        prevOccurredAt={
+                          index > 0 ? filteredNotes[index - 1].occurredAt : null
+                        }
+                        nextOccurredAt={note.occurredAt}
                         onClose={() => setInlineAddIndex(null)}
                       />
                     )}
 
                     <NoteRow
+                      // isEditMode 토글 시 row 를 자연 remount 시켜 작성 중 draft state 도 같이 초기화 (사용자 의도).
+                      key={`${key}-${isEditMode ? "edit" : "view"}`}
                       note={note}
                       encounterId={encounterId}
                       isEditMode={isEditMode}
@@ -165,6 +169,13 @@ export function NursingTab({
                   <InlineAddForm
                     encounterId={encounterId}
                     currentUser={currentUser}
+                    date={date}
+                    prevOccurredAt={
+                      filteredNotes.length > 0
+                        ? filteredNotes[filteredNotes.length - 1].occurredAt
+                        : null
+                    }
+                    nextOccurredAt={null}
                     onClose={() => setInlineAddIndex(null)}
                   />
                 )}
@@ -190,6 +201,47 @@ function rowKey(note: NursingNoteItem): string {
   return note.type === "STT_NOTE"
     ? `stt-${note.nursingRecordId}`
     : `med-${note.taggingId}`;
+}
+
+// "yyyy-MM-ddTHH:mm:ss" 로컬 ISO (타임존/밀리초 없음). 백엔드 confirmedAt 포맷.
+function formatLocalIsoDateTime(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+// 인라인 추가 시 confirmedAt 결정:
+// - 두 기록 사이: prev/next 사이 랜덤
+// - 맨 위 (next 만 있음): selectedDate 00:00 ~ next 사이 랜덤
+// - 맨 아래 + 오늘: undefined (서버 현재 시각으로 저장 → 정렬 보존)
+// - 맨 아래 + 다른 날짜 (목록 비어있을 때 포함): prev(있으면) ~ selectedDate 23:59:59 사이 랜덤
+function computeNewConfirmedAt(
+  selectedDate: string,
+  prevOccurredAt: string | null,
+  nextOccurredAt: string | null,
+): string | undefined {
+  // 맨 아래 (= next 없음).
+  if (nextOccurredAt === null) {
+    if (selectedDate === toIsoDate(new Date())) {
+      // 오늘 + 맨 아래 → 서버 현재 시각.
+      return undefined;
+    }
+    const startMs = prevOccurredAt
+      ? new Date(prevOccurredAt).getTime()
+      : new Date(`${selectedDate}T00:00:00`).getTime();
+    const endMs = new Date(`${selectedDate}T23:59:59`).getTime();
+    return formatLocalIsoDateTime(new Date(randomBetween(startMs, endMs)));
+  }
+  // 사이 또는 맨 위.
+  const startMs = prevOccurredAt
+    ? new Date(prevOccurredAt).getTime()
+    : new Date(`${selectedDate}T00:00:00`).getTime();
+  const endMs = new Date(nextOccurredAt).getTime();
+  return formatLocalIsoDateTime(new Date(randomBetween(startMs, endMs)));
+}
+
+function randomBetween(startMs: number, endMs: number): number {
+  if (endMs <= startMs) return startMs;
+  return startMs + Math.random() * (endMs - startMs);
 }
 
 // ISO datetime 의 HH:mm 만 새 값으로 교체 (날짜/초/타임존 보존).
@@ -225,11 +277,13 @@ function TimeInput({
     onChange(`${h}:${m}`);
   };
 
+  // display 모드 시간 셀 (`text-[15px] font-extrabold leading-[1.6]`) 과 글자 크기/높이 동일하게.
+  // 너비는 글자 2자 폭에 맞춰 좁게 — w-9 처럼 넓으면 가운데 정렬에서 양 끝으로 벌어져 보임.
   const cellClass =
-    "w-9 text-center bg-transparent focus:outline-none font-mono font-extrabold text-[15px] text-content-primary";
+    "w-6 text-center bg-transparent focus:outline-none font-mono font-extrabold text-[15px] leading-[1.6] text-content-primary";
 
   return (
-    <div className="flex items-center justify-center gap-0.5 w-full leading-tight border border-border-base rounded px-1 py-1 bg-white focus-within:ring-1 focus-within:ring-content-primary/20">
+    <div className="flex items-center justify-center gap-0.5 w-full border border-border-base rounded bg-white focus-within:ring-1 focus-within:ring-content-primary/20">
       <input
         type="text"
         inputMode="numeric"
@@ -245,7 +299,7 @@ function TimeInput({
         onBlur={() => update(hour ? hour.padStart(2, "0") : "00", minute)}
         className={cellClass}
       />
-      <span className="font-mono font-bold text-content-muted">:</span>
+      <span className="font-mono font-bold text-[15px] leading-[1.6] text-content-muted">:</span>
       <input
         type="text"
         inputMode="numeric"
@@ -284,20 +338,41 @@ function BetweenRowAdd({ onClick }: { onClick: () => void }) {
 function InlineAddForm({
   encounterId,
   currentUser,
+  date,
+  prevOccurredAt,
+  nextOccurredAt,
   onClose,
 }: {
   encounterId: number;
   currentUser: string;
+  // 현재 NursingTab 의 selectedDate (yyyy-MM-dd) — 오늘인지 판별 + fallback 경계 계산용.
+  date: string;
+  // 삽입 위치 기준의 이전/다음 기록 시각 (ISO datetime). 끝이면 null.
+  prevOccurredAt: string | null;
+  nextOccurredAt: string | null;
   onClose: () => void;
 }) {
   const [content, setContent] = useState("");
   const createMutation = useCreateNursingRecord(encounterId);
 
+  // 폼 마운트 시점에 시각 한 번만 결정 — 좌측 셀 표시값과 submit 송신값을 같은 값으로 맞춘다.
+  // undefined 면 "오늘 + 맨 아래" 케이스 — 서버 현재 시각으로 저장되며, 표시는 마운트 시점 now 로 미리 보여준다.
+  const [plannedConfirmedAt] = useState<string | undefined>(() =>
+    computeNewConfirmedAt(date, prevOccurredAt, nextOccurredAt),
+  );
+  const [displayHHmm] = useState<string>(() =>
+    plannedConfirmedAt ? formatHHmm(plannedConfirmedAt) : formatHHmm(new Date()),
+  );
+
   const handleSubmit = () => {
     const trimmed = content.trim();
     if (!trimmed) return;
     createMutation.mutate(
-      { encounterId, content: trimmed },
+      {
+        encounterId,
+        content: trimmed,
+        ...(plannedConfirmedAt ? { confirmedAt: plannedConfirmedAt } : {}),
+      },
       {
         onSuccess: () => {
           setContent("");
@@ -309,8 +384,8 @@ function InlineAddForm({
 
   return (
     <div className="grid grid-cols-[90px_1fr_70px_90px_110px] gap-4 px-4 py-2 border-y border-brand-primary/10 bg-brand-surface/30 items-center shadow-inner">
-      <div className="text-center text-body-micro font-mono text-content-muted">
-        자동
+      <div className="text-center text-body-sm font-mono font-bold text-content-secondary">
+        {displayHHmm}
       </div>
       <div className="pr-4">
         <textarea
@@ -368,7 +443,8 @@ function NoteRow({
 }) {
   const isMedication = note.type === "MEDICATION";
 
-  // STT_NOTE: content + occurredAt / MEDICATION: dosageQuantity + effectiveDatetime
+  // STT_NOTE: content + occurredAt / MEDICATION: dosageQuantity + confirmedAt
+  // 헤더 "편집" 토글 변화 시 NoteRow 가 key 변경으로 remount 되므로 isEditing 도 자연 초기화됨.
   const [isEditing, setIsEditing] = useState(false);
   const [draftContent, setDraftContent] = useState("");
   const [draftTime, setDraftTime] = useState(""); // "HH:mm" 형식
@@ -437,7 +513,7 @@ function NoteRow({
       );
       return;
     }
-    // MEDICATION — 변경된 약물 + 시간 (effectiveDatetime).
+    // MEDICATION — 변경된 약물(약별 1회 투여량) + 그룹 시각(confirmedAt).
     const changedMeds = note.medications
       .filter(
         (medication) =>
@@ -448,7 +524,6 @@ function NoteRow({
       .map((medication) => ({
         medicationAdminId: medication.medicationAdminId,
         dosageQuantity: medicationDrafts[medication.medicationAdminId],
-        dosageUnit: medication.dosageUnit,
       }));
     if (changedMeds.length === 0 && !timeChanged) {
       cancelEdit();
@@ -459,7 +534,7 @@ function NoteRow({
         taggingId: note.taggingId,
         request: {
           ...(changedMeds.length > 0 ? { medications: changedMeds } : {}),
-          ...(newOccurredAt ? { effectiveDatetime: newOccurredAt } : {}),
+          ...(newOccurredAt ? { confirmedAt: newOccurredAt } : {}),
         },
       },
       {
@@ -482,7 +557,7 @@ function NoteRow({
         isEditing && "bg-brand-surface/15",
       )}
     >
-      {/* 시간 — 편집 모드에선 HH : mm 분리 입력. STT_NOTE = confirmedAt / MEDICATION = effectiveDatetime 으로 PATCH. */}
+      {/* 시간 — 편집 모드에선 HH : mm 분리 입력. STT_NOTE / MEDICATION 모두 body 의 confirmedAt 키로 송신. */}
       <div className="py-1.5 border-r border-border-base/50 pr-4 min-w-0">
         {isEditing ? (
           <TimeInput value={draftTime} onChange={setDraftTime} />
@@ -507,25 +582,43 @@ function NoteRow({
               }))
             }
           />
-        ) : isEditing ? (
-          <textarea
-            autoFocus
-            value={draftContent}
-            onChange={(event) => setDraftContent(event.target.value)}
-            ref={(element) => {
-              if (element) {
-                element.style.height = "auto";
-                element.style.height = `${element.scrollHeight}px`;
-              }
-            }}
-            onInput={(event) => {
-              const target = event.currentTarget;
-              target.style.height = "auto";
-              target.style.height = `${target.scrollHeight}px`;
-            }}
-            className="w-full bg-white border border-brand-primary/30 rounded px-2 py-1.5 text-body-sm leading-[1.6] text-content-primary resize-none focus:outline-none focus:ring-1 focus:ring-brand-primary/20 shadow-xs"
-            rows={1}
-          />
+        ) : isEditing && note.type === "STT_NOTE" ? (
+          <div className="flex flex-col">
+            <textarea
+              autoFocus
+              value={draftContent}
+              onChange={(event) => setDraftContent(event.target.value)}
+              ref={(element) => {
+                if (element) {
+                  element.style.height = "auto";
+                  element.style.height = `${element.scrollHeight}px`;
+                }
+              }}
+              onInput={(event) => {
+                const target = event.currentTarget;
+                target.style.height = "auto";
+                target.style.height = `${target.scrollHeight}px`;
+              }}
+              className="w-full bg-white border border-brand-primary/30 rounded px-2 py-1.5 text-body-sm leading-[1.6] text-content-primary resize-none focus:outline-none focus:ring-1 focus:ring-brand-primary/20 shadow-xs"
+              rows={1}
+            />
+            <QuickCorrectionPanel
+              nursingRecordId={note.nursingRecordId}
+              content={note.content}
+              onApply={(start, end, replaced) => {
+                // 본문 정확 치환 — 응답의 start/end 는 원본 content 인덱스 기준이라 note.content 에서 자른다.
+                // 사용자가 textarea 를 직접 편집한 후라면 인덱스가 어긋날 수 있어 안전 가드 추가.
+                const original = note.content.slice(start, end);
+                const next =
+                  draftContent === note.content
+                    ? note.content.slice(0, start) +
+                      replaced +
+                      note.content.slice(end)
+                    : draftContent.replace(original, replaced);
+                setDraftContent(next);
+              }}
+            />
+          </div>
         ) : (
           <SttContent content={note.content} />
         )}
@@ -613,8 +706,8 @@ function SttNoteActions({
   isEditMode: boolean;
   onStartEdit: () => void;
 }) {
-  const confirmMutation = useConfirmNursingRecord(encounterId);
-  const deleteMutation = useDeleteNursingRecord(encounterId);
+  const confirmMutation = useConfirmNursingNoteItem(encounterId);
+  const deleteMutation = useDeleteNursingNoteItem(encounterId);
 
   return (
     <>
@@ -659,8 +752,8 @@ function MedicationActions({
   isEditMode: boolean;
   onStartEdit: () => void;
 }) {
-  const confirmMutation = useConfirmMedicationGroup(encounterId);
-  const deleteMutation = useDeleteMedicationGroup(encounterId);
+  const confirmMutation = useConfirmNursingNoteItem(encounterId);
+  const deleteMutation = useDeleteNursingNoteItem(encounterId);
 
   return (
     <>

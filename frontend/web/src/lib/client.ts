@@ -77,7 +77,9 @@ const isAuthEntryRequest = (url: string | undefined) =>
 
 let refreshPromise: Promise<void> | null = null
 
-const performRefresh = () => {
+// AI client 등 다른 axios 인스턴스에서 재사용. 동시 401 발생 시 동일 promise 공유로 중복 refresh 방지.
+// refresh 실패 시 redirect/clear 는 호출 측 인터셉터가 결정 (현재 정책: redirect 안 함, 호출 측 onError 가 처리).
+export const performRefresh = () => {
   if (refreshPromise) return refreshPromise
   refreshPromise = client
     .post('/auth/refresh', null, { _retry: true } as RetryConfig)
@@ -86,13 +88,6 @@ const performRefresh = () => {
       refreshPromise = null
     })
   return refreshPromise
-}
-
-const redirectToLogin = () => {
-  if (typeof window !== 'undefined') {
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? ''
-    window.location.href = `${basePath}/login`
-  }
 }
 
 client.interceptors.response.use(
@@ -132,8 +127,8 @@ client.interceptors.response.use(
       await performRefresh()
       return client(originalRequest)
     } catch (refreshError) {
-      devTokenStorage.clear()
-      redirectToLogin()
+      // refresh 실패 시 redirect 끔 (사용자 요청). token 도 clear 안 함 — 다른 기능이 access token 으로 잘 동작 중일 수 있음.
+      // 호출 측이 onError 로 알림 처리.
       return Promise.reject(refreshError)
     }
   },
