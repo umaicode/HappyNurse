@@ -1,30 +1,17 @@
 /**
- * 투약 그룹(taggingId 단위) 액션 API.
+ * 투약 그룹(taggingId 단위) 수정 API.
  *
- * - update / delete / confirm — 그룹 단위 작업. 그룹 생성은 모바일 NFC 흐름.
+ * - update — `PATCH /nursing-notes/medication/{taggingId}` (백엔드 통합 라우터)
+ * - 그룹 단위 확정 / 삭제 — `nursing-note.ts` 의 통합 helper(confirm/deleteNursingNoteItem) 사용
  */
 import { client } from "@/lib/client";
-import type {
-  MedicationAdministrationUpdateRequest,
-  MedicationAdministrationWriteResponse,
-} from "../types/medication-administration";
+import type { NursingNoteMedicationEditRequest } from "../types/medication-administration";
+import type { NursingNoteItem } from "../types/nursing-note";
 
 export const updateMedicationGroup = (
   taggingId: string,
-  request: MedicationAdministrationUpdateRequest,
-): Promise<MedicationAdministrationWriteResponse> =>
+  request: NursingNoteMedicationEditRequest,
+): Promise<NursingNoteItem> =>
   client
-    .patch(`/medication-administrations/tagging/${taggingId}`, request)
-    .then((response) => response.data);
-
-export const deleteMedicationGroup = (taggingId: string): Promise<void> =>
-  client
-    .delete(`/medication-administrations/tagging/${taggingId}`)
-    .then(() => undefined);
-
-export const confirmMedicationGroup = (
-  taggingId: string,
-): Promise<MedicationAdministrationWriteResponse> =>
-  client
-    .post(`/medication-administrations/tagging/${taggingId}/confirm`)
+    .patch(`/nursing-notes/medication/${taggingId}`, request)
     .then((response) => response.data);
