@@ -8,5 +8,6 @@
 .claude/
 
 # Swagger 덤프
+**/swagger_ai.md
+**/swagger_be.md
 **/swagger.md
-
