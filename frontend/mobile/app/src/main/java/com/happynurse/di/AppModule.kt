@@ -9,7 +9,6 @@ import com.happynurse.data.remote.api.EncounterApi
 import com.happynurse.data.remote.api.FcmTokenApi
 import com.happynurse.data.remote.api.IvApi
 import com.happynurse.data.remote.api.NotificationApi
-import com.happynurse.data.remote.api.NursingNoteApi
 import com.happynurse.data.remote.api.SttApi
 import com.happynurse.data.remote.api.HappyNurseApi
 import com.happynurse.data.remote.api.NfcTokenApi
@@ -95,7 +94,6 @@ object AppModule {
     @Provides @Singleton fun provideIvApi(@AuthRetrofit r: Retrofit): IvApi = r.create(IvApi::class.java)
     @Provides @Singleton fun provideNotificationApi(@AuthRetrofit r: Retrofit): NotificationApi = r.create(NotificationApi::class.java)
     @Provides @Singleton fun provideSttApi(@AiRetrofit r: Retrofit): SttApi = r.create(SttApi::class.java)
-    @Provides @Singleton fun provideNursingNoteApi(@AuthRetrofit r: Retrofit): NursingNoteApi = r.create(NursingNoteApi::class.java)
 
     // AI 서버용 별도 Retrofit — STT/correction 등. Bearer 토큰 동일하게 주입 (AuthRepository 의 access_token 재활용).
     // AuthAuthenticator 도 같이 붙여 — AI 서버가 401(토큰 만료) 시 /auth/refresh 자동 호출 후 재시도.

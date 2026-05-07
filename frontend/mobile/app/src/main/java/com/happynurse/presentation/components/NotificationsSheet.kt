@@ -63,17 +63,41 @@ fun NotificationsSheet(
                 Icon(Icons.Outlined.Close, contentDescription = "닫기", tint = HnColors.TextSecondary)
             }
         }
-        val sorted = notifications.sortedWith(
-            compareByDescending<Notif> { it.upcoming }.thenByDescending { it.minutesAgo },
-        )
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 6.dp),
-        ) {
-            items(sorted, key = { it.id }) { NotifRow(it) }
-            item { Spacer(Modifier.height(20.dp)) }
+        if (notifications.isEmpty()) {
+            // 담당 환자가 없거나 그 환자에 대한 알림이 없을 때
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 32.dp),
+            ) {
+                Text(
+                    "담당 환자의 알림이 없습니다",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = HnColors.Text,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "환자 탭에서 담당환자를 선택하면\n해당 환자의 알림이 여기 표시됩니다",
+                    fontSize = 12.sp,
+                    color = HnColors.TextSecondary,
+                )
+                Spacer(Modifier.height(20.dp))
+            }
+        } else {
+            val sorted = notifications.sortedWith(
+                compareByDescending<Notif> { it.upcoming }.thenByDescending { it.minutesAgo },
+            )
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 6.dp),
+            ) {
+                items(sorted, key = { it.id }) { NotifRow(it) }
+                item { Spacer(Modifier.height(20.dp)) }
+            }
         }
     }
 }
