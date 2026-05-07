@@ -56,7 +56,8 @@ public class SymptomSubmittedNotificationAdapter {
                 event,
                 event.getSubmittedAt().atZone(ZoneId.systemDefault()).toInstant(),
                 null,
-                PushPolicy.ASSIGN_DELIVERY
+                PushPolicy.ASSIGN_DELIVERY,
+                null   // priority — Phase 5에서 event.getPriority()로 채움
         );
 
         dispatcher.dispatch(envelope);

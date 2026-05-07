@@ -13,6 +13,7 @@ import com.ssafy.happynurse.domain.nurse.notification.service.registry.WardEmitt
 import com.ssafy.happynurse.domain.patient.entity.Patient;
 import com.ssafy.happynurse.domain.patient.repository.PatientRepository;
 import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
+import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
 import com.ssafy.happynurse.domain.webapp.repository.PatientSelfReportRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -125,6 +126,35 @@ class DefaultNotificationDispatcherTest {
         verify(fcmSender).sendToActiveDevicesOf(eq(7L), any());
     }
 
+    @Test
+    void dispatch_priority가_있으면_priority가_저장된_Notification이_영속화된다() {
+        stubMinimalLookups();
+        Notification saved = stubSavedNotification();
+        ArgumentCaptor<Notification> entityCaptor = ArgumentCaptor.forClass(Notification.class);
+        when(notificationRepository.save(entityCaptor.capture())).thenReturn(saved);
+
+        NotificationEnvelope env = envelope(1L, 7L, PushPolicy.ALERT_CRITICAL,
+                SourceType.self_report, SymptomPriority.CRITICAL);
+        dispatcher.dispatch(env);
+
+        Notification persisted = entityCaptor.getValue();
+        assertThat(persisted.getPriority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    void dispatch_priority가_null이면_Notification_priority도_null이다() {
+        stubMinimalLookups();
+        Notification saved = stubSavedNotification();
+        ArgumentCaptor<Notification> entityCaptor = ArgumentCaptor.forClass(Notification.class);
+        when(notificationRepository.save(entityCaptor.capture())).thenReturn(saved);
+
+        NotificationEnvelope env = envelope(1L, 7L, PushPolicy.ASSIGN_DELIVERY,
+                SourceType.order_change, null);
+        dispatcher.dispatch(env);
+
+        assertThat(entityCaptor.getValue().getPriority()).isNull();
+    }
+
     private void stubMinimalLookups() {
         when(practitionerRepository.findById(7L)).thenReturn(Optional.of(mock(Practitioner.class)));
         when(patientRepository.findById(100L)).thenReturn(Optional.of(mock(Patient.class)));
@@ -144,11 +174,15 @@ class DefaultNotificationDispatcherTest {
     }
 
     private NotificationEnvelope envelope(Long wardId, Long practitionerId, PushPolicy policy, SourceType sourceType) {
+        return envelope(wardId, practitionerId, policy, sourceType, null);
+    }
+
+    private NotificationEnvelope envelope(Long wardId, Long practitionerId, PushPolicy policy, SourceType sourceType, SymptomPriority priority) {
         return new NotificationEnvelope(
                 sourceType,
                 wardId, practitionerId, 100L, 50L,
                 "title", "body",
                 "payload", Instant.now(), null,
-                policy);
+                policy, priority);
     }
 }

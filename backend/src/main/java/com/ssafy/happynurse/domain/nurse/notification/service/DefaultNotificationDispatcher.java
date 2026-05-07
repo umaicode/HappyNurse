@@ -116,6 +116,17 @@ public class DefaultNotificationDispatcher implements NotificationDispatcher {
                         "PatientSelfReport not found: " + env.sourceEntityId()))
                 : null;
 
+        if (env.priority() != null) {
+            return Notification.create(
+                    recipient,
+                    env.sourceType(),
+                    selfReport,
+                    patient,
+                    env.title(),
+                    env.body(),
+                    env.priority()
+            );
+        }
         return Notification.create(
                 recipient,
                 env.sourceType(),

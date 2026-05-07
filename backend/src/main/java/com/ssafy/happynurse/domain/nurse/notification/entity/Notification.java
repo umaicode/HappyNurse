@@ -4,6 +4,7 @@ import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
 import com.ssafy.happynurse.domain.watch.entity.IvInfusion;
 import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
+import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -49,6 +50,10 @@ public class Notification {
     @Column(length = 500)
     private String body;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private SymptomPriority priority; // 자가보고 알림 한정. iv_alert/order_change 등은 null.
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -62,6 +67,13 @@ public class Notification {
         notification.title = title;
         notification.body = body;
 
+        return notification;
+    }
+
+    /** 자가보고 알림 — priority 포함. */
+    public static Notification create(Practitioner recipientPractitioner, SourceType sourceType, PatientSelfReport patientSelfReport, Patient patient, String title, String body, SymptomPriority priority) {
+        Notification notification = create(recipientPractitioner, sourceType, patientSelfReport, patient, title, body);
+        notification.priority = priority;
         return notification;
     }
 

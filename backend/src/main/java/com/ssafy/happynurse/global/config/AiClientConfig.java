@@ -15,7 +15,7 @@ public class AiClientConfig {
 
     @Bean(name = "aiClassificationRestClient")
     public RestClient aiClassificationRestClient(
-            @Value("${ai.base-url}") String baseUrl,
+            @Value("${ai.base-url:http://localhost:8000}") String baseUrl,
             @Value("${ai.classification.timeout-ms:5000}") int timeoutMs) {
         return RestClient.builder()
                 .baseUrl(baseUrl)
@@ -25,7 +25,7 @@ public class AiClientConfig {
 
     @Bean(name = "aiSttRestClient")
     public RestClient aiSttRestClient(
-            @Value("${ai.base-url}") String baseUrl,
+            @Value("${ai.base-url:http://localhost:8000}") String baseUrl,
             @Value("${ai.stt.timeout-ms:15000}") int timeoutMs) {
         return RestClient.builder()
                 .baseUrl(baseUrl)

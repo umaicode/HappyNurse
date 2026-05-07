@@ -61,7 +61,8 @@ public class IvAlertNotificationAdapter {
                 event,                     // payload — SSE/FCM 직렬화 (DB 저장 X)
                 event.firedAt(),
                 null,
-                PushPolicy.ASSIGN_DELIVERY
+                PushPolicy.ASSIGN_DELIVERY,
+                null   // priority — iv_alert는 자가보고 분류 대상 아님
         );
 
         dispatcher.dispatch(envelope);
