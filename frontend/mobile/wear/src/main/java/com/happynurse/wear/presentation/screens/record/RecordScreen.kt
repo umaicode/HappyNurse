@@ -1,10 +1,14 @@
 // RecordScreen — 워치 녹음 화면(명세 §2). IDLE/RECORDING 두 상태를 한 화면에서 처리.
-// 마이크 탭 시 새 화면으로 이동하지 않고 인라인으로 녹음 상태 전환. 60초 또는 Stop 탭 시 onRecordingComplete 호출.
+// IDLE/RECORDING의 중앙 버튼(80dp, error 컬러)이 동일 위치/크기로 배치되어
+// AnimatedContent fade+scale 전환 시 자연스럽게 mic↔stop 이 모핑되는 듯한 인상을 준다.
 package com.happynurse.wear.presentation.screens.record
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,7 +20,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -42,19 +45,16 @@ import com.happynurse.wear.presentation.components.HnPulseRing
 import com.happynurse.wear.presentation.components.HnPulsingDot
 import com.happynurse.wear.presentation.theme.TabularNumStyle
 import kotlinx.coroutines.delay
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 private enum class RecordState { IDLE, RECORDING }
 private const val MAX_RECORD_SEC = 60
+private val ButtonSize = 80.dp
 
 @Composable
 fun RecordScreen(
     onRecordingComplete: () -> Unit,
     pagerCurrentPage: Int = 1,
 ) {
-    val now by remember { mutableStateOf(SimpleDateFormat("HH:mm", Locale.KOREA).format(Date())) }
     var state by remember { mutableStateOf(RecordState.IDLE) }
     var elapsed by remember { mutableIntStateOf(0) }
 
@@ -77,14 +77,14 @@ fun RecordScreen(
     ) {
         AnimatedContent(
             targetState = state,
-            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            transitionSpec = {
+                (fadeIn(tween(220)) + scaleIn(tween(220), initialScale = 0.92f)) togetherWith
+                    (fadeOut(tween(160)) + scaleOut(tween(160), targetScale = 0.96f))
+            },
             label = "recordStateAnim",
         ) { currentState ->
             when (currentState) {
-                RecordState.IDLE -> IdleContent(
-                    now = now,
-                    onMicTap = { state = RecordState.RECORDING },
-                )
+                RecordState.IDLE -> IdleContent(onMicTap = { state = RecordState.RECORDING })
                 RecordState.RECORDING -> RecordingContent(
                     elapsed = elapsed,
                     onStop = {
@@ -105,42 +105,37 @@ fun RecordScreen(
 }
 
 @Composable
-private fun IdleContent(now: String, onMicTap: () -> Unit) {
+private fun IdleContent(onMicTap: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 18.dp, bottom = 28.dp),
+            .padding(top = 22.dp, bottom = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        // 상단 시각 칩 (Material 3 스타일)
-        TimeChip(text = now, isRecording = false)
-        Text(
-            text = "탭하여 녹음 시작",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Medium,
-        )
+        // 상단: "환자 타이머" 라벨 (시간 칩 대체)
+        TitleLabel(text = "환자 타이머")
+
+        Spacer(Modifier.weight(1f))
+
+        // 중앙 — 정지 버튼과 동일 위치/사이즈의 빨간 마이크 버튼
         Box(
             modifier = Modifier
-                .size(96.dp)
+                .size(ButtonSize)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
+                .background(MaterialTheme.colorScheme.error)
                 .clickable { onMicTap() },
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = Icons.Filled.Mic,
                 contentDescription = "녹음 시작",
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(44.dp),
+                tint = MaterialTheme.colorScheme.onError,
+                modifier = Modifier.size(36.dp),
             )
         }
-        Text(
-            text = "→ 스와이프 → 알람 리스트",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+
+        Spacer(Modifier.weight(1f))
     }
 }
 
@@ -149,16 +144,16 @@ private fun RecordingContent(elapsed: Int, onStop: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 18.dp, bottom = 28.dp),
+            .padding(top = 22.dp, bottom = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         // 상단 시간 칩 — 점멸 도트 + 경과 시간
-        TimeChip(text = formatMmSs(elapsed), isRecording = true)
+        TimeChip(text = formatMmSs(elapsed))
 
         Spacer(Modifier.weight(1f))
 
-        // 중앙 펄스 링 + 빨간 Stop 버튼
+        // 중앙 펄스 링 + 빨간 Stop 버튼 (IDLE의 mic 버튼과 동일 사이즈/위치)
         Box(contentAlignment = Alignment.Center) {
             HnPulseRing(
                 diameterDp = 110,
@@ -166,7 +161,7 @@ private fun RecordingContent(elapsed: Int, onStop: () -> Unit) {
             )
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(ButtonSize)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.error)
                     .clickable { onStop() },
@@ -175,44 +170,41 @@ private fun RecordingContent(elapsed: Int, onStop: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .size(28.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(RoundedCornerShape(6.dp))
                         .background(Color.White),
                 )
             }
         }
-        Text(
-            text = "탭하여 중지",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
 
         Spacer(Modifier.weight(1f))
     }
 }
 
 @Composable
-private fun TimeChip(text: String, isRecording: Boolean) {
+private fun TitleLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.SemiBold,
+    )
+}
+
+@Composable
+private fun TimeChip(text: String) {
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(
-                if (isRecording) MaterialTheme.colorScheme.errorContainer
-                else MaterialTheme.colorScheme.surfaceContainer,
-            )
+            .clip(RoundedCornerShape(percent = 50))
+            .background(MaterialTheme.colorScheme.errorContainer)
             .padding(horizontal = 14.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        if (isRecording) {
-            HnPulsingDot()
-        }
+        HnPulsingDot()
         Text(
             text = text,
-            style = MaterialTheme.typography.titleSmall.merge(
-                if (isRecording) TabularNumStyle else TabularNumStyle
-            ),
-            color = if (isRecording) MaterialTheme.colorScheme.onErrorContainer
-            else MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.titleSmall.merge(TabularNumStyle),
+            color = MaterialTheme.colorScheme.onErrorContainer,
             fontWeight = FontWeight.Bold,
         )
     }

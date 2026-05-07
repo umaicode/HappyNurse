@@ -7,7 +7,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.happynurse.wear.data.model.IvInfusionTimer
-import com.happynurse.wear.data.model.PatientSelfReport
 import com.happynurse.wear.data.model.SttTimer
 import com.happynurse.wear.presentation.screens.home.HomeScreen
 import com.happynurse.wear.presentation.screens.record.RecordScreen
@@ -16,7 +15,6 @@ import com.happynurse.wear.presentation.screens.record.RecordScreen
 fun HomeRecordPager(
     onIvClick: (IvInfusionTimer) -> Unit,
     onSttClick: (SttTimer) -> Unit,
-    onReqClick: (PatientSelfReport) -> Unit,
     onRecordingComplete: () -> Unit,
 ) {
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
@@ -28,7 +26,6 @@ fun HomeRecordPager(
             0 -> HomeScreen(
                 onIvClick = onIvClick,
                 onSttClick = onSttClick,
-                onReqClick = onReqClick,
                 pagerCurrentPage = pagerState.currentPage,
             )
             1 -> RecordScreen(

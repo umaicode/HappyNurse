@@ -1,7 +1,8 @@
-// IvListTab — 홈 수액 탭. 카드 탭 시 s08 IvProgressScreen 진입, 좌측 스와이프 시 삭제 버튼.
+// IvListTab — 홈 수액 탭. 카드 탭 시 s08 IvProgressScreen 진입(삭제 불가).
 package com.happynurse.wear.presentation.screens.home.tabs
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,14 +23,12 @@ import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.happynurse.wear.data.model.IvInfusionTimer
-import com.happynurse.wear.presentation.components.HnSwipeToDeleteCard
 import com.happynurse.wear.presentation.theme.HnIvBlue
 
 @Composable
 fun IvListTab(
     items: List<IvInfusionTimer>,
     onCardClick: (IvInfusionTimer) -> Unit,
-    onDelete: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (items.isEmpty()) {
@@ -43,24 +42,20 @@ fun IvListTab(
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         items(items, key = { it.ivInfusionId }) { iv ->
-            HnSwipeToDeleteCard(
-                onDelete = { onDelete(iv.ivInfusionId) },
-                onClick = { onCardClick(iv) },
-            ) {
-                IvCardContent(iv)
-            }
+            IvCardContent(iv = iv, onClick = { onCardClick(iv) })
         }
     }
 }
 
 @Composable
-private fun IvCardContent(iv: IvInfusionTimer) {
+private fun IvCardContent(iv: IvInfusionTimer, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -68,7 +63,7 @@ private fun IvCardContent(iv: IvInfusionTimer) {
                 text = iv.patientName,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = "  ·  ${iv.medicationName}",

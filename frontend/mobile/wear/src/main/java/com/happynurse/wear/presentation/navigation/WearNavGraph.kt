@@ -29,7 +29,6 @@ fun WearNavGraph(navController: NavHostController) {
             HomeRecordPager(
                 onIvClick = { iv -> navController.navigate(WearRoute.IvProgress.build(iv.ivInfusionId)) },
                 onSttClick = { stt -> navController.navigate(WearRoute.SttTimerDetail.build(stt.sttTimerId)) },
-                onReqClick = { /* TODO: 환자 상세 화면 — 추후 정의 */ },
                 onRecordingComplete = {
                     navController.navigate(WearRoute.SttResult.path) {
                         popUpTo(WearRoute.HomePager.path)

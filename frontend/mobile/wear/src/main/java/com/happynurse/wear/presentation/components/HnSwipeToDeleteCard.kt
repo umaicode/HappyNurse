@@ -1,5 +1,5 @@
 // HnSwipeToDeleteCard — 카드를 좌측으로 30dp 이상 스와이프 시 우측에 삭제 버튼이 노출되는 컨테이너.
-// 페이지 전환과 충돌하지 않도록 가로 드래그가 우세할 때만 카드 transformX 를 갱신한다.
+// Material 3 Expressive: 캡슐형 errorContainer 버튼 + scale-in 모션.
 package com.happynurse.wear.presentation.components
 
 import androidx.compose.animation.core.animateFloatAsState
@@ -12,10 +12,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -33,7 +34,7 @@ import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 
 private const val SWIPE_THRESHOLD_DP = 30
-private const val OPENED_OFFSET_DP = 78
+private const val OPENED_OFFSET_DP = 72
 
 @Composable
 fun HnSwipeToDeleteCard(
@@ -50,12 +51,15 @@ fun HnSwipeToDeleteCard(
     var dragX by remember { mutableFloatStateOf(0f) }
     val target = if (opened) -openedPx else 0f
     val animated by animateFloatAsState(targetValue = target + dragX, label = "swipeOffset")
+    // 진행도(0~1) — 삭제 버튼 scale-in 효과
+    val progress = (-animated / openedPx).coerceIn(0f, 1f)
+    val btnScale = 0.6f + 0.4f * progress
 
     Box(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .matchParentSize()
-                .padding(vertical = 2.dp),
+                .padding(vertical = 2.dp, horizontal = 2.dp),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -63,8 +67,14 @@ fun HnSwipeToDeleteCard(
                 modifier = Modifier
                     .fillMaxHeight()
                     .width(OPENED_OFFSET_DP.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MaterialTheme.colorScheme.error)
+                    .padding(vertical = 4.dp)
+                    .graphicsLayer {
+                        scaleX = btnScale
+                        scaleY = btnScale
+                        alpha = progress
+                    }
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(MaterialTheme.colorScheme.errorContainer)
                     .clickable {
                         opened = false
                         dragX = 0f
@@ -73,9 +83,10 @@ fun HnSwipeToDeleteCard(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Delete,
+                    imageVector = Icons.Rounded.DeleteOutline,
                     contentDescription = "삭제",
-                    tint = MaterialTheme.colorScheme.onError,
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.size(22.dp),
                 )
             }
         }
