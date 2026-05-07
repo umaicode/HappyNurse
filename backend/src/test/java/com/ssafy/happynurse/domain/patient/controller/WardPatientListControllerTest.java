@@ -49,13 +49,14 @@ class WardPatientListControllerTest {
     }
 
     @Test
-    @DisplayName("GET /wards/me/patients 성공 시 200 + 9 필드(patientId · isMyPatient 포함) 환자 목록 반환")
+    @DisplayName("GET /wards/me/patients 성공 시 200 + 13 필드(담당 간호사·주증상·수술명 포함) 환자 목록 반환")
     void listMyWardPatients_성공() throws Exception {
         authenticate(new CustomUserDetails(99L, "EMP099", "본인", "nurse", "session-1", 1L, 3L));
         given(wardPatientListService.listWardPatients(anyLong(), anyLong()))
                 .willReturn(List.of(
                         new WardPatientListResponse(1L, 100L, "김가민", Gender.female,
-                                LocalDate.of(1999, 5, 20), "7101호", "A", 2L, true)
+                                LocalDate.of(1999, 5, 20), "7101호", "A", 2L, true,
+                                12L, "이수정", "복통", "충수절제술")
                 ));
 
         mockMvc.perform(get("/wards/me/patients"))
@@ -70,7 +71,11 @@ class WardPatientListControllerTest {
                 .andExpect(jsonPath("$.data[0].roomName").value("7101호"))
                 .andExpect(jsonPath("$.data[0].bedName").value("A"))
                 .andExpect(jsonPath("$.data[0].unconfirmedNursingCount").value(2))
-                .andExpect(jsonPath("$.data[0].isMyPatient").value(true));
+                .andExpect(jsonPath("$.data[0].isMyPatient").value(true))
+                .andExpect(jsonPath("$.data[0].assignedNurseId").value(12))
+                .andExpect(jsonPath("$.data[0].assignedNurseName").value("이수정"))
+                .andExpect(jsonPath("$.data[0].chiefComplaint").value("복통"))
+                .andExpect(jsonPath("$.data[0].surgeryName").value("충수절제술"));
 
         ArgumentCaptor<Long> wardCaptor = ArgumentCaptor.forClass(Long.class);
         ArgumentCaptor<Long> meCaptor = ArgumentCaptor.forClass(Long.class);
