@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.HappyNurse" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        windowBackground/colorBackground 를 흰색으로 강제 — enableEdgeToEdge() 사용 시
+        Compose 첫 프레임 렌더 전 또는 액티비티 포커스 전환 동안 black-flash 가 보이는 현상 방지.
+        windowDrawsSystemBarBackgrounds=false + 투명 status/nav bar 로 EdgeToEdge 와 호환.
+    -->
+    <style name="Theme.HappyNurse" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:colorBackground">@android:color/white</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
 </resources>

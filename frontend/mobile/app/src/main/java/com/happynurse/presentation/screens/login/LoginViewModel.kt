@@ -4,6 +4,7 @@ package com.happynurse.presentation.screens.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.happynurse.data.remote.api.OrganizationApi
+import com.happynurse.data.remote.fcm.FcmTokenRegistrar
 import com.happynurse.data.remote.model.OrganizationDto
 import com.happynurse.data.remote.model.WardDto
 import com.happynurse.data.repository.AuthRepository
@@ -30,6 +31,7 @@ data class LoginUiState(
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val organizationApi: OrganizationApi,
+    private val fcmTokenRegistrar: FcmTokenRegistrar,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -92,7 +94,10 @@ class LoginViewModel @Inject constructor(
                 password = s.password,
             )
             result.fold(
-                onSuccess = { _uiState.value = _uiState.value.copy(loading = false, loggedIn = true) },
+                onSuccess = {
+                    fcmTokenRegistrar.registerCurrentToken()
+                    _uiState.value = _uiState.value.copy(loading = false, loggedIn = true)
+                },
                 onFailure = { _uiState.value = _uiState.value.copy(loading = false, error = it.message) },
             )
         }
