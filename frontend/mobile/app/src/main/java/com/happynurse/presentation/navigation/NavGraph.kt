@@ -63,6 +63,10 @@ fun NavGraph(
         composable(
             route = NavRoutes.PATIENT_DETAIL,
             arguments = listOf(navArgument("id") { type = NavType.StringType }),
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None },
         ) { entry ->
             val id = entry.arguments?.getString("id") ?: ""
             PatientDetailScreen(

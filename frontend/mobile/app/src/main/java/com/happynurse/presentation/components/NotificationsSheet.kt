@@ -121,7 +121,7 @@ private fun NotifRow(n: Notif) {
             Text(
                 timeLabel,
                 fontSize = 14.sp, fontWeight = FontWeight.Bold,
-                color = if (n.upcoming) HnColors.Danger else HnColors.TextSecondary,
+                color = HnColors.Text,
                 modifier = Modifier.padding(start = 8.dp),
             )
         }

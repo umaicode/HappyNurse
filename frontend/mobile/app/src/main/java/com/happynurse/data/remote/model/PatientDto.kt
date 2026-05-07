@@ -13,6 +13,8 @@ data class WardPatientDto(
     @SerializedName("bedName") val bedName: String?,
     @SerializedName("unconfirmedNursingCount") val unconfirmedNursingCount: Int = 0,
     @SerializedName("isMyPatient") val isMyPatient: Boolean = false,
+    @SerializedName("assignedNurseName") val assignedNurseName: String? = null,
+    @SerializedName("chiefComplaint")    val chiefComplaint: String? = null,
 )
 
 data class PatientDetailDto(

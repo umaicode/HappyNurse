@@ -11,7 +11,6 @@ import com.happynurse.domain.model.NurseProfile
 import com.happynurse.domain.model.Order
 import com.happynurse.domain.model.OrderKind
 import com.happynurse.domain.model.Patient
-import com.happynurse.domain.model.Vitals
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -60,15 +59,11 @@ fun WardPatientDto.toDomain(): Patient = Patient(
     bed = bedName.orEmpty(),
     admittedOn = "",
     daysSince = 0,
-    nurse = "",
+    nurse = assignedNurseName.orEmpty(),
     department = "",
     doctor = "",
-    chief = "",
+    chief = chiefComplaint.orEmpty(),
     surgery = "",
-    memo = "",
-    vitals = Vitals(bp = "", hr = 0, rr = 0, temp = "", spo2 = 0),
-    notes = emptyList(),
-    orders = emptyList(),
     patientId = patientId,
     encounterId = encounterId,
     unconfirmedNursingCount = unconfirmedNursingCount,
@@ -92,16 +87,12 @@ fun PatientDetailDto.toDomain(): Patient = Patient(
     doctor = attendingPhysicianName.orEmpty(),
     chief = chiefComplaint.orEmpty(),
     surgery = surgeryName.orEmpty(),
-    memo = "",
-    vitals = Vitals(bp = "", hr = 0, rr = 0, temp = "", spo2 = 0),
-    notes = emptyList(),
-    orders = emptyList(),
     patientId = patientId,
     encounterId = encounterId,
     status = status.orEmpty(),
     attendingPhysicianId = attendingPhysicianId,
     phone = phone.orEmpty(),
-    address = address.orEmpty(),
+    diseaseName = diseaseName.orEmpty(),
 )
 
 fun NursingNoteDto.toDomain(): Note {

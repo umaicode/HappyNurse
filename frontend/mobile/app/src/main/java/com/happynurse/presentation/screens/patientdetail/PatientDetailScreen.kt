@@ -2,19 +2,24 @@
 package com.happynurse.presentation.screens.patientdetail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
@@ -22,14 +27,11 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -52,13 +55,13 @@ import com.happynurse.domain.model.Patient
 import com.happynurse.presentation.components.HnCard
 import com.happynurse.presentation.components.TagChip
 import com.happynurse.presentation.theme.HnColors
+import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.ZoneId
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PatientDetailScreen(
     patientId: String,
@@ -74,6 +77,8 @@ fun PatientDetailScreen(
     val orders by vm.orders.collectAsStateWithLifecycle()
     val myPatients by vm.myPatients.collectAsStateWithLifecycle()
     val selectedDate by vm.selectedDate.collectAsStateWithLifecycle()
+    val visibleMonth by vm.visibleMonth.collectAsStateWithLifecycle()
+    val monthCounts by vm.monthCounts.collectAsStateWithLifecycle()
 
     var expanded by remember { mutableStateOf(false) }
     var tab by remember { mutableStateOf("notes") }
@@ -120,47 +125,66 @@ fun PatientDetailScreen(
                     expanded = patientMenuOpen,
                     onDismissRequest = { patientMenuOpen = false },
                 ) {
-                    myPatients.forEach { other ->
-                        val current = other.id == p.id
-                        DropdownMenuItem(
-                            text = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Column(Modifier.weight(1f)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (myPatients.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .width(260.dp)
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                "담당 환자가 없습니다",
+                                fontSize = 13.sp,
+                                color = HnColors.TextTertiary,
+                            )
+                        }
+                    } else {
+                        myPatients.forEach { other ->
+                            val current = other.id == p.id
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.width(260.dp),
+                                    ) {
+                                        Column(Modifier.weight(1f)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    other.name,
+                                                    fontSize = 16.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (current) HnColors.Primary else HnColors.Text,
+                                                )
+                                                Spacer(Modifier.size(8.dp))
+                                                Text(
+                                                    "${other.sex}/${other.age}",
+                                                    fontSize = 13.sp,
+                                                    color = HnColors.TextSecondary,
+                                                )
+                                            }
                                             Text(
-                                                other.name,
-                                                fontSize = 14.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = if (current) HnColors.Primary else HnColors.Text,
-                                            )
-                                            Spacer(Modifier.size(6.dp))
-                                            Text(
-                                                "${other.sex}/${other.age}",
+                                                "${other.room}호 ${other.bed}번 침대",
                                                 fontSize = 12.sp,
-                                                color = HnColors.TextSecondary,
+                                                color = HnColors.TextTertiary,
+                                                modifier = Modifier.padding(top = 2.dp),
                                             )
                                         }
-                                        Text(
-                                            "${other.room}호 ${other.bed}번 침대",
-                                            fontSize = 11.sp,
-                                            color = HnColors.TextTertiary,
-                                        )
+                                        if (current) {
+                                            Icon(
+                                                Icons.Outlined.Check,
+                                                contentDescription = null,
+                                                tint = HnColors.Primary,
+                                                modifier = Modifier.size(20.dp),
+                                            )
+                                        }
                                     }
-                                    if (current) {
-                                        Icon(
-                                            Icons.Outlined.Check,
-                                            contentDescription = null,
-                                            tint = HnColors.Primary,
-                                            modifier = Modifier.size(18.dp),
-                                        )
-                                    }
-                                }
-                            },
-                            onClick = {
-                                patientMenuOpen = false
-                                if (!current) onSelectPatient(other.id)
-                            },
-                        )
+                                },
+                                onClick = {
+                                    patientMenuOpen = false
+                                    if (!current) onSelectPatient(other.id)
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -173,6 +197,7 @@ fun PatientDetailScreen(
             item {
                 HnCard(padding = 14.dp) {
                     Column {
+                        // 접힘 상태: 2x2 정보 그리드 + 토글 아이콘
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
@@ -180,9 +205,21 @@ fun PatientDetailScreen(
                                 .clickable { expanded = !expanded },
                         ) {
                             Column(Modifier.weight(1f)) {
-                                Text("MRN: ${p.mrn}", fontSize = 13.sp, color = HnColors.TextSecondary)
-                                Text("${p.room}호 ${p.bed}번 침대", fontSize = 13.sp, color = HnColors.TextSecondary)
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    InfoCell("생년월일", p.birthdate, modifier = Modifier.weight(1f))
+                                    Box(Modifier.width(1.dp).height(36.dp).background(HnColors.Border))
+                                    InfoCell("주증상", p.chief, modifier = Modifier.weight(1f).padding(start = 12.dp))
+                                }
+                                Spacer(Modifier.height(8.dp))
+                                HorizontalDivider(color = HnColors.Border, thickness = 1.dp)
+                                Spacer(Modifier.height(8.dp))
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    InfoCell("호실/침대", "${p.room}호 ${p.bed}", modifier = Modifier.weight(1f))
+                                    Box(Modifier.width(1.dp).height(36.dp).background(HnColors.Border))
+                                    InfoCell("MRN", p.mrn.ifBlank { "-" }, modifier = Modifier.weight(1f).padding(start = 12.dp))
+                                }
                             }
+                            Spacer(Modifier.size(8.dp))
                             Icon(
                                 Icons.Outlined.ExpandMore,
                                 contentDescription = null,
@@ -192,23 +229,14 @@ fun PatientDetailScreen(
                         }
                         if (expanded) {
                             Spacer(Modifier.height(12.dp))
-                            Box(Modifier.fillMaxWidth().height(1.dp).background(HnColors.Border))
+                            HorizontalDivider(color = HnColors.Border, thickness = 1.dp)
                             Spacer(Modifier.height(12.dp))
-                            InfoRow("생년월일", p.birthdate)
                             InfoRow("진료부서", p.department)
                             InfoRow("담당의", "${p.doctor} 의사")
-                            InfoRow("주증상", p.chief)
-                            InfoRow("수술", p.surgery)
-                            Spacer(Modifier.height(8.dp))
-                            Text("메모", fontSize = 12.sp, color = HnColors.TextTertiary)
-                            Box(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 4.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(HnColors.SurfaceAlt)
-                                    .padding(10.dp),
-                            ) { Text(p.memo, fontSize = 13.sp, color = HnColors.Text) }
+                            InfoRow("병명", p.diseaseName.ifBlank { "-" })
+                            InfoRow("수술", p.surgery.ifBlank { "-" })
+                            InfoRow("입원일", p.admittedOn.ifBlank { "-" })
+                            InfoRow("휴대폰", p.phone.ifBlank { "-" })
                         }
                     }
                 }
@@ -250,8 +278,12 @@ fun PatientDetailScreen(
                 }
                 if (calendarOpen) {
                     item {
-                        InlineCalendar(
+                        MonthGrid(
+                            yearMonth = visibleMonth,
                             selectedDate = selectedDate,
+                            counts = monthCounts,
+                            onPrevMonth = { vm.setMonth(visibleMonth.minusMonths(1)) },
+                            onNextMonth = { vm.setMonth(visibleMonth.plusMonths(1)) },
                             onPick = {
                                 vm.setDate(it)
                                 calendarOpen = false
@@ -291,6 +323,15 @@ private fun InfoRow(label: String, value: String) {
     Row(modifier = Modifier.padding(vertical = 4.dp)) {
         Text(label, fontSize = 12.sp, color = HnColors.TextTertiary, modifier = Modifier.size(width = 64.dp, height = 18.dp))
         Text(value, fontSize = 14.sp, color = HnColors.Text, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun InfoCell(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(label, fontSize = 11.sp, color = HnColors.TextTertiary)
+        Spacer(Modifier.height(2.dp))
+        Text(value.ifBlank { "-" }, fontSize = 13.sp, color = HnColors.Text, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -348,33 +389,130 @@ private fun DateSelectorBar(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun InlineCalendar(
+private fun MonthGrid(
+    yearMonth: YearMonth,
     selectedDate: LocalDate,
+    counts: Map<LocalDate, Int>,
+    onPrevMonth: () -> Unit,
+    onNextMonth: () -> Unit,
     onPick: (LocalDate) -> Unit,
 ) {
-    val initialMillis = selectedDate.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
-    val state = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+    val today = LocalDate.now()
+    val firstOfMonth = yearMonth.atDay(1)
+    // ISO: Mon=1..Sun=7. We want Sun-first columns (Sun=0..Sat=6)
+    val leading = (firstOfMonth.dayOfWeek.value % 7) // Mon→1, Sun→0
+    val daysInMonth = yearMonth.lengthOfMonth()
+    val totalCells = ((leading + daysInMonth + 6) / 7) * 7
 
-    LaunchedEffect(state.selectedDateMillis) {
-        val millis = state.selectedDateMillis ?: return@LaunchedEffect
-        val picked = java.time.Instant.ofEpochMilli(millis).atZone(ZoneId.of("UTC")).toLocalDate()
-        if (picked != selectedDate) onPick(picked)
-    }
-
-    HnCard(padding = 4.dp) {
-        DatePicker(
-            state = state,
-            showModeToggle = false,
-            title = null,
-            headline = null,
-            colors = DatePickerDefaults.colors(
-                selectedDayContainerColor = HnColors.Primary,
-                todayDateBorderColor = HnColors.Primary,
-                todayContentColor = HnColors.Primary,
-            ),
-        )
+    HnCard(padding = 12.dp) {
+        Column {
+            // 헤더: 월 이동
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
+                    contentDescription = "이전 달",
+                    tint = HnColors.TextSecondary,
+                    modifier = Modifier.size(24.dp).clickable(onClick = onPrevMonth),
+                )
+                Text(
+                    "${yearMonth.year}년 ${yearMonth.monthValue}월",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = HnColors.Text,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = "다음 달",
+                    tint = HnColors.TextSecondary,
+                    modifier = Modifier.size(24.dp).clickable(onClick = onNextMonth),
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            // 요일 헤더
+            Row(modifier = Modifier.fillMaxWidth()) {
+                listOf("일", "월", "화", "수", "목", "금", "토").forEachIndexed { i, label ->
+                    val color = when (i) {
+                        0 -> HnColors.Danger
+                        6 -> HnColors.Info
+                        else -> HnColors.TextSecondary
+                    }
+                    Text(
+                        label,
+                        fontSize = 11.sp,
+                        color = color,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            // 날짜 그리드 (7열)
+            var idx = 0
+            while (idx < totalCells) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    repeat(7) { col ->
+                        val cell = idx + col
+                        val dayNumber = cell - leading + 1
+                        if (dayNumber in 1..daysInMonth) {
+                            val date = yearMonth.atDay(dayNumber)
+                            val isSelected = date == selectedDate
+                            val isToday = date == today
+                            val cnt = counts[date] ?: 0
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(1f)
+                                    .padding(2.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSelected) HnColors.Primary else Color.Transparent)
+                                    .let {
+                                        if (isToday && !isSelected) {
+                                            it.border(1.dp, HnColors.Primary, RoundedCornerShape(8.dp))
+                                        } else it
+                                    }
+                                    .clickable { onPick(date) }
+                                    .padding(vertical = 4.dp),
+                            ) {
+                                Text(
+                                    dayNumber.toString(),
+                                    fontSize = 13.sp,
+                                    fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Medium,
+                                    color = when {
+                                        isSelected -> Color.White
+                                        col == 0 -> HnColors.Danger
+                                        col == 6 -> HnColors.Info
+                                        else -> HnColors.Text
+                                    },
+                                )
+                                if (cnt > 0) {
+                                    Text(
+                                        "${cnt}건",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (isSelected) Color.White else HnColors.Primary,
+                                    )
+                                } else {
+                                    Spacer(Modifier.height(11.dp))
+                                }
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(1f)
+                                    .padding(2.dp),
+                            )
+                        }
+                    }
+                }
+                idx += 7
+            }
+        }
     }
 }
 
@@ -382,7 +520,7 @@ private fun InlineCalendar(
 private fun NoteRow(n: Note) {
     Row(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.width(56.dp).padding(top = 12.dp)) {
-            Text(n.time, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HnColors.Primary)
+            Text(n.time, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
         }
         HnCard(padding = 12.dp, modifier = Modifier.weight(1f)) {
             Column {

@@ -59,6 +59,8 @@ fun PatientsScreen(
     vm: PatientsViewModel = hiltViewModel(),
 ) {
     val all by vm.patients.collectAsStateWithLifecycle()
+    val profile by vm.profile.collectAsStateWithLifecycle()
+    val myName = profile?.name ?: ""
     var listTab by remember { mutableStateOf("mine") }
     var pickerOpen by remember { mutableStateOf(false) }
     val mine = all.filter { it.isMyPatient }
@@ -97,6 +99,7 @@ fun PatientsScreen(
                                 patient = p,
                                 onClick = { onOpenPatient(p.id) },
                                 layout = layout,
+                                myNurseName = myName,
                             )
                         }
                     }

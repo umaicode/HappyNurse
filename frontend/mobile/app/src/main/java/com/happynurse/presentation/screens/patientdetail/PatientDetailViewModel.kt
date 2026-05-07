@@ -10,11 +10,14 @@ import com.happynurse.domain.model.Note
 import com.happynurse.domain.model.Order
 import com.happynurse.domain.model.Patient
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.YearMonth
 import javax.inject.Inject
 
 @HiltViewModel
@@ -41,6 +44,12 @@ class PatientDetailViewModel @Inject constructor(
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
+    private val _visibleMonth = MutableStateFlow(YearMonth.now())
+    val visibleMonth: StateFlow<YearMonth> = _visibleMonth.asStateFlow()
+
+    private val _monthCounts = MutableStateFlow<Map<LocalDate, Int>>(emptyMap())
+    val monthCounts: StateFlow<Map<LocalDate, Int>> = _monthCounts.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
@@ -57,6 +66,7 @@ class PatientDetailViewModel @Inject constructor(
                     if (p.encounterId > 0L) {
                         loadNotes(p.encounterId, _selectedDate.value)
                         loadOrders(p.encounterId)
+                        loadMonthNotes(p.encounterId, _visibleMonth.value)
                     }
                 },
                 onFailure = { _error.value = it.message },
@@ -68,6 +78,27 @@ class PatientDetailViewModel @Inject constructor(
         _selectedDate.value = date
         val eid = _patient.value?.encounterId ?: return
         if (eid > 0L) loadNotes(eid, date)
+        val ym = YearMonth.from(date)
+        if (ym != _visibleMonth.value) setMonth(ym)
+    }
+
+    fun setMonth(ym: YearMonth) {
+        _visibleMonth.value = ym
+        val eid = _patient.value?.encounterId ?: return
+        if (eid > 0L) loadMonthNotes(eid, ym)
+    }
+
+    private fun loadMonthNotes(encounterId: Long, ym: YearMonth) {
+        viewModelScope.launch {
+            val days = (1..ym.lengthOfMonth()).map { ym.atDay(it) }
+            val results = days.map { d ->
+                async {
+                    val r = encounterRepository.getNursingNotes(encounterId, d.toString())
+                    d to (r.getOrNull()?.size ?: 0)
+                }
+            }.awaitAll()
+            _monthCounts.value = results.toMap().filterValues { it > 0 }
+        }
     }
 
     private fun loadNotes(encounterId: Long, date: LocalDate) {
@@ -91,7 +122,11 @@ class PatientDetailViewModel @Inject constructor(
     private fun loadMyPatients() {
         viewModelScope.launch {
             patientRepository.getMyWardPatients().fold(
-                onSuccess = { list -> _myPatients.value = list.filter { it.isMyPatient } },
+                onSuccess = { list ->
+                    // 본인 담당 환자 우선, 없으면 같은 병동 환자 전체 표시
+                    val mine = list.filter { it.isMyPatient }
+                    _myPatients.value = if (mine.isNotEmpty()) mine else list
+                },
                 onFailure = { _error.value = it.message },
             )
         }

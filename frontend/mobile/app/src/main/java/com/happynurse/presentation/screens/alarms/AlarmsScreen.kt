@@ -108,12 +108,12 @@ private fun NurseAlarmCard(a: NurseAlarm) {
                 Spacer(Modifier.padding(horizontal = 4.dp))
                 Text(a.room, fontSize = 12.sp, color = HnColors.Text)
                 Spacer(Modifier.weight(1f))
-                Text(a.time, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HnColors.Primary)
+                Text(a.time, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
             }
             Spacer(Modifier.height(8.dp))
             Text(a.text, fontSize = 14.sp, color = HnColors.Text)
             Spacer(Modifier.height(8.dp))
-            Text("생성됨: ${a.createdTime}", fontSize = 12.sp, color = HnColors.TextSecondary)
+            Text("생성됨: ${a.createdTime}", fontSize = 12.sp, color = HnColors.Text)
         }
     }
 }
