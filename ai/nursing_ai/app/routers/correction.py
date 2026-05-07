@@ -118,7 +118,7 @@ async def apply_correction(
         """), {
             "nrid": req.nursing_record_id,
             "sid": suggestion_id,
-            "pid": req.practitioner_id,
+            "pid": practitioner_id,
             "orig": req.original_word,
             "repl": req.replaced_word,
             "ctype": req.correction_type
@@ -158,17 +158,6 @@ async def apply_correction(
         raise HTTPException(status_code=500, detail=str(e))
 
 # === 1-2. 퀵요청 ===
-@router.post(
-    "/correction/analyze",
-    summary="퀵수정 후보 분석",
-    description="""
-간호기록 텍스트를 분석하여 교정 가능한 의료 용어와 후보를 반환합니다.
-
-프론트엔드에서 이 결과를 사용해 해당 단어에 밑줄을 표시하고,
-클릭 시 후보 드롭다운을 보여줍니다.
-    """
-)
-
 @router.post(
     "/correction/analyze",
     summary="퀵수정 후보 분석",
@@ -352,6 +341,8 @@ async def approve_to_dictionary(
     # if current_user["role"] not in ["admin", "head_nurse"]:
     #     raise HTTPException(status_code=403, detail="관리자 권한이 필요합니다")
 
+    practitioner_id = current_user["practitioner_id"]
+
     """관리자가 승인하면 매핑 사전에 추가"""
     try:
         # 이미 같은 매핑이 있는지 확인
@@ -379,7 +370,7 @@ async def approve_to_dictionary(
             "correct": req.correct_word,
             "normalized": req.stt_word.replace(" ", "").lower(),
             "category": req.category,
-            "pid": req.approved_by_practitioner_id
+            "pid": practitioner_id
         })
 
         # 관련 수정 이력 promoted 처리

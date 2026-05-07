@@ -31,9 +31,20 @@ app = FastAPI(
 )
 
 # CORS 설정 추가
+# HttpOnly 쿠키(ACCESS_TOKEN)를 동봉하므로 allow_credentials=True 사용 →
+# 브라우저 스펙상 allow_origins="*" 와 함께 쓸 수 없어 명시적 origin 화이트리스트 필요.
+cors_origins = [
+    o.strip()
+    for o in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:5173,http://localhost:3000",
+    ).split(",")
+    if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 개발 단계에서는 전체 허용
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
