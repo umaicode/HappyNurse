@@ -37,13 +37,17 @@ android {
 }
 
 dependencies {
-    // Wear OS Compose
+    // Wear OS Compose (Material 3 Expressive)
     implementation(platform(libs.androidx.compose.bom))
-    implementation("androidx.wear.compose:compose-material:1.4.0")
-    implementation("androidx.wear.compose:compose-foundation:1.4.0")
-    implementation("androidx.wear.compose:compose-navigation:1.4.0")
+    implementation("androidx.wear.compose:compose-material3:1.5.0-beta04")
+    implementation("androidx.wear.compose:compose-foundation:1.5.0-beta04")
+    implementation("androidx.wear.compose:compose-navigation:1.5.0-beta04")
+    implementation("androidx.wear:wear-tooling-preview:1.0.0")
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    // Foundation extras (Pager 등)
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.material:material-icons-extended")
 
     // Wear OS Core
     implementation("androidx.wear:wear:1.3.0")

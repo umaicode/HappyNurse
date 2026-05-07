@@ -4,7 +4,7 @@
     <!-- Wear OS -->
     <uses-feature android:name="android.hardware.type.watch" />
 
-    <!-- 마이크 (음성 녹음) -->
+    <!-- 마이크 (STT 음성 녹음) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <!-- 바디 센서 (제스처 감지) -->
@@ -14,8 +14,12 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- 진동 (알림) -->
+    <!-- 알람/알림 -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:name=".WearApplication"
@@ -38,6 +42,26 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- s09 수액 종료 풀스크린 알람 호스트 -->
+        <activity
+            android:name=".alarm.IvAlarmActivity"
+            android:exported="false"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:excludeFromRecents="true" />
+
+        <!-- s13 STT 타이머 풀스크린 알람 호스트 -->
+        <activity
+            android:name=".alarm.SttAlarmActivity"
+            android:exported="false"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:excludeFromRecents="true" />
 
         <!-- 폰-워치 DataLayer 메시지 수신 서비스 -->
         <service
