@@ -10,6 +10,7 @@ import type { NextConfig } from 'next'
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || ''
+const aiBaseUrl = process.env.NEXT_PUBLIC_AI_BASE_URL || ''
 
 const nextConfig: NextConfig = {
   output: 'standalone',
@@ -23,13 +24,20 @@ const nextConfig: NextConfig = {
   // 클라이언트는 hostname 이 localhost 일 때만 /api-proxy/* 로 요청 (lib/client.ts 분기).
   // 배포(dev/prod)에서는 client 가 절대 URL 로 직접 호출하므로 이 rewrite 는 호출되지 않음 (dormant).
   async rewrites() {
-    if (!apiBaseUrl) return []
-    return [
-      {
+    const rules = []
+    if (apiBaseUrl) {
+      rules.push({
         source: '/api-proxy/:path*',
         destination: `${apiBaseUrl}/:path*`,
-      },
-    ]
+      })
+    }
+    if (aiBaseUrl) {
+      rules.push({
+        source: '/ai-proxy/:path*',
+        destination: `${aiBaseUrl}/:path*`,
+      })
+    }
+    return rules
   },
 }
 

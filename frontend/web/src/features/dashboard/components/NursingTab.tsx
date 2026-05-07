@@ -20,6 +20,7 @@ import {
   type MedicationItem,
   type NursingNoteItem,
 } from "../types/nursing-note";
+import { QuickCorrectionPanel } from "./QuickCorrectionPanel";
 
 type NursingTabProps = {
   encounterId: number | null;
@@ -581,25 +582,43 @@ function NoteRow({
               }))
             }
           />
-        ) : isEditing ? (
-          <textarea
-            autoFocus
-            value={draftContent}
-            onChange={(event) => setDraftContent(event.target.value)}
-            ref={(element) => {
-              if (element) {
-                element.style.height = "auto";
-                element.style.height = `${element.scrollHeight}px`;
-              }
-            }}
-            onInput={(event) => {
-              const target = event.currentTarget;
-              target.style.height = "auto";
-              target.style.height = `${target.scrollHeight}px`;
-            }}
-            className="w-full bg-white border border-brand-primary/30 rounded px-2 py-1.5 text-body-sm leading-[1.6] text-content-primary resize-none focus:outline-none focus:ring-1 focus:ring-brand-primary/20 shadow-xs"
-            rows={1}
-          />
+        ) : isEditing && note.type === "STT_NOTE" ? (
+          <div className="flex flex-col">
+            <textarea
+              autoFocus
+              value={draftContent}
+              onChange={(event) => setDraftContent(event.target.value)}
+              ref={(element) => {
+                if (element) {
+                  element.style.height = "auto";
+                  element.style.height = `${element.scrollHeight}px`;
+                }
+              }}
+              onInput={(event) => {
+                const target = event.currentTarget;
+                target.style.height = "auto";
+                target.style.height = `${target.scrollHeight}px`;
+              }}
+              className="w-full bg-white border border-brand-primary/30 rounded px-2 py-1.5 text-body-sm leading-[1.6] text-content-primary resize-none focus:outline-none focus:ring-1 focus:ring-brand-primary/20 shadow-xs"
+              rows={1}
+            />
+            <QuickCorrectionPanel
+              nursingRecordId={note.nursingRecordId}
+              content={note.content}
+              onApply={(start, end, replaced) => {
+                // 본문 정확 치환 — 응답의 start/end 는 원본 content 인덱스 기준이라 note.content 에서 자른다.
+                // 사용자가 textarea 를 직접 편집한 후라면 인덱스가 어긋날 수 있어 안전 가드 추가.
+                const original = note.content.slice(start, end);
+                const next =
+                  draftContent === note.content
+                    ? note.content.slice(0, start) +
+                      replaced +
+                      note.content.slice(end)
+                    : draftContent.replace(original, replaced);
+                setDraftContent(next);
+              }}
+            />
+          </div>
         ) : (
           <SttContent content={note.content} />
         )}
