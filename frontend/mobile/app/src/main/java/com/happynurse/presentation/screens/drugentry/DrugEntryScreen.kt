@@ -46,9 +46,14 @@ data class DrugItem(val id: Int, val kind: DrugKind, val name: String, val presc
 
 @Composable
 fun DrugEntryScreen(
+    patientId: Long,
+    encounterId: Long,
     onClose: () -> Unit,
     onTimer: () -> Unit,
 ) {
+    androidx.compose.runtime.LaunchedEffect(patientId, encounterId) {
+        android.util.Log.d("DrugEntryScreen", "received patientId=$patientId encounterId=$encounterId")
+    }
     val drugs = remember {
         mutableStateListOf(
             DrugItem(1, DrugKind.FLUID, "0.9% 생리식염수 500mL", "24시간 IV, 80 mL/hr"),

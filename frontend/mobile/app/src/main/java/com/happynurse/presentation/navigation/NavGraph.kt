@@ -82,15 +82,41 @@ fun NavGraph(
         composable(NavRoutes.NFC_PATIENT) {
             NfcPatientScreen(
                 onClose = { navController.popBackStack() },
-                onLog = { navController.navigate(NavRoutes.LOG_ENTRY) },
-                onDrug = { navController.navigate(NavRoutes.DRUG_ENTRY) },
+                onLog = { patientId, encounterId ->
+                    navController.navigate(NavRoutes.logEntry(patientId, encounterId))
+                },
+                onDrug = { patientId, encounterId ->
+                    navController.navigate(NavRoutes.drugEntry(patientId, encounterId))
+                },
             )
         }
-        composable(NavRoutes.LOG_ENTRY) {
-            LogEntryScreen(onClose = { navController.popBackStack() })
+        composable(
+            route = NavRoutes.LOG_ENTRY,
+            arguments = listOf(
+                navArgument("patientId") { type = NavType.LongType; defaultValue = -1L },
+                navArgument("encounterId") { type = NavType.LongType; defaultValue = -1L },
+            ),
+        ) { entry ->
+            val patientId = entry.arguments?.getLong("patientId") ?: -1L
+            val encounterId = entry.arguments?.getLong("encounterId") ?: -1L
+            LogEntryScreen(
+                patientId = patientId,
+                encounterId = encounterId,
+                onClose = { navController.popBackStack() },
+            )
         }
-        composable(NavRoutes.DRUG_ENTRY) {
+        composable(
+            route = NavRoutes.DRUG_ENTRY,
+            arguments = listOf(
+                navArgument("patientId") { type = NavType.LongType; defaultValue = -1L },
+                navArgument("encounterId") { type = NavType.LongType; defaultValue = -1L },
+            ),
+        ) { entry ->
+            val patientId = entry.arguments?.getLong("patientId") ?: -1L
+            val encounterId = entry.arguments?.getLong("encounterId") ?: -1L
             DrugEntryScreen(
+                patientId = patientId,
+                encounterId = encounterId,
                 onClose = { navController.popBackStack() },
                 onTimer = { navController.navigate(NavRoutes.IV_TIMER_SETUP) },
             )

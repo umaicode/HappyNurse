@@ -77,7 +77,7 @@ object AppModule {
     @Provides @Singleton fun provideAuthApi(@PublicRetrofit r: Retrofit): AuthApi = r.create(AuthApi::class.java)
     @Provides @Singleton fun provideOrganizationApi(@PublicRetrofit r: Retrofit): OrganizationApi = r.create(OrganizationApi::class.java)
     @Provides @Singleton fun provideHappyNurseApi(@AuthRetrofit r: Retrofit): HappyNurseApi = r.create(HappyNurseApi::class.java)
-    @Provides @Singleton fun provideNfcTokenApi(@AuthRetrofit r: Retrofit): NfcTokenApi = r.create(NfcTokenApi::class.java)
+    @Provides @Singleton fun provideNfcTokenApi(@PublicRetrofit r: Retrofit): NfcTokenApi = r.create(NfcTokenApi::class.java)
     @Provides @Singleton fun provideFcmTokenApi(@AuthRetrofit r: Retrofit): FcmTokenApi = r.create(FcmTokenApi::class.java)
     @Provides @Singleton fun providePractitionerApi(@AuthRetrofit r: Retrofit): PractitionerApi = r.create(PractitionerApi::class.java)
     @Provides @Singleton fun provideWardApi(@AuthRetrofit r: Retrofit): WardApi = r.create(WardApi::class.java)

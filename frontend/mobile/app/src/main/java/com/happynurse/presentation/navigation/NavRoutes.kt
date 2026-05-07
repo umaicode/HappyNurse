@@ -8,7 +8,13 @@ object NavRoutes {
     fun patientDetail(id: String) = "patient_detail/$id"
 
     const val NFC_PATIENT = "nfc_patient"
-    const val LOG_ENTRY = "log_entry"
-    const val DRUG_ENTRY = "drug_entry"
+
+    // patientId / encounterId 인자 (NFC 흐름에서만 채워짐. 다른 진입점에선 -1L 로 호출)
+    const val LOG_ENTRY = "log_entry?patientId={patientId}&encounterId={encounterId}"
+    fun logEntry(patientId: Long, encounterId: Long) = "log_entry?patientId=$patientId&encounterId=$encounterId"
+
+    const val DRUG_ENTRY = "drug_entry?patientId={patientId}&encounterId={encounterId}"
+    fun drugEntry(patientId: Long, encounterId: Long) = "drug_entry?patientId=$patientId&encounterId=$encounterId"
+
     const val IV_TIMER_SETUP = "iv_timer_setup"
 }

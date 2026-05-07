@@ -43,7 +43,14 @@ import com.happynurse.presentation.theme.HnColors
 import kotlinx.coroutines.delay
 
 @Composable
-fun LogEntryScreen(onClose: () -> Unit) {
+fun LogEntryScreen(
+    patientId: Long,
+    encounterId: Long,
+    onClose: () -> Unit,
+) {
+    androidx.compose.runtime.LaunchedEffect(patientId, encounterId) {
+        android.util.Log.d("LogEntryScreen", "received patientId=$patientId encounterId=$encounterId")
+    }
     var stage by remember { mutableIntStateOf(0) } // 0 idle, 1 recording, 2 result, 3 sending, 4 done
     var seconds by remember { mutableIntStateOf(0) }
     val text = "환자 김가민, 14시 30분. 보행 시도 중 어지러움 호소하여 즉시 침상 안정 시킴. 혈압 118 76, 맥박 82, 통증 NRS 2점으로 감소 확인."
