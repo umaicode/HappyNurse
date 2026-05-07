@@ -10,9 +10,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -138,6 +140,30 @@ public class WebappController {
     ) {
         return ResponseEntity.ok(ApiResponse.ok(
             webappService.submitSymptom(userDetails.getPractitionerId(), patientId, request)
+        ));
+    }
+
+    @Operation(
+            summary = "환자 음성 STT 변환 (제출 전 미리보기)",
+            description = "환자 음성 파일을 텍스트로 변환합니다. 의료 용어 자동 교정은 비활성화되며 raw STT 결과만 반환합니다. 환자가 텍스트를 확인·수정 후 /symptoms로 제출합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "STT 변환 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "음성 파일 형식 오류 — STT_AUDIO_INVALID"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "본인이 아닌 환자 ID 시도"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "503", description = "AI 서비스 호출 실패 — STT_SERVICE_UNAVAILABLE")
+    })
+    @PostMapping(value = "/patients/{patientId}/symptoms/transcribe",
+                 consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<SymptomTranscribeResponse>> transcribeSymptom(
+        @Parameter(description = "환자 ID (JWT subject와 일치해야 함)", example = "1", required = true)
+        @PathVariable Long patientId,
+        @RequestPart("audio") MultipartFile audio,
+        @AuthenticationPrincipal CustomUserDetails userDetails,
+        @CookieValue(name = "${jwt.cookie-name}") String accessToken
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(
+            webappService.transcribe(userDetails.getPractitionerId(), patientId, audio, accessToken)
         ));
     }
 }

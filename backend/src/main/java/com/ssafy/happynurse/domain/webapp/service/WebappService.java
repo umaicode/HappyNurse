@@ -18,12 +18,22 @@ import com.ssafy.happynurse.global.exception.ErrorCode;
 import com.ssafy.happynurse.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -40,6 +50,9 @@ public class WebappService {
     private final PatientSelfReportRepository patientSelfReportRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final SymptomClassificationService classificationService;
+
+    @Qualifier("aiSttRestClient")
+    private final RestClient aiSttRestClient;
 
     public NfcEntryResponse getPatientEntry(String token) {
         Patient patient = patientRepository.findByNfcToken(token)
@@ -180,5 +193,53 @@ public class WebappService {
         ));
 
         return new SymptomSubmitResponse(savedReport.getSelfReportId(), savedReport.getSubmittedAt());
+    }
+
+    public SymptomTranscribeResponse transcribe(Long jwtPatientId, Long pathPatientId, MultipartFile audio, String accessToken) {
+        if (!jwtPatientId.equals(pathPatientId)) {
+            throw new CustomException(ErrorCode.PATIENT_ID_MISMATCH);
+        }
+        if (audio == null || audio.isEmpty()) {
+            throw new CustomException(ErrorCode.STT_AUDIO_INVALID);
+        }
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        try {
+            byte[] bytes = audio.getBytes();
+            String filename = audio.getOriginalFilename() != null ? audio.getOriginalFilename() : "audio.wav";
+            body.add("audio", new ByteArrayResource(bytes) {
+                @Override
+                public String getFilename() {
+                    return filename;
+                }
+            });
+        } catch (IOException e) {
+            throw new CustomException(ErrorCode.STT_AUDIO_INVALID);
+        }
+
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = aiSttRestClient.post()
+                    .uri(uriBuilder -> uriBuilder.path("/api/stt/recognize")
+                            .queryParam("skip_correction", true)
+                            .build())
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .body(body)
+                    .retrieve()
+                    .body(Map.class);
+
+            if (response == null) {
+                log.warn("AI STT returned empty body");
+                throw new CustomException(ErrorCode.STT_SERVICE_UNAVAILABLE);
+            }
+            Object originalText = response.get("original_text");
+            return new SymptomTranscribeResponse(originalText == null ? "" : originalText.toString());
+        } catch (CustomException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("AI STT call failed: {}", e.getMessage(), e);
+            throw new CustomException(ErrorCode.STT_SERVICE_UNAVAILABLE);
+        }
     }
 }

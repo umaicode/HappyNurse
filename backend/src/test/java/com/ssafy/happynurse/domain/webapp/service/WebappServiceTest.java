@@ -12,6 +12,7 @@ import com.ssafy.happynurse.global.security.JwtTokenProvider;
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.webapp.dto.SymptomSubmitRequest;
 import com.ssafy.happynurse.domain.webapp.dto.SymptomSubmitResponse;
+import com.ssafy.happynurse.domain.webapp.dto.SymptomTranscribeResponse;
 import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
 import com.ssafy.happynurse.domain.webapp.entity.QuickSymptomButton;
 import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
@@ -57,6 +58,8 @@ public class WebappServiceTest {
     ApplicationEventPublisher eventPublisher;
     @Mock
     SymptomClassificationService classificationService;
+    @Mock
+    org.springframework.web.client.RestClient aiSttRestClient;
 
     @BeforeEach
     void stubClassifierDefaults() {
@@ -380,6 +383,84 @@ public class WebappServiceTest {
         ArgumentCaptor<SymptomSubmittedEvent> eventCaptor = ArgumentCaptor.forClass(SymptomSubmittedEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue().getPriority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("transcribe: jwt patientId와 path patientId 불일치 -> PATIENT_ID_MISMATCH")
+    void transcribe_patientIdMismatch() {
+        org.springframework.mock.web.MockMultipartFile audio =
+                new org.springframework.mock.web.MockMultipartFile("audio", "a.wav", "audio/wav", new byte[]{1, 2, 3});
+
+        assertThatThrownBy(() -> webAppService.transcribe(1L, 99L, audio, "token"))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PATIENT_ID_MISMATCH);
+    }
+
+    @Test
+    @DisplayName("transcribe: 빈 음성 파일 -> STT_AUDIO_INVALID")
+    void transcribe_emptyAudio_STT_AUDIO_INVALID() {
+        org.springframework.mock.web.MockMultipartFile audio =
+                new org.springframework.mock.web.MockMultipartFile("audio", "a.wav", "audio/wav", new byte[]{});
+
+        assertThatThrownBy(() -> webAppService.transcribe(1L, 1L, audio, "token"))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.STT_AUDIO_INVALID);
+    }
+
+    @Test
+    @DisplayName("transcribe: AI 응답에서 original_text를 추출해 반환")
+    void transcribe_정상_응답_매핑() {
+        org.springframework.web.client.RestClient.RequestBodyUriSpec uriSpec =
+                org.mockito.Mockito.mock(org.springframework.web.client.RestClient.RequestBodyUriSpec.class);
+        org.springframework.web.client.RestClient.RequestBodySpec bodySpec =
+                org.mockito.Mockito.mock(org.springframework.web.client.RestClient.RequestBodySpec.class);
+        org.springframework.web.client.RestClient.ResponseSpec responseSpec =
+                org.mockito.Mockito.mock(org.springframework.web.client.RestClient.ResponseSpec.class);
+
+        given(aiSttRestClient.post()).willReturn(uriSpec);
+        given(uriSpec.uri(org.mockito.ArgumentMatchers.<java.util.function.Function<org.springframework.web.util.UriBuilder, java.net.URI>>any()))
+                .willReturn(bodySpec);
+        given(bodySpec.contentType(any(org.springframework.http.MediaType.class))).willReturn(bodySpec);
+        given(bodySpec.header(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.<String>any())).willReturn(bodySpec);
+        given(bodySpec.body(any(Object.class))).willReturn(bodySpec);
+        given(bodySpec.retrieve()).willReturn(responseSpec);
+        given(responseSpec.body(eq(java.util.Map.class)))
+                .willReturn(java.util.Map.of("original_text", "허리가 너무 아파요"));
+
+        org.springframework.mock.web.MockMultipartFile audio =
+                new org.springframework.mock.web.MockMultipartFile("audio", "a.wav", "audio/wav", new byte[]{1, 2, 3});
+
+        SymptomTranscribeResponse result = webAppService.transcribe(1L, 1L, audio, "token");
+
+        assertThat(result.text()).isEqualTo("허리가 너무 아파요");
+    }
+
+    @Test
+    @DisplayName("transcribe: AI 호출 실패 -> STT_SERVICE_UNAVAILABLE")
+    void transcribe_AI_실패_STT_SERVICE_UNAVAILABLE() {
+        org.springframework.web.client.RestClient.RequestBodyUriSpec uriSpec =
+                org.mockito.Mockito.mock(org.springframework.web.client.RestClient.RequestBodyUriSpec.class);
+        org.springframework.web.client.RestClient.RequestBodySpec bodySpec =
+                org.mockito.Mockito.mock(org.springframework.web.client.RestClient.RequestBodySpec.class);
+        org.springframework.web.client.RestClient.ResponseSpec responseSpec =
+                org.mockito.Mockito.mock(org.springframework.web.client.RestClient.ResponseSpec.class);
+
+        given(aiSttRestClient.post()).willReturn(uriSpec);
+        given(uriSpec.uri(org.mockito.ArgumentMatchers.<java.util.function.Function<org.springframework.web.util.UriBuilder, java.net.URI>>any()))
+                .willReturn(bodySpec);
+        given(bodySpec.contentType(any(org.springframework.http.MediaType.class))).willReturn(bodySpec);
+        given(bodySpec.header(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.<String>any())).willReturn(bodySpec);
+        given(bodySpec.body(any(Object.class))).willReturn(bodySpec);
+        given(bodySpec.retrieve()).willReturn(responseSpec);
+        given(responseSpec.body(eq(java.util.Map.class)))
+                .willThrow(new org.springframework.web.client.ResourceAccessException("connection refused"));
+
+        org.springframework.mock.web.MockMultipartFile audio =
+                new org.springframework.mock.web.MockMultipartFile("audio", "a.wav", "audio/wav", new byte[]{1, 2, 3});
+
+        assertThatThrownBy(() -> webAppService.transcribe(1L, 1L, audio, "token"))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.STT_SERVICE_UNAVAILABLE);
     }
 
     @Test
