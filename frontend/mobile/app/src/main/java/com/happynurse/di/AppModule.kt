@@ -3,8 +3,10 @@ package com.happynurse.di
 
 import com.happynurse.data.remote.AuthAuthenticator
 import com.happynurse.data.remote.api.AuthApi
+import com.happynurse.data.remote.api.DrugApi
 import com.happynurse.data.remote.api.EncounterApi
 import com.happynurse.data.remote.api.FcmTokenApi
+import com.happynurse.data.remote.api.IvApi
 import com.happynurse.data.remote.api.HappyNurseApi
 import com.happynurse.data.remote.api.NfcTokenApi
 import com.happynurse.data.remote.api.OrganizationApi
@@ -77,10 +79,12 @@ object AppModule {
     @Provides @Singleton fun provideAuthApi(@PublicRetrofit r: Retrofit): AuthApi = r.create(AuthApi::class.java)
     @Provides @Singleton fun provideOrganizationApi(@PublicRetrofit r: Retrofit): OrganizationApi = r.create(OrganizationApi::class.java)
     @Provides @Singleton fun provideHappyNurseApi(@AuthRetrofit r: Retrofit): HappyNurseApi = r.create(HappyNurseApi::class.java)
-    @Provides @Singleton fun provideNfcTokenApi(@AuthRetrofit r: Retrofit): NfcTokenApi = r.create(NfcTokenApi::class.java)
+    @Provides @Singleton fun provideNfcTokenApi(@PublicRetrofit r: Retrofit): NfcTokenApi = r.create(NfcTokenApi::class.java)
     @Provides @Singleton fun provideFcmTokenApi(@AuthRetrofit r: Retrofit): FcmTokenApi = r.create(FcmTokenApi::class.java)
     @Provides @Singleton fun providePractitionerApi(@AuthRetrofit r: Retrofit): PractitionerApi = r.create(PractitionerApi::class.java)
     @Provides @Singleton fun provideWardApi(@AuthRetrofit r: Retrofit): WardApi = r.create(WardApi::class.java)
     @Provides @Singleton fun providePatientApi(@AuthRetrofit r: Retrofit): PatientApi = r.create(PatientApi::class.java)
     @Provides @Singleton fun provideEncounterApi(@AuthRetrofit r: Retrofit): EncounterApi = r.create(EncounterApi::class.java)
+    @Provides @Singleton fun provideDrugApi(@AuthRetrofit r: Retrofit): DrugApi = r.create(DrugApi::class.java)
+    @Provides @Singleton fun provideIvApi(@AuthRetrofit r: Retrofit): IvApi = r.create(IvApi::class.java)
 }

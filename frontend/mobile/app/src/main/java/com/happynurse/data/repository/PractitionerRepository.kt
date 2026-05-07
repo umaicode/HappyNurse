@@ -16,14 +16,14 @@ class PractitionerRepository @Inject constructor(
         val res = api.getMyProfile()
         val body = res.body()
         if (res.isSuccessful && body?.success == true && body.data != null) body.data.toDomain()
-        else throw Exception(body?.message ?: "프로필 조회 실패 (${res.code()})")
+        else throw Exception(body?.message ?: "프로필 조회 실패")
     }
 
     suspend fun updateAssignedPatients(encounterIds: List<Long>): Result<Unit> = runCatching {
         val res = api.updateAssignedPatients(AssignedPatientUpdateRequest(encounterIds))
         val body = res.body()
         if (!(res.isSuccessful && body?.success == true)) {
-            throw Exception(body?.message ?: "담당환자 저장 실패 (${res.code()})")
+            throw Exception(body?.message ?: "담당환자 저장 실패")
         }
     }
 }
