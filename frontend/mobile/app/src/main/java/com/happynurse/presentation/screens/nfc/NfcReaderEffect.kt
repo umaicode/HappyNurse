@@ -17,7 +17,7 @@ fun NfcReaderEffect(viewModel: NfcPatientViewModel) {
     }
 }
 
-private fun Context.findActivity(): Activity? = when (this) {
+internal fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
     is ContextWrapper -> baseContext.findActivity()
     else -> null

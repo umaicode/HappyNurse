@@ -42,13 +42,13 @@ class NfcPatientViewModel @Inject constructor(
     }
 
     fun startNfc(activity: Activity) {
-        readerManager.enable(activity) { tag ->
+        readerManager.enable(activity, this) { tag ->
             readerManager.parsePatientToken(tag)?.let(::onTokenScanned)
         }
     }
 
     fun stopNfc(activity: Activity) {
-        readerManager.disable(activity)
+        readerManager.disable(activity, this)
     }
 
     fun reset() {

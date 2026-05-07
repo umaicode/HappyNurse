@@ -16,13 +16,13 @@ class EncounterRepository @Inject constructor(
         val res = api.getNursingNotes(encounterId, date)
         val body = res.body()
         if (res.isSuccessful && body?.success == true) body.data.orEmpty().map { it.toDomain() }
-        else throw Exception(body?.message ?: "간호일지 조회 실패 (${res.code()})")
+        else throw Exception(body?.message ?: "간호일지 조회 실패")
     }
 
     suspend fun getOrders(encounterId: Long): Result<List<Order>> = runCatching {
         val res = api.getOrders(encounterId)
         val body = res.body()
         if (res.isSuccessful && body?.success == true) body.data?.orders.orEmpty().map { it.toDomain() }
-        else throw Exception(body?.message ?: "의사오더 조회 실패 (${res.code()})")
+        else throw Exception(body?.message ?: "의사오더 조회 실패")
     }
 }

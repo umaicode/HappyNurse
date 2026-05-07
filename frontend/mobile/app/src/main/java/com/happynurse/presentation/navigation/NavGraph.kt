@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.happynurse.presentation.screens.drugentry.DrugEntryScreen
+import com.happynurse.presentation.screens.ivtimer.IVTimerActiveScreen
 import com.happynurse.presentation.screens.ivtimer.IVTimerSetupScreen
 import com.happynurse.presentation.screens.login.LoginScreen
 import com.happynurse.presentation.screens.logentry.LogEntryScreen
@@ -52,7 +53,7 @@ fun NavGraph(
         composable(NavRoutes.MAIN) {
             MainScaffold(
                 onOpenPatient = { id -> navController.navigate(NavRoutes.patientDetail(id)) },
-                onOpenNFC = { navController.navigate(NavRoutes.NFC_PATIENT) },
+                onOpenNFC = { navController.navigate(NavRoutes.nfcPatient()) },
                 onLogout = {
                     navController.navigate(NavRoutes.LOGIN) {
                         popUpTo(NavRoutes.MAIN) { inclusive = true }
@@ -79,14 +80,24 @@ fun NavGraph(
                 },
             )
         }
-        composable(NavRoutes.NFC_PATIENT) {
+        composable(
+            route = NavRoutes.NFC_PATIENT,
+            arguments = listOf(
+                navArgument("token") { type = NavType.StringType; nullable = true; defaultValue = null },
+            ),
+        ) { entry ->
+            val token = entry.arguments?.getString("token")
             NfcPatientScreen(
+                token = token,
                 onClose = { navController.popBackStack() },
                 onLog = { patientId, encounterId ->
                     navController.navigate(NavRoutes.logEntry(patientId, encounterId))
                 },
                 onDrug = { patientId, encounterId ->
                     navController.navigate(NavRoutes.drugEntry(patientId, encounterId))
+                },
+                onIv = {
+                    navController.navigate(NavRoutes.ivTimerActive())
                 },
             )
         }
@@ -118,11 +129,45 @@ fun NavGraph(
                 patientId = patientId,
                 encounterId = encounterId,
                 onClose = { navController.popBackStack() },
-                onTimer = { navController.navigate(NavRoutes.IV_TIMER_SETUP) },
+                onTimer = { encId, orderIds ->
+                    navController.navigate(NavRoutes.ivTimerSetup(encId, orderIds))
+                },
             )
         }
-        composable(NavRoutes.IV_TIMER_SETUP) {
-            IVTimerSetupScreen(onClose = { navController.popBackStack() })
+        composable(
+            route = NavRoutes.IV_TIMER_SETUP,
+            arguments = listOf(
+                navArgument("encounterId") { type = NavType.LongType; defaultValue = -1L },
+                navArgument("orderIds") { type = NavType.StringType; nullable = true; defaultValue = null },
+            ),
+        ) { entry ->
+            val encId = entry.arguments?.getLong("encounterId") ?: -1L
+            val ids = entry.arguments?.getString("orderIds")
+                ?.split(",")
+                ?.mapNotNull { it.toLongOrNull() }
+                ?: emptyList()
+            IVTimerSetupScreen(
+                encounterId = encId,
+                medicationOrderIds = ids,
+                onClose = { navController.popBackStack() },
+                onActive = { ivInfusionId ->
+                    navController.navigate(NavRoutes.ivTimerActive(ivInfusionId)) {
+                        popUpTo(NavRoutes.IV_TIMER_SETUP) { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable(
+            route = NavRoutes.IV_TIMER_ACTIVE,
+            arguments = listOf(
+                navArgument("ivInfusionId") { type = NavType.LongType; defaultValue = -1L },
+            ),
+        ) { entry ->
+            val ivInfusionId = entry.arguments?.getLong("ivInfusionId") ?: -1L
+            IVTimerActiveScreen(
+                ivInfusionId = ivInfusionId,
+                onClose = { navController.popBackStack() },
+            )
         }
     }
 }

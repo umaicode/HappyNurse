@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
@@ -22,10 +24,12 @@ import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.MedicalServices
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Nfc
+import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,12 +46,19 @@ import com.happynurse.presentation.theme.HnColors
 
 @Composable
 fun NfcPatientScreen(
+    token: String? = null,
     onClose: () -> Unit,
     onLog: (patientId: Long, encounterId: Long) -> Unit,
     onDrug: (patientId: Long, encounterId: Long) -> Unit,
+    onIv: () -> Unit,
     viewModel: NfcPatientViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // Path A — manifest dispatch 로 들어온 token 을 화면 진입 시 1회 자동 스캔.
+    LaunchedEffect(token) {
+        if (token != null) viewModel.onTokenScanned(token)
+    }
 
     NfcReaderEffect(viewModel)
 
@@ -61,7 +72,12 @@ fun NfcPatientScreen(
             Spacer(Modifier.size(8.dp))
             Text("NFC 인식", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
         }
-        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 4.dp),
+        ) {
             when (val s = state) {
                 NfcPatientViewModel.State.Idle -> IdleCard()
                 NfcPatientViewModel.State.Loading -> LoadingCard()
@@ -69,9 +85,11 @@ fun NfcPatientScreen(
                     info = s.info,
                     onLog = { onLog(s.info.patientId, s.info.encounterId) },
                     onDrug = { onDrug(s.info.patientId, s.info.encounterId) },
+                    onIv = onIv,
                 )
                 is NfcPatientViewModel.State.Error -> ErrorCard(s.message, onRetry = viewModel::reset)
             }
+            Spacer(Modifier.height(20.dp))
         }
     }
 }
@@ -108,6 +126,7 @@ private fun SuccessSection(
     info: NfcPatientInfo,
     onLog: () -> Unit,
     onDrug: () -> Unit,
+    onIv: () -> Unit,
 ) {
     HnCard(padding = 20.dp) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -149,6 +168,8 @@ private fun SuccessSection(
     ActionTile(Icons.Outlined.Mic, "간호일지 등록", "음성 녹음 → STT → 전송", onLog)
     Spacer(Modifier.height(8.dp))
     ActionTile(Icons.Outlined.MedicalServices, "약물 등록", "약물 NFC 태깅 → 리스트 → 전송", onDrug)
+    Spacer(Modifier.height(8.dp))
+    ActionTile(Icons.Outlined.WaterDrop, "수액 확인", "진행 중 수액 → NFC 재태깅", onIv)
 }
 
 @Composable
