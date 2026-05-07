@@ -27,7 +27,6 @@ import com.happynurse.presentation.theme.HnColors
 @Composable
 fun MainScaffold(
     onOpenPatient: (String) -> Unit,
-    onOpenNFC: () -> Unit,
     onLogout: () -> Unit,
 ) {
     var tab by remember { mutableStateOf(HnTab.PATIENTS) }
@@ -40,7 +39,6 @@ fun MainScaffold(
                 when (tab) {
                     HnTab.PATIENTS -> PatientsScreen(
                         onOpenPatient = onOpenPatient,
-                        onOpenNFC = onOpenNFC,
                         onOpenNotifications = { notifOpen = true },
                         upcomingCount = upcoming,
                         layout = PatientLayout.CARD,

@@ -15,17 +15,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.happynurse.core.sample.SampleData
 import com.happynurse.domain.model.NurseAlarm
 import com.happynurse.presentation.components.HnCard
 import com.happynurse.presentation.components.IVTimerCard
@@ -39,10 +41,18 @@ fun AlarmsScreen(
     onOpenNotifications: () -> Unit,
     upcomingCount: Int,
     ivLayout: IVTimerLayout = IVTimerLayout.BAR,
+    viewModel: AlarmsViewModel = hiltViewModel(),
 ) {
     var tab by remember { mutableStateOf("nurse") }
-    val alarms = remember { SampleData.nurseAlarms.sortedBy { it.date + it.time } }
-    val timers = remember { SampleData.ivTimers.sortedBy { it.endsAt.replace(":", "").toIntOrNull() ?: 0 } }
+    // 화면 진입 시마다 새로 fetch — 담당환자 변경 후 stale 방지
+    LaunchedEffect(Unit) {
+        viewModel.refreshIvBoard()
+        viewModel.refreshAlarms()
+    }
+    val rawAlarms by viewModel.alarms.collectAsStateWithLifecycle()
+    val alarms = rawAlarms.sortedByDescending { it.date + it.time }
+    val ivTimers by viewModel.ivTimers.collectAsStateWithLifecycle()
+    val timers = ivTimers.sortedBy { it.endsAt.replace(":", "").toIntOrNull() ?: 0 }
 
     Column(Modifier.fillMaxWidth()) {
         PageHeader(title = "알람", right = { NotifBell(unreadCount = upcomingCount, onClick = onOpenNotifications) })
@@ -69,7 +79,7 @@ fun AlarmsScreen(
 private fun SubTabBar(active: String, onChange: (String) -> Unit) {
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-            listOf("nurse" to "전체 알림", "iv" to "수액타이머").forEach { (id, label) ->
+            listOf("nurse" to "전체 알람", "iv" to "수액타이머").forEach { (id, label) ->
                 val on = id == active
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,

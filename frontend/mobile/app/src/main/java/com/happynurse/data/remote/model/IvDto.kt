@@ -45,3 +45,16 @@ data class ChangeRateRequest(
     @SerializedName("rateGttPerMin") val rateGttPerMin: Int,
     @SerializedName("patientType") val patientType: String, // "ADULT" | "PEDIATRIC"
 )
+
+// --- GET /iv?wardId=&status= 응답 (slim 목록) ---
+data class IvInfusionListItemResponse(
+    @SerializedName("ivInfusionId") val ivInfusionId: Long,
+    @SerializedName("patientId") val patientId: Long,
+    @SerializedName("patientName") val patientName: String?,
+    @SerializedName("medicationNames") val medicationNames: List<String> = emptyList(),
+    @SerializedName("currentRateMlPerHr") val currentRateMlPerHr: Double?,
+    @SerializedName("status") val status: String, // IN_PROGRESS|PAUSED|COMPLETED|CANCELLED|EXPIRED
+    @SerializedName("startedAt") val startedAt: String?,
+    @SerializedName("expectedEndAt") val expectedEndAt: String?,
+    @SerializedName("remainingSeconds") val remainingSeconds: Long?,
+)
