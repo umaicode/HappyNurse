@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from app.routers import stt, correction
+from app.routers import stt, correction, classification
 
 load_dotenv()
 
@@ -26,6 +26,7 @@ app = FastAPI(
     openapi_tags=[
         {"name": "STT 음성인식", "description": "음성 파일 → 텍스트 변환 + 의료 용어 매핑"},
         {"name": "용어 교정 피드백", "description": "교정 이력 저장 및 매핑 사전 관리"},
+        {"name": "중요도 분류", "description": "환자 발화 텍스트 → priority(LLM 분류)"},
         {"name": "서버 상태", "description": "서버 상태 확인"},
     ]
 )
@@ -41,6 +42,7 @@ app.add_middleware(
 
 app.include_router(stt.router, prefix="/api", tags=["STT 음성인식"])
 app.include_router(correction.router, prefix="/api", tags=["용어 교정 피드백"])
+app.include_router(classification.router, prefix="/api", tags=["중요도 분류"])
 
 @app.get("/", tags=["서버 상태"])
 def root():
