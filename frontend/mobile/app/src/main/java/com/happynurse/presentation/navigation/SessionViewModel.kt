@@ -1,4 +1,4 @@
-// 세션 상태 ViewModel — accessToken 유무를 관찰해 자동 로그아웃 시 로그인 화면으로 유도
+// 세션 상태 ViewModel — DataStore 첫 emit 전엔 null (결정 전), 이후 토큰 유무로 true/false
 package com.happynurse.presentation.navigation
 
 import androidx.lifecycle.ViewModel
@@ -14,6 +14,7 @@ import javax.inject.Inject
 class SessionViewModel @Inject constructor(
     authRepository: AuthRepository,
 ) : ViewModel() {
-    val isLoggedIn: StateFlow<Boolean> =
-        authRepository.isLoggedIn.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    // null 초기값으로 DataStore 첫 emit 까지 NavGraph 가 진입 분기를 보류하게 함 (LOGIN/MAIN 깜빡임 방지)
+    val isLoggedIn: StateFlow<Boolean?> =
+        authRepository.isLoggedIn.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 }

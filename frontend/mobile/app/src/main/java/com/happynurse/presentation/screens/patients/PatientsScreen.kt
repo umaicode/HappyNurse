@@ -52,7 +52,6 @@ import com.happynurse.presentation.theme.HnColors
 @Composable
 fun PatientsScreen(
     onOpenPatient: (String) -> Unit,
-    onOpenNFC: () -> Unit,
     onOpenNotifications: () -> Unit,
     upcomingCount: Int,
     layout: PatientLayout = PatientLayout.CARD,
@@ -65,60 +64,45 @@ fun PatientsScreen(
     var pickerOpen by remember { mutableStateOf(false) }
     val mine = all.filter { it.isMyPatient }
 
-    Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize()) {
-            PageHeader(
-                title = "환자",
-                sub = "2026년 4월 30일 (목) · 데이 근무",
-                right = { NotifBell(unreadCount = upcomingCount, onClick = onOpenNotifications) },
-            )
-            TabRow(
-                active = listTab,
-                onChange = { listTab = it },
-                onOpenPicker = { pickerOpen = true },
-            )
-            val showing: List<Patient> = if (listTab == "mine") mine else all
+    // wristband NFC 진입은 manifest dispatch + autoVerify 로 자동 처리되므로 화면 내 별도 FAB 불필요.
+    Column(Modifier.fillMaxSize()) {
+        PageHeader(
+            title = "환자",
+            sub = "2026년 4월 30일 (목) · 데이 근무",
+            right = { NotifBell(unreadCount = upcomingCount, onClick = onOpenNotifications) },
+        )
+        TabRow(
+            active = listTab,
+            onChange = { listTab = it },
+            onOpenPicker = { pickerOpen = true },
+        )
+        val showing: List<Patient> = if (listTab == "mine") mine else all
 
-            if (showing.isEmpty()) {
-                EmptyState(onOpenPicker = { pickerOpen = true })
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp,
-                    ),
-                ) {
-                    val rooms = showing.map { it.room }.distinct().sorted()
-                    rooms.forEach { room ->
-                        val inRoom = showing.filter { it.room == room }
-                        item(key = "h-$room") {
-                            RoomHeader(room = room, count = inRoom.size)
-                        }
-                        items(inRoom, key = { it.id }) { p ->
-                            PatientCard(
-                                patient = p,
-                                onClick = { onOpenPatient(p.id) },
-                                layout = layout,
-                                myNurseName = myName,
-                            )
-                        }
+        if (showing.isEmpty()) {
+            EmptyState(onOpenPicker = { pickerOpen = true })
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp,
+                ),
+            ) {
+                val rooms = showing.map { it.room }.distinct().sorted()
+                rooms.forEach { room ->
+                    val inRoom = showing.filter { it.room == room }
+                    item(key = "h-$room") {
+                        RoomHeader(room = room, count = inRoom.size)
+                    }
+                    items(inRoom, key = { it.id }) { p ->
+                        PatientCard(
+                            patient = p,
+                            onClick = { onOpenPatient(p.id) },
+                            layout = layout,
+                            myNurseName = myName,
+                        )
                     }
                 }
             }
-        }
-
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(20.dp)
-                .shadow(elevation = 8.dp, shape = CircleShape)
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(HnColors.Primary)
-                .clickable(onClick = onOpenNFC),
-        ) {
-            Icon(Icons.Outlined.Nfc, contentDescription = "NFC", tint = Color.White, modifier = Modifier.size(26.dp))
         }
     }
 

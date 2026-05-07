@@ -3,6 +3,7 @@ package com.happynurse.data.repository
 
 import com.happynurse.data.remote.api.IvApi
 import com.happynurse.data.remote.model.ChangeRateRequest
+import com.happynurse.data.remote.model.IvInfusionListItemResponse
 import com.happynurse.data.remote.model.IvInfusionResponse
 import com.happynurse.data.remote.model.StartIvRequest
 import javax.inject.Inject
@@ -66,4 +67,15 @@ class IvRepository @Inject constructor(
 
     fun cachedById(ivInfusionId: Long): IvInfusionResponse? =
         lastInfusion?.takeIf { it.ivInfusionId == ivInfusionId }
+
+    // 병동 IV 보드 — AlarmsScreen 의 수액타이머 탭에서 30초 polling 또는 진입 시 한 번 로드
+    suspend fun getByWard(
+        wardId: Long,
+        status: String? = null,
+    ): Result<List<IvInfusionListItemResponse>> = runCatching {
+        val res = api.getByWard(wardId, status)
+        val body = res.body()
+        if (res.isSuccessful && body?.success == true && body.data != null) body.data
+        else throw Exception(body?.message ?: "수액 보드 조회 실패")
+    }
 }

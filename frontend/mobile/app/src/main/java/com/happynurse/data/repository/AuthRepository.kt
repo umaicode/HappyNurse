@@ -39,6 +39,9 @@ class AuthRepository @Inject constructor(
 
     val isLoggedIn: Flow<Boolean> = accessToken.map { it != null }
 
+    // 본인 wardId 노출 — AlarmsViewModel 의 IV 보드 / 알림 fetch 등에서 사용
+    val wardId: Flow<Long?> = context.authDataStore.data.map { it[KEY_WARD_ID] }
+
     suspend fun login(
         organizationId: Long,
         wardId: Long,
@@ -52,7 +55,7 @@ class AuthRepository @Inject constructor(
                 saveSession(body.data)
                 Result.success(body.data)
             } else {
-                Result.failure(Exception(body?.message ?: "로그인 실패 (${response.code()})"))
+                Result.failure(Exception(body?.message ?: "로그인 실패"))
             }
         } catch (e: Exception) {
             Result.failure(e)

@@ -28,10 +28,15 @@ fun NavGraph(
     sessionViewModel: SessionViewModel = hiltViewModel(),
 ) {
     val loggedIn by sessionViewModel.isLoggedIn.collectAsStateWithLifecycle()
+    // 토큰 결정 후 양방향 진입 분기. null = 결정 전(빈 화면 유지), true → MAIN, false → LOGIN
     LaunchedEffect(loggedIn) {
-        if (!loggedIn && navController.currentDestination?.route != NavRoutes.LOGIN) {
-            navController.navigate(NavRoutes.LOGIN) {
-                popUpTo(0) { inclusive = true }
+        when (loggedIn) {
+            null -> Unit
+            true -> if (navController.currentDestination?.route != NavRoutes.MAIN) {
+                navController.navigate(NavRoutes.MAIN) { popUpTo(0) { inclusive = true } }
+            }
+            false -> if (navController.currentDestination?.route != NavRoutes.LOGIN) {
+                navController.navigate(NavRoutes.LOGIN) { popUpTo(0) { inclusive = true } }
             }
         }
     }
@@ -53,7 +58,6 @@ fun NavGraph(
         composable(NavRoutes.MAIN) {
             MainScaffold(
                 onOpenPatient = { id -> navController.navigate(NavRoutes.patientDetail(id)) },
-                onOpenNFC = { navController.navigate(NavRoutes.nfcPatient()) },
                 onLogout = {
                     navController.navigate(NavRoutes.LOGIN) {
                         popUpTo(NavRoutes.MAIN) { inclusive = true }
