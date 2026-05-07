@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         ensureNotificationPermission()
-        fcmTokenRegistrar.fetchAndLog()
+        fcmTokenRegistrar.registerCurrentToken()
         val nfcToken = intent.getStringExtra(NfcEntryActivity.EXTRA_NFC_TOKEN)
         setContent {
             HappyNurseTheme {

@@ -26,12 +26,8 @@ public interface NursingRecordRepository extends JpaRepository<NursingRecord, Lo
     @Query("""
             SELECT nr FROM NursingRecord nr
             WHERE nr.encounterId = :encounterId
-              AND (
-                (nr.status = com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus.draft
-                   AND nr.createdAt >= :dayStart AND nr.createdAt < :dayEnd)
-                OR (nr.status <> com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus.draft
-                   AND nr.confirmedAt >= :dayStart AND nr.confirmedAt < :dayEnd)
-              )
+              AND nr.confirmedAt >= :dayStart
+              AND nr.confirmedAt < :dayEnd
             """)
     List<NursingRecord> findAllByEncounterIdAndDateWithAuthor(
             @Param("encounterId") Long encounterId,
@@ -49,13 +45,11 @@ public interface NursingRecordRepository extends JpaRepository<NursingRecord, Lo
     @Query("""
             UPDATE NursingRecord nr
             SET nr.status = com.ssafy.happynurse.domain.nurseSTT.entity.RecordStatus.confirmed,
-                nr.finalContent = :finalContent,
-                nr.confirmedAt = :confirmedAt
+                nr.finalContent = :finalContent
             WHERE nr.nursingRecordId = :id
             """)
     int confirmDraft(@Param("id") Long id,
-                     @Param("finalContent") String finalContent,
-                     @Param("confirmedAt") LocalDateTime confirmedAt);
+                     @Param("finalContent") String finalContent);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE NursingRecord nr SET nr.editContent = :content WHERE nr.nursingRecordId = :id")

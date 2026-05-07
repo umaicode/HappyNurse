@@ -11,14 +11,15 @@ public class NursingRecordFactory {
     public NursingRecord createManual(Long patientId,
                                       Long encounterId,
                                       Long authorPractitionerId,
-                                      String content) {
+                                      String content,
+                                      LocalDateTime confirmedAt) {
         return NursingRecord.builder()
                 .patientId(patientId)
                 .encounterId(encounterId)
                 .authorPractitionerId(authorPractitionerId)
                 .status(RecordStatus.confirmed)
                 .finalContent(content)
-                .confirmedAt(LocalDateTime.now())
+                .confirmedAt(confirmedAt != null ? confirmedAt : LocalDateTime.now())
                 .build();
     }
 }

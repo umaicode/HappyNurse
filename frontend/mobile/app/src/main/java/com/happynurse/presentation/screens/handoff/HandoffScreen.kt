@@ -99,7 +99,7 @@ private fun AiSummaryCard() {
                 }
                 Spacer(Modifier.size(8.dp))
                 Text("AI 인계 요약", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                Text("14:30 생성", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                Text("14:30 생성", color = HnColors.Text, fontSize = 12.sp)
             }
             Spacer(Modifier.height(14.dp))
             Box(
@@ -120,12 +120,11 @@ private fun AiSummaryCard() {
             }
             if (open) {
                 Spacer(Modifier.height(10.dp))
+                val summaryLines = remember {
+                    SampleData.handoffs.flatMap { it.aiSummary }.take(3)
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf(
-                        "담당 환자 3명 · V/S 정상 2명, 미열 1명 (이승연-701-2)",
-                        "미완료 업무 5건 · 드레싱 1건, 수액 교체 1건",
-                        "김가민 신규 처방 세프트리악손 1g q12h",
-                    ).forEach { line ->
+                    summaryLines.forEach { line ->
                         Box(
                             Modifier
                                 .clip(RoundedCornerShape(8.dp))

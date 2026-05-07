@@ -84,4 +84,37 @@ public class MedicationOrder {
     public void markCompleted() {
         this.status = OrderStatus.completed;
     }
+
+    public static MedicationOrder create(
+            Patient patient, Encounter encounter, Practitioner prescriber, Medication medication,
+            String orderType, String orderCode, String orderName,
+            BigDecimal dose, Integer frequency, String doseUnit,
+            String route, String remarks) {
+        MedicationOrder order = new MedicationOrder();
+        order.patient = patient;
+        order.encounter = encounter;
+        order.prescriber = prescriber;
+        order.medication = medication;
+        order.orderType = OrderType.valueOf(orderType);
+        order.orderCode = orderCode;
+        order.orderName = orderName;
+        order.dose = dose;
+        order.frequency = frequency;
+        order.doseUnit = doseUnit;
+        order.route = route;
+        order.remarks = remarks;
+        order.status = OrderStatus.active;
+        order.dateWritten = LocalDateTime.now();
+        return order;
+    }
+
+    public void applyUpdate(OrderStatus status, BigDecimal dose, Integer frequency,
+                            String doseUnit, String route, String remarks) {
+        if (status != null)    this.status = status;
+        if (dose != null)      this.dose = dose;
+        if (frequency != null) this.frequency = frequency;
+        if (doseUnit != null)  this.doseUnit = doseUnit;
+        if (route != null)     this.route = route;
+        if (remarks != null)   this.remarks = remarks;
+    }
 }

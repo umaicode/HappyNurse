@@ -31,8 +31,7 @@ fun NotifBell(
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(40.dp)
-            .clip(CircleShape)
+            .size(44.dp)
             .clickable(onClick = onClick),
     ) {
         Icon(Icons.Outlined.Notifications, contentDescription = "알림", tint = HnColors.Text, modifier = Modifier.size(24.dp))
@@ -41,16 +40,17 @@ fun NotifBell(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .size(20.dp)
+                    .padding(top = 2.dp, end = 2.dp)
+                    .size(18.dp)
                     .clip(CircleShape)
                     .background(HnColors.Danger)
                     .border(1.5.dp, bgRing, CircleShape)
-                    .padding(horizontal = 4.dp),
+                    .padding(horizontal = 3.dp),
             ) {
                 Text(
                     text = unreadCount.toString(),
                     color = Color.White,
-                    fontSize = 11.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                 )
             }
