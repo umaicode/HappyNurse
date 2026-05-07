@@ -17,6 +17,7 @@ public record IvInfusionListItemResponse(
         @Schema(description = "혼합 약물명 목록", example = "[\"5% Dextrose\", \"KCl\"]") List<String> medicationNames,
         @Schema(description = "현재 주입 속도 (mL/hr)") BigDecimal currentRateMlPerHr,
         @Schema(description = "상태") InfusionStatus status,
+        @Schema(description = "수액 투여 시작 시각") LocalDateTime startedAt,
         @Schema(description = "예상 종료 시각") LocalDateTime expectedEndAt,
         @Schema(description = "잔여 시간 (초)") Long remainingSeconds
 ) {
@@ -32,6 +33,7 @@ public record IvInfusionListItemResponse(
                 names,
                 iv.getCurrentRateMlPerHr(),
                 iv.getStatus(),
+                iv.getStartedAt(),
                 iv.getExpectedEndAt(),
                 secsLeft
         );
