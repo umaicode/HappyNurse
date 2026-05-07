@@ -39,6 +39,7 @@ public class WebappService {
     private final QuickSymptomButtonRepository quickSymptomButtonRepository;
     private final PatientSelfReportRepository patientSelfReportRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final SymptomClassificationService classificationService;
 
     public NfcEntryResponse getPatientEntry(String token) {
         Patient patient = patientRepository.findByNfcToken(token)
@@ -162,6 +163,10 @@ public class WebappService {
 
         Practitioner assignedPractitioner = encounter.getAssignedPractitioner();
 
+        SymptomClassificationService.SymptomClassificationResult classification = hasButton
+                ? classificationService.classifyButton(button.getLabel())
+                : classificationService.classify(symptomText, encounter.getDepartmentCode());
+
         // 이벤트 발행 — SymptomSubmittedNotificationAdapter 가 트랜잭션 커밋 후 dispatcher 통해 알림 영속화 + 채널 발사
         eventPublisher.publishEvent(new SymptomSubmittedEvent(
                 assignedPractitioner != null ? assignedPractitioner.getPractitionerId() : null,
@@ -170,7 +175,8 @@ public class WebappService {
                 encounter.getRoom().getRoomName(),
                 symptomText,
                 savedReport.getSelfReportId(),
-                savedReport.getSubmittedAt()
+                savedReport.getSubmittedAt(),
+                classification.priority()
         ));
 
         return new SymptomSubmitResponse(savedReport.getSelfReportId(), savedReport.getSubmittedAt());

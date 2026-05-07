@@ -5,6 +5,7 @@ import com.ssafy.happynurse.domain.nurse.notification.api.NotificationEnvelope;
 import com.ssafy.happynurse.domain.nurse.notification.api.PushPolicy;
 import com.ssafy.happynurse.domain.nurse.notification.entity.SourceType;
 import com.ssafy.happynurse.domain.patient.repository.EncounterRepository;
+import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
 import com.ssafy.happynurse.domain.webapp.event.SymptomSubmittedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,8 @@ public class SymptomSubmittedNotificationAdapter {
             return;
         }
 
+        PushPolicy policy = pushPolicyOf(event.getPriority());
+
         NotificationEnvelope envelope = new NotificationEnvelope(
                 SourceType.self_report,
                 wardIdOpt.get(),
@@ -56,10 +59,20 @@ public class SymptomSubmittedNotificationAdapter {
                 event,
                 event.getSubmittedAt().atZone(ZoneId.systemDefault()).toInstant(),
                 null,
-                PushPolicy.ASSIGN_DELIVERY,
-                null   // priority — Phase 5에서 event.getPriority()로 채움
+                policy,
+                event.getPriority()
         );
 
         dispatcher.dispatch(envelope);
+    }
+
+    private static PushPolicy pushPolicyOf(SymptomPriority priority) {
+        if (priority == null) {
+            return PushPolicy.ASSIGN_DELIVERY;
+        }
+        return switch (priority) {
+            case CRITICAL -> PushPolicy.ALERT_CRITICAL;
+            case HIGH, MEDIUM, LOW -> PushPolicy.ASSIGN_DELIVERY;
+        };
     }
 }
