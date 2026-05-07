@@ -1,0 +1,204 @@
+package com.ssafy.happynurse.domain.webapp.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class SymptomClassificationServiceTest {
+
+    private SymptomClassificationService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new SymptomClassificationService(new ObjectMapper());
+        service.loadDictionary();
+    }
+
+    @Test
+    @DisplayName("호흡 키워드는 CRITICAL로 분류된다")
+    void classify_성공_CRITICAL_호흡_키워드() {
+        var result = service.classify("숨이 답답해요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("출혈 키워드는 CRITICAL로 분류된다")
+    void classify_성공_CRITICAL_출혈_키워드() {
+        var result = service.classify("피가 멈추지 않아요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("통증 단독은 HIGH로 분류된다")
+    void classify_성공_HIGH_통증_키워드() {
+        var result = service.classify("어깨가 욱신거려요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.HIGH);
+    }
+
+    @Test
+    @DisplayName("일반 정보 문의는 LOW로 분류된다")
+    void classify_성공_LOW_일반_문의() {
+        var result = service.classify("퇴원은 언제 해요?", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.LOW);
+    }
+
+    @Test
+    @DisplayName("여러 카테고리가 매칭되면 가장 높은 우선순위가 채택된다")
+    void classify_성공_여러_카테고리_매칭_시_최고_우선순위() {
+        var result = service.classify("숨이 답답하고 어깨도 아파요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("compound upgrade — 통증 + 소화기 증상은 CRITICAL로 승격된다")
+    void classify_성공_compound_upgrade_통증과_소화기증상_CRITICAL() {
+        var result = service.classify("배가 엄청 아프고 계속 토해요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("compound upgrade — 감염 징후 키워드 2개 이상이면 CRITICAL로 승격된다")
+    void classify_성공_compound_upgrade_감염징후_2개이상_CRITICAL() {
+        var result = service.classify("열도 나고 수술한 데가 빨갛고 고름도 나와요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("부서 override — 정형외과에서 감각 이상 호소는 CRITICAL")
+    void classify_성공_부서_override_정형외과_CRITICAL() {
+        var result = service.classify("다리에 감각이 없어요", "OS");
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("부서 override는 해당 부서 코드일 때만 적용된다")
+    void classify_성공_부서_override_다른_부서는_적용_안됨() {
+        var result = service.classify("다리가 퍼렇게 됐어요", null);
+
+        assertThat(result.priority()).isNotEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("어떤 키워드도 매칭 안 되면 MEDIUM 기본값을 반환한다")
+    void classify_성공_미매칭_MEDIUM_기본값() {
+        var result = service.classify("ㅁㅁㅁㅁㅁ 알 수 없는 텍스트 zxcvbnm", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.MEDIUM);
+    }
+
+    @Test
+    @DisplayName("빈 문자열은 MEDIUM 기본값을 반환한다")
+    void classify_성공_빈_문자열_MEDIUM() {
+        var result = service.classify("", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.MEDIUM);
+    }
+
+    @Test
+    @DisplayName("null 입력은 MEDIUM 기본값을 반환한다")
+    void classify_성공_null_MEDIUM() {
+        var result = service.classify(null, null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.MEDIUM);
+    }
+
+    @Test
+    @DisplayName("사전 보강 — '어지러' 활용형은 CRITICAL로 매칭된다")
+    void classify_성공_어지러_CRITICAL() {
+        var result = service.classify("머리가 너무 어지러워요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("사전 보강 — '고열' 활용형은 HIGH로 매칭된다")
+    void classify_성공_고열_HIGH() {
+        var result = service.classify("어젯밤부터 고열이 나요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.HIGH);
+    }
+
+    @Test
+    @DisplayName("사전 보강 — '메스꺼' 활용형은 HIGH로 매칭된다")
+    void classify_성공_메스꺼_HIGH() {
+        var result = service.classify("속이 메스꺼워서 못 먹겠어요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.HIGH);
+    }
+
+    @Test
+    @DisplayName("사전 보강 — '숨이 가빠' 표현은 CRITICAL로 매칭된다")
+    void classify_성공_가빠_CRITICAL() {
+        var result = service.classify("계단 오를 때 숨이 가빠요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("사전 보강 — '엎어졌' 표현은 CRITICAL(낙상)로 매칭된다")
+    void classify_성공_엎어_CRITICAL() {
+        var result = service.classify("화장실 가다 엎어졌어요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("사전 보강 — '기억이 안 나' 표현은 CRITICAL(신경계)로 매칭된다")
+    void classify_성공_기억이_안_CRITICAL() {
+        var result = service.classify("방금 일이 기억이 안 나요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("classifyButton — '통증' 버튼은 HIGH를 반환한다")
+    void classifyButton_성공_통증_HIGH() {
+        var result = service.classifyButton("통증");
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.HIGH);
+    }
+
+    @Test
+    @DisplayName("classifyButton — '수액' 버튼은 CRITICAL을 반환한다")
+    void classifyButton_성공_수액_CRITICAL() {
+        var result = service.classifyButton("수액");
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("classifyButton — '호흡 불편' 버튼은 CRITICAL을 반환한다")
+    void classifyButton_성공_호흡불편_CRITICAL() {
+        var result = service.classifyButton("호흡 불편");
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("classifyButton — '화장실' 버튼은 MEDIUM을 반환한다")
+    void classifyButton_성공_화장실_MEDIUM() {
+        var result = service.classifyButton("화장실");
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.MEDIUM);
+    }
+
+    @Test
+    @DisplayName("classifyButton — 등록되지 않은 라벨은 MEDIUM 기본값을 반환한다")
+    void classifyButton_성공_미등록_라벨_MEDIUM() {
+        var result = service.classifyButton("알수없는라벨");
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.MEDIUM);
+    }
+}
