@@ -183,7 +183,7 @@ class NursingNoteServiceTest {
     }
 
     @Test
-    @DisplayName("draft는 createdAt+editContent, confirmed는 confirmedAt+finalContent로 매핑된다")
+    @DisplayName("draft는 confirmedAt+editContent, confirmed는 confirmedAt+finalContent로 매핑된다")
     void getNursingNotes_성공_status별_시간_본문_분기() {
         Practitioner nurse = createPractitioner(ME, "이조은");
         given(encounterRepository.findById(ENCOUNTER_ID))
@@ -192,7 +192,7 @@ class NursingNoteServiceTest {
         LocalDateTime draftCreated = LocalDateTime.of(2026, 5, 3, 9, 0);
         LocalDateTime confirmedAt = LocalDateTime.of(2026, 5, 3, 12, 0);
 
-        NursingRecord draft = createNursingRecord(20L, nurse, RecordStatus.draft, draftCreated, null);
+        NursingRecord draft = createNursingRecord(20L, nurse, RecordStatus.draft, draftCreated, draftCreated);
         setField(draft, "editContent", "임시 본문");
         setField(draft, "finalContent", null);
 

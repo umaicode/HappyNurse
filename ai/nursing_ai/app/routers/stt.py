@@ -82,12 +82,10 @@ async def recognize_speech(
                 INSERT INTO nursing_record
                 (patient_id, encounter_id, author_practitioner_id,
                  status, audio_file_url, original_stt_content,
-                 editor_state_json, edit_content,
-                 created_at, updated_at)
+                 edit_content, created_at, updated_at)
                 VALUES (:pid, :eid, :prid,
                         'draft', :audio_url, :original,
-                        :editor_state, :corrected,
-                        NOW(), NOW())
+                        :corrected, NOW(), NOW())
                 RETURNING nursing_record_id
             """), {
                 "pid": patient_id,
@@ -95,7 +93,6 @@ async def recognize_speech(
                 "prid": practitioner_id,
                 "audio_url": audio_path,
                 "original": result["original_text"],
-                "editor_state": editor_state,
                 "corrected": result["corrected_text"]
             })
             nursing_record_id = row.fetchone()[0]

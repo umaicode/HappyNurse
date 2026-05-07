@@ -69,7 +69,7 @@ class NursingRecordServiceTest {
 
         LocalDateTime before = LocalDateTime.now();
         NursingRecordWriteResponse response = nursingRecordService.createManual(
-                new NursingRecordManualCreateRequest(ENCOUNTER_ID, "수동 입력 본문"), ME);
+                new NursingRecordManualCreateRequest(ENCOUNTER_ID, "수동 입력 본문", null), ME);
         LocalDateTime after = LocalDateTime.now();
 
         ArgumentCaptor<NursingRecord> captor = ArgumentCaptor.forClass(NursingRecord.class);
@@ -94,10 +94,35 @@ class NursingRecordServiceTest {
     }
 
     @Test
+    @DisplayName("수동 작성 시 confirmedAt 명시 → 그 시각으로 저장")
+    void createManual_성공_confirmedAt_명시() {
+        Patient patient = createPatient(PATIENT_ID);
+        Encounter encounter = createEncounter(ENCOUNTER_ID, patient);
+        given(encounterRepository.findById(ENCOUNTER_ID)).willReturn(Optional.of(encounter));
+        given(practitionerRepository.existsById(ME)).willReturn(true);
+        given(nursingRecordRepository.save(any(NursingRecord.class))).willAnswer(inv -> {
+            NursingRecord arg = inv.getArgument(0);
+            setField(arg, "nursingRecordId", ID);
+            return arg;
+        });
+
+        LocalDateTime explicit = LocalDateTime.of(2026, 5, 3, 14, 37);
+        NursingRecordWriteResponse response = nursingRecordService.createManual(
+                new NursingRecordManualCreateRequest(ENCOUNTER_ID, "사이 끼워넣기", explicit), ME);
+
+        ArgumentCaptor<NursingRecord> captor = ArgumentCaptor.forClass(NursingRecord.class);
+        verify(nursingRecordRepository).save(captor.capture());
+        NursingRecord saved = captor.getValue();
+
+        assertThat(saved.getConfirmedAt()).isEqualTo(explicit);
+        assertThat(response.confirmedAt()).isEqualTo(explicit);
+    }
+
+    @Test
     @DisplayName("수동 작성 시 encounterId null → INVALID_INPUT_VALUE")
     void createManual_실패_encounterId_null() {
         assertThatThrownBy(() -> nursingRecordService.createManual(
-                new NursingRecordManualCreateRequest(null, "본문"), ME))
+                new NursingRecordManualCreateRequest(null, "본문", null), ME))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT_VALUE);
         verify(nursingRecordRepository, never()).save(any());
@@ -107,7 +132,7 @@ class NursingRecordServiceTest {
     @DisplayName("수동 작성 시 본문 null → INVALID_INPUT_VALUE")
     void createManual_실패_본문_null() {
         assertThatThrownBy(() -> nursingRecordService.createManual(
-                new NursingRecordManualCreateRequest(ENCOUNTER_ID, null), ME))
+                new NursingRecordManualCreateRequest(ENCOUNTER_ID, null, null), ME))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT_VALUE);
         verify(nursingRecordRepository, never()).save(any());
@@ -117,7 +142,7 @@ class NursingRecordServiceTest {
     @DisplayName("수동 작성 시 본문이 공백뿐 → INVALID_INPUT_VALUE")
     void createManual_실패_본문_blank() {
         assertThatThrownBy(() -> nursingRecordService.createManual(
-                new NursingRecordManualCreateRequest(ENCOUNTER_ID, "   "), ME))
+                new NursingRecordManualCreateRequest(ENCOUNTER_ID, "   ", null), ME))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT_VALUE);
         verify(nursingRecordRepository, never()).save(any());
@@ -129,7 +154,7 @@ class NursingRecordServiceTest {
         given(encounterRepository.findById(ENCOUNTER_ID)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> nursingRecordService.createManual(
-                new NursingRecordManualCreateRequest(ENCOUNTER_ID, "본문"), ME))
+                new NursingRecordManualCreateRequest(ENCOUNTER_ID, "본문", null), ME))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ENCOUNTER_NOT_FOUND);
         verify(nursingRecordRepository, never()).save(any());
@@ -144,17 +169,17 @@ class NursingRecordServiceTest {
         given(practitionerRepository.existsById(ME)).willReturn(false);
 
         assertThatThrownBy(() -> nursingRecordService.createManual(
-                new NursingRecordManualCreateRequest(ENCOUNTER_ID, "본문"), ME))
+                new NursingRecordManualCreateRequest(ENCOUNTER_ID, "본문", null), ME))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRACTITIONER_NOT_FOUND);
         verify(nursingRecordRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("draft 확정 시 finalContent=editContent, confirmedAt=createdAt 복사")
+    @DisplayName("draft 확정 시 finalContent=editContent, confirmedAt은 그대로 보존")
     void confirm_성공() {
         LocalDateTime created = LocalDateTime.of(2026, 5, 3, 14, 30);
-        NursingRecord record = createRecord(ID, ME, RecordStatus.draft, created, null,
+        NursingRecord record = createRecord(ID, ME, RecordStatus.draft, created, created,
                 "녹음 본문", null);
         given(nursingRecordRepository.findById(ID)).willReturn(Optional.of(record));
 
@@ -164,7 +189,22 @@ class NursingRecordServiceTest {
         assertThat(response.status()).isEqualTo(RecordStatus.confirmed);
         assertThat(response.content()).isEqualTo("녹음 본문");
         assertThat(response.confirmedAt()).isEqualTo(created);
-        verify(nursingRecordRepository).confirmDraft(ID, "녹음 본문", created);
+        verify(nursingRecordRepository).confirmDraft(ID, "녹음 본문");
+    }
+
+    @Test
+    @DisplayName("draft 확정 시 사용자 지정 confirmedAt이 보존됨 (createdAt과 다른 값)")
+    void confirm_confirmedAt_보존() {
+        LocalDateTime created = LocalDateTime.of(2026, 5, 3, 14, 30);
+        LocalDateTime userSet = LocalDateTime.of(2026, 5, 3, 11, 5);
+        NursingRecord record = createRecord(ID, ME, RecordStatus.draft, created, userSet,
+                "녹음 본문", null);
+        given(nursingRecordRepository.findById(ID)).willReturn(Optional.of(record));
+
+        NursingRecordWriteResponse response = nursingRecordService.confirm(ID, ME);
+
+        assertThat(response.confirmedAt()).isEqualTo(userSet);
+        verify(nursingRecordRepository).confirmDraft(ID, "녹음 본문");
     }
 
     @Test
