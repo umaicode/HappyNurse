@@ -111,6 +111,56 @@ class TermMapper:
 
         return candidates
 
+    def process_text(self, text: str, medical_candidates: list) -> dict:
+        """텍스트 전체를 매핑 사전으로 교정. 형태소 후보를 1차 정확 → 2차 퍼지 매칭 처리."""
+        corrected_text = text
+        corrections = []
+
+        for candidate in medical_candidates:
+            word = candidate["word"]
+
+            # 1차: 정확 매칭
+            exact_result = self.exact_match(word)
+            if exact_result:
+                corrected_text = corrected_text.replace(word, exact_result)
+                corrections.append({
+                    "original": word,
+                    "corrected": exact_result,
+                    "type": "exact",
+                    "confidence": 1.0
+                })
+                print(f"  정확 매칭: {word} → {exact_result}")
+                continue
+
+            # 2차: 퍼지 매칭
+            fuzzy_results = self.fuzzy_match(word)
+            if fuzzy_results:
+                best = fuzzy_results[0]
+                if best["confidence_score"] >= 0.85:
+                    corrected_text = corrected_text.replace(word, best["suggested_word"])
+                    corrections.append({
+                        "original": word,
+                        "corrected": best["suggested_word"],
+                        "type": "fuzzy",
+                        "confidence": best["confidence_score"],
+                        "candidates": fuzzy_results
+                    })
+                    print(f"  퍼지 매칭 (자동): {word} → {best['suggested_word']} ({best['confidence_score']})")
+                else:
+                    corrections.append({
+                        "original": word,
+                        "corrected": None,
+                        "type": "candidates",
+                        "confidence": best["confidence_score"],
+                        "candidates": fuzzy_results
+                    })
+                    print(f"  퍼지 매칭 (후보 제시): {word} → {fuzzy_results}")
+
+        return {
+            "corrected_text": corrected_text,
+            "corrections": corrections
+        }
+
     def find_dictionary_matches(self, text: str) -> list:
         """텍스트에서 매핑 사전에 있는 오인식 단어를 직접 검색"""
         matches = []
