@@ -62,3 +62,10 @@ app:
 
 firebase:
   credentials-path: ${FIREBASE_CREDENTIALS_PATH:file:/app/firebase/service-account.json}
+
+ai:
+  base-url: ${AI_BASE_URL}
+  classification:
+    timeout-ms: 5000
+  stt:
+    timeout-ms: 15000

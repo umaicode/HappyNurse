@@ -62,3 +62,10 @@ app:
     enabled: false
   nfc-secret: ${NFC_SECRET}
   webapp-base-url: ${WEBAPP_BASE_URL}
+
+ai:
+  base-url: ${AI_BASE_URL:http://localhost:8000}
+  classification:
+    timeout-ms: 5000
+  stt:
+    timeout-ms: 15000

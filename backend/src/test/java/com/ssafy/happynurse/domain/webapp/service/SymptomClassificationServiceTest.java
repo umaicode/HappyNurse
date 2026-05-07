@@ -6,15 +6,27 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 class SymptomClassificationServiceTest {
 
     private SymptomClassificationService service;
+    private SymptomClassificationLlmClient llmClient;
 
     @BeforeEach
     void setUp() {
-        service = new SymptomClassificationService(new ObjectMapper());
+        llmClient = mock(SymptomClassificationLlmClient.class);
+        given(llmClient.classify(anyString(), any())).willReturn(
+                new SymptomClassificationService.SymptomClassificationResult(SymptomPriority.MEDIUM, null));
+        service = new SymptomClassificationService(new ObjectMapper(), llmClient);
         service.loadDictionary();
     }
 
@@ -200,5 +212,35 @@ class SymptomClassificationServiceTest {
         var result = service.classifyButton("알수없는라벨");
 
         assertThat(result.priority()).isEqualTo(SymptomPriority.MEDIUM);
+    }
+
+    @Test
+    @DisplayName("safety_rules.no_downgrade — 키워드로 CRITICAL 산출되면 LLM 호출 안 한다")
+    void classify_성공_CRITICAL_키워드_매칭_시_LLM_호출_안함() {
+        service.classify("숨이 답답해요", null);
+
+        verify(llmClient, never()).classify(anyString(), any());
+    }
+
+    @Test
+    @DisplayName("키워드 미매칭이면 LLM에 위임된다")
+    void classify_성공_키워드_미매칭_LLM_위임() {
+        given(llmClient.classify(anyString(), any())).willReturn(
+                new SymptomClassificationService.SymptomClassificationResult(
+                        SymptomPriority.HIGH, BigDecimal.valueOf(0.82)));
+
+        var result = service.classify("뭔가 이상한 느낌이 드는데 잘 모르겠어요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.HIGH);
+        assertThat(result.confidence()).isEqualByComparingTo(BigDecimal.valueOf(0.82));
+        verify(llmClient).classify("뭔가 이상한 느낌이 드는데 잘 모르겠어요", null);
+    }
+
+    @Test
+    @DisplayName("LLM 위임 시 부서 코드도 함께 전달된다")
+    void classify_성공_LLM_위임_시_부서코드_전달() {
+        service.classify("뭔가 이상해요", "GS");
+
+        verify(llmClient).classify("뭔가 이상해요", "GS");
     }
 }

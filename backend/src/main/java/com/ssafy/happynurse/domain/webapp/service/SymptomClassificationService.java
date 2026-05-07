@@ -36,6 +36,7 @@ public class SymptomClassificationService {
     );
 
     private final ObjectMapper objectMapper;
+    private final SymptomClassificationLlmClient llmClient;
 
     private Map<String, List<String>> categoryKeywords;
     private Map<String, SymptomPriority> categoryPriorities;
@@ -193,8 +194,8 @@ public class SymptomClassificationService {
             return new SymptomClassificationResult(highest, null);
         }
 
-        // 미매칭 — Phase 3에서 LLM 위임으로 교체. 현재는 안전 기본값.
-        return new SymptomClassificationResult(SymptomPriority.MEDIUM, null);
+        // 키워드 미매칭 → LLM 위임. 호출 실패 시 클라이언트가 MEDIUM fallback.
+        return llmClient.classify(text, departmentCode);
     }
 
     private Map<String, Long> countCategoryMatches(String text) {
