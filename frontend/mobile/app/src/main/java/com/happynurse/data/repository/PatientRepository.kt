@@ -17,13 +17,13 @@ class PatientRepository @Inject constructor(
         val res = wardApi.getMyWardPatients()
         val body = res.body()
         if (res.isSuccessful && body?.success == true && body.data != null) body.data.map { it.toDomain() }
-        else throw Exception(body?.message ?: "병동 환자 조회 실패 (${res.code()})")
+        else throw Exception(body?.message ?: "병동 환자 조회 실패")
     }
 
     suspend fun getPatient(patientId: Long): Result<Patient> = runCatching {
         val res = patientApi.getPatient(patientId)
         val body = res.body()
         if (res.isSuccessful && body?.success == true && body.data != null) body.data.toDomain()
-        else throw Exception(body?.message ?: "환자 조회 실패 (${res.code()})")
+        else throw Exception(body?.message ?: "환자 조회 실패")
     }
 }

@@ -25,35 +25,43 @@ class FcmTokenRegistrar @Inject constructor(
         FirebaseMessaging.getInstance().token
             .addOnSuccessListener { token ->
                 Log.d(TAG, "현재 토큰 = $token")
-                register(token)
+                register(token, DEVICE_MOBILE)
             }
             .addOnFailureListener { Log.w(TAG, "토큰 발급 실패", it) }
     }
 
     fun handleNewToken(token: String) {
         Log.d(TAG, "갱신 토큰 = $token")
-        register(token)
+        register(token, DEVICE_MOBILE)
     }
 
-    private fun register(token: String) {
+    /** 워치가 발급받은 FCM 토큰을 폰이 대행 등록 (deviceType=watch). */
+    fun registerWearToken(token: String) {
+        Log.d(TAG, "워치 토큰 대행 등록 = $token")
+        register(token, DEVICE_WATCH)
+    }
+
+    private fun register(token: String, deviceType: String) {
         scope.launch {
             if (authRepository.accessToken.firstOrNull() == null) {
-                Log.d(TAG, "로그인 전 — 백엔드 등록 보류")
+                Log.d(TAG, "로그인 전 — 백엔드 등록 보류 (deviceType=$deviceType)")
                 return@launch
             }
             runCatching {
-                val res = api.registerFcmToken(FcmTokenRegisterRequest(token, "mobile"))
+                val res = api.registerFcmToken(FcmTokenRegisterRequest(token, deviceType))
                 val body = res.body()
                 if (res.isSuccessful && body?.success == true) {
-                    Log.d(TAG, "FCM 등록 성공: deviceId=${body.data?.deviceId}")
+                    Log.d(TAG, "FCM 등록 성공: deviceId=${body.data?.deviceId} type=$deviceType")
                 } else {
-                    Log.w(TAG, "FCM 등록 실패: code=${res.code()} msg=${body?.message}")
+                    Log.w(TAG, "FCM 등록 실패: code=${res.code()} msg=${body?.message} type=$deviceType")
                 }
-            }.onFailure { Log.w(TAG, "FCM 등록 예외", it) }
+            }.onFailure { Log.w(TAG, "FCM 등록 예외 type=$deviceType", it) }
         }
     }
 
     companion object {
         private const val TAG = "FCM"
+        private const val DEVICE_MOBILE = "mobile"
+        private const val DEVICE_WATCH = "watch"
     }
 }
