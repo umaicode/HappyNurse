@@ -1,11 +1,16 @@
 // Hilt 모듈 — Retrofit(OkHttp + 토큰 인터셉터) 및 API/Repository 싱글톤 제공
 package com.happynurse.di
 
+import com.happynurse.data.remote.AuthAuthenticator
 import com.happynurse.data.remote.api.AuthApi
+import com.happynurse.data.remote.api.EncounterApi
 import com.happynurse.data.remote.api.FcmTokenApi
 import com.happynurse.data.remote.api.HappyNurseApi
 import com.happynurse.data.remote.api.NfcTokenApi
 import com.happynurse.data.remote.api.OrganizationApi
+import com.happynurse.data.remote.api.PatientApi
+import com.happynurse.data.remote.api.PractitionerApi
+import com.happynurse.data.remote.api.WardApi
 import com.happynurse.data.repository.AuthRepository
 import dagger.Module
 import dagger.Provides
@@ -44,7 +49,11 @@ object AppModule {
             .build()
 
     @Provides @Singleton @AuthRetrofit
-    fun provideAuthRetrofit(logging: HttpLoggingInterceptor, authRepository: AuthRepository): Retrofit {
+    fun provideAuthRetrofit(
+        logging: HttpLoggingInterceptor,
+        authRepository: AuthRepository,
+        authenticator: AuthAuthenticator,
+    ): Retrofit {
         val tokenInterceptor = Interceptor { chain ->
             val token = runBlocking { authRepository.accessToken.firstOrNull() }
             val req = if (token != null)
@@ -54,7 +63,13 @@ object AppModule {
         }
         return Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .client(OkHttpClient.Builder().addInterceptor(tokenInterceptor).addInterceptor(logging).build())
+            .client(
+                OkHttpClient.Builder()
+                    .addInterceptor(tokenInterceptor)
+                    .addInterceptor(logging)
+                    .authenticator(authenticator)
+                    .build()
+            )
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
@@ -64,4 +79,8 @@ object AppModule {
     @Provides @Singleton fun provideHappyNurseApi(@AuthRetrofit r: Retrofit): HappyNurseApi = r.create(HappyNurseApi::class.java)
     @Provides @Singleton fun provideNfcTokenApi(@AuthRetrofit r: Retrofit): NfcTokenApi = r.create(NfcTokenApi::class.java)
     @Provides @Singleton fun provideFcmTokenApi(@AuthRetrofit r: Retrofit): FcmTokenApi = r.create(FcmTokenApi::class.java)
+    @Provides @Singleton fun providePractitionerApi(@AuthRetrofit r: Retrofit): PractitionerApi = r.create(PractitionerApi::class.java)
+    @Provides @Singleton fun provideWardApi(@AuthRetrofit r: Retrofit): WardApi = r.create(WardApi::class.java)
+    @Provides @Singleton fun providePatientApi(@AuthRetrofit r: Retrofit): PatientApi = r.create(PatientApi::class.java)
+    @Provides @Singleton fun provideEncounterApi(@AuthRetrofit r: Retrofit): EncounterApi = r.create(EncounterApi::class.java)
 }

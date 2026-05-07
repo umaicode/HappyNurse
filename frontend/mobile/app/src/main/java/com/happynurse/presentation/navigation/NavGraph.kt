@@ -1,7 +1,13 @@
 // 폰 앱 네비게이션 그래프 — login → main(4탭) + 모달 라우트(상세/NFC 플로우)
 package com.happynurse.presentation.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -16,8 +22,26 @@ import com.happynurse.presentation.screens.nfc.NfcPatientScreen
 import com.happynurse.presentation.screens.patientdetail.PatientDetailScreen
 
 @Composable
-fun NavGraph(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = NavRoutes.LOGIN) {
+fun NavGraph(
+    navController: NavHostController,
+    sessionViewModel: SessionViewModel = hiltViewModel(),
+) {
+    val loggedIn by sessionViewModel.isLoggedIn.collectAsStateWithLifecycle()
+    LaunchedEffect(loggedIn) {
+        if (!loggedIn && navController.currentDestination?.route != NavRoutes.LOGIN) {
+            navController.navigate(NavRoutes.LOGIN) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+    NavHost(
+        navController = navController,
+        startDestination = NavRoutes.LOGIN,
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None },
+    ) {
         composable(NavRoutes.LOGIN) {
             LoginScreen(onLoggedIn = {
                 navController.navigate(NavRoutes.MAIN) {
@@ -39,9 +63,21 @@ fun NavGraph(navController: NavHostController) {
         composable(
             route = NavRoutes.PATIENT_DETAIL,
             arguments = listOf(navArgument("id") { type = NavType.StringType }),
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None },
         ) { entry ->
             val id = entry.arguments?.getString("id") ?: ""
-            PatientDetailScreen(patientId = id, onBack = { navController.popBackStack() })
+            PatientDetailScreen(
+                patientId = id,
+                onBack = { navController.popBackStack() },
+                onSelectPatient = { newId ->
+                    navController.navigate(NavRoutes.patientDetail(newId)) {
+                        popUpTo(NavRoutes.PATIENT_DETAIL) { inclusive = true }
+                    }
+                },
+            )
         }
         composable(NavRoutes.NFC_PATIENT) {
             NfcPatientScreen(

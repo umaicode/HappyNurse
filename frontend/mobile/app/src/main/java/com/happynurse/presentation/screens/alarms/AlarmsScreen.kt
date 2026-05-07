@@ -69,7 +69,7 @@ fun AlarmsScreen(
 private fun SubTabBar(active: String, onChange: (String) -> Unit) {
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-            listOf("nurse" to "워치타이머", "iv" to "수액타이머").forEach { (id, label) ->
+            listOf("nurse" to "전체 알림", "iv" to "수액타이머").forEach { (id, label) ->
                 val on = id == active
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -108,12 +108,12 @@ private fun NurseAlarmCard(a: NurseAlarm) {
                 Spacer(Modifier.padding(horizontal = 4.dp))
                 Text(a.room, fontSize = 12.sp, color = HnColors.Text)
                 Spacer(Modifier.weight(1f))
-                Text(a.time, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HnColors.Primary)
+                Text(a.time, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
             }
             Spacer(Modifier.height(8.dp))
             Text(a.text, fontSize = 14.sp, color = HnColors.Text)
             Spacer(Modifier.height(8.dp))
-            Text("생성됨: ${a.createdTime}", fontSize = 12.sp, color = HnColors.TextSecondary)
+            Text("생성됨: ${a.createdTime}", fontSize = 12.sp, color = HnColors.Text)
         }
     }
 }
