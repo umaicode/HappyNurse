@@ -5,6 +5,8 @@ package com.happynurse.data.wearable
 object WearableMessagePaths {
     // 워치 → 폰
     const val AUDIO_TIMER = "/audio/timer" // 타이머 STT 용 raw audio (폰이 서버에 업로드 후 시간 파싱)
+    const val WEAR_FCM_TOKEN = "/wear/fcm-token"          // 워치 FCM 토큰을 폰이 백엔드에 대행 등록
+    const val WEAR_STT_TIMER_CREATE = "/wear/stt/create"  // 워치에서 등록한 STT 타이머를 폰이 백엔드에 등록 위임
 
     // 폰 → 워치
     const val TIMER_START = "/timer/start"               // 서버에서 파싱된 타이머 시간(millis) 워치에 전달

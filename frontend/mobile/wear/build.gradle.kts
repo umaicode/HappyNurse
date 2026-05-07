@@ -6,6 +6,11 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+// google-services.json 이 존재할 때만 Firebase 플러그인 적용 (Console 등록 전 빌드 깨짐 방지)
+if (file("google-services.json").exists()) {
+    apply(plugin = libs.plugins.google.services.get().pluginId)
+}
+
 android {
     namespace = "com.happynurse.wear"
     compileSdk = 35
@@ -69,4 +74,7 @@ dependencies {
 
     // Kotlin Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+    // Firebase Cloud Messaging — 워치 직접 푸시 수신
+    implementation(libs.firebase.messaging)
 }

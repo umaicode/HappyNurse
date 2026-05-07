@@ -5,16 +5,19 @@ package com.happynurse.wear.presentation.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import com.happynurse.wear.data.model.MockData
+import com.happynurse.wear.data.notification.WearSttCreatePayload
 import com.happynurse.wear.presentation.screens.detail.IvProgressScreen
 import com.happynurse.wear.presentation.screens.detail.SttTimerDetailScreen
 import com.happynurse.wear.presentation.screens.pager.HomeRecordPager
 import com.happynurse.wear.presentation.screens.stt.SttResultScreen
+import com.happynurse.wear.presentation.screens.stt.SttResultViewModel
 
 @Composable
 fun WearNavGraph(navController: NavHostController) {
@@ -36,6 +39,7 @@ fun WearNavGraph(navController: NavHostController) {
         }
         composable(WearRoute.SttResult.path) {
             val sample = MockData.sttList.first()
+            val viewModel: SttResultViewModel = hiltViewModel()
             SttResultScreen(
                 patientName = sample.patientName,
                 roomBed = sample.patientRoomBed,
@@ -44,6 +48,15 @@ fun WearNavGraph(navController: NavHostController) {
                 highlightStart = sample.highlightStart,
                 highlightEnd = sample.highlightEnd,
                 onConfirm = {
+                    // 폰에 STT 타이머 등록 위임 (백엔드 timer/reminder API)
+                    viewModel.submitToPhone(
+                        WearSttCreatePayload(
+                            patientName = sample.patientName,
+                            sttText = sample.sttText,
+                            contentSummary = sample.contentSummary,
+                            targetEpochMillis = System.currentTimeMillis() + sample.remainingSec * 1000L,
+                        ),
+                    )
                     navController.navigate(WearRoute.SttTimerDetail.build(sample.sttTimerId)) {
                         popUpTo(WearRoute.HomePager.path)
                     }
