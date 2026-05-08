@@ -326,4 +326,15 @@ class SymptomClassificationServiceTest {
         assertThat(result.priority().ordinal())
                 .isLessThanOrEqualTo(SymptomPriority.HIGH.ordinal());
     }
+
+    @Test
+    @DisplayName("JSON 사전에 없는 부서 코드도 분류 흐름이 안전하게 진행된다")
+    void classify_성공_미등록_부서코드_분류_정상_진행() {
+        var result = service.classify(
+                "어깨가 욱신거려요",
+                EncounterContext.ofDepartment("UNKNOWN_DEPT"));
+
+        // 키워드 매칭(pain → HIGH) 흐름이 그대로 적용되어야 함
+        assertThat(result.priority()).isEqualTo(SymptomPriority.HIGH);
+    }
 }

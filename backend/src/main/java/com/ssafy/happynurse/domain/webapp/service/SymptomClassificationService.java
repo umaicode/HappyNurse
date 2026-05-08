@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -43,6 +45,9 @@ public class SymptomClassificationService {
     private Map<String, SymptomPriority> categoryPriorities;
     private Map<String, List<String>> departmentOverrides;
     private List<CompoundRule> compoundRules;
+
+    // 등장 빈도가 높은 미등록 부서 코드가 매 요청마다 로그를 도배하지 않도록 첫 등장만 WARN.
+    private final Set<String> warnedUnknownDepartmentCodes = ConcurrentHashMap.newKeySet();
 
     public record SymptomClassificationResult(
             SymptomPriority priority,
@@ -76,8 +81,11 @@ public class SymptomClassificationService {
             loadDepartmentOverrides(root.path("department_overrides").path("overrides"));
             loadCompoundRules(root.path("safety_rules").path("compound_upgrade").path("rules"));
             validateCompoundRules();
-            log.info("Loaded keyword dictionary: {} categories, {} dept overrides, {} compound rules",
-                    categoryKeywords.size(), departmentOverrides.size(), compoundRules.size());
+            log.info("Loaded keyword dictionary: {} categories, {} dept overrides {}, {} compound rules",
+                    categoryKeywords.size(),
+                    departmentOverrides.size(),
+                    departmentOverrides.keySet(),
+                    compoundRules.size());
         } catch (Exception e) {
             throw new IllegalStateException("Failed to load " + DICTIONARY_PATH, e);
         }
@@ -179,6 +187,10 @@ public class SymptomClassificationService {
             List<String> overrideKeywords = departmentOverrides.get(departmentCode);
             if (overrideKeywords != null && containsAny(text, overrideKeywords)) {
                 return new SymptomClassificationResult(SymptomPriority.CRITICAL, null);
+            }
+            if (overrideKeywords == null && warnedUnknownDepartmentCodes.add(departmentCode)) {
+                log.warn("Unknown departmentCode '{}' — no department override applied. Known codes: {}",
+                        departmentCode, departmentOverrides.keySet());
             }
         }
 
