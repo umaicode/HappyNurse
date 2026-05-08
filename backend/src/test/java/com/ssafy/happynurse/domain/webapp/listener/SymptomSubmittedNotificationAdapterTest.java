@@ -5,6 +5,7 @@ import com.ssafy.happynurse.domain.nurse.notification.api.NotificationEnvelope;
 import com.ssafy.happynurse.domain.nurse.notification.api.PushPolicy;
 import com.ssafy.happynurse.domain.nurse.notification.entity.SourceType;
 import com.ssafy.happynurse.domain.patient.repository.EncounterRepository;
+import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
 import com.ssafy.happynurse.domain.webapp.event.SymptomSubmittedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,13 +34,14 @@ class SymptomSubmittedNotificationAdapterTest {
     SymptomSubmittedNotificationAdapter adapter;
 
     @Test
-    @DisplayName("증상 이벤트를 ASSIGN_DELIVERY envelope으로 변환하여 dispatch")
-    void onSymptomSubmitted_dispatchesAssignDeliveryEnvelope() {
+    @DisplayName("HIGH 이벤트는 ASSIGN_DELIVERY envelope으로 dispatch + priority 전달")
+    void onSymptomSubmitted_HIGH_dispatchesAssignDelivery() {
         when(encounterRepository.findCurrentWardIdByPatientId(1L)).thenReturn(Optional.of(3L));
 
         SymptomSubmittedEvent event = new SymptomSubmittedEvent(
                 10L, 1L, "이승연", "302호", "두통이 심해요", 42L,
-                LocalDateTime.of(2026, 5, 3, 10, 30, 0));
+                LocalDateTime.of(2026, 5, 3, 10, 30, 0),
+                SymptomPriority.HIGH);
 
         adapter.on(event);
 
@@ -56,6 +58,61 @@ class SymptomSubmittedNotificationAdapterTest {
         assertThat(env.title()).contains("이승연");
         assertThat(env.body()).isEqualTo("두통이 심해요");
         assertThat(env.pushPolicy()).isEqualTo(PushPolicy.ASSIGN_DELIVERY);
+        assertThat(env.priority()).isEqualTo(SymptomPriority.HIGH);
+    }
+
+    @Test
+    @DisplayName("CRITICAL 이벤트는 ALERT_CRITICAL push policy로 dispatch")
+    void onSymptomSubmitted_CRITICAL_dispatchesAlertCritical() {
+        when(encounterRepository.findCurrentWardIdByPatientId(1L)).thenReturn(Optional.of(3L));
+
+        SymptomSubmittedEvent event = new SymptomSubmittedEvent(
+                10L, 1L, "이승연", "302호", "숨이 답답해요", 42L,
+                LocalDateTime.now(),
+                SymptomPriority.CRITICAL);
+
+        adapter.on(event);
+
+        ArgumentCaptor<NotificationEnvelope> envCaptor =
+                ArgumentCaptor.forClass(NotificationEnvelope.class);
+        verify(dispatcher).dispatch(envCaptor.capture());
+        assertThat(envCaptor.getValue().pushPolicy()).isEqualTo(PushPolicy.ALERT_CRITICAL);
+        assertThat(envCaptor.getValue().priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("MEDIUM·LOW 이벤트도 ASSIGN_DELIVERY로 dispatch")
+    void onSymptomSubmitted_MEDIUM_LOW_useAssignDelivery() {
+        when(encounterRepository.findCurrentWardIdByPatientId(1L)).thenReturn(Optional.of(3L));
+
+        for (SymptomPriority p : new SymptomPriority[]{SymptomPriority.MEDIUM, SymptomPriority.LOW}) {
+            SymptomSubmittedEvent event = new SymptomSubmittedEvent(
+                    10L, 1L, "이승연", "302호", "텍스트", 42L, LocalDateTime.now(), p);
+            adapter.on(event);
+        }
+
+        ArgumentCaptor<NotificationEnvelope> envCaptor =
+                ArgumentCaptor.forClass(NotificationEnvelope.class);
+        verify(dispatcher, org.mockito.Mockito.times(2)).dispatch(envCaptor.capture());
+        assertThat(envCaptor.getAllValues())
+                .allMatch(env -> env.pushPolicy() == PushPolicy.ASSIGN_DELIVERY);
+    }
+
+    @Test
+    @DisplayName("priority가 null인 이벤트도 ASSIGN_DELIVERY 기본값으로 dispatch")
+    void onSymptomSubmitted_nullPriority_useAssignDeliveryFallback() {
+        when(encounterRepository.findCurrentWardIdByPatientId(1L)).thenReturn(Optional.of(3L));
+
+        SymptomSubmittedEvent event = new SymptomSubmittedEvent(
+                10L, 1L, "이승연", "302호", "텍스트", 42L, LocalDateTime.now(), null);
+
+        adapter.on(event);
+
+        ArgumentCaptor<NotificationEnvelope> envCaptor =
+                ArgumentCaptor.forClass(NotificationEnvelope.class);
+        verify(dispatcher).dispatch(envCaptor.capture());
+        assertThat(envCaptor.getValue().pushPolicy()).isEqualTo(PushPolicy.ASSIGN_DELIVERY);
+        assertThat(envCaptor.getValue().priority()).isNull();
     }
 
     @Test
@@ -64,7 +121,8 @@ class SymptomSubmittedNotificationAdapterTest {
         when(encounterRepository.findCurrentWardIdByPatientId(1L)).thenReturn(Optional.empty());
 
         SymptomSubmittedEvent event = new SymptomSubmittedEvent(
-                10L, 1L, "이승연", "302호", "두통이 심해요", 42L, LocalDateTime.now());
+                10L, 1L, "이승연", "302호", "두통이 심해요", 42L, LocalDateTime.now(),
+                SymptomPriority.HIGH);
 
         adapter.on(event);
 
@@ -75,7 +133,8 @@ class SymptomSubmittedNotificationAdapterTest {
     @DisplayName("담당 간호사가 null이면 dispatch 스킵")
     void onSymptomSubmitted_nullPractitioner_skipsDispatch() {
         SymptomSubmittedEvent event = new SymptomSubmittedEvent(
-                null, 1L, "이승연", "302호", "두통이 심해요", 42L, LocalDateTime.now());
+                null, 1L, "이승연", "302호", "두통이 심해요", 42L, LocalDateTime.now(),
+                SymptomPriority.HIGH);
 
         adapter.on(event);
 

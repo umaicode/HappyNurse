@@ -1,5 +1,6 @@
 package com.ssafy.happynurse.domain.webapp.event;
 
+import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -16,4 +17,5 @@ public class SymptomSubmittedEvent {
     private String symptomText;
     private Long selfReportId;
     private LocalDateTime submittedAt;
+    private SymptomPriority priority;       // 분류 결과. null 가능 (분류 실패 등)
 }

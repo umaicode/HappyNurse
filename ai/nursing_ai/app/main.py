@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from app.routers import stt, correction
 from app.routers import handover
+from app.routers import stt, correction, classification
 
 load_dotenv()
 
@@ -17,7 +18,6 @@ app = FastAPI(
 - **STT (Speech-to-Text)**: 간호사 음성을 텍스트로 변환 (CLOVA Speech)
 - **의료 용어 매핑**: STT 오인식 단어를 정식 의료 용어로 자동 교정
 - **피드백 루프**: 간호사 수정 이력을 학습하여 매핑 정확도 향상
-- **AI 인수인계**: 간호기록을 분석해 PASS-BAR 형식의 인수인계 리포트를 자동 생성 (Claude via GMS)
 
 ### 인증
 - **운영(브라우저)**: Spring Boot 로그인 시 발급되는 HttpOnly 쿠키 `ACCESS_TOKEN`이 자동 전송됨
@@ -28,6 +28,7 @@ app = FastAPI(
     openapi_tags=[
         {"name": "STT 음성인식", "description": "음성 파일 → 텍스트 변환 + 의료 용어 매핑"},
         {"name": "용어 교정 피드백", "description": "교정 이력 저장 및 매핑 사전 관리"},
+        {"name": "중요도 분류", "description": "환자 발화 텍스트 → priority(LLM 분류)"},
         {"name": "서버 상태", "description": "서버 상태 확인"},
         {"name": "AI 인수인계", "description": "PASS-BAR 인수인계 리포트 생성 및 조회"},
     ]
@@ -107,6 +108,7 @@ async def _startup_handover():
         job_coordinator=job_coordinator,
         freshness_repo=freshness_repo,
     )
+app.include_router(classification.router, prefix="/api", tags=["중요도 분류"])
 
 @app.get("/", tags=["서버 상태"])
 def root():

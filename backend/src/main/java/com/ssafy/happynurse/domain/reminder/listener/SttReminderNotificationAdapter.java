@@ -52,7 +52,8 @@ public class SttReminderNotificationAdapter {
                 payload,
                 event.firedAt(),
                 null,
-                PushPolicy.PERSONAL_INFO
+                PushPolicy.PERSONAL_INFO,
+                null // priority는 환자 요청 알림 전용 — 타이머는 미사용
         );
 
         dispatcher.dispatch(envelope);

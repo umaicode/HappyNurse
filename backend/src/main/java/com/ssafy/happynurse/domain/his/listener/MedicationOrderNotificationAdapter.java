@@ -40,7 +40,8 @@ public class MedicationOrderNotificationAdapter {
                 event,
                 event.getOccurredAt().atZone(ZoneId.systemDefault()).toInstant(),
                 null,
-                PushPolicy.ASSIGN_DELIVERY
+                PushPolicy.ASSIGN_DELIVERY,
+                null   // priority — order_change는 자가보고 분류 대상 아님
         );
 
         dispatcher.dispatch(envelope);
@@ -67,7 +68,8 @@ public class MedicationOrderNotificationAdapter {
                 event,
                 event.getOccurredAt().atZone(ZoneId.systemDefault()).toInstant(),
                 null,
-                PushPolicy.ASSIGN_DELIVERY
+                PushPolicy.ASSIGN_DELIVERY,
+                null   // priority — order_change는 자가보고 분류 대상 아님
         );
 
         dispatcher.dispatch(envelope);
