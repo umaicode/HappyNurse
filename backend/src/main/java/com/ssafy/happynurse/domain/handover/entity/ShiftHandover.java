@@ -32,6 +32,9 @@ public class ShiftHandover {
     @Column(name = "auto_summary", columnDefinition = "TEXT")
     private String autoSummary; // 특이사항 자동 요약
 
+    @Column(name = "auto_summary_json", columnDefinition = "jsonb")
+    private String autoSummaryJson; // AI 인수인계 JSON (PASS-BAR)
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
