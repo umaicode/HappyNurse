@@ -2,6 +2,7 @@ package com.ssafy.happynurse.domain.nurse.notification.entity;
 
 import com.ssafy.happynurse.domain.common.entity.Practitioner;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
+import com.ssafy.happynurse.domain.reminder.entity.SttReminder;
 import com.ssafy.happynurse.domain.watch.entity.IvInfusion;
 import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
 import jakarta.persistence.*;
@@ -40,6 +41,10 @@ public class Notification {
     private IvInfusion sourceIvInfusion; // sourceType=iv_alert 일 때만 채워짐
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_stt_reminder_id")
+    private SttReminder sourceSttReminder; // sourceType=timer 일 때만 채워짐
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id")
     private Patient patient; // 대상 환자
 
@@ -76,6 +81,23 @@ public class Notification {
         notification.recipientPractitioner = recipientPractitioner;
         notification.sourceType = SourceType.iv_alert;
         notification.sourceIvInfusion = sourceIvInfusion;
+        notification.patient = patient;
+        notification.title = title;
+        notification.body = body;
+        return notification;
+    }
+
+    /** STT 음성 메모 타이머 알람용 — sourceType=timer 고정. */
+    public static Notification createForSttReminder(
+            Practitioner recipientPractitioner,
+            SttReminder sourceSttReminder,
+            Patient patient,
+            String title,
+            String body) {
+        Notification notification = new Notification();
+        notification.recipientPractitioner = recipientPractitioner;
+        notification.sourceType = SourceType.timer;
+        notification.sourceSttReminder = sourceSttReminder;
         notification.patient = patient;
         notification.title = title;
         notification.body = body;
