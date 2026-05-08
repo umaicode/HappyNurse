@@ -12,8 +12,8 @@
     "critical": {
       "label": "즉시 대응",
       "color": "red",
-      "ktas_mapping": "Level 1",
-      "target_response_time_min": 3,
+      "ktas_mapping": "Level 1-2",
+      "target_response_time_min": 0,
       "alert_method": ["watch_emergency_vibration", "push", "screen_top"],
       "notify_nurse": true,
       "allow_downgrade": false
@@ -21,8 +21,8 @@
     "high": {
       "label": "빠른 대응",
       "color": "orange",
-      "ktas_mapping": "Level 2-3",
-      "target_response_time_min": 10,
+      "ktas_mapping": "Level 3",
+      "target_response_time_min": 30,
       "alert_method": ["watch_vibration", "push"],
       "notify_nurse": true,
       "allow_downgrade": false
@@ -31,7 +31,7 @@
       "label": "일반 요청",
       "color": "blue",
       "ktas_mapping": "Level 4",
-      "target_response_time_min": 30,
+      "target_response_time_min": 60,
       "alert_method": ["push"],
       "notify_nurse": true,
       "allow_downgrade": true
@@ -40,7 +40,7 @@
       "label": "단순 문의",
       "color": "gray",
       "ktas_mapping": "Level 5",
-      "target_response_time_min": 0,
+      "target_response_time_min": 120,
       "alert_method": [],
       "notify_nurse": false,
       "allow_downgrade": true
