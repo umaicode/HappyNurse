@@ -1,0 +1,64 @@
+version: "2026.05.01"
+note: "Layer 3 verbatim quote는 적용 면제. AI 자체 생성 영역에만 적용."
+
+ko:
+  # 추론·추정 표현
+  - 아마
+  - 추정
+  - 의심
+  - 가능성
+  - 추측
+  - 예상
+  - 짐작
+  - "인 듯"
+  - "로 보임"
+  - "할 수 있음"
+  - "할 가능성"
+  - "것 같음"
+  - "것 같다"
+  - "것 같아요"
+  - "일 수 있다"
+  - "일 것이다"
+  - "보이는"
+  - "보인다"
+  - "여겨진다"
+  - "생각된다"
+  - "판단된다"
+  - "시사한다"
+  - "시사됨"
+  - "의심된다"
+  - "추정된다"
+  - "우려된다"
+  - "우려"
+  - "고려"
+  - "고려됨"
+  - "고려되어야"
+
+en:
+  - probable
+  - probably
+  - possibly
+  - possible
+  - suspect
+  - suspected
+  - likely
+  - "may be"
+  - "could be"
+  - might
+  - presumed
+  - presumably
+  - seemingly
+  - appears
+  - appears to
+  - "seems to"
+  - suggests
+  - "suggestive of"
+  - consistent
+  - "consistent with"
+  - concerning
+  - "concerning for"
+  - "rule out"
+  - "cannot rule out"
+  - unclear
+  - uncertain
+  - questionable

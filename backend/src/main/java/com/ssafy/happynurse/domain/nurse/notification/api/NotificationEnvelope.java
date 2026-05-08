@@ -1,6 +1,7 @@
 package com.ssafy.happynurse.domain.nurse.notification.api;
 
 import com.ssafy.happynurse.domain.nurse.notification.entity.SourceType;
+import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
 
 import java.time.Instant;
 
@@ -19,22 +20,23 @@ import java.time.Instant;
  * - notificationId: producer는 null로 두기. dispatcher가 영속화 후 채움.
  */
 public record NotificationEnvelope(
-        SourceType   sourceType,
-        Long         wardId,
-        Long         assignedPractitionerId,
-        Long         patientId,
-        Long         sourceEntityId,
-        String       title,
-        String       body,
-        Object       payload,
-        Instant      occurredAt,
-        Long         notificationId,
-        PushPolicy   pushPolicy
+        SourceType      sourceType,
+        Long            wardId,
+        Long            assignedPractitionerId,
+        Long            patientId,
+        Long            sourceEntityId,
+        String          title,
+        String          body,
+        Object          payload,
+        Instant         occurredAt,
+        Long            notificationId,
+        PushPolicy      pushPolicy,
+        SymptomPriority priority
 ) {
     /** dispatcher가 영속화 후 notificationId를 채워 새 envelope을 만들 때 사용. */
     public NotificationEnvelope withNotificationId(Long notificationId) {
         return new NotificationEnvelope(
                 sourceType, wardId, assignedPractitionerId, patientId, sourceEntityId,
-                title, body, payload, occurredAt, notificationId, pushPolicy);
+                title, body, payload, occurredAt, notificationId, pushPolicy, priority);
     }
 }

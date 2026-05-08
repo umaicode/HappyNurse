@@ -1,0 +1,22 @@
+version: "2026.05.01"
+flags:
+  - id: bp_crisis
+    label: "고혈압 응급 후보 (BP ≥ 180/120)"
+    source: "JNC 8"
+    severity: high
+    when: "vitals.bp_sys >= 180 or vitals.bp_dia >= 120"
+  - id: sbp_low
+    label: "수축기 저혈압 (BP_sys < 90)"
+    source: "NEWS2"
+    severity: medium
+    when: "vitals.bp_sys < 90"
+  - id: spo2_low
+    label: "저산소증 후보 (SpO2 < 92)"
+    source: "NEWS2"
+    severity: high
+    when: "vitals.spo2 < 92"
+  - id: temp_high
+    label: "고체온 (Temp ≥ 38.3)"
+    source: "NEWS2"
+    severity: medium
+    when: "vitals.temp >= 38.3"
