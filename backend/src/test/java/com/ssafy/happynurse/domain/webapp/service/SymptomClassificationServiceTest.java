@@ -243,4 +243,36 @@ class SymptomClassificationServiceTest {
 
         verify(llmClient).classify("뭔가 이상해요", "GS");
     }
+
+    @Test
+    @DisplayName("'실밥 언제 풀어요?'는 일정 문의로 LOW로 분류된다")
+    void classify_성공_LOW_실밥_언제_풀어요_일정문의() {
+        var result = service.classify("실밥 언제 풀어요?", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.LOW);
+    }
+
+    @Test
+    @DisplayName("'실밥이 빠졌어요'는 처치 필요로 HIGH로 분류된다")
+    void classify_성공_HIGH_실밥이_빠졌어요_처치필요() {
+        var result = service.classify("실밥이 빠졌어요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.HIGH);
+    }
+
+    @Test
+    @DisplayName("'실밥이 터졌어요'는 처치 필요로 HIGH로 분류된다")
+    void classify_성공_HIGH_실밥이_터졌어요_처치필요() {
+        var result = service.classify("실밥이 터졌어요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.HIGH);
+    }
+
+    @Test
+    @DisplayName("'실밥 풀어주세요'는 키워드 미매칭으로 LLM에 위임된다")
+    void classify_성공_실밥_풀어주세요_LLM_위임() {
+        service.classify("실밥 풀어주세요", null);
+
+        verify(llmClient).classify("실밥 풀어주세요", null);
+    }
 }
