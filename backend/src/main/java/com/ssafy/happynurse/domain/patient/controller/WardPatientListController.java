@@ -24,7 +24,7 @@ public class WardPatientListController {
 
     private final WardPatientListService wardPatientListService;
 
-    @Operation(summary = "병동 입원 환자 목록 조회",
+    @Operation(summary = "병동별 환자 목록 조회 (담당 환자 포함)",
             description = "토큰의 wardId 기준 현재 입원 중(in_progress) 환자를 반환합니다. " +
                     "각 환자에는 본인 담당 여부(isMyPatient)가 Redis 저장 기준으로 함께 표시됩니다.")
     @ApiResponses({
