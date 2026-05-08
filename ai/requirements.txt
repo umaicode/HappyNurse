@@ -9,3 +9,8 @@ sqlalchemy
 psycopg2-binary
 pydub
 PyJWT
+anthropic
+asyncpg
+sse-starlette
+pyyaml
+pydantic-settings
