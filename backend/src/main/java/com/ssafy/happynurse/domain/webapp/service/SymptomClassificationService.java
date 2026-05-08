@@ -2,6 +2,7 @@ package com.ssafy.happynurse.domain.webapp.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ssafy.happynurse.domain.webapp.dto.EncounterContext;
 import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -166,11 +167,14 @@ public class SymptomClassificationService {
         return new SymptomClassificationResult(priority, null);
     }
 
-    public SymptomClassificationResult classify(String text, @Nullable String departmentCode) {
+    public SymptomClassificationResult classify(String text, EncounterContext context) {
+        EncounterContext ctx = context != null ? context : EncounterContext.empty();
+
         if (text == null || text.isBlank()) {
             return new SymptomClassificationResult(SymptomPriority.MEDIUM, null);
         }
 
+        String departmentCode = ctx.departmentCode();
         if (departmentCode != null) {
             List<String> overrideKeywords = departmentOverrides.get(departmentCode);
             if (overrideKeywords != null && containsAny(text, overrideKeywords)) {
@@ -195,7 +199,7 @@ public class SymptomClassificationService {
         }
 
         // 키워드 미매칭 → LLM 위임. 호출 실패 시 클라이언트가 MEDIUM fallback.
-        return llmClient.classify(text, departmentCode);
+        return llmClient.classify(text, ctx);
     }
 
     private Map<String, Long> countCategoryMatches(String text) {

@@ -1,16 +1,19 @@
 package com.ssafy.happynurse.domain.webapp.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ssafy.happynurse.domain.webapp.dto.EncounterContext;
 import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -89,7 +92,7 @@ class SymptomClassificationServiceTest {
     @Test
     @DisplayName("부서 override — 정형외과에서 감각 이상 호소는 CRITICAL")
     void classify_성공_부서_override_정형외과_CRITICAL() {
-        var result = service.classify("다리에 감각이 없어요", "OS");
+        var result = service.classify("다리에 감각이 없어요", EncounterContext.ofDepartment("OS"));
 
         assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
     }
@@ -229,19 +232,21 @@ class SymptomClassificationServiceTest {
                 new SymptomClassificationService.SymptomClassificationResult(
                         SymptomPriority.HIGH, BigDecimal.valueOf(0.82)));
 
-        var result = service.classify("뭔가 이상한 느낌이 드는데 잘 모르겠어요", null);
+        var result = service.classify("뭔가 이상한 느낌이 드는데 잘 모르겠어요", EncounterContext.empty());
 
         assertThat(result.priority()).isEqualTo(SymptomPriority.HIGH);
         assertThat(result.confidence()).isEqualByComparingTo(BigDecimal.valueOf(0.82));
-        verify(llmClient).classify("뭔가 이상한 느낌이 드는데 잘 모르겠어요", null);
+        verify(llmClient).classify(eq("뭔가 이상한 느낌이 드는데 잘 모르겠어요"), eq(EncounterContext.empty()));
     }
 
     @Test
     @DisplayName("LLM 위임 시 부서 코드도 함께 전달된다")
     void classify_성공_LLM_위임_시_부서코드_전달() {
-        service.classify("뭔가 이상해요", "GS");
+        service.classify("뭔가 이상해요", EncounterContext.ofDepartment("GS"));
 
-        verify(llmClient).classify("뭔가 이상해요", "GS");
+        ArgumentCaptor<EncounterContext> captor = ArgumentCaptor.forClass(EncounterContext.class);
+        verify(llmClient).classify(eq("뭔가 이상해요"), captor.capture());
+        assertThat(captor.getValue().departmentCode()).isEqualTo("GS");
     }
 
     @Test
@@ -271,9 +276,22 @@ class SymptomClassificationServiceTest {
     @Test
     @DisplayName("'실밥 풀어주세요'는 키워드 미매칭으로 LLM에 위임된다")
     void classify_성공_실밥_풀어주세요_LLM_위임() {
-        service.classify("실밥 풀어주세요", null);
+        service.classify("실밥 풀어주세요", EncounterContext.empty());
 
-        verify(llmClient).classify("실밥 풀어주세요", null);
+        verify(llmClient).classify(eq("실밥 풀어주세요"), any(EncounterContext.class));
+    }
+
+    @Test
+    @DisplayName("LLM 위임 시 EncounterContext의 모든 필드가 그대로 전달된다")
+    void classify_성공_LLM_위임_시_EncounterContext_전체_전달() {
+        EncounterContext ctx = new EncounterContext(
+                "GS", "COLECTOMY", "대장암", "복통", 70, "MALE", 2);
+
+        service.classify("뭔가 이상해요", ctx);
+
+        ArgumentCaptor<EncounterContext> captor = ArgumentCaptor.forClass(EncounterContext.class);
+        verify(llmClient).classify(eq("뭔가 이상해요"), captor.capture());
+        assertThat(captor.getValue()).isEqualTo(ctx);
     }
 
     @Test

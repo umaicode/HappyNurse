@@ -1,5 +1,6 @@
 package com.ssafy.happynurse.domain.webapp.service;
 
+import com.ssafy.happynurse.domain.webapp.dto.EncounterContext;
 import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -48,7 +49,7 @@ class AiServiceClassificationClientTest {
                 .willReturn(new AiServiceClassificationClient.ClassificationResponse(
                         "high", "pain", 0.85));
 
-        var result = client.classify("어깨가 아파요", "OS");
+        var result = client.classify("어깨가 아파요", EncounterContext.ofDepartment("OS"));
 
         assertThat(result.priority()).isEqualTo(SymptomPriority.HIGH);
         assertThat(result.confidence()).isEqualByComparingTo(BigDecimal.valueOf(0.85));
@@ -61,7 +62,7 @@ class AiServiceClassificationClientTest {
                 .willReturn(new AiServiceClassificationClient.ClassificationResponse(
                         "critical", "respiratory", 0.93));
 
-        var result = client.classify("뭔가 이상해요", "CS");
+        var result = client.classify("뭔가 이상해요", EncounterContext.ofDepartment("CS"));
 
         assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
     }
@@ -72,7 +73,7 @@ class AiServiceClassificationClientTest {
         given(responseSpec.body(eq(AiServiceClassificationClient.ClassificationResponse.class)))
                 .willThrow(new ResourceAccessException("connection refused"));
 
-        var result = client.classify("아무 텍스트", "GS");
+        var result = client.classify("아무 텍스트", EncounterContext.ofDepartment("GS"));
 
         assertThat(result.priority()).isEqualTo(SymptomPriority.MEDIUM);
         assertThat(result.confidence()).isNull();
@@ -84,7 +85,7 @@ class AiServiceClassificationClientTest {
         given(responseSpec.body(eq(AiServiceClassificationClient.ClassificationResponse.class)))
                 .willReturn(null);
 
-        var result = client.classify("아무 텍스트", null);
+        var result = client.classify("아무 텍스트", EncounterContext.empty());
 
         assertThat(result.priority()).isEqualTo(SymptomPriority.MEDIUM);
     }
@@ -96,7 +97,7 @@ class AiServiceClassificationClientTest {
                 .willReturn(new AiServiceClassificationClient.ClassificationResponse(
                         "unknown_value", null, 0.5));
 
-        var result = client.classify("텍스트", null);
+        var result = client.classify("텍스트", EncounterContext.empty());
 
         assertThat(result.priority()).isEqualTo(SymptomPriority.MEDIUM);
     }

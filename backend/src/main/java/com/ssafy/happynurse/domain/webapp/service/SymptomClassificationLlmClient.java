@@ -1,10 +1,10 @@
 package com.ssafy.happynurse.domain.webapp.service;
 
-import org.springframework.lang.Nullable;
+import com.ssafy.happynurse.domain.webapp.dto.EncounterContext;
 
 public interface SymptomClassificationLlmClient {
 
     SymptomClassificationService.SymptomClassificationResult classify(
             String symptomText,
-            @Nullable String departmentCode);
+            EncounterContext context);
 }
