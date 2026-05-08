@@ -23,16 +23,6 @@ public class AiClientConfig {
                 .build();
     }
 
-    @Bean(name = "aiSttRestClient")
-    public RestClient aiSttRestClient(
-            @Value("${ai.base-url:http://localhost:8000}") String baseUrl,
-            @Value("${ai.stt.timeout-ms:15000}") int timeoutMs) {
-        return RestClient.builder()
-                .baseUrl(baseUrl)
-                .requestFactory(buildRequestFactory(timeoutMs))
-                .build();
-    }
-
     private static SimpleClientHttpRequestFactory buildRequestFactory(int timeoutMs) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout((int) Duration.ofMillis(timeoutMs).toMillis());

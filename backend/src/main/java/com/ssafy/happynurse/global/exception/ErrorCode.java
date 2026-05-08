@@ -57,10 +57,6 @@ public enum ErrorCode implements ResponseCode {
     SYMPTOM_INPUT_INVALID(HttpStatus.BAD_REQUEST, "버튼 또는 직접 입력 중 하나만 선택해야 합니다."),
     PATIENT_ID_MISMATCH(HttpStatus.FORBIDDEN, "본인의 증상만 제출할 수 있습니다."),
 
-    // STT proxy
-    STT_AUDIO_INVALID(HttpStatus.BAD_REQUEST, "음성 파일 형식이 올바르지 않습니다."),
-    STT_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "음성 인식 서비스를 사용할 수 없습니다."),
-
     // Nursing Record
     NURSING_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "간호 기록을 찾을 수 없습니다."),
     NURSING_RECORD_NOT_AUTHOR(HttpStatus.FORBIDDEN, "본인이 작성한 간호 기록만 수정할 수 있습니다."),
