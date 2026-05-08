@@ -1,6 +1,17 @@
 // 도메인 모델 — 환자/간호일지/오더/프로필 + 알람/수액/알림/인계 (알람 이하는 SampleData)
 package com.happynurse.domain.model
 
+data class NfcPatientInfo(
+    val patientId: Long,
+    val encounterId: Long,
+    val patientName: String,
+    val roomName: String?,
+    val diseaseName: String?,
+    val chiefComplaint: String?,
+    val surgeryName: String?,
+    val attendingPhysicianName: String?,
+)
+
 data class Note(
     val time: String,
     val author: String,
