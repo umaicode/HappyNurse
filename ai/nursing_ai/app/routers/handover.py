@@ -1,8 +1,12 @@
+import time
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sse_starlette.sse import EventSourceResponse
 from app.middleware.jwt_auth import get_current_user
 
 router = APIRouter()
+
+_roster_cache: dict[str, dict] = {}
+_CACHE_TTL = 1800  # 30분
 
 _pipeline = None
 _roster_service = None
@@ -32,6 +36,8 @@ def configure(*, pipeline, roster_service, session_factory, record_loader, rule_
              description="담당 환자 전체의 인수인계 리포트를 비동기로 생성합니다. 반환된 job_id로 진행 상황을 스트리밍 조회하세요.")
 async def generate(current_user: dict = Depends(get_current_user)):
     practitioner_id = str(current_user["practitioner_id"])
+    # 새 리포트 생성 시 Roster Summary 캐시 무효화
+    _roster_cache.pop(practitioner_id, None)
     encounters = await _roster_service.list_for_practitioner(practitioner_id)
     job_id = _job_coordinator.create_job(encounters)
     import asyncio
@@ -106,6 +112,12 @@ async def roster_summary(current_user: dict = Depends(get_current_user)):
     from app.services.handover.db.models import ShiftHandover
     from app.services.handover.coordination.roster_summary import assemble_roster
     practitioner_id = str(current_user["practitioner_id"])
+
+    # 캐시 확인 — 30분 내 동일 간호사의 요청은 LLM 재호출 없이 반환
+    cached = _roster_cache.get(practitioner_id)
+    if cached and time.time() < cached["expires_at"]:
+        return cached["data"]
+
     encounters = await _roster_service.list_for_practitioner(practitioner_id)
     handovers = []
     async with _session_factory() as session:
@@ -122,7 +134,15 @@ async def roster_summary(current_user: dict = Depends(get_current_user)):
     if not handovers:
         return {"narrative_header": "", "stats": {"patient_count": 0}, "patients": [],
                 "verification_followup": [], "meta": {"model_for_narrative_only": _settings_meta["model"]}}
-    return await assemble_roster(patient_handovers=handovers, llm=_llm, model_name=_settings_meta["model"])
+
+    result = await assemble_roster(patient_handovers=handovers, llm=_llm, model_name=_settings_meta["model"])
+
+    # 캐시 저장 — practitioner_id별 분리 저장
+    _roster_cache[practitioner_id] = {
+        "data": result,
+        "expires_at": time.time() + _CACHE_TTL,
+    }
+    return result
 
 
 @router.get("",
@@ -169,6 +189,8 @@ async def get_one(handover_id: str, current_user: dict = Depends(get_current_use
              description="특정 환자의 인수인계 리포트를 새로 생성합니다. 기존 리포트는 유지됩니다.")
 async def regenerate(encounter_id: str, current_user: dict = Depends(get_current_user)):
     practitioner_id = str(current_user["practitioner_id"])
+    # 재생성 시 Roster Summary 캐시 무효화
+    _roster_cache.pop(practitioner_id, None)
     job_id = _job_coordinator.create_job([encounter_id])
     import asyncio
     asyncio.create_task(_run_job(job_id, practitioner_id, [encounter_id]))
