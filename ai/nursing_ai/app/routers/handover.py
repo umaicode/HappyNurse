@@ -27,7 +27,9 @@ def configure(*, pipeline, roster_service, session_factory, record_loader, rule_
     _job_coordinator = job_coordinator; _freshness_repo = freshness_repo
 
 
-@router.post("/generate")
+@router.post("/generate",
+             summary="인수인계 리포트 일괄 생성",
+             description="담당 환자 전체의 인수인계 리포트를 비동기로 생성합니다. 반환된 job_id로 진행 상황을 스트리밍 조회하세요.")
 async def generate(current_user: dict = Depends(get_current_user)):
     practitioner_id = str(current_user["practitioner_id"])
     encounters = await _roster_service.list_for_practitioner(practitioner_id)
@@ -89,12 +91,16 @@ async def stream(job_id: str, current_user: dict = Depends(get_current_user)):
     return EventSourceResponse(gen())
 
 
-@router.get("/{handover_id}/freshness")
+@router.get("/{handover_id}/freshness",
+            summary="리포트 생성 이후 신규 간호기록 수 조회",
+            description="Briefing 모드에서 리포트가 최신인지 확인할 때 사용합니다.")
 async def freshness(handover_id: str, current_user: dict = Depends(get_current_user)):
     return await _freshness_repo.count_new_records_since_report(handover_id)
 
 
-@router.get("/roster-summary")
+@router.get("/roster-summary",
+            summary="담당 환자 전체 시프트 요약 즉석 조립",
+            description="Briefing 진입 시 담당 환자 전체의 요약을 즉석으로 생성합니다. DB에 저장되지 않습니다.")
 async def roster_summary(current_user: dict = Depends(get_current_user)):
     from sqlalchemy import select, desc
     from app.services.handover.db.models import ShiftHandover
@@ -119,10 +125,12 @@ async def roster_summary(current_user: dict = Depends(get_current_user)):
     return await assemble_roster(patient_handovers=handovers, llm=_llm, model_name=_settings_meta["model"])
 
 
-@router.get("")
+@router.get("",
+            summary="특정 환자 최신 인수인계 리포트 조회",
+            description="encounter_id로 해당 환자의 가장 최근 인수인계 리포트를 조회합니다.")
 async def get_latest_for_encounter(
-    encounter_id: str = Query(...),
-    latest: bool = Query(True),
+    encounter_id: str = Query(..., description="입원 ID"),
+    latest: bool = Query(True, description="최신 1건만 조회 여부"),
     current_user: dict = Depends(get_current_user),
 ):
     from sqlalchemy import select, desc
@@ -142,7 +150,9 @@ async def get_latest_for_encounter(
                 "created_at": r.created_at.isoformat()} for r in rows]
 
 
-@router.get("/{handover_id}")
+@router.get("/{handover_id}",
+            summary="인수인계 리포트 단건 조회",
+            description="handover_id로 특정 인수인계 리포트를 조회합니다.")
 async def get_one(handover_id: str, current_user: dict = Depends(get_current_user)):
     from app.services.handover.db.models import ShiftHandover
     async with _session_factory() as session:
@@ -154,7 +164,9 @@ async def get_one(handover_id: str, current_user: dict = Depends(get_current_use
                 "created_at": row.created_at.isoformat()}
 
 
-@router.post("/{encounter_id}/regenerate")
+@router.post("/{encounter_id}/regenerate",
+             summary="단일 환자 인수인계 재생성",
+             description="특정 환자의 인수인계 리포트를 새로 생성합니다. 기존 리포트는 유지됩니다.")
 async def regenerate(encounter_id: str, current_user: dict = Depends(get_current_user)):
     practitioner_id = str(current_user["practitioner_id"])
     job_id = _job_coordinator.create_job([encounter_id])

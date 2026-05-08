@@ -11,12 +11,13 @@ app = FastAPI(
     title="HappyNurse AI API",
     root_path=os.getenv("ROOT_PATH", ""), 
     description="""
-## 간호사 음성 인식 및 의료 용어 매핑 API
+## 해피너스 AI API
 
 ### 주요 기능
 - **STT (Speech-to-Text)**: 간호사 음성을 텍스트로 변환 (CLOVA Speech)
 - **의료 용어 매핑**: STT 오인식 단어를 정식 의료 용어로 자동 교정
 - **피드백 루프**: 간호사 수정 이력을 학습하여 매핑 정확도 향상
+- **AI 인수인계**: 간호기록을 분석해 PASS-BAR 형식의 인수인계 리포트를 자동 생성 (Claude via GMS)
 
 ### 인증
 - **운영(브라우저)**: Spring Boot 로그인 시 발급되는 HttpOnly 쿠키 `ACCESS_TOKEN`이 자동 전송됨
