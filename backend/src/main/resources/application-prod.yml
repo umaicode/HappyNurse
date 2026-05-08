@@ -67,5 +67,3 @@ ai:
   base-url: ${AI_BASE_URL}
   classification:
     timeout-ms: 5000
-  stt:
-    timeout-ms: 15000
