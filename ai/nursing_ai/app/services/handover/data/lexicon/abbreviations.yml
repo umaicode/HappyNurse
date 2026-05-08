@@ -1,0 +1,599 @@
+version: "2026.05.01"
+tier: 2
+entries:
+  # ── 진료과 ──────────────────────────────────────────────────────
+  - { abbr: GS,       ko: 일반외과 }
+  - { abbr: CS,       ko: 흉부외과 }
+  - { abbr: NS,       ko: 신경외과 }
+  - { abbr: OS,       ko: 정형외과 }
+  - { abbr: GI,       ko: 소화기내과 }
+  - { abbr: ID,       ko: 감염내과 }
+  - { abbr: OBGY,     ko: 산부인과 }
+  - { abbr: URO,      ko: 비뇨기과 }
+  - { abbr: ENT,      ko: 이비인후과 }
+  - { abbr: EM,       ko: 응급의학과 }
+  - { abbr: PED,      ko: 소아청소년과 }
+  - { abbr: PS,       ko: 성형외과 }
+  - { abbr: CV,       ko: 심장내과 }
+  - { abbr: NR,       ko: 신경내과 }
+  - { abbr: PY,       ko: 정신건강의학과 }
+  - { abbr: IM,       ko: 내과 }
+  - { abbr: OPD,      ko: 외래 }
+  - { abbr: RHB,      ko: 재활의학과 }
+  - { abbr: ANS,      ko: 마취통증의학과 }
+  - { abbr: PM,       ko: 완화의료 }
+  - { abbr: Onco,     ko: 종양내과 }
+  - { abbr: Hema,     ko: 혈액내과 }
+  - { abbr: Rheum,    ko: 류마티스내과 }
+  - { abbr: Pulm,     ko: 호흡기내과 }
+  - { abbr: Neph,     ko: 신장내과 }
+
+  # ── 병동·구역 ────────────────────────────────────────────────────
+  - { abbr: ICU,      ko: 중환자실 }
+  - { abbr: SICU,     ko: 외과계중환자실 }
+  - { abbr: MICU,     ko: 내과계중환자실 }
+  - { abbr: CCU,      ko: 심장집중치료실 }
+  - { abbr: NICU,     ko: 신생아중환자실 }
+  - { abbr: PICU,     ko: 소아중환자실 }
+  - { abbr: RICU,     ko: 호흡기중환자실 }
+  - { abbr: NCU,      ko: 신생아집중치료실 }
+  - { abbr: OR,       ko: 수술실 }
+  - { abbr: PACU,     ko: 회복실 }
+  - { abbr: ER,       ko: 응급실 }
+  - { abbr: ED,       ko: 응급실 }
+  - { abbr: DR,       ko: 분만실 }
+  - { abbr: EMR,      ko: 전자의무기록 }
+
+  # ── EMR 핵심 약어 ────────────────────────────────────────────────
+  - { abbr: "C/C",    ko: 주호소 }
+  - { abbr: "c/o",    ko: 주호소 }
+  - { abbr: Dx,       ko: 진단 }
+  - { abbr: "R/O",    ko: 추정진단 }
+  - { abbr: "S/P",    ko: 수술 후 상태 }
+  - { abbr: Hx,       ko: 과거력 }
+  - { abbr: "F/U",    ko: 추적관찰 }
+  - { abbr: "W/U",    ko: 검사 }
+  - { abbr: Cx,       ko: 합병증 }
+  - { abbr: "d/t",    ko: ~때문에 }
+  - { abbr: Tx,       ko: 치료 }
+  - { abbr: Sx,       ko: 수술 }
+  - { abbr: Ax,       ko: 사정·평가 }
+  - { abbr: Px,       ko: 처방·예방 }
+  - { abbr: Bx,       ko: 생검 }
+  - { abbr: noti,     ko: 담당의 보고 }
+  - { abbr: notify,   ko: 담당의 보고 }
+  - { abbr: obs,      ko: 관찰 }
+  - { abbr: adm,      ko: 입원 }
+  - { abbr: "D/C",    ko: 퇴원·중단 }
+  - { abbr: consult,  ko: 협진 }
+  - { abbr: transfer, ko: 전동 }
+  - { abbr: NKDA,     ko: 알려진 약물알레르기 없음 }
+  - { abbr: NKA,      ko: 알려진 알레르기 없음 }
+
+  # ── 활력징후·모니터링 ─────────────────────────────────────────────
+  - { abbr: VS,       ko: 활력징후 }
+  - { abbr: BP,       ko: 혈압 }
+  - { abbr: SBP,      ko: 수축기혈압 }
+  - { abbr: DBP,      ko: 이완기혈압 }
+  - { abbr: HR,       ko: 맥박 }
+  - { abbr: PR,       ko: 맥박수 }
+  - { abbr: RR,       ko: 호흡수 }
+  - { abbr: BT,       ko: 체온 }
+  - { abbr: Temp,     ko: 체온 }
+  - { abbr: SpO2,     ko: 산소포화도 }
+  - { abbr: SaO2,     ko: 동맥혈산소포화도 }
+  - { abbr: FiO2,     ko: 흡입산소분율 }
+  - { abbr: GCS,      ko: 글래스고혼수척도 }
+  - { abbr: EKG,      ko: 심전도 }
+  - { abbr: ECG,      ko: 심전도 }
+  - { abbr: CVP,      ko: 중심정맥압 }
+  - { abbr: MAP,      ko: 평균동맥압 }
+  - { abbr: ICP,      ko: 두개내압 }
+  - { abbr: EtCO2,    ko: 호기말이산화탄소 }
+  - { abbr: BST,      ko: 혈당검사 }
+  - { abbr: FBS,      ko: 공복혈당 }
+  - { abbr: PPBS,     ko: 식후혈당 }
+  - { abbr: NRS,      ko: 통증숫자척도 }
+  - { abbr: VAS,      ko: 시각통증척도 }
+  - { abbr: FLACC,    ko: 소아통증척도 }
+  - { abbr: CRIES,    ko: 신생아통증척도 }
+  - { abbr: "I/O",    ko: 섭취량·배설량 }
+  - { abbr: "U/O",    ko: 소변량 }
+  - { abbr: NIBP,     ko: 비침습혈압 }
+  - { abbr: PAP,      ko: 폐동맥압 }
+
+  # ── 처방·투약 빈도 ────────────────────────────────────────────────
+  - { abbr: NPO,      ko: 금식 }
+  - { abbr: SOW,      ko: 물만 소량 }
+  - { abbr: STAT,     ko: 즉시 }
+  - { abbr: PRN,      ko: 필요시 }
+  - { abbr: QD,       ko: 1일1회 }
+  - { abbr: BID,      ko: 1일2회 }
+  - { abbr: TID,      ko: 1일3회 }
+  - { abbr: QID,      ko: 1일4회 }
+  - { abbr: Q4H,      ko: 4시간마다 }
+  - { abbr: Q6H,      ko: 6시간마다 }
+  - { abbr: Q8H,      ko: 8시간마다 }
+  - { abbr: Q12H,     ko: 12시간마다 }
+  - { abbr: AC,       ko: 식전 }
+  - { abbr: PC,       ko: 식후 }
+  - { abbr: HS,       ko: 취침전 }
+  - { abbr: DC,       ko: 처방종료 }
+  - { abbr: ASAP,     ko: 가능한 빨리 }
+
+  # ── 투약 경로 ─────────────────────────────────────────────────────
+  - { abbr: PO,       ko: 경구 }
+  - { abbr: IV,       ko: 정맥주사 }
+  - { abbr: IVP,      ko: 정맥주사(빠르게) }
+  - { abbr: IVPB,     ko: 소량정맥주사 }
+  - { abbr: IM,       ko: 근육주사 }
+  - { abbr: SC,       ko: 피하주사 }
+  - { abbr: SQ,       ko: 피하주사 }
+  - { abbr: SL,       ko: 설하투여 }
+  - { abbr: "PR(직장)", ko: 직장투여 }
+  - { abbr: TOP,      ko: 국소도포 }
+  - { abbr: INH,      ko: 흡입 }
+  - { abbr: "ID(피내)", ko: 피내주사 }
+  - { abbr: NGT,      ko: 비위관 투여 }
+
+  # ── 수액 종류 ─────────────────────────────────────────────────────
+  - { abbr: NS,       ko: 생리식염수 0.9% }
+  - { abbr: "1/2NS",  ko: 0.45% 생리식염수 }
+  - { abbr: D5W,      ko: 5% 포도당 }
+  - { abbr: D10W,     ko: 10% 포도당 }
+  - { abbr: RL,       ko: 링거젖산액 }
+  - { abbr: LR,       ko: 젖산링거액 }
+  - { abbr: D5NS,     ko: 5% 포도당 생리식염수 }
+  - { abbr: "H/S",    ko: 하트만액 }
+  - { abbr: Hartmann, ko: 하트만액 }
+  - { abbr: TPN,      ko: 완전정맥영양 }
+  - { abbr: PPN,      ko: 부분정맥영양 }
+  - { abbr: EN,       ko: 경장영양 }
+  - { abbr: FFP,      ko: 신선냉동혈장 }
+  - { abbr: "P/C",    ko: 농축적혈구수혈 }
+  - { abbr: PLT,      ko: 혈소판수혈 }
+  - { abbr: Alb,      ko: 알부민 }
+  - { abbr: Albumin,  ko: 알부민 }
+  - { abbr: Colloid,  ko: 콜로이드용액 }
+
+  # ── 검사·진단 ────────────────────────────────────────────────────
+  - { abbr: CBC,      ko: 일반혈액검사 }
+  - { abbr: diff,     ko: 백혈구분류 }
+  - { abbr: BMP,      ko: 기본대사지표 }
+  - { abbr: CMP,      ko: 종합대사지표 }
+  - { abbr: LFT,      ko: 간기능검사 }
+  - { abbr: RFT,      ko: 신기능검사 }
+  - { abbr: TFT,      ko: 갑상선기능검사 }
+  - { abbr: ABG,      ko: 동맥혈가스분석 }
+  - { abbr: ABGA,     ko: 동맥혈가스분석 }
+  - { abbr: "PT/INR", ko: 프로트롬빈시간 }
+  - { abbr: aPTT,     ko: 활성화부분트롬보플라스틴시간 }
+  - { abbr: INR,      ko: 국제정상화비율 }
+  - { abbr: CRP,      ko: C반응단백 }
+  - { abbr: ESR,      ko: 적혈구침강속도 }
+  - { abbr: PCT,      ko: 프로칼시토닌(감염지표) }
+  - { abbr: BNP,      ko: 뇌나트륨이뇨펩타이드 }
+  - { abbr: proBNP,   ko: proBNP(심부전지표) }
+  - { abbr: Trop,     ko: 트로포닌 }
+  - { abbr: Troponin, ko: 트로포닌 }
+  - { abbr: CK,       ko: 크레아틴키나아제 }
+  - { abbr: CKMB,     ko: 심근효소 }
+  - { abbr: HbA1c,    ko: 당화혈색소 }
+  - { abbr: Hb,       ko: 혈색소 }
+  - { abbr: Hgb,      ko: 혈색소 }
+  - { abbr: Hct,      ko: 헤마토크릿 }
+  - { abbr: WBC,      ko: 백혈구 }
+  - { abbr: RBC,      ko: 적혈구 }
+  - { abbr: Plt,      ko: 혈소판 }
+  - { abbr: Na,       ko: 나트륨 }
+  - { abbr: K,        ko: 칼륨 }
+  - { abbr: Cl,       ko: 염소 }
+  - { abbr: Ca,       ko: 칼슘 }
+  - { abbr: Mg,       ko: 마그네슘 }
+  - { abbr: P,        ko: 인 }
+  - { abbr: BUN,      ko: 혈액요소질소 }
+  - { abbr: Cr,       ko: 크레아티닌 }
+  - { abbr: eGFR,     ko: 사구체여과율 }
+  - { abbr: AST,      ko: 아스파르테이트아미노전달효소 }
+  - { abbr: ALT,      ko: 알라닌아미노전달효소 }
+  - { abbr: ALP,      ko: 알칼리인산분해효소 }
+  - { abbr: GGT,      ko: 감마글루타밀전달효소 }
+  - { abbr: T.bili,   ko: 총빌리루빈 }
+  - { abbr: D.bili,   ko: 직접빌리루빈 }
+  - { abbr: TP,       ko: 총단백 }
+  - { abbr: PaO2,     ko: 동맥혈산소분압 }
+  - { abbr: PaCO2,    ko: 동맥혈이산화탄소분압 }
+  - { abbr: pH,       ko: 수소이온농도 }
+  - { abbr: HCO3,     ko: 중탄산이온 }
+  - { abbr: BE,       ko: 염기과잉 }
+  - { abbr: Lac,      ko: 젖산 }
+  - { abbr: Lactate,  ko: 젖산 }
+  - { abbr: UA,       ko: 소변검사 }
+  - { abbr: "U/A",    ko: 소변분석 }
+  - { abbr: "C&S",    ko: 균배양·감수성검사 }
+  - { abbr: BC,       ko: 혈액배양검사 }
+  - { abbr: "U/C",    ko: 소변배양 }
+  - { abbr: EEG,      ko: 뇌파검사 }
+  - { abbr: EMG,      ko: 근전도검사 }
+  - { abbr: Echo,     ko: 심장초음파 }
+  - { abbr: CXR,      ko: 흉부X선 }
+  - { abbr: KUB,      ko: 복부X선 }
+  - { abbr: CT,       ko: 전산화단층촬영 }
+  - { abbr: MRI,      ko: 자기공명영상 }
+  - { abbr: PET,      ko: 양전자방출단층촬영 }
+  - { abbr: US,       ko: 초음파검사 }
+  - { abbr: sono,     ko: 초음파검사 }
+  - { abbr: DEXA,     ko: 골밀도검사 }
+  - { abbr: V/Q,      ko: 환기관류스캔 }
+  - { abbr: Doppler,  ko: 도플러초음파 }
+  - { abbr: angio,    ko: 혈관조영술 }
+
+  # ── 임상 평가 도구·척도 ───────────────────────────────────────────
+  - { abbr: GCS,      ko: 글래스고혼수척도(E+V+M) }
+  - { abbr: APACHE,   ko: 급성생리·만성건강평가 }
+  - { abbr: SOFA,     ko: 순차적장기부전평가 }
+  - { abbr: qSOFA,    ko: 신속SOFA(패혈증선별) }
+  - { abbr: SIRS,     ko: 전신염증반응증후군 }
+  - { abbr: NEWS2,    ko: 국가조기경보점수2 }
+  - { abbr: MEWS,     ko: 수정조기경보점수 }
+  - { abbr: Braden,   ko: 욕창위험도평가도구 }
+  - { abbr: Morse,    ko: 낙상위험도평가도구(Morse) }
+  - { abbr: MFS,      ko: 모스낙상척도 }
+  - { abbr: Hendrich, ko: 낙상위험도평가(Hendrich II) }
+  - { abbr: Caprini,  ko: DVT위험도평가(Caprini) }
+  - { abbr: Wells,    ko: DVT/PE위험도평가(Wells) }
+  - { abbr: KTAS,     ko: 한국형응급환자분류도구 }
+  - { abbr: "KTAS 1", ko: KTAS1 소생-즉각처치 }
+  - { abbr: "KTAS 2", ko: KTAS2 응급-빠른처치 }
+  - { abbr: "KTAS 3", ko: KTAS3 응급-30분이내 }
+  - { abbr: "KTAS 4", ko: KTAS4 준응급-1시간이내 }
+  - { abbr: "KTAS 5", ko: KTAS5 비응급-2시간이내 }
+  - { abbr: Barthel,  ko: 바델일상생활활동지수 }
+  - { abbr: FIM,      ko: 기능적독립척도 }
+  - { abbr: "K-ADL",  ko: 한국형일상생활활동 }
+  - { abbr: "K-IADL", ko: 한국형도구적일상생활활동 }
+  - { abbr: MMSE,     ko: 간이정신상태검사 }
+  - { abbr: CDR,      ko: 임상치매평가 }
+  - { abbr: Borg,     ko: 호흡곤란정도평가 }
+  - { abbr: Ramsey,   ko: Ramsey진정척도 }
+  - { abbr: RASS,     ko: Richmond진정·각성척도 }
+  - { abbr: CAM,      ko: 섬망평가도구 }
+  - { abbr: CPOT,     ko: 중환자통증평가도구 }
+  - { abbr: BPS,      ko: 행동통증척도 }
+  - { abbr: CAMS,     ko: 코끝진정모니터링 }
+  - { abbr: PHQ,      ko: 환자건강설문지(우울선별) }
+  - { abbr: AUDIT,    ko: 음주선별검사 }
+
+  # ── ICU·인공호흡기 ───────────────────────────────────────────────
+  - { abbr: "E/T",    ko: 기관내삽관 }
+  - { abbr: ETT,      ko: 기관내삽관튜브 }
+  - { abbr: intubation, ko: 기관내삽관 }
+  - { abbr: extubation, ko: 발관 }
+  - { abbr: MV,       ko: 기계환기 }
+  - { abbr: ventilator, ko: 인공호흡기 }
+  - { abbr: PEEP,     ko: 호기말양압 }
+  - { abbr: TV,       ko: 일회호흡량 }
+  - { abbr: VT,       ko: 일회호흡량 }
+  - { abbr: "F/R(호흡)", ko: 호흡수설정 }
+  - { abbr: ACMV,     ko: 보조·조절환기 }
+  - { abbr: SIMV,     ko: 동기화간헐강제환기 }
+  - { abbr: PSV,      ko: 압력지지환기 }
+  - { abbr: CPAP,     ko: 지속기도양압 }
+  - { abbr: BiPAP,    ko: 이상기도양압 }
+  - { abbr: HFNC,     ko: 고유량비강캐뉼라 }
+  - { abbr: NRM,      ko: 비재호흡마스크 }
+  - { abbr: Venturi,  ko: 벤츄리마스크 }
+  - { abbr: "A-line", ko: 동맥라인 }
+  - { abbr: CVC,      ko: 중심정맥카테터 }
+  - { abbr: CVL,      ko: 중심정맥라인 }
+  - { abbr: PICC,     ko: 말초삽입중심정맥카테터 }
+  - { abbr: Arrow,    ko: 중심정맥카테터(Arrow) }
+  - { abbr: subclavian, ko: 쇄골하정맥 }
+  - { abbr: jugular,  ko: 경정맥 }
+  - { abbr: femoral,  ko: 대퇴정맥 }
+  - { abbr: CRRT,     ko: 지속적신대체요법 }
+  - { abbr: IHD,      ko: 간헐적혈액투석 }
+  - { abbr: IABP,     ko: 대동맥내풍선펌프 }
+  - { abbr: ECMO,     ko: 체외막산소화장치 }
+  - { abbr: sedation, ko: 진정 }
+  - { abbr: delirium, ko: 섬망 }
+
+  # ── 처치·간호 ─────────────────────────────────────────────────────
+  - { abbr: ABR,      ko: 절대침상안정 }
+  - { abbr: BRP,      ko: 화장실 보행 허용 }
+  - { abbr: HOB,      ko: 침상 머리 상승각도 }
+  - { abbr: ECDB,     ko: 기침·심호흡 격려 }
+  - { abbr: EDBC,     ko: 기침·심호흡 격려 }
+  - { abbr: ROM,      ko: 관절운동범위 }
+  - { abbr: AROM,     ko: 능동적관절운동 }
+  - { abbr: PROM,     ko: 수동적관절운동 }
+  - { abbr: CPM,      ko: 지속적수동운동기 }
+  - { abbr: ambulation, ko: 보행 }
+  - { abbr: suction,  ko: 흡인 }
+  - { abbr: Dx,       ko: 드레싱 }
+  - { abbr: dressing, ko: 드레싱 }
+  - { abbr: Foley,    ko: 유치도뇨관 }
+  - { abbr: "F/C",    ko: 유치도뇨관 }
+  - { abbr: Levin,    ko: 비위관 }
+  - { abbr: "L/T",    ko: 비위관 }
+  - { abbr: NGT,      ko: 비위관 }
+  - { abbr: NG,       ko: 비위관 }
+  - { abbr: OGT,      ko: 구위관 }
+  - { abbr: enema,    ko: 관장 }
+  - { abbr: PEG,      ko: 경피내시경위루술 }
+  - { abbr: ostomy,   ko: 장루 }
+  - { abbr: colostomy, ko: 결장루 }
+  - { abbr: ileostomy, ko: 회장루 }
+  - { abbr: trach,    ko: 기관절개 }
+  - { abbr: tracheostomy, ko: 기관절개 }
+  - { abbr: restraint, ko: 억제대 }
+  - { abbr: compress, ko: 찜질 }
+  - { abbr: OT,       ko: 작업치료 }
+  - { abbr: PT,       ko: 물리치료 }
+  - { abbr: ST,       ko: 언어치료 }
+  - { abbr: ADL,      ko: 일상생활활동 }
+  - { abbr: CPR,      ko: 심폐소생술 }
+  - { abbr: AED,      ko: 자동심장충격기 }
+  - { abbr: "c/r",    ko: 카테터교체 }
+  - { abbr: flush,    ko: 생리식염수세척 }
+  - { abbr: heplock,  ko: 헤파린록 }
+
+  # ── 배액관·수술 관련 ──────────────────────────────────────────────
+  - { abbr: POD,      ko: 수술 후 일수 }
+  - { abbr: HD,       ko: 입원 일수 }
+  - { abbr: "Op wd",  ko: 수술창상 }
+  - { abbr: "Op site", ko: 수술부위 }
+  - { abbr: oozing,   ko: 소량출혈 }
+  - { abbr: JP,       ko: Jackson-Pratt 배액관 }
+  - { abbr: "H-vac",  ko: 헤모박 배액 }
+  - { abbr: Hemovac,  ko: 헤모박 배액 }
+  - { abbr: "H/vac",  ko: 헤모박 배액 }
+  - { abbr: drain,    ko: 배액관 }
+  - { abbr: chest tube, ko: 흉관 }
+  - { abbr: PCN,      ko: 경피적신루조성술 }
+  - { abbr: "explo-lapa", ko: 진단개복술 }
+  - { abbr: irrigation, ko: 세척 }
+  - { abbr: TKA,      ko: 슬관절전치환술 }
+  - { abbr: TKR,      ko: 슬관절전치환술 }
+  - { abbr: THR,      ko: 고관절전치환술 }
+  - { abbr: THA,      ko: 고관절전치환술 }
+  - { abbr: TSA,      ko: 견관절전치환술 }
+  - { abbr: ORIF,     ko: 골절관혈적정복내고정 }
+  - { abbr: lap,      ko: 복강경 }
+  - { abbr: laparoscopy, ko: 복강경 }
+  - { abbr: SSI,      ko: 수술부위감염 }
+  - { abbr: ACL,      ko: 전방십자인대 }
+  - { abbr: PCL,      ko: 후방십자인대 }
+  - { abbr: MCL,      ko: 내측측부인대 }
+  - { abbr: AFO,      ko: 발목발보조기 }
+  - { abbr: "A/K",    ko: 슬와부 위(Above Knee) }
+  - { abbr: "B/K",    ko: 무릎 아래(Below Knee) }
+
+  # ── 수술실·마취 ───────────────────────────────────────────────────
+  - { abbr: GA,       ko: 전신마취 }
+  - { abbr: LA,       ko: 국소마취 }
+  - { abbr: SA,       ko: 척추마취 }
+  - { abbr: epidural, ko: 경막외마취 }
+  - { abbr: supine,   ko: 앙와위 }
+  - { abbr: prone,    ko: 복와위 }
+  - { abbr: lithotomy, ko: 쇄석위(분만자세) }
+  - { abbr: Trendelenburg, ko: 트렌델렌버그체위 }
+  - { abbr: lateral,  ko: 측와위 }
+  - { abbr: Fowler,   ko: 파울러체위 }
+  - { abbr: "time-out", ko: 수술시작전확인절차 }
+
+  # ── 주요 과거력·진단명 약어 ──────────────────────────────────────
+  - { abbr: HTN,      ko: 고혈압 }
+  - { abbr: DM,       ko: 당뇨 }
+  - { abbr: MI,       ko: 심근경색 }
+  - { abbr: CHF,      ko: 울혈성심부전 }
+  - { abbr: AF,       ko: 심방세동 }
+  - { abbr: COPD,     ko: 만성폐쇄성폐질환 }
+  - { abbr: CKD,      ko: 만성신장질환 }
+  - { abbr: CVA,      ko: 뇌졸중 }
+  - { abbr: TIA,      ko: 일과성뇌허혈발작 }
+  - { abbr: CA,       ko: 암 }
+  - { abbr: sepsis,   ko: 패혈증 }
+  - { abbr: DVT,      ko: 심부정맥혈전증 }
+  - { abbr: PE,       ko: 폐색전증 }
+  - { abbr: PTE,      ko: 폐혈전색전증 }
+  - { abbr: VTE,      ko: 정맥혈전색전증 }
+  - { abbr: GERD,     ko: 위식도역류질환 }
+  - { abbr: UTI,      ko: 요로감염 }
+  - { abbr: PNA,      ko: 폐렴 }
+  - { abbr: ARF,      ko: 급성신부전 }
+  - { abbr: AKI,      ko: 급성신손상 }
+  - { abbr: TA,       ko: 교통사고 }
+  - { abbr: Fx,       ko: 골절 }
+  - { abbr: hemoperitoneum, ko: 복강내출혈 }
+  - { abbr: liver injury, ko: 간손상 }
+  - { abbr: RA,       ko: 류마티스관절염 }
+  - { abbr: OA,       ko: 골관절염 }
+  - { abbr: Osteoporosis, ko: 골다공증 }
+  - { abbr: HBP,      ko: 간염B형 }
+  - { abbr: HCV,      ko: 간염C형 }
+  - { abbr: Hep,      ko: 간염 }
+  - { abbr: cirrhosis, ko: 간경변 }
+  - { abbr: IBS,      ko: 과민성대장증후군 }
+  - { abbr: IBD,      ko: 염증성장질환 }
+  - { abbr: Crohn,    ko: 크론병 }
+  - { abbr: UC,       ko: 궤양성대장염 }
+
+  # ── VTE 예방·항응고 ──────────────────────────────────────────────
+  - { abbr: LMWH,     ko: 저분자량헤파린 }
+  - { abbr: UFH,      ko: 비분획헤파린 }
+  - { abbr: GCS,      ko: 압박스타킹 }
+  - { abbr: "T-ED",   ko: 혈전예방스타킹 }
+  - { abbr: IPC,      ko: 간헐적공기압박장치 }
+  - { abbr: Fondaparinux, ko: 폰다파리눅스 }
+  - { abbr: Rivaroxaban, ko: 리바록사반 }
+  - { abbr: Dabigatran, ko: 다비가트란 }
+  - { abbr: Apixaban, ko: 아픽사반 }
+  - { abbr: Enoxaparin, ko: 에녹사파린(LMWH) }
+  - { abbr: Fragmin,  ko: 프라그민(LMWH) }
+
+  # ── 감염관리·번들 ────────────────────────────────────────────────
+  - { abbr: HAI,      ko: 의료관련감염 }
+  - { abbr: HCAI,     ko: 의료관련감염 }
+  - { abbr: CLABSI,   ko: 중심정맥카테터관련혈류감염 }
+  - { abbr: CAUTI,    ko: 카테터관련요로감염 }
+  - { abbr: VAP,      ko: 인공호흡기관련폐렴 }
+  - { abbr: SSI,      ko: 수술부위감염 }
+  - { abbr: MRSA,     ko: 메치실린내성황색포도알균 }
+  - { abbr: VRE,      ko: 반코마이신내성장알균 }
+  - { abbr: CRE,      ko: 카바페넴내성장내세균 }
+  - { abbr: MDR,      ko: 다제내성균 }
+  - { abbr: PPE,      ko: 개인보호장비 }
+  - { abbr: CHG,      ko: 클로르헥시딘(피부소독) }
+  - { abbr: IPC,      ko: 감염예방관리 }
+  - { abbr: bundle,   ko: 묶음간호(번들케어) }
+
+  # ── 패혈증·쇼크 ──────────────────────────────────────────────────
+  - { abbr: SIRS,     ko: 전신염증반응증후군 }
+  - { abbr: sepsis,   ko: 패혈증 }
+  - { abbr: "septic shock", ko: 패혈성쇼크 }
+  - { abbr: MODS,     ko: 다발성장기부전 }
+  - { abbr: DIC,      ko: 파종성혈관내응고 }
+  - { abbr: vasopressor, ko: 승압제 }
+  - { abbr: lactate,  ko: 젖산(패혈증지표) }
+  - { abbr: KISS,     ko: 한국패혈증개선등록시스템 }
+
+  # ── 약물·진통제 ──────────────────────────────────────────────────
+  - { abbr: PCA,      ko: 자가통증조절 }
+  - { abbr: opioid,   ko: 아편유사진통제 }
+  - { abbr: Morphine, ko: 모르핀 }
+  - { abbr: Fentanyl, ko: 펜타닐 }
+  - { abbr: Tramadol, ko: 트라마돌 }
+  - { abbr: Ketorolac, ko: 케토로락 }
+  - { abbr: NSAID,    ko: 비스테로이드성소염진통제 }
+  - { abbr: Acetaminophen, ko: 아세트아미노펜 }
+  - { abbr: Tylenol,  ko: 타이레놀 }
+  - { abbr: Cefazolin, ko: 세파졸린(항생제) }
+  - { abbr: Ceftriaxone, ko: 세프트리악손(항생제) }
+  - { abbr: Cefepime, ko: 세페핌(항생제) }
+  - { abbr: Piperacillin, ko: 피페라실린(항생제) }
+  - { abbr: Meropenem, ko: 메로페넴(광범위항생제) }
+  - { abbr: Vancomycin, ko: 반코마이신(항생제) }
+  - { abbr: Metronidazole, ko: 메트로니다졸(항생제) }
+  - { abbr: Azithromycin, ko: 아지트로마이신(항생제) }
+  - { abbr: heparin,  ko: 헤파린 }
+  - { abbr: warfarin, ko: 와파린 }
+  - { abbr: insulin,  ko: 인슐린 }
+  - { abbr: Lasix,    ko: 라식스(이뇨제) }
+  - { abbr: Furosemide, ko: 푸로세미드(이뇨제) }
+  - { abbr: Mannitol, ko: 만니톨(삼투이뇨제) }
+  - { abbr: Ativan,   ko: 아티반(진정제) }
+  - { abbr: Lorazepam, ko: 로라제팜(진정제) }
+  - { abbr: Midazolam, ko: 미다졸람(진정제) }
+  - { abbr: Propofol, ko: 프로포폴(진정제) }
+  - { abbr: Dexmedetomidine, ko: 덱스메데토미딘(진정제) }
+  - { abbr: Haloperidol, ko: 할로페리돌(항정신병약) }
+  - { abbr: Quetiapine, ko: 쿠에타핀(섬망치료) }
+  - { abbr: Zolpidem, ko: 졸피뎀(수면제) }
+  - { abbr: Stilvid,  ko: 스틸녹스(수면제) }
+  - { abbr: Alprazolam, ko: 알프라졸람(항불안제) }
+  - { abbr: Diazepam, ko: 디아제팜(항불안제) }
+  - { abbr: Denogan,  ko: 데노간(해열제) }
+  - { abbr: Botropase, ko: 보트로파제(지혈제) }
+  - { abbr: Gaster,   ko: 가스터(위산억제제) }
+  - { abbr: Pantoprazole, ko: 판토프라졸(PPI) }
+  - { abbr: Omeprazole, ko: 오메프라졸(PPI) }
+  - { abbr: PPI,      ko: 양성자펌프억제제 }
+  - { abbr: MgO,      ko: 산화마그네슘(완하제) }
+  - { abbr: lactulose, ko: 락툴로스(완하제) }
+  - { abbr: Bisacodyl, ko: 비사코딜(완하제) }
+  - { abbr: Glycerin, ko: 글리세린관장 }
+  - { abbr: steroid,  ko: 스테로이드 }
+  - { abbr: KCl,      ko: 염화칼륨 }
+  - { abbr: MgSO4,    ko: 황산마그네슘 }
+  - { abbr: NaHCO3,   ko: 중탄산나트륨 }
+  - { abbr: Epinephrine, ko: 에피네프린 }
+  - { abbr: Dopamine, ko: 도파민 }
+  - { abbr: Dobutamine, ko: 도부타민 }
+  - { abbr: Norepinephrine, ko: 노르에피네프린 }
+  - { abbr: Vasopressin, ko: 바소프레신 }
+  - { abbr: Nitroglycerin, ko: 니트로글리세린 }
+  - { abbr: Nicardipine, ko: 니카르디핀(혈압강하제) }
+  - { abbr: Ondansetron, ko: 온단세트론(항구토제) }
+  - { abbr: metoclopramide, ko: 메토클로프라미드(항구토제) }
+  - { abbr: Carcium,  ko: 칼슘글루코네이트 }
+  - { abbr: bromhexine, ko: 브롬헥신(거담제) }
+  - { abbr: Acetylcysteine, ko: 아세틸시스테인(거담제) }
+  - { abbr: Aminophylline, ko: 아미노필린(기관지확장제) }
+  - { abbr: Salbutamol, ko: 살부타몰(기관지확장제) }
+  - { abbr: Digoxin,  ko: 디곡신(심부전약) }
+  - { abbr: Amiodarone, ko: 아미오다론(항부정맥제) }
+  - { abbr: Calcium,  ko: 칼슘 }
+  - { abbr: Carcium,  ko: 칼슘글루코네이트 }
+  - { abbr: Albumin,  ko: 알부민 }
+  - { abbr: adelavin, ko: 아델라빈(비타민제) }
+
+  # ── 산부인과·산과 ────────────────────────────────────────────────
+  - { abbr: OB,       ko: 산과 }
+  - { abbr: GYN,      ko: 부인과 }
+  - { abbr: GA,       ko: 재태연령 }
+  - { abbr: EDD,      ko: 분만예정일 }
+  - { abbr: LMP,      ko: 마지막월경일 }
+  - { abbr: "G_P_",   ko: 임신횟수_분만횟수 }
+  - { abbr: NSVD,     ko: 자연분만 }
+  - { abbr: C/S,      ko: 제왕절개 }
+  - { abbr: VBAC,     ko: 제왕절개후자연분만 }
+  - { abbr: EFM,      ko: 전자태아감시 }
+  - { abbr: FHR,      ko: 태아심박수 }
+  - { abbr: CTG,      ko: 태아심박수-자궁수축감시 }
+  - { abbr: lochia,   ko: 오로(산후분비물) }
+  - { abbr: fundus,   ko: 자궁저부 }
+  - { abbr: involution, ko: 자궁복구 }
+  - { abbr: PIH,      ko: 임신성고혈압 }
+  - { abbr: GDM,      ko: 임신성당뇨 }
+  - { abbr: PPROM,    ko: 조기양막파수 }
+  - { abbr: PTL,      ko: 조기진통 }
+
+  # ── 신생아·소아 ──────────────────────────────────────────────────
+  - { abbr: VLBWI,    ko: 극소저체중출생아(1500g미만) }
+  - { abbr: ELBWI,    ko: 초극소저체중출생아(1000g미만) }
+  - { abbr: RDS,      ko: 신생아호흡곤란증후군 }
+  - { abbr: IVH,      ko: 뇌실내출혈 }
+  - { abbr: BPD,      ko: 기관지폐이형성증 }
+  - { abbr: NEC,      ko: 괴사성장염 }
+  - { abbr: PDA,      ko: 동맥관개존증 }
+  - { abbr: jaundice, ko: 황달 }
+  - { abbr: phototherapy, ko: 광선치료 }
+  - { abbr: KMC,      ko: 캥거루케어 }
+  - { abbr: Apgar,    ko: 아프가점수 }
+
+  # ── 동의서·행정 ──────────────────────────────────────────────────
+  - { abbr: DNR,      ko: 심폐소생거부 }
+  - { abbr: AND,      ko: 자연사허용 }
+  - { abbr: "informed consent", ko: 동의서 }
+  - { abbr: JCI,      ko: 국제의료기관평가 }
+  - { abbr: KOIHA,    ko: 한국의료기관평가인증원 }
+
+  # ── 한국 간호 현장 은어 ──────────────────────────────────────────
+  - { abbr: 바이탈,   ko: 활력징후 측정 }
+  - { abbr: 라운딩,   ko: 병실 순회 }
+  - { abbr: 인계,     ko: 인수인계 }
+  - { abbr: 처치,     ko: 간호처치 }
+  - { abbr: 드레싱,   ko: 상처 드레싱 }
+  - { abbr: 채혈,     ko: 혈액채취 }
+  - { abbr: 나이트,   ko: 야간근무 }
+  - { abbr: 데이,     ko: 주간근무 }
+  - { abbr: 이브닝,   ko: 저녁근무 }
+  - { abbr: 닥터,     ko: 의사 }
+  - { abbr: 고잉,     ko: 진행 중 }
+  - { abbr: 푸쉬,     ko: IV 일시주사 }
+  - { abbr: 세파,     ko: Cefazolin(항생제) }
+  - { abbr: 타이레놀, ko: 아세트아미노펜 }
+  - { abbr: 디씨,     ko: 중단·퇴원 }
+  - { abbr: 라스트,   ko: 마지막 }
+  - { abbr: 컨펌,     ko: 확인 }
+  - { abbr: 오더,     ko: 처방 }
+  - { abbr: 메디,     ko: 약물투여 }
+  - { abbr: 도즈,     ko: 투여량·회차 }
+  - { abbr: 세컨도즈, ko: 2회차 투여 }
+  - { abbr: 워드,     ko: 병동 }
+  - { abbr: 차팅,     ko: 간호기록 작성 }
+  - { abbr: 노티,     ko: 의사보고 }
+  - { abbr: 아이스팩, ko: 냉찜질 }
+  - { abbr: 리커버리, ko: 회복실 }
+  - { abbr: 오페,     ko: 수술 }

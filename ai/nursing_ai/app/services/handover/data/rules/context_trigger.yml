@@ -1,0 +1,11 @@
+version: "2026.05.01"
+triggers:
+  - id: ref_to_prior
+    description: "직전 기록에 명시적 참조 표현"
+    when: "any(t in last_shift_text for t in ['F/U', '전 근무자', '전번 근무자', '전 시프트', 'previous shift'])"
+  - id: early_admission
+    description: "입원 초기 (POD/HD ≤ 3)"
+    when: "(pod is not None and pod <= 3) or (hd is not None and hd <= 3)"
+  - id: critical_event
+    description: "직전 시프트 임상 이벤트 카테고리"
+    when: "any(c in last_shift_events for c in ['fall', 'rapid_response', 'transfer', 'adverse_drug_event'])"
