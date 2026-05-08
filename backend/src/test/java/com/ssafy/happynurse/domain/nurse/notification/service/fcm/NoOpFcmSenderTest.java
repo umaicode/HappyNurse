@@ -19,7 +19,7 @@ class NoOpFcmSenderTest {
                 1L, 7L, 100L, 50L,
                 "title", "body",
                 "payload", Instant.now(), null,
-                PushPolicy.ASSIGN_DELIVERY);
+                PushPolicy.ASSIGN_DELIVERY, null);
 
         assertThatCode(() -> sender.sendToActiveDevicesOf(7L, envelope))
                 .doesNotThrowAnyException();

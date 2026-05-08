@@ -14,3 +14,4 @@ asyncpg
 sse-starlette
 pyyaml
 pydantic-settings
+anthropic
