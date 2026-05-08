@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -62,17 +63,41 @@ fun NotificationsSheet(
                 Icon(Icons.Outlined.Close, contentDescription = "닫기", tint = HnColors.TextSecondary)
             }
         }
-        val sorted = notifications.sortedWith(
-            compareByDescending<Notif> { it.upcoming }.thenByDescending { it.minutesAgo },
-        )
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 4.dp),
-        ) {
-            items(sorted, key = { it.id }) { NotifRow(it) }
-            item { Spacer(Modifier.height(20.dp)) }
+        if (notifications.isEmpty()) {
+            // 담당 환자가 없거나 그 환자에 대한 알림이 없을 때
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 32.dp),
+            ) {
+                Text(
+                    "담당 환자의 알림이 없습니다",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = HnColors.Text,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "환자 탭에서 담당환자를 선택하면\n해당 환자의 알림이 여기 표시됩니다",
+                    fontSize = 12.sp,
+                    color = HnColors.TextSecondary,
+                )
+                Spacer(Modifier.height(20.dp))
+            }
+        } else {
+            val sorted = notifications.sortedWith(
+                compareByDescending<Notif> { it.upcoming }.thenByDescending { it.minutesAgo },
+            )
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 6.dp),
+            ) {
+                items(sorted, key = { it.id }) { NotifRow(it) }
+                item { Spacer(Modifier.height(20.dp)) }
+            }
         }
     }
 }
@@ -90,7 +115,13 @@ private fun NotifRow(n: Notif) {
         n.minutesAgo < 60 -> "${n.minutesAgo}분 전"
         else              -> n.time
     }
-    HnCard(padding = 12.dp) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(HnColors.SurfaceAlt)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+    ) {
         Row(verticalAlignment = Alignment.Top) {
             Box(
                 modifier = Modifier
@@ -108,13 +139,13 @@ private fun NotifRow(n: Notif) {
                     Spacer(Modifier.size(4.dp))
                     Text(n.room, fontSize = 12.sp, color = HnColors.TextSecondary)
                 }
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(6.dp))
                 Text(n.text, fontSize = 13.sp, color = HnColors.Text)
             }
             Text(
                 timeLabel,
                 fontSize = 14.sp, fontWeight = FontWeight.Bold,
-                color = if (n.upcoming) HnColors.Danger else HnColors.TextSecondary,
+                color = HnColors.Text,
                 modifier = Modifier.padding(start = 8.dp),
             )
         }

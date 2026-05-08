@@ -52,7 +52,7 @@ private fun BarCard(iv: IVTimer, pct: Float, color: Color) {
                 Spacer(Modifier.size(6.dp))
                 TagChip(iv.room, fg = HnColors.Primary, bg = HnColors.PrimarySoft)
                 Spacer(Modifier.weight(1f))
-                Text("종료 ${iv.endsAt}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Primary)
+                Text("종료 ${iv.endsAt}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
             }
             Spacer(Modifier.height(8.dp))
             Text(iv.drug, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text)
@@ -76,7 +76,7 @@ private fun BarCard(iv: IVTimer, pct: Float, color: Color) {
             Text(
                 "${iv.elapsedMin / 60}시간 ${iv.elapsedMin % 60}분 / ${iv.totalMin / 60}시간 ${iv.totalMin % 60}분",
                 fontSize = 12.sp,
-                color = HnColors.TextSecondary,
+                color = HnColors.Text,
             )
         }
     }
@@ -99,7 +99,7 @@ private fun RingCard(iv: IVTimer, pct: Float, color: Color) {
                 Text(
                     "남은 시간 ${remaining / 60}h ${remaining % 60}m · 종료 ${iv.endsAt}",
                     fontSize = 12.sp,
-                    color = HnColors.TextSecondary,
+                    color = HnColors.Text,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }

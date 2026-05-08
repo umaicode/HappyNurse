@@ -49,7 +49,7 @@ class WardPatientListControllerTest {
     }
 
     @Test
-    @DisplayName("GET /wards/me/patients 성공 시 200 + 13 필드(담당 간호사·주증상·수술명 포함) 환자 목록 반환")
+    @DisplayName("GET /wards/me/patients 성공 시 200 + 13 필드(담당간호사·병명 포함) 환자 목록 반환")
     void listMyWardPatients_성공() throws Exception {
         authenticate(new CustomUserDetails(99L, "EMP099", "본인", "nurse", "session-1", 1L, 3L));
         given(wardPatientListService.listWardPatients(anyLong(), anyLong()))

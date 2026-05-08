@@ -87,7 +87,13 @@ public enum ErrorCode implements ResponseCode {
     IV_INFUSION_NOT_FOUND(HttpStatus.NOT_FOUND, "수액 정보를 찾을 수 없습니다."),
     IV_RATE_INPUT_INVALID(HttpStatus.BAD_REQUEST, "주입 속도 입력이 올바르지 않습니다 (mL/hr 또는 gtt/min+patientType 중 하나만 채워야 합니다)."),
     IV_INVALID_STATE(HttpStatus.BAD_REQUEST, "현재 수액 상태에서 처리할 수 없는 요청입니다."),
-    IV_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "해당 처방으로 진행 중인 수액이 이미 존재합니다. 먼저 종료해주세요.");
+    IV_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "해당 처방으로 진행 중인 수액이 이미 존재합니다. 먼저 종료해주세요."),
+
+    // STT Reminder
+    STT_TIME_NOT_FOUND(HttpStatus.BAD_REQUEST, "발화에서 시간 표현을 찾을 수 없습니다. 예: \"8시 30분\", \"10분 뒤\"."),
+    STT_FIRE_AT_INVALID(HttpStatus.BAD_REQUEST, "알람 시각은 현재 시각보다 60초 이상 미래여야 합니다."),
+    STT_REMINDER_NOT_FOUND(HttpStatus.NOT_FOUND, "STT 알람을 찾을 수 없습니다."),
+    STT_REMINDER_NOT_OWNER(HttpStatus.FORBIDDEN, "본인이 등록한 STT 알람만 취소할 수 있습니다.");
 
     private final HttpStatus status;
     private final String message;

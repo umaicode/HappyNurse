@@ -86,7 +86,7 @@ function NotificationCard({ alert }: { alert: NotificationListItem }) {
             {label}
           </span>
         </div>
-        <span className="text-body-xs font-mono font-medium text-content-tertiary shrink-0 leading-none">
+        <span className="text-body-xs font-medium text-content-tertiary shrink-0 leading-none">
           {formatRelativeTime(alert.createdAt)}
         </span>
       </div>

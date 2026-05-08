@@ -12,6 +12,8 @@ import com.ssafy.happynurse.domain.nurse.notification.service.registry.PersonalE
 import com.ssafy.happynurse.domain.nurse.notification.service.registry.WardEmitterRegistry;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
 import com.ssafy.happynurse.domain.patient.repository.PatientRepository;
+import com.ssafy.happynurse.domain.reminder.entity.SttReminder;
+import com.ssafy.happynurse.domain.reminder.repository.SttReminderRepository;
 import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
 import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
 import com.ssafy.happynurse.domain.webapp.repository.PatientSelfReportRepository;
@@ -44,6 +46,7 @@ class DefaultNotificationDispatcherTest {
     @Mock PractitionerRepository practitionerRepository;
     @Mock PatientRepository patientRepository;
     @Mock PatientSelfReportRepository patientSelfReportRepository;
+    @Mock SttReminderRepository sttReminderRepository;
 
     @InjectMocks
     DefaultNotificationDispatcher dispatcher;
@@ -161,6 +164,9 @@ class DefaultNotificationDispatcherTest {
         org.mockito.Mockito.lenient()
                 .when(patientSelfReportRepository.findById(50L))
                 .thenReturn(Optional.of(mock(PatientSelfReport.class)));
+        org.mockito.Mockito.lenient()
+                .when(sttReminderRepository.findById(50L))
+                .thenReturn(Optional.of(mock(SttReminder.class)));
     }
 
     private Notification stubSavedNotification() {

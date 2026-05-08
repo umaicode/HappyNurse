@@ -1,26 +1,21 @@
+// FCM 디바이스 토큰 등록 API — POST /devices/fcm-token (Authorization은 OkHttp 인터셉터가 주입)
 package com.happynurse.data.remote.api
 
+import com.happynurse.data.remote.model.ApiResponse
+import retrofit2.Response
 import retrofit2.http.Body
-import retrofit2.http.Header
 import retrofit2.http.POST
 
 interface FcmTokenApi {
-    @POST("api/devices/fcm-token")
+    @POST("devices/fcm-token")
     suspend fun registerFcmToken(
-        @Header("Authorization") authorization: String,
         @Body request: FcmTokenRegisterRequest,
-    ): FcmTokenRegisterResponse
+    ): Response<ApiResponse<FcmTokenRegisterData>>
 }
 
 data class FcmTokenRegisterRequest(
     val fcmToken: String,
     val deviceType: String,
-)
-
-data class FcmTokenRegisterResponse(
-    val success: Boolean,
-    val message: String?,
-    val data: FcmTokenRegisterData?,
 )
 
 data class FcmTokenRegisterData(

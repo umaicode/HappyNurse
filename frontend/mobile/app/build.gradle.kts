@@ -27,9 +27,11 @@ android {
         // 에뮬레이터에서 실행 시 AppModule 이 자동으로 http://10.0.2.2:8080/ 로 override
         debug {
             buildConfigField("String", "BASE_URL", "\"https://k14e101.p.ssafy.io/dev/api/\"")
+            buildConfigField("String", "AI_BASE_URL", "\"https://k14e101.p.ssafy.io/dev/ai/\"")
         }
         release {
             buildConfigField("String", "BASE_URL", "\"https://k14e101.p.ssafy.io/api/\"")
+            buildConfigField("String", "AI_BASE_URL", "\"https://k14e101.p.ssafy.io/ai/\"")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

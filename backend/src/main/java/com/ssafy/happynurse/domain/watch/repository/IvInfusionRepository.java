@@ -124,7 +124,10 @@ public interface IvInfusionRepository extends JpaRepository<IvInfusion, Long> {
             LEFT JOIN FETCH e.assignedPractitioner
             LEFT JOIN FETCH iv.medications ivm
             LEFT JOIN FETCH ivm.medication
-            WHERE iv.medicationOrder.medicationOrderId = :orderId
+            WHERE (iv.medicationOrder.medicationOrderId = :orderId
+                   OR EXISTS (SELECT 1 FROM IvInfusionMedication ivm2
+                              WHERE ivm2.ivInfusion.ivInfusionId = iv.ivInfusionId
+                                AND ivm2.medicationOrder.medicationOrderId = :orderId))
               AND iv.status = com.ssafy.happynurse.domain.watch.entity.InfusionStatus.IN_PROGRESS
             """)
     Optional<IvInfusion> findActiveByMedicationOrderIdWithRoutingInfo(@Param("orderId") Long orderId);

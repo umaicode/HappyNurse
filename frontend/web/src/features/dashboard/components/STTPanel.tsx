@@ -16,8 +16,6 @@ import {
 } from "@/components/ui/command";
 import { PanelCard } from "./PanelCard";
 import {
-  ORDER_STATUS_LABEL,
-  ORDER_STATUS_TONE,
   ORDER_TYPE_LABEL,
   type OrderType,
 } from "@/features/dashboard/types/order";
@@ -165,7 +163,7 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                       </span>
                     )}
                   </div>
-                  <span className="text-body-xs font-mono font-medium text-content-tertiary shrink-0 leading-none">
+                  <span className="text-body-xs font-medium text-content-tertiary shrink-0 leading-none">
                     {formatMonthDayHHmm(order.createdAt)}
                   </span>
                 </div>
@@ -186,7 +184,7 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                   </span>
                 )}
 
-                {/* 2x2 Info Grid */}
+                {/* Info Grid */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 py-1">
                   <InfoCell label="1회량">
                     <span className="font-mono">
@@ -199,15 +197,6 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                   </InfoCell>
                   <InfoCell label="용법">
                     <span className="text-brand-primary">{order.route}</span>
-                  </InfoCell>
-                  <InfoCell label="상태">
-                    <span
-                      className={cn(
-                        ORDER_STATUS_TONE[order.status] ?? "text-status-neutral",
-                      )}
-                    >
-                      {ORDER_STATUS_LABEL[order.status] ?? order.status}
-                    </span>
                   </InfoCell>
                 </div>
 
