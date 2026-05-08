@@ -275,4 +275,37 @@ class SymptomClassificationServiceTest {
 
         verify(llmClient).classify("실밥 풀어주세요", null);
     }
+
+    @Test
+    @DisplayName("띄어쓴 '식은 땀' 발화도 CRITICAL로 매칭된다")
+    void classify_성공_식은땀_띄어쓰기_CRITICAL() {
+        var result = service.classify("계속 식은 땀이 나요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("붙여쓴 '식은땀' 발화도 기존대로 CRITICAL을 유지한다")
+    void classify_성공_식은땀_붙여쓰기_회귀_CRITICAL() {
+        var result = service.classify("식은땀이 나요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("띄어쓴 '가슴 통증' 발화도 CRITICAL로 매칭된다")
+    void classify_성공_가슴통증_띄어쓰기_CRITICAL() {
+        var result = service.classify("가슴 통증이 심해요", null);
+
+        assertThat(result.priority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("띄어쓴 '소변 줄' 발화는 wound_treatment 매칭으로 HIGH 이상이다")
+    void classify_성공_소변줄_띄어쓰기_HIGH_이상() {
+        var result = service.classify("소변 줄이 빠진 것 같아요", null);
+
+        assertThat(result.priority().ordinal())
+                .isLessThanOrEqualTo(SymptomPriority.HIGH.ordinal());
+    }
 }
