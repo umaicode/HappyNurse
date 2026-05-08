@@ -10,7 +10,7 @@ class STTPipeline:
         self.mapper = TermMapper(db=db)
         print("STT 파이프라인 초기화 완료")
 
-    async def process(self, audio_data: bytes, filename: str = "audio.wav", skip_correction: bool = False) -> dict:
+    async def process(self, audio_data: bytes, filename: str = "audio.wav") -> dict:
         print("\n=== 1단계: 클로바 STT ===")
         original_text = await self.clova.recognize(audio_data, filename)
         print(f"STT 결과: {original_text}")
@@ -19,16 +19,6 @@ class STTPipeline:
             return {
                 "original_text": "",
                 "corrected_text": "",
-                "corrections": []
-            }
-
-        # 환자 모드 등 raw STT만 필요한 경우 Stage 2/3 우회.
-        # 환자가 자연어로 말하므로 의료 용어 자동 교정이 의도를 왜곡할 위험을 회피.
-        if skip_correction:
-            print("=== skip_correction=True: 형태소/용어 매핑 우회 ===")
-            return {
-                "original_text": original_text,
-                "corrected_text": original_text,
                 "corrections": []
             }
 

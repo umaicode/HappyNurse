@@ -54,7 +54,6 @@ async def recognize_speech(
     audio: UploadFile = File(..., description="음성 파일 (wav, m4a, mp3, webm)"),
     patient_id: Optional[int] = Query(None, description="환자 ID (DB 저장 시 필수)"),
     encounter_id: Optional[int] = Query(None, description="입원 ID (DB 저장 시 필수)"),
-    skip_correction: bool = Query(False, description="True면 의료 용어 자동 교정(Stage 2/3) 건너뜀. 환자 모드에서 자연어를 그대로 받기 위해 사용."),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -62,7 +61,7 @@ async def recognize_speech(
         # 토큰에서 간호사 정보 자동 추출
         practitioner_id = current_user["practitioner_id"]
         print(f"\n인증된 사용자: {current_user['name']} (ID: {practitioner_id})")
-        print(f"파일 수신: {audio.filename}, 타입: {audio.content_type}, skip_correction: {skip_correction}")
+        print(f"파일 수신: {audio.filename}, 타입: {audio.content_type}")
 
         audio_data = await audio.read()
         print(f"음성 데이터 크기: {len(audio_data)} bytes")
@@ -72,7 +71,7 @@ async def recognize_speech(
 
         # 2. STT + 매핑 처리
         pipeline = STTPipeline(db=db)
-        result = await pipeline.process(audio_data, audio.filename, skip_correction=skip_correction)
+        result = await pipeline.process(audio_data, audio.filename)
 
         # 3. nursing_record DB 저장 (환자 정보가 있을 때만)
         nursing_record_id = None
