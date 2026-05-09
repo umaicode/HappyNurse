@@ -56,18 +56,17 @@ export function useNotificationStream() {
     return openSse("/sse/subscribe", { onEvent });
   }, [isLoggedIn, wardId, queryClient]);
 
-  // 병동 채널 — 같은 ward 의 모든 알림.
+  // 병동 채널 — 같은 ward 의 모든 알림. IV 캐시 갱신은 개인 채널이 담당하므로
+  // 여기서는 알림 카운트만 갱신한다 (한 이벤트로 두 채널이 동시에 IV 캐시를 invalidate
+  // 하면 staleTime 통과 시 /iv 가 두 번 fetch 되는 문제 회피).
   useEffect(() => {
     if (!isLoggedIn || wardId === null) return;
     if (isLocalhostDevelopment()) return;
-    const handler = (eventName: SourceEventName) => {
+    const handler = () => {
       queryClient.invalidateQueries({ queryKey: ["notifications", "ward", wardId] });
-      if (eventName === "iv_alert") {
-        queryClient.invalidateQueries({ queryKey: ["iv", "ward", wardId] });
-      }
     };
     const onEvent = Object.fromEntries(
-      SOURCE_EVENTS.map((name) => [name, () => handler(name)]),
+      SOURCE_EVENTS.map((name) => [name, handler]),
     );
     return openSse("/sse/ward-subscribe", { onEvent });
   }, [isLoggedIn, wardId, queryClient]);
