@@ -4,10 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PatientSidebar } from "@/features/patient/components/PatientSidebar";
 import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
+import type { WardPatient } from "@/features/patient/types/ward-patient";
 import { EMRGrid, type EMRTab } from "./EMRGrid";
 import { RightPanel } from "./RightPanel";
 import { AssignPatientModal } from "./AssignPatientModal";
 import { usePatientDetail } from "../hooks/usePatientDetail";
+
+// data 가 undefined 일 때 매 렌더 새 빈 배열을 만들면 useMemo deps 가 흔들려
+// selectedPatientId 등 파생값이 매번 재계산된다. 모듈 스코프 배열로 reference 고정.
+const EMPTY_WARD_PATIENTS: WardPatient[] = [];
 
 export function DashboardView() {
   const [isLeftOpen, setIsLeftOpen] = useState(true);
@@ -24,7 +29,7 @@ export function DashboardView() {
   const [hasCheckedAssignment, setHasCheckedAssignment] = useState(false);
 
   const wardPatientsQuery = useWardPatients();
-  const patients = wardPatientsQuery.data ?? [];
+  const patients = wardPatientsQuery.data ?? EMPTY_WARD_PATIENTS;
 
   // 담당 환자 우선, 없으면 첫 환자, 환자 자체가 없으면 null.
   const fallbackPatientId = useMemo<number | null>(() => {
