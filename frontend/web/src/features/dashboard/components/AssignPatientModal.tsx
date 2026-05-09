@@ -49,8 +49,8 @@ export function AssignPatientModal({
 
   const filteredPatients = useMemo(() => {
     if (!normalizedQuery) return patients;
-    return patients.filter((p) =>
-      p.name.toLowerCase().includes(normalizedQuery),
+    return patients.filter((patient) =>
+      patient.name.toLowerCase().includes(normalizedQuery),
     );
   }, [patients, normalizedQuery]);
 
@@ -70,8 +70,8 @@ export function AssignPatientModal({
 
   const getRoomCheckedState = (roomPatients: WardPatient[]): RoomCheckedState => {
     if (roomPatients.length === 0) return false;
-    const selectedCount = roomPatients.filter((p) =>
-      selectedIds.has(p.encounterId),
+    const selectedCount = roomPatients.filter((patient) =>
+      selectedIds.has(patient.encounterId),
     ).length;
     if (selectedCount === 0) return false;
     if (selectedCount === roomPatients.length) return true;
@@ -81,13 +81,13 @@ export function AssignPatientModal({
   const toggleRoom = (roomPatients: WardPatient[]) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      const allSelected = roomPatients.every((p) =>
-        next.has(p.encounterId),
+      const allSelected = roomPatients.every((patient) =>
+        next.has(patient.encounterId),
       );
       if (allSelected) {
-        roomPatients.forEach((p) => next.delete(p.encounterId));
+        roomPatients.forEach((patient) => next.delete(patient.encounterId));
       } else {
-        roomPatients.forEach((p) => next.add(p.encounterId));
+        roomPatients.forEach((patient) => next.add(patient.encounterId));
       }
       return next;
     });
@@ -129,7 +129,7 @@ export function AssignPatientModal({
               type="text"
               placeholder="환자명 검색..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(event) => setSearchQuery(event.target.value)}
               className="pl-9 h-9 bg-white border-border-subtle focus-visible:ring-1 focus-visible:ring-brand-primary"
             />
           </div>

@@ -33,7 +33,7 @@ export function DashboardView() {
 
   // 담당 환자 우선, 없으면 첫 환자, 환자 자체가 없으면 null.
   const fallbackPatientId = useMemo<number | null>(() => {
-    const firstMine = patients.find((p) => p.isMyPatient);
+    const firstMine = patients.find((patient) => patient.isMyPatient);
     if (firstMine) return firstMine.patientId;
     return patients[0]?.patientId ?? null;
   }, [patients]);
@@ -42,7 +42,7 @@ export function DashboardView() {
   const selectedPatientId = useMemo<number | null>(() => {
     if (
       overridePatientId !== null &&
-      patients.some((p) => p.patientId === overridePatientId)
+      patients.some((patient) => patient.patientId === overridePatientId)
     ) {
       return overridePatientId;
     }

@@ -56,21 +56,21 @@ export function PatientSidebar({
 
   const duplicateNames = useMemo(
     () =>
-      patients.reduce<Record<string, number>>((acc, p) => {
-        acc[p.name] = (acc[p.name] || 0) + 1;
-        return acc;
+      patients.reduce<Record<string, number>>((accumulator, patient) => {
+        accumulator[patient.name] = (accumulator[patient.name] || 0) + 1;
+        return accumulator;
       }, {}),
     [patients],
   );
 
   const filteredPatients = useMemo(
-    () => patients.filter((p) => p.name.includes(searchQuery)),
+    () => patients.filter((patient) => patient.name.includes(searchQuery)),
     [patients, searchQuery],
   );
 
   // 내 담당 환자 — 호실별 그룹핑
   const myPatientsByRoom = useMemo(
-    () => groupByRoom(filteredPatients.filter((p) => p.isMyPatient)),
+    () => groupByRoom(filteredPatients.filter((patient) => patient.isMyPatient)),
     [filteredPatients],
   );
 
@@ -98,7 +98,7 @@ export function PatientSidebar({
             type="text"
             placeholder="환자명 검색..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(event) => setSearchQuery(event.target.value)}
             className="pl-8 bg-white border-border-subtle shadow-sm h-8 text-body-sm focus-visible:ring-1 focus-visible:ring-brand-primary"
           />
         </div>

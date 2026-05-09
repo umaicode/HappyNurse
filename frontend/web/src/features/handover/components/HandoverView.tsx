@@ -178,7 +178,7 @@ export function HandoverView() {
               placeholder="환자명, 병실 검색..."
               className="pl-9 bg-slate-50 border-border-base h-10 text-[14px] focus-visible:ring-1 focus-visible:ring-[var(--color-brand-primary)]"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(event) => setSearchQuery(event.target.value)}
             />
           </div>
         </div>
