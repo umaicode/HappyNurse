@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PatientSidebar } from "@/features/patient/components/PatientSidebar";
 import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
@@ -49,16 +49,13 @@ export function DashboardView() {
   const selectedEncounterId = patientDetailQuery.data?.encounterId ?? null;
 
   // 데이터 로드 직후 한 번만: 담당 환자가 한 명도 없으면 모달 자동 오픈.
-  if (
-    !hasCheckedAssignment &&
-    !wardPatientsQuery.isPending &&
-    wardPatientsQuery.isSuccess
-  ) {
+  useEffect(() => {
+    if (hasCheckedAssignment || !wardPatientsQuery.isSuccess) return;
     setHasCheckedAssignment(true);
-    if (patients.length > 0 && !patients.some((p) => p.isMyPatient)) {
+    if (patients.length > 0 && !patients.some((patient) => patient.isMyPatient)) {
       setIsAssignOpen(true);
     }
-  }
+  }, [hasCheckedAssignment, wardPatientsQuery.isSuccess, patients]);
 
   return (
     <>
