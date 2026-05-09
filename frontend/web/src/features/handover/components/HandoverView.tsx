@@ -168,6 +168,9 @@ export function HandoverView() {
             >
               AI 인수인계 리포트
             </Heading>
+            <span className="px-2 py-0.5 rounded-full bg-status-warning-surface text-status-warning text-body-micro font-bold leading-none">
+              🛠️ 목업 데이터
+            </span>
           </div>
         </div>
 
@@ -231,7 +234,7 @@ export function HandoverView() {
                             : "text-slate-800",
                         )}
                       >
-                        {patient.name}
+                        🛠️ {patient.name}
                       </span>
                       <span className="text-[12px] text-slate-400 shrink-0">
                         {patient.room}
@@ -320,7 +323,7 @@ export function HandoverView() {
                             level="h3"
                             className="text-2xl font-bold text-slate-800"
                           >
-                            {patient.name}
+                            🛠️ {patient.name}
                           </Heading>
                           <Text className="text-[15px] text-slate-500 font-medium">
                             {patient.birthDate}
