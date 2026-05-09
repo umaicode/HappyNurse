@@ -114,7 +114,7 @@ export function AssignPatientModal({
     >
       <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-hidden flex flex-col rounded-2xl p-0 border border-border-base bg-white shadow-2xl">
         <DialogHeader className="px-7 pt-7 pb-4 border-b border-border-subtle">
-          <DialogTitle className="text-2xl font-bold text-[var(--color-sub-primary)]">
+          <DialogTitle className="text-2xl font-bold text-sub-primary">
             담당 환자 설정
           </DialogTitle>
           <DialogDescription className="text-[14px] text-content-tertiary">
@@ -130,7 +130,7 @@ export function AssignPatientModal({
               placeholder="환자명 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 bg-white border-border-subtle focus-visible:ring-1 focus-visible:ring-[var(--color-brand-primary)]"
+              className="pl-9 h-9 bg-white border-border-subtle focus-visible:ring-1 focus-visible:ring-brand-primary"
             />
           </div>
         </div>
@@ -150,7 +150,7 @@ export function AssignPatientModal({
                 <div key={roomName} className="flex flex-col">
                   <label
                     htmlFor={roomCheckboxId}
-                    className="flex items-center gap-2 px-2 py-1.5 border-b border-border-subtle mb-1 cursor-pointer select-none hover:bg-[var(--color-surface-hover)] rounded-md"
+                    className="flex items-center gap-2 px-2 py-1.5 border-b border-border-subtle mb-1 cursor-pointer select-none hover:bg-surface-hover rounded-md"
                   >
                     <span className="text-[13px] font-bold text-content-muted tracking-wider uppercase">
                       {roomName}
@@ -174,7 +174,7 @@ export function AssignPatientModal({
                         <label
                           key={patient.encounterId}
                           htmlFor={checkboxId}
-                          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md hover:bg-[var(--color-surface-hover)] transition-all cursor-pointer select-none"
+                          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md hover:bg-surface-hover transition-all cursor-pointer select-none"
                         >
                           <Checkbox
                             id={checkboxId}

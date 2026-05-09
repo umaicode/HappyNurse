@@ -23,9 +23,9 @@ export function RightPanel({ encounterId }: RightPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>('orders');
 
   return (
-    <div className="flex flex-col h-full bg-[var(--color-surface-base)]">
-      <div className="px-3 pt-3 pb-1 bg-[var(--color-surface-base)]/90 backdrop-blur-md">
-        <div className="flex p-1 bg-[var(--color-surface-hover)] rounded-lg">
+    <div className="flex flex-col h-full bg-surface-base">
+      <div className="px-3 pt-3 pb-1 bg-surface-base/90 backdrop-blur-md">
+        <div className="flex p-1 bg-surface-hover rounded-lg">
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -36,7 +36,7 @@ export function RightPanel({ encounterId }: RightPanelProps) {
                 className={cn(
                   "flex-1 py-2 text-[13px] font-bold rounded-md transition-all flex items-center justify-center gap-1",
                   isActive
-                    ? "bg-white text-[var(--color-brand-primary)] shadow-sm"
+                    ? "bg-white text-brand-primary shadow-sm"
                     : "text-content-muted hover:text-content-secondary",
                 )}
               >
