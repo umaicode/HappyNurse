@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 @Slf4j
 @Component
@@ -39,6 +40,9 @@ public class FirebaseFcmSender implements FcmSender {
                         .setBody(envelope.body())
                         .build())
                 .putAllData(buildDataPayload(envelope))
+                .setAndroidConfig(AndroidConfig.builder()
+                        .setPriority(AndroidConfig.Priority.HIGH) // 워치 풀스크린 알람 도달성 강화
+                        .build())
                 .build();
 
         try {
@@ -80,6 +84,17 @@ public class FirebaseFcmSender implements FcmSender {
         data.put("sourceType", env.sourceType().name());
         if (env.patientId() != null) data.put("patientId", String.valueOf(env.patientId()));
         if (env.sourceEntityId() != null) data.put("sourceEntityId", String.valueOf(env.sourceEntityId()));
+
+        // envelope.payload 가 Map<String,String> 이면 추가 키들을 그대로 전달
+        // (워치 SttAlarmActivity 등이 patientName, contentSummary, roomBedTime 등을 읽음)
+        if (env.payload() instanceof Map<?, ?> payloadMap) {
+            for (Entry<?, ?> e : payloadMap.entrySet()) {
+                if (e.getKey() == null || e.getValue() == null) continue;
+                String key = e.getKey().toString();
+                if (data.containsKey(key)) continue; // 표준 키 보호
+                data.put(key, e.getValue().toString());
+            }
+        }
         return data;
     }
 }

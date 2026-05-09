@@ -140,4 +140,5 @@ public class WebappController {
             webappService.submitSymptom(userDetails.getPractitionerId(), patientId, request)
         ));
     }
+
 }

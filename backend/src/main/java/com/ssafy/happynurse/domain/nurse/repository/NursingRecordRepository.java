@@ -26,8 +26,8 @@ public interface NursingRecordRepository extends JpaRepository<NursingRecord, Lo
     @Query("""
             SELECT nr FROM NursingRecord nr
             WHERE nr.encounterId = :encounterId
-              AND nr.confirmedAt >= :dayStart
-              AND nr.confirmedAt < :dayEnd
+              AND nr.createdAt >= :dayStart
+              AND nr.createdAt < :dayEnd
             """)
     List<NursingRecord> findAllByEncounterIdAndDateWithAuthor(
             @Param("encounterId") Long encounterId,
