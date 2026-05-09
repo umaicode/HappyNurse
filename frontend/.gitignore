@@ -93,3 +93,6 @@ src.zip
 web/swagger.json
 mobile/swagger.json
 mobile/app/google-services.json
+
+# 로컬 작업용 문서 (커밋 대상 아님)
+web/docs/
