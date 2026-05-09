@@ -1,0 +1,183 @@
+version: "2026.05.01"
+# 한국 병원에서 사용되는 주요 임상 평가 도구
+# LLM이 슬롯 추출 시 점수·단계 해석에 활용
+
+scales:
+  # ── 통증 척도 ─────────────────────────────────────────────────────
+  - id: NRS
+    name: 통증숫자척도 (Numeric Rating Scale)
+    range: 0-10
+    thresholds:
+      - { range: "0",    label: 무통증 }
+      - { range: "1-4",  label: 경증통증 }
+      - { range: "5-6",  label: 중등도통증 }
+      - { range: "7-10", label: 중증통증, action: 담당의 보고 고려 }
+    note: "NRS ≥ 5 시 Watcher 전환 고려"
+
+  - id: FLACC
+    name: FLACC 소아통증척도 (2개월~7세)
+    range: 0-10
+    subscales: [Face, Legs, Activity, Cry, Consolability]
+
+  - id: CRIES
+    name: CRIES 신생아통증척도
+    subscales: [Crying, O2requirement, Increased_vitals, Expression, Sleepless]
+
+  # ── 욕창 위험도 (Braden Scale) ─────────────────────────────────────
+  - id: Braden
+    name: 브레이든 욕창위험도평가
+    range: 6-23
+    subscales:
+      - { name: 감각지각, range: 1-4 }
+      - { name: 습도,     range: 1-4 }
+      - { name: 활동성,   range: 1-4 }
+      - { name: 이동성,   range: 1-4 }
+      - { name: 영양상태, range: 1-4 }
+      - { name: 마찰·전단력, range: 1-3 }
+    thresholds:
+      - { score: "≤12",  risk: 고위험,   action: 욕창예방 집중간호 }
+      - { score: "13-14", risk: 중등도위험, action: 체위변경 2시간마다 }
+      - { score: "15-18", risk: 경미한위험, action: 주의관찰 }
+      - { score: "≥19",  risk: 위험없음 }
+    korea_cutoff: 17
+
+  # ── 낙상 위험도 (Morse Fall Scale) ────────────────────────────────
+  - id: MFS
+    name: 모스낙상척도 (Morse Fall Scale)
+    range: 0-125
+    subscales:
+      - { name: 낙상력,      score_values: [0, 25] }
+      - { name: 이차질환,    score_values: [0, 15] }
+      - { name: 보행보조기구, score_values: [0, 15, 30] }
+      - { name: 정맥주입,    score_values: [0, 20] }
+      - { name: 보행형태,    score_values: [0, 10, 20] }
+      - { name: 정신상태,    score_values: [0, 15] }
+    thresholds:
+      - { score: "0-24",  risk: 저위험 }
+      - { score: "25-44", risk: 중등도위험 }
+      - { score: "≥45",  risk: 고위험, action: 낙상예방 집중간호 }
+    korea_cutoff: 45
+
+  # ── 의식 수준 (Glasgow Coma Scale) ────────────────────────────────
+  - id: GCS
+    name: 글래스고혼수척도
+    range: 3-15
+    subscales:
+      - { name: "Eye(눈뜨기)",   abbr: E, range: 1-4,
+          levels: {4: "자발적", 3: "언어자극", 2: "통증자극", 1: "반응없음"} }
+      - { name: "Verbal(언어반응)", abbr: V, range: 1-5,
+          levels: {5: "지남력있음", 4: "혼동", 3: "부적절한단어", 2: "이해불가소리", 1: "없음"} }
+      - { name: "Motor(운동반응)", abbr: M, range: 1-6,
+          levels: {6: "지시따름", 5: "통증위치파악", 4: "통증회피", 3: "굴곡", 2: "신전", 1: "없음"} }
+    thresholds:
+      - { score: "13-15", level: 경미한손상, consciousness: 명료 }
+      - { score: "9-12",  level: 중등도손상 }
+      - { score: "≤8",   level: 중증손상, action: "기도 확보 고려" }
+
+  # ── 패혈증 선별 (qSOFA) ────────────────────────────────────────────
+  - id: qSOFA
+    name: 신속SOFA (Quick Sequential Organ Failure Assessment)
+    range: 0-3
+    criteria:
+      - { item: 의식변화,            score: 1 }
+      - { item: "수축기BP ≤100mmHg", score: 1 }
+      - { item: "호흡수 ≥22회/분",   score: 1 }
+    thresholds:
+      - { score: "≥2", interpretation: 장기부전위험, action: 패혈증 프로토콜 즉시 적용 }
+
+  # ── 장기부전 평가 (SOFA) ──────────────────────────────────────────
+  - id: SOFA
+    name: Sequential Organ Failure Assessment
+    subscales: [호흡, 응고, 간기능, 심혈관, CNS, 신기능]
+    note: "ICU 패혈증 중증도 평가"
+
+  # ── 급성생리·만성건강평가 (APACHE II) ──────────────────────────────
+  - id: APACHE2
+    name: APACHE II (중환자 사망률 예측)
+    components: [체온, 맥박, 호흡수, 혈압, 산소화, pH, 크레아티닌, 칼륨, 나트륨, 헤마토크릿, 백혈구, GCS]
+    note: "ICU 입원 초기 24시간 내 평가"
+
+  # ── 국가조기경보점수 (NEWS2) ───────────────────────────────────────
+  - id: NEWS2
+    name: National Early Warning Score 2
+    range: 0-20
+    subscales:
+      - { name: "호흡수",      thresholds: ["≤8:+3", "9-11:+1", "12-20:0", "21-24:+2", "≥25:+3"] }
+      - { name: "산소포화도(SpO2)", thresholds: ["≤91:+3", "92-93:+2", "94-95:+1", "≥96:0"] }
+      - { name: "산소보충",    thresholds: ["없음:0", "있음:+2"] }
+      - { name: "체온",        thresholds: ["≤35.0:+3", "35.1-36.0:+1", "36.1-38.0:0", "38.1-39.0:+1", "≥39.1:+2"] }
+      - { name: "수축기BP",    thresholds: ["≤90:+3", "91-100:+2", "101-110:+1", "111-219:0", "≥220:+3"] }
+      - { name: "맥박",        thresholds: ["≤40:+3", "41-50:+1", "51-90:0", "91-110:+1", "111-130:+2", "≥131:+3"] }
+      - { name: "의식",        thresholds: ["명료:0", "새로운혼돈:+3"] }
+    thresholds:
+      - { score: "0-4",  risk: 저위험,   monitoring: 정기 }
+      - { score: "5-6",  risk: 중등도위험, monitoring: 즉시검토, action: "담당의 보고" }
+      - { score: "≥7",  risk: 고위험,   monitoring: 긴급, action: "즉각 개입" }
+    watcher_threshold: 5
+    unstable_threshold: 7
+
+  # ── 진정 척도 (RASS) ──────────────────────────────────────────────
+  - id: RASS
+    name: Richmond 진정·각성 척도
+    range: "-5 ~ +4"
+    levels:
+      - { score: "+4", label: 호전적 }
+      - { score: "+3", label: 매우 초조 }
+      - { score: "+2", label: 초조 }
+      - { score: "+1", label: 불안 }
+      - { score: "0",  label: 명료 }
+      - { score: "-1", label: 졸음 }
+      - { score: "-2", label: 가벼운 진정 }
+      - { score: "-3", label: 중등도 진정 }
+      - { score: "-4", label: 깊은 진정 }
+      - { score: "-5", label: 반응없음 }
+    target_for_icu: "-2 ~ 0"
+
+  # ── 욕창 분류 (NPUAP/EPUAP) ───────────────────────────────────────
+  - id: PRESSURE_INJURY
+    name: 욕창·압박손상 분류 (NPUAP/EPUAP)
+    stages:
+      - { stage: "1단계", description: 눌러도 색이 안변하는 발적, skin_intact: true }
+      - { stage: "2단계", description: 부분층 피부손상·얕은 궤양 }
+      - { stage: "3단계", description: 전층 피부손상·피하지방 노출 }
+      - { stage: "4단계", description: 전층 조직손상·근육·힘줄·뼈 노출 }
+      - { stage: "미분류", description: 괴사조직으로 깊이 미확인 }
+      - { stage: "심부조직손상의심", description: 자줏빛 변색·피부는 온전 }
+
+  # ── 한국형 응급환자 분류 (KTAS) ───────────────────────────────────
+  - id: KTAS
+    name: 한국형 응급환자 분류도구
+    levels:
+      - { level: 1, label: 소생, description: "즉각 소생처치 필요 (심정지·심각한 호흡곤란·쇼크)" }
+      - { level: 2, label: 응급, description: "빠른 처치 필요 (의식변화·혈역학 불안정·패혈증)" }
+      - { level: 3, label: 응급, description: "30분 이내 처치 (중증도 증상)" }
+      - { level: 4, label: 준응급, description: "1시간 이내 처치 (경미한 증상)" }
+      - { level: 5, label: 비응급, description: "2시간 이내 처치 (비응급 증상)" }
+
+  # ── DVT 위험도 (Caprini Score) ─────────────────────────────────────
+  - id: Caprini
+    name: Caprini DVT 위험도 평가
+    risk_groups:
+      - { score: "0",    risk: 매우낮음 }
+      - { score: "1-2",  risk: 낮음 }
+      - { score: "3-4",  risk: 중등도 }
+      - { score: "≥5",  risk: 고위험, action: "약물적 예방요법 고려" }
+    key_factors:
+      - { factor: 수술, score: 1-5 }
+      - { factor: "연령 ≥75세", score: 3 }
+      - { factor: "DVT 과거력", score: 3 }
+      - { factor: "암", score: 2 }
+      - { factor: "부동·마비", score: 2 }
+      - { factor: "TKA/THA", score: 5 }
+
+  # ── 통증 중재 효과 평가 기준 ──────────────────────────────────────
+  - id: PAIN_RESPONSE
+    name: 통증 중재 반응 평가
+    effective_criteria:
+      - NRS 2점 이상 감소
+      - "환자 '통증 완화' 표현"
+      - "활동 시 통증 허용 가능 수준"
+    reassessment_timing:
+      oral_analgesic: 1시간 후
+      IV_analgesic: 30분 후
+      PRN_not_effective: 담당의 보고

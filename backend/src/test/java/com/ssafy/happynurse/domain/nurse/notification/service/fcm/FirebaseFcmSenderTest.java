@@ -44,7 +44,7 @@ class FirebaseFcmSenderTest {
         NotificationEnvelope env = new NotificationEnvelope(
                 SourceType.self_report, 99L, practitionerId, 1L, 7L,
                 "환자 자가보고", "환자가 통증을 호소합니다", null,
-                java.time.Instant.now(), 42L, PushPolicy.ASSIGN_DELIVERY);
+                java.time.Instant.now(), 42L, PushPolicy.ASSIGN_DELIVERY, null);
 
         // when
         sender.sendToActiveDevicesOf(practitionerId, env);
@@ -142,7 +142,7 @@ class FirebaseFcmSenderTest {
         return new NotificationEnvelope(
                 SourceType.self_report, 99L, 1L, 1L, 7L,
                 "T", "B", null,
-                java.time.Instant.now(), 42L, PushPolicy.ASSIGN_DELIVERY);
+                java.time.Instant.now(), 42L, PushPolicy.ASSIGN_DELIVERY, null);
     }
 
     private PractitionerDevice mockDevice(Long deviceId, String token) {

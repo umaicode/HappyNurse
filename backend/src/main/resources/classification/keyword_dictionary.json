@@ -1,0 +1,688 @@
+{
+  "version": "1.0.0",
+  "description": "HappyNurse 환자 요청 중요도 분류 키워드 사전",
+  "sources": [
+    "KTAS 한국형 응급환자 분류도구",
+    "K-CPAT 암성 통증 어휘 조사",
+    "119 구급신고 한국어 증상 표현 연구",
+    "ERAS Society Guidelines",
+    "NursesLabs Postoperative Nursing Assessment"
+  ],
+  "priority_levels": {
+    "critical": {
+      "label": "즉시 대응",
+      "color": "red",
+      "ktas_mapping": "Level 1-2",
+      "target_response_time_min": 0,
+      "alert_method": ["watch_emergency_vibration", "push", "screen_top"],
+      "notify_nurse": true,
+      "allow_downgrade": false
+    },
+    "high": {
+      "label": "빠른 대응",
+      "color": "orange",
+      "ktas_mapping": "Level 3",
+      "target_response_time_min": 30,
+      "alert_method": ["watch_vibration", "push"],
+      "notify_nurse": true,
+      "allow_downgrade": false
+    },
+    "medium": {
+      "label": "일반 요청",
+      "color": "blue",
+      "ktas_mapping": "Level 4",
+      "target_response_time_min": 60,
+      "alert_method": ["push"],
+      "notify_nurse": true,
+      "allow_downgrade": true
+    },
+    "low": {
+      "label": "단순 문의",
+      "color": "gray",
+      "ktas_mapping": "Level 5",
+      "target_response_time_min": 120,
+      "alert_method": [],
+      "notify_nurse": false,
+      "allow_downgrade": true
+    }
+  },
+  "categories": {
+    "respiratory": {
+      "priority": "critical",
+      "label": "호흡 이상",
+      "medical_basis": "폐색전증(PE), 무기폐, 기도폐쇄, 폐렴",
+      "ktas_criteria": "1차 고려사항 1단계: 호흡 상태",
+      "keywords": [
+        "숨", "호흡", "숨이 차", "숨이 안", "숨을 못",
+        "헉헉", "숨쉬기", "숨 쉬기", "목이 막", "기도",
+        "가래", "가래에 피", "객혈",
+        "입술이 파", "손톱이 파", "청색",
+        "산소", "숨이 답답", "가빠"
+      ],
+      "patient_expressions": [
+        "숨이 안 쉬어져요",
+        "숨이 차요",
+        "숨을 못 쉬겠어요",
+        "헉헉거려요",
+        "목이 막혀요",
+        "숨이 막혀요",
+        "가래가 안 나와요",
+        "입술이 파래요",
+        "가슴이 답답하고 숨이 차요",
+        "갑자기 숨이 안 쉬어져요",
+        "가래에 피가 섞여 나와요",
+        "기침할 때 피가 나와요"
+      ]
+    },
+    "circulatory": {
+      "priority": "critical",
+      "label": "순환계 이상",
+      "medical_basis": "심부정맥, 쇼크, 저혈압, 심근경색",
+      "ktas_criteria": "1차 고려사항 1단계: 혈역학적 상태",
+      "keywords": [
+        "가슴통증", "가슴 통증", "가슴이 아", "흉통",
+        "심장", "두근", "심장이 빨리",
+        "쓰러", "실신", "의식",
+        "깜깜", "눈앞이",
+        "식은땀", "식은 땀", "힘이 없", "손발이 차",
+        "어지러", "기절", "어찔"
+      ],
+      "patient_expressions": [
+        "가슴이 아파요",
+        "가슴이 쥐어짜요",
+        "가슴이 찌르듯이 아파요",
+        "심장이 막 뛰어요",
+        "두근두근거려요",
+        "심장이 빨리 뛰어요",
+        "어지러워서 쓰러졌어요",
+        "눈앞이 깜깜해요",
+        "정신이 없어요",
+        "식은땀이 나요",
+        "온몸에 힘이 없어요",
+        "손발이 차가워요"
+      ]
+    },
+    "hemorrhage": {
+      "priority": "critical",
+      "label": "출혈",
+      "medical_basis": "수술 부위 출혈, 내출혈, 문합부 출혈",
+      "ktas_criteria": "1차 고려사항 2단계: 출혈성 소인",
+      "keywords": [
+        "출혈", "피가", "피를", "피 나",
+        "안 멈", "피가 안",
+        "토혈", "피를 토",
+        "혈변", "까만", "대변에 피",
+        "드레인", "배액", "빨간"
+      ],
+      "patient_expressions": [
+        "상처에서 피가 나요",
+        "피가 안 멈춰요",
+        "붕대에 피가 배어요",
+        "피를 토했어요",
+        "토한 거에 피가 섞여 있어요",
+        "대변에 피가 나와요",
+        "변이 까만색이에요",
+        "드레인에 피가 많이 나와요",
+        "배액이 빨간색이에요",
+        "가래에 피가 섞여 나와요"
+      ]
+    },
+    "iv_line": {
+      "priority": "critical",
+      "label": "수액/IV 라인 이상",
+      "medical_basis": "수액 침윤, 정맥염, 라인 이탈",
+      "ktas_criteria": "즉시 확인 필요",
+      "keywords": [
+        "링거", "수액", "주사 부위",
+        "부어", "빵빵",
+        "안 떨어", "안 내려",
+        "줄이 빠",
+        "역류", "거꾸로"
+      ],
+      "patient_expressions": [
+        "링거 맞는 데가 부어올랐어요",
+        "주사 부위가 빵빵해요",
+        "주사 맞는 데가 빨갛고 아파요",
+        "혈관이 아파요",
+        "링거가 안 떨어져요",
+        "수액이 안 내려가요",
+        "줄이 빠졌어요",
+        "피가 거꾸로 올라와요",
+        "수액줄에 피가 차요"
+      ]
+    },
+    "fall_trauma": {
+      "priority": "critical",
+      "label": "낙상/외상",
+      "medical_basis": "수술 후 섬망, 근력 저하에 의한 낙상",
+      "ktas_criteria": "1차 고려사항 2단계: 사고 기전",
+      "keywords": [
+        "넘어", "떨어", "낙상",
+        "미끄러", "굴렀",
+        "침대에서", "부딪",
+        "다쳤", "엎어"
+      ],
+      "patient_expressions": [
+        "넘어졌어요",
+        "떨어졌어요",
+        "미끄러졌어요",
+        "침대에서 떨어졌어요",
+        "침대에서 굴렀어요",
+        "걷다가 넘어졌어요",
+        "화장실 가다 미끄러졌어요"
+      ]
+    },
+    "neurological": {
+      "priority": "critical",
+      "label": "신경계 이상",
+      "medical_basis": "수술 후 섬망, 뇌졸중, 경련",
+      "ktas_criteria": "1차 고려사항 1단계: 의식 수준",
+      "keywords": [
+        "의식", "정신이 없", "헛소리",
+        "못 알아", "사람을 못",
+        "떨려", "경기", "경련",
+        "눈이 뒤집", "거품",
+        "마비", "어눌", "안 움직",
+        "입이 돌아", "여기가 어디",
+        "기억이 안", "발음이", "정신을 잃"
+      ],
+      "patient_expressions": [
+        "정신이 없어요",
+        "깨워도 안 일어나요",
+        "헛소리해요",
+        "사람을 못 알아봐요",
+        "자꾸 이상한 소리해요",
+        "여기가 어딘지 모르겠어요",
+        "온몸이 떨려요",
+        "경기를 해요",
+        "눈이 뒤집혔어요",
+        "거품을 물어요",
+        "한쪽 팔이 안 움직여요",
+        "말이 어눌해요",
+        "입이 돌아갔어요"
+      ]
+    },
+    "pain": {
+      "priority": "high",
+      "label": "통증",
+      "medical_basis": "수술 후 통증 관리 실패 → 합병증 위험 증가",
+      "ktas_criteria": "1차 고려사항 2단계: 통증",
+      "keywords": [
+        "아파", "아프", "아픔", "통증", "진통제",
+        "쑤시", "쑤셔", "욱신",
+        "찌르", "콕콕",
+        "화끈", "화끈거",
+        "저리", "찌릿",
+        "뻐근", "뻐개",
+        "쓰리", "쓰려",
+        "뒤틀", "꼬여",
+        "결리", "결려",
+        "찢어", "터질 것",
+        "뻗치", "뻗쳐",
+        "답답", "묵직",
+        "시리", "시려",
+        "따갑", "따끔",
+        "쥐어짜", "짓누",
+        "땡기", "땡겨"
+      ],
+      "subcategories": {
+        "somatic": {
+          "label": "체성 통증",
+          "description": "피부, 근육, 뼈의 통증",
+          "source": "K-CPAT",
+          "representative_words": ["쑤시다", "결리다", "찢어지는 듯하다", "뻐개지는 듯하다", "찌르다"],
+          "patient_expressions": [
+            "쑤셔요", "욱신욱신 쑤셔요", "콕콕 쑤셔요",
+            "결려요", "어깨가 결려요",
+            "찢어지는 것 같아요", "살이 찢어져요",
+            "뻐개지는 것 같아요", "머리가 뻐개져요",
+            "찌르는 것 같아요", "바늘로 찌르는 것 같아요",
+            "끊어지는 듯이 아파요", "지긋이 아파요",
+            "채찍으로 후리는 듯해요"
+          ]
+        },
+        "visceral": {
+          "label": "내장성 통증",
+          "description": "장기의 통증",
+          "source": "K-CPAT",
+          "representative_words": ["쑤시다", "뻐근하다", "쓰리다", "뒤틀리다", "쥐어짜는 듯하다"],
+          "patient_expressions": [
+            "속이 쑤셔요", "배가 쑤셔요",
+            "뻐근해요", "배가 뻐근해요",
+            "쓰려요", "속이 쓰려요",
+            "뒤틀려요", "배가 뒤틀려요", "배가 꼬여요",
+            "쥐어짜는 것 같아요", "배를 쥐어짜요",
+            "묵직해요", "짓누르는 것 같아요",
+            "답답해요", "속이 답답해요"
+          ]
+        },
+        "neuropathic": {
+          "label": "신경병증성 통증",
+          "description": "신경 손상에 의한 통증",
+          "source": "K-CPAT",
+          "representative_words": ["화끈거리다", "저리다", "뻗치다", "찌릿찌릿하다", "피부만 닿아도 아프다"],
+          "patient_expressions": [
+            "화끈거려요", "불에 데인 것 같아요",
+            "저려요", "손발이 저려요", "쩌릿해요",
+            "통증이 뻗쳐요", "다리로 뻗쳐요",
+            "찌릿찌릿해요", "전기 오는 것 같아요",
+            "스치기만 해도 아파요", "만지면 아파요",
+            "따갑다", "따끔거려요"
+          ]
+        }
+      },
+      "patient_expressions": [
+        "아파요",
+        "너무 아파요",
+        "참을 수가 없어요",
+        "진통제 주세요",
+        "약 좀 주세요",
+        "수술한 데가 아파요",
+        "점점 더 아파져요"
+      ]
+    },
+    "infection_signs": {
+      "priority": "high",
+      "label": "감염 징후",
+      "medical_basis": "수술 부위 감염(SSI), 패혈증 초기 징후",
+      "ktas_criteria": "1차 고려사항 1단계: 체온",
+      "keywords": [
+        "열", "열이 나", "38도", "39도", "발열", "고열",
+        "오한", "으슬으슬", "춥고 열",
+        "고름", "빨개", "빨갛",
+        "부었", "붓고",
+        "노란 물", "냄새",
+        "뜨거워", "화끈"
+      ],
+      "patient_expressions": [
+        "열이 나요",
+        "몸이 뜨거워요",
+        "열이 안 내려가요",
+        "오한이 나요",
+        "으슬으슬해요",
+        "상처가 빨개졌어요",
+        "상처 주변이 부었어요",
+        "상처가 뜨거워요",
+        "상처에서 고름이 나와요",
+        "노란 물이 나와요",
+        "냄새가 나요",
+        "온몸이 떨려요",
+        "춥고 열이 나요"
+      ],
+      "compound_upgrade_to_critical": {
+        "description": "감염 징후 2개 이상 동시 발생 시 CRITICAL 상향",
+        "condition": "keywords_matched >= 2",
+        "reason": "패혈증 가능성"
+      }
+    },
+    "gi_symptoms": {
+      "priority": "high",
+      "label": "소화기 증상",
+      "medical_basis": "수술 후 마비성 장폐색, PONV",
+      "ktas_criteria": "ERAS 퇴원 기준 역산",
+      "keywords": [
+        "토하", "토해", "구토", "토했",
+        "구역", "구역질", "헛구역", "헛 구역",
+        "울렁", "메스", "메스꺼", "느글",
+        "배가 아", "복통",
+        "배 빵빵", "배가 빵",
+        "가스", "방귀", "가스가 안",
+        "설사"
+      ],
+      "patient_expressions": [
+        "토할 것 같아요",
+        "속이 울렁거려요",
+        "토했어요",
+        "구역질 나요",
+        "메스꺼워요",
+        "배가 빵빵해요",
+        "가스가 안 나와요",
+        "방귀가 안 나와요",
+        "배가 아파요",
+        "배가 뒤틀려요",
+        "설사해요",
+        "물 같은 변이 나와요"
+      ]
+    },
+    "wound_treatment": {
+      "priority": "high",
+      "label": "상처/처치 필요",
+      "medical_basis": "창상 열개(dehiscence), 드레싱 교체",
+      "ktas_criteria": "간호 처치 필요",
+      "keywords": [
+        "드레싱", "반창고",
+        "상처", "진물",
+        "벌어", "터진",
+        "실이 빠", "실밥이 빠", "실밥 터", "실밥이 터",
+        "소변줄", "소변 줄", "카테터", "튜브",
+        "소변이 안"
+      ],
+      "patient_expressions": [
+        "상처가 벌어졌어요",
+        "실이 빠졌어요",
+        "터진 것 같아요",
+        "드레싱이 젖었어요",
+        "반창고가 떨어졌어요",
+        "진물이 나와요",
+        "소변줄이 빠졌어요",
+        "줄이 꺾였어요",
+        "소변이 안 나와요",
+        "소변에 피가 섞여요"
+      ]
+    },
+    "urinary_bowel": {
+      "priority": "high",
+      "label": "배뇨/배변 이상",
+      "medical_basis": "수술 후 요폐, 변비",
+      "ktas_criteria": "ERAS 퇴원 기준",
+      "keywords": [
+        "소변 안", "소변이 안",
+        "소변에 피", "소변 빨",
+        "변 못", "대변 안", "대변이 안",
+        "복부 팽만", "배에 가스"
+      ],
+      "patient_expressions": [
+        "소변이 안 나와요",
+        "소변 보고 싶은데 안 나와요",
+        "배가 빵빵한데 소변이 안 돼요",
+        "소변에 피가 섞여요",
+        "소변이 빨개요",
+        "변을 못 봐요",
+        "대변이 안 나와요",
+        "배에 가스가 찼어요"
+      ]
+    },
+    "daily_comfort": {
+      "priority": "medium",
+      "label": "생활 편의",
+      "medical_basis": null,
+      "ktas_criteria": "Level 4 (준응급)",
+      "keywords": [
+        "물", "물 좀", "목이 말",
+        "이불", "담요",
+        "침대", "베개",
+        "화장실", "도와",
+        "리모컨", "TV",
+        "에어컨", "춥", "더워", "덥",
+        "전등", "불 좀"
+      ],
+      "patient_expressions": [
+        "물 좀 주세요",
+        "목이 말라요",
+        "이불 주세요",
+        "담요 주세요",
+        "춥다", "더워요",
+        "에어컨 켜주세요", "에어컨 꺼주세요",
+        "침대 올려주세요", "침대 내려주세요",
+        "자세 좀 바꿔주세요",
+        "베개 더 주세요",
+        "화장실 좀 데려다주세요",
+        "걸어야 하는데 도와주세요",
+        "리모컨이 안 돼요",
+        "TV 켜주세요",
+        "전등 꺼주세요"
+      ]
+    },
+    "minor_discomfort": {
+      "priority": "medium",
+      "label": "경미한 불편",
+      "medical_basis": null,
+      "ktas_criteria": "Level 4 (준응급)",
+      "keywords": [
+        "잠이 안", "잠을 못",
+        "시끄", "소음",
+        "불편", "뻣뻣",
+        "밝아", "어두"
+      ],
+      "patient_expressions": [
+        "잠이 안 와요",
+        "시끄러워요",
+        "옆 침대가 코를 골아요",
+        "자세 불편해요",
+        "허리가 뻣뻣해요",
+        "오래 누워있으니 불편해요",
+        "너무 밝아요",
+        "소음이 심해요"
+      ]
+    },
+    "meal_request": {
+      "priority": "medium",
+      "label": "식이 관련",
+      "medical_basis": null,
+      "ktas_criteria": "Level 4 (준응급)",
+      "keywords": [
+        "식사",
+        "배고", "먹어도", "간식"
+      ],
+      "patient_expressions": [
+        "밥 언제 나와요?",
+        "식사 시간이 언제예요?",
+        "배고파요",
+        "뭐 먹어도 되나요?",
+        "간식 먹어도 돼요?"
+      ]
+    },
+    "schedule_inquiry": {
+      "priority": "low",
+      "label": "일정/절차 문의",
+      "medical_basis": null,
+      "ktas_criteria": "Level 5 (비응급)",
+      "keywords": [
+        "언제", "몇 시",
+        "퇴원", "나갈 수",
+        "검사", "다음 검사",
+        "회진", "의사 선생님",
+        "면회", "보호자",
+        "실밥 언제"
+      ],
+      "patient_expressions": [
+        "퇴원 언제예요?",
+        "언제 나갈 수 있어요?",
+        "검사 몇 시예요?",
+        "다음 검사 언제예요?",
+        "수술 후 언제부터 걸어도 돼요?",
+        "실밥 언제 풀어요?",
+        "의사 선생님 언제 오세요?",
+        "회진 몇 시예요?",
+        "면회 시간이 언제예요?",
+        "보호자가 언제 올 수 있어요?"
+      ],
+      "use_rag": true,
+      "faq_table": "symptom_faq"
+    },
+    "general_inquiry": {
+      "priority": "low",
+      "label": "일반 정보 문의",
+      "medical_basis": null,
+      "ktas_criteria": "Level 5 (비응급)",
+      "keywords": [
+        "궁금", "절차", "어떻게",
+        "되나요", "해도 돼", "해도 되",
+        "뭐예요", "가능", "괜찮"
+      ],
+      "patient_expressions": [
+        "뭐 먹으면 안 돼요?",
+        "수술 후 뭐 먹어요?",
+        "샤워해도 돼요?",
+        "걸어도 되나요?",
+        "이 약이 뭐예요?",
+        "약 부작용이 뭐예요?",
+        "궁금한 게 있어요",
+        "절차가 어떻게 돼요?"
+      ],
+      "use_rag": true,
+      "faq_table": "symptom_faq"
+    }
+  },
+  "safety_rules": {
+    "no_downgrade": {
+      "description": "키워드 매칭으로 CRITICAL 판정된 건은 LLM이 등급을 낮출 수 없음",
+      "example": {
+        "input": "숨이 좀 답답한데 괜찮은 것 같아요",
+        "keyword_match": "숨 + 답답 → CRITICAL",
+        "llm_override": false,
+        "final_priority": "critical"
+      }
+    },
+    "streaming_early_detection": {
+      "description": "STT 스트리밍 중간 텍스트에서 CRITICAL 키워드 감지 시 즉시 알림",
+      "example": {
+        "partial_text": "숨이 안 쉬어—",
+        "keyword_detected": "숨이 안",
+        "action": "즉시 CRITICAL 알림 트리거"
+      }
+    },
+    "compound_upgrade": {
+      "description": "단독으로는 HIGH이지만, 특정 조합 시 CRITICAL로 상향",
+      "rules": [
+        {
+          "condition": "infection_signs >= 2",
+          "upgrade_to": "critical",
+          "reason": "패혈증 가능성",
+          "example": "열도 나고 수술한 데가 빨갛고 고름도 나와요"
+        },
+        {
+          "condition": "pain + gi_symptoms",
+          "upgrade_to": "critical",
+          "reason": "문합부 누출 가능성",
+          "example": "배가 엄청 아프고 계속 토해요"
+        },
+        {
+          "condition": "pain + hemorrhage keywords in same sentence",
+          "upgrade_to": "critical",
+          "reason": "수술 부위 출혈 동반 통증",
+          "example": "수술한 데가 아프면서 피가 나요"
+        }
+      ]
+    }
+  },
+  "department_overrides": {
+    "description": "진료부서별 추가 CRITICAL 키워드 (encounter.department_code 기반)",
+    "overrides": {
+      "orthopedics": {
+        "department_codes": ["OS", "ORTHO"],
+        "additional_critical_keywords": [
+          "발가락 안 움직", "다리가 붓고 딱딱",
+          "감각이 없", "다리가 퍼렇"
+        ],
+        "reason": "구획증후군 긴급"
+      },
+      "cardiac_surgery": {
+        "department_codes": ["CS", "CARDIAC"],
+        "additional_critical_keywords": [
+          "가슴 절개 벌어", "심장이 불규칙",
+          "가슴뼈가 흔들", "흉골 통증"
+        ],
+        "reason": "종격동염 위험"
+      },
+      "gi_surgery": {
+        "department_codes": ["GS", "GI"],
+        "additional_critical_keywords": [
+          "문합부", "배가 딱딱", "복부 팽만 + 발열"
+        ],
+        "reason": "문합부 누출"
+      },
+      "neurosurgery": {
+        "department_codes": ["NS", "NEURO"],
+        "additional_critical_keywords": [
+          "두통 + 구토", "한쪽 힘 빠",
+          "시야가 흐", "눈이 안 보"
+        ],
+        "reason": "뇌출혈/뇌부종"
+      },
+      "obstetrics": {
+        "department_codes": ["OB", "OBGY"],
+        "additional_critical_keywords": [
+          "질 출혈", "하혈", "출혈 + 어지러"
+        ],
+        "reason": "수술 후 출혈"
+      }
+    }
+  },
+  "stt_correction_mapping": {
+    "description": "STT 오인식 빈도 높은 의료 용어 → 키워드 매칭 전 교정",
+    "corrections": [
+      {"stt_output": "수시다", "corrected": "쑤시다", "category": "pain"},
+      {"stt_output": "써리다", "corrected": "쓰리다", "category": "pain"},
+      {"stt_output": "뻐개진다", "corrected": "뻐개지는 듯하다", "category": "pain"},
+      {"stt_output": "저린다", "corrected": "저리다", "category": "pain"},
+      {"stt_output": "화근거린다", "corrected": "화끈거리다", "category": "pain"},
+      {"stt_output": "링겔", "corrected": "링거", "category": "iv_line"},
+      {"stt_output": "링겔이", "corrected": "링거가", "category": "iv_line"},
+      {"stt_output": "트레인", "corrected": "드레인", "category": "hemorrhage"},
+      {"stt_output": "드레싱이", "corrected": "드레싱이", "category": "wound_treatment"},
+      {"stt_output": "카데터", "corrected": "카테터", "category": "wound_treatment"},
+      {"stt_output": "인슐린", "corrected": "인슐린", "category": "pain"}
+    ],
+    "related_table": "quick_correction_dictionary"
+  },
+  "llm_classification_config": {
+    "description": "2차 LLM 분류 호출 시 설정",
+    "model": "claude-haiku",
+    "max_tokens": 100,
+    "response_format": {
+      "priority": "critical | high | medium | low",
+      "category": "카테고리 ID (예: respiratory, pain, daily_comfort)",
+      "confidence": "0.00 ~ 1.00",
+      "ai_response": "null (LOW가 아닌 경우) | FAQ 답변 텍스트 (LOW인 경우)"
+    },
+    "system_prompt_includes": [
+      "priority_levels 정의",
+      "categories의 keywords와 patient_expressions",
+      "safety_rules (하향 분류 금지 등)",
+      "해당 환자의 department_code에 맞는 department_overrides"
+    ]
+  },
+  "rag_config": {
+    "description": "LOW 등급 FAQ 자동 응답 시 RAG 설정",
+    "trigger": "priority == 'low'",
+    "vector_store": {
+      "source_table": "symptom_faq",
+      "embedding_fields": ["question", "answer"],
+      "filter_by": "surgery_type_code (encounter에서 조회)",
+      "top_k": 3
+    },
+    "llm_generation": {
+      "model": "claude-haiku",
+      "max_tokens": 300,
+      "context": "검색된 FAQ top_k 결과를 컨텍스트로 포함"
+    }
+  },
+  "db_schema_additions": {
+    "description": "patient_self_report 테이블에 추가할 컬럼",
+    "columns": [
+      {
+        "name": "priority",
+        "type": "ENUM('critical','high','medium','low')",
+        "nullable": false,
+        "default": "medium",
+        "comment": "중요도 등급"
+      },
+      {
+        "name": "category",
+        "type": "VARCHAR(50)",
+        "nullable": true,
+        "comment": "분류 카테고리 (respiratory, pain, daily_comfort 등)"
+      },
+      {
+        "name": "classification_method",
+        "type": "ENUM('keyword','llm','manual')",
+        "nullable": false,
+        "default": "keyword",
+        "comment": "분류 방식 (키워드 매칭 / LLM / 수동)"
+      },
+      {
+        "name": "ai_response",
+        "type": "TEXT",
+        "nullable": true,
+        "comment": "LOW 등급 시 AI 자동 응답 내용"
+      },
+      {
+        "name": "confidence_score",
+        "type": "DECIMAL(3,2)",
+        "nullable": true,
+        "comment": "LLM 분류 신뢰도 (0.00~1.00)"
+      }
+    ]
+  }
+}

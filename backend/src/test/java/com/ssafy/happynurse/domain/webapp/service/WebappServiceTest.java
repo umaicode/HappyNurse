@@ -14,16 +14,19 @@ import com.ssafy.happynurse.domain.webapp.dto.SymptomSubmitRequest;
 import com.ssafy.happynurse.domain.webapp.dto.SymptomSubmitResponse;
 import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
 import com.ssafy.happynurse.domain.webapp.entity.QuickSymptomButton;
+import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
 import com.ssafy.happynurse.domain.webapp.event.SymptomSubmittedEvent;
 import com.ssafy.happynurse.domain.webapp.repository.PatientSelfReportRepository;
 import com.ssafy.happynurse.domain.webapp.repository.QuickSymptomButtonRepository;
 import org.springframework.context.ApplicationEventPublisher;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
@@ -52,6 +55,19 @@ public class WebappServiceTest {
     PatientSelfReportRepository patientSelfReportRepository;
     @Mock
     ApplicationEventPublisher eventPublisher;
+    @Mock
+    SymptomClassificationService classificationService;
+
+    @BeforeEach
+    void stubClassifierDefaults() {
+        // 기본 stub: 모든 입력에 MEDIUM 반환. 특정 시나리오 테스트는 개별 given()으로 덮어씀.
+        Mockito.lenient()
+                .when(classificationService.classifyButton(Mockito.anyString()))
+                .thenReturn(new SymptomClassificationService.SymptomClassificationResult(SymptomPriority.MEDIUM, null));
+        Mockito.lenient()
+                .when(classificationService.classify(Mockito.anyString(), Mockito.any()))
+                .thenReturn(new SymptomClassificationService.SymptomClassificationResult(SymptomPriority.MEDIUM, null));
+    }
 
     @Test
     @DisplayName("존재하지 않는 환자 진입 시 PATIENT_NOT_FOUND 발생")
@@ -308,6 +324,87 @@ public class WebappServiceTest {
         assertThatThrownBy(() -> webAppService.submitSymptom(1L, 1L, new SymptomSubmitRequest()))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SYMPTOM_INPUT_INVALID);
+    }
+
+    @Test
+    @DisplayName("증상 제출: 버튼 입력은 classifyButton(label)으로 분류 + priority 이벤트 전파")
+    void submitSymptom_button_classifyButton_사용() {
+        Patient patient = createPatient(1L);
+        Practitioner nurse = createPractitioner(10L);
+        Encounter encounter = createEncounterWithWard(patient, "김가민", "301호", 3L, nurse);
+        QuickSymptomButton button = createButton(1L, "수액", 4);
+        PatientSelfReport savedReport = createSavedReport(50L, LocalDateTime.now());
+
+        given(patientRepository.findById(1L)).willReturn(Optional.of(patient));
+        given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
+                .willReturn(Optional.of(encounter));
+        given(quickSymptomButtonRepository.findById(1L)).willReturn(Optional.of(button));
+        given(patientSelfReportRepository.save(any())).willReturn(savedReport);
+        given(classificationService.classifyButton("수액")).willReturn(
+                new SymptomClassificationService.SymptomClassificationResult(SymptomPriority.CRITICAL, null));
+
+        SymptomSubmitRequest request = new SymptomSubmitRequest();
+        request.setButtonId(1L);
+
+        webAppService.submitSymptom(1L, 1L, request);
+
+        verify(classificationService).classifyButton("수액");
+        verify(classificationService, org.mockito.Mockito.never()).classify(any(), any());
+        ArgumentCaptor<SymptomSubmittedEvent> eventCaptor = ArgumentCaptor.forClass(SymptomSubmittedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getPriority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("증상 제출: 직접 입력은 classify(text, dept)로 분류 + priority 이벤트 전파")
+    void submitSymptom_text_classify_사용() {
+        Patient patient = createPatient(1L);
+        Practitioner nurse = createPractitioner(10L);
+        Encounter encounter = createEncounterWithWard(patient, "김가민", "301호", 3L, nurse);
+        PatientSelfReport savedReport = createSavedReport(51L, LocalDateTime.now());
+
+        given(patientRepository.findById(1L)).willReturn(Optional.of(patient));
+        given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
+                .willReturn(Optional.of(encounter));
+        given(patientSelfReportRepository.save(any())).willReturn(savedReport);
+        given(classificationService.classify(eq("숨이 답답해요"), any())).willReturn(
+                new SymptomClassificationService.SymptomClassificationResult(SymptomPriority.CRITICAL, null));
+
+        SymptomSubmitRequest request = new SymptomSubmitRequest();
+        request.setSymptomText("숨이 답답해요");
+
+        webAppService.submitSymptom(1L, 1L, request);
+
+        verify(classificationService).classify(eq("숨이 답답해요"), any());
+        verify(classificationService, org.mockito.Mockito.never()).classifyButton(any());
+        ArgumentCaptor<SymptomSubmittedEvent> eventCaptor = ArgumentCaptor.forClass(SymptomSubmittedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getPriority()).isEqualTo(SymptomPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("증상 제출: 버튼 + 텍스트 동시 입력도 버튼 라벨로 classifyButton 사용")
+    void submitSymptom_buttonAndText_classifyButton_사용() {
+        Patient patient = createPatient(1L);
+        Practitioner nurse = createPractitioner(10L);
+        Encounter encounter = createEncounterWithWard(patient, "김가민", "301호", 3L, nurse);
+        QuickSymptomButton button = createButton(1L, "통증", 1);
+        PatientSelfReport savedReport = createSavedReport(52L, LocalDateTime.now());
+
+        given(patientRepository.findById(1L)).willReturn(Optional.of(patient));
+        given(encounterRepository.findByPatientAndStatus(patient, EncounterStatus.in_progress))
+                .willReturn(Optional.of(encounter));
+        given(quickSymptomButtonRepository.findById(1L)).willReturn(Optional.of(button));
+        given(patientSelfReportRepository.save(any())).willReturn(savedReport);
+
+        SymptomSubmitRequest request = new SymptomSubmitRequest();
+        request.setButtonId(1L);
+        request.setSymptomText("어깨 부위가 욱신거려요");
+
+        webAppService.submitSymptom(1L, 1L, request);
+
+        verify(classificationService).classifyButton("통증");
+        verify(classificationService, org.mockito.Mockito.never()).classify(any(), any());
     }
 
     @Test
