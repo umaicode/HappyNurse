@@ -203,6 +203,11 @@ export function EMRGrid({
                       if (!date) return;
                       onChangeSelectedDate(date);
                     }}
+                    locale={ko}
+                    formatters={{
+                      formatCaption: (date) =>
+                        format(date, "yyyy년 M월", { locale: ko }),
+                    }}
                   />
                 </PopoverContent>
               </Popover>
@@ -235,7 +240,7 @@ export function EMRGrid({
             </div>
             <div className="flex items-stretch border-r border-border-base">
               <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-sub-primary flex items-center whitespace-nowrap w-[100px] shrink-0">
-                진료의
+                담당의
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
                 <span className="font-bold text-content-secondary truncate w-full">
