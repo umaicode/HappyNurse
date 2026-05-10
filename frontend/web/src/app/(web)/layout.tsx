@@ -18,6 +18,8 @@ import { Spinner } from '@/components/common/Spinner'
  * 끝까지 실패하면 /login 으로 이동한다.
  *
  * 로그인 직후 라우트 이동(store.user 가 이미 채워진 상태)에는 호출을 생략한다.
+ * 자동 로그아웃 직후 reset() 으로 user 가 falsy 가 되는 순간에도 useQuery 가 재발동하지 않도록
+ * authStore.hasInitialized 로 한 번 초기화된 라이프사이클에서는 다시 호출하지 않는다.
  */
 export default function WebLayout({
   children,
@@ -25,6 +27,7 @@ export default function WebLayout({
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
   const setUser = useAuthStore((state) => state.setUser)
+  const hasInitialized = useAuthStore((state) => state.hasInitialized)
   // 15 분 자동 로그아웃 타이머 활성화 (useAuth 의 useEffect 가 user 가 set 된 동안 동작)
   useAuth()
   // 개인/병동 SSE 구독 — 새 알림 도착 시 알림 캐시 invalidate.
@@ -38,7 +41,7 @@ export default function WebLayout({
       return data
     },
     retry: false,
-    enabled: !user,
+    enabled: !user && !hasInitialized,
     staleTime: Infinity,
   })
 

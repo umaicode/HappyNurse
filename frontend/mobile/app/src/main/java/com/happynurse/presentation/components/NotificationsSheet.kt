@@ -63,7 +63,9 @@ fun NotificationsSheet(
                 Icon(Icons.Outlined.Close, contentDescription = "닫기", tint = HnColors.TextSecondary)
             }
         }
-        if (notifications.isEmpty()) {
+        // 현재 시간 기준 24시간(1440분) 이내 알림만 표시
+        val recent = notifications.filter { it.minutesAgo in 0..1440 }
+        if (recent.isEmpty()) {
             // 담당 환자가 없거나 그 환자에 대한 알림이 없을 때
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -86,8 +88,8 @@ fun NotificationsSheet(
                 Spacer(Modifier.height(20.dp))
             }
         } else {
-            val sorted = notifications.sortedWith(
-                compareByDescending<Notif> { it.upcoming }.thenByDescending { it.minutesAgo },
+            val sorted = recent.sortedWith(
+                compareBy<Notif> { it.minutesAgo },
             )
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -105,14 +107,15 @@ fun NotificationsSheet(
 @Composable
 private fun NotifRow(n: Notif) {
     val (catLabel, catFg, catBg) = when (n.category) {
-        NotifCategory.FLUID   -> Triple("수액",     HnColors.Purple, HnColors.TagFluidBg)
-        NotifCategory.WATCH   -> Triple("워치",     HnColors.Danger, Color(0xFFFEE2E2))
-        NotifCategory.REQUEST -> Triple("환자요청", HnColors.Info,   HnColors.TagInjBg)
+        NotifCategory.FLUID   -> Triple("수액",     HnColors.TagFluidStrongFg,   HnColors.TagFluidStrongBg)
+        NotifCategory.ORDER   -> Triple("의사오더", HnColors.TagOrderStrongFg,   HnColors.TagOrderStrongBg)
+        NotifCategory.REQUEST -> Triple("환자요청", HnColors.TagRequestStrongFg, HnColors.TagRequestStrongBg)
+        NotifCategory.WATCH   -> Triple("워치",     HnColors.TagWatchStrongFg,   HnColors.TagWatchStrongBg)
     }
     val timeLabel = when {
         n.minutesAgo == 0 -> "지금"
         n.minutesAgo < 0  -> "${-n.minutesAgo}분 후"
-        n.minutesAgo < 60 -> "${n.minutesAgo}분 전"
+        n.minutesAgo < 30 -> "${n.minutesAgo}분 전"
         else              -> n.time
     }
     Box(
@@ -134,10 +137,14 @@ private fun NotifRow(n: Notif) {
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TagChip(catLabel, fg = catFg, bg = catBg)
-                    Spacer(Modifier.size(6.dp))
-                    Text(n.patient, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                    Spacer(Modifier.size(4.dp))
-                    Text(n.room, fontSize = 12.sp, color = HnColors.TextSecondary)
+                    if (n.patient.isNotBlank()) {
+                        Spacer(Modifier.size(6.dp))
+                        Text(n.patient, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                    }
+                    if (n.room.isNotBlank()) {
+                        Spacer(Modifier.size(4.dp))
+                        Text(n.room, fontSize = 12.sp, color = HnColors.TextSecondary)
+                    }
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(n.text, fontSize = 13.sp, color = HnColors.Text)
