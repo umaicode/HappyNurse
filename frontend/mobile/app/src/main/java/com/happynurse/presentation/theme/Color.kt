@@ -37,4 +37,10 @@ object HnColors {
     val TagLisBg     = Color(0xFFFFF8E1); val TagLisFg     = Color(0xFFB45309) // LIS  — 앰버
     val TagImgBg     = Color(0xFFE0F7FA); val TagImgFg     = Color(0xFF00838F) // 영상 — 틸
     val TagPillBg    = Color(0xFFE8F5E9); val TagPillFg    = Color(0xFF2E7D32) // 알약 — 그린
+
+    // 알림 시트 전용 — 진한 톤 카테고리 태그
+    val TagFluidStrongBg   = Color(0xFFDBE3FF); val TagFluidStrongFg   = Color(0xFF1428A0) // 수액 — Primary 블루
+    val TagOrderStrongBg   = Color(0xFFEDE4FF); val TagOrderStrongFg   = Color(0xFF5B21B6) // 의사오더 — 진한 퍼플
+    val TagRequestStrongBg = Color(0xFFFEE2E2); val TagRequestStrongFg = Color(0xFFB91C1C) // 환자요청 — 진한 레드
+    val TagWatchStrongBg   = Color(0xFFFEF3C7); val TagWatchStrongFg   = Color(0xFFB45309) // 워치 — 진한 옐로/앰버
 }

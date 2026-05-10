@@ -96,11 +96,13 @@ class TasksViewModel @Inject constructor(
     fun refreshBellNotifs() {
         viewModelScope.launch {
             val wardId = authRepository.wardId.firstOrNull() ?: return@launch
-            val myPatientIds = loadMyPatientIds()
+            val wardPatients = patientRepository.getMyWardPatients().getOrNull() ?: emptyList()
+            val myPatientIds = wardPatients.filter { it.isMyPatient }.map { it.patientId }.toSet()
+            val locationMap = wardPatients.associate { it.patientId to (it.room to it.bed) }
             notificationRepository.getWard(wardId, limit = 50).fold(
                 onSuccess = { res ->
                     val mine = res.items.filter { it.patientId != null && it.patientId in myPatientIds }
-                    _notifs.value = mine.map { it.toNotif() }
+                    _notifs.value = mine.map { it.toNotif(locationMap) }
                     _error.value = null
                 },
                 onFailure = { _error.value = it.message ?: "알림 조회 실패" },
@@ -116,7 +118,9 @@ class TasksViewModel @Inject constructor(
             ?: emptySet()
 }
 
-private fun NotificationListItemResponse.toNotif(): Notif {
+private fun NotificationListItemResponse.toNotif(
+    locationMap: Map<Long, Pair<String, String>> = emptyMap(),
+): Notif {
     val instant = parseInstantOrNull(createdAt) ?: Instant.now()
     val now = Instant.now()
     val minutesAgo = ((now.epochSecond - instant.epochSecond) / 60).toInt().coerceAtLeast(0)
@@ -124,15 +128,18 @@ private fun NotificationListItemResponse.toNotif(): Notif {
     val time = zoned.format(DateTimeFormatter.ofPattern("HH:mm"))
     val cat = when (sourceType) {
         "iv_alert" -> NotifCategory.FLUID
-        "self_report", "order_change" -> NotifCategory.REQUEST
+        "order_change" -> NotifCategory.ORDER
+        "self_report" -> NotifCategory.REQUEST
         "vital_alert", "timer" -> NotifCategory.WATCH
         else -> NotifCategory.REQUEST
     }
+    val (room, bed) = patientId?.let { locationMap[it] } ?: ("" to "")
+    val roomLabel = listOf(room, bed).filter { it.isNotBlank() }.joinToString("-")
     return Notif(
         id = notificationId.toString(),
         category = cat,
         patient = patientName ?: "",
-        room = "",
+        room = roomLabel,
         text = listOfNotNull(title, body).joinToString(" — ").ifBlank { sourceType ?: "" },
         time = time,
         minutesAgo = minutesAgo,

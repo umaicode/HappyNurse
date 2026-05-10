@@ -96,7 +96,7 @@ data class IVTimer(
     val currentRateMlPerHr: Double? = null,  // 서버 slim 응답에서 받음 — gtt 환산용
 )
 
-enum class NotifCategory { FLUID, WATCH, REQUEST }
+enum class NotifCategory { FLUID, ORDER, WATCH, REQUEST }
 
 data class Notif(
     val id: String,
