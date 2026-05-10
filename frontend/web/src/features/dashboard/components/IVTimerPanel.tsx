@@ -138,6 +138,7 @@ export function IVTimerPanel() {
 
           // 게이지 색 — 모바일 IVTimerCard.kt 와 동일한 경과율 기준 50%/80% 3단계.
           // 단 잔여 5분 미만이면 무조건 danger override (iv_alert SSE 발행 시점과 align).
+          // 텍스트는 의사오더/알림 카드와 통일된 차분 톤으로 — 사용자 안전 강조는 게이지가 담당.
           const isCritical = remainingMs < CRITICAL_REMAINING_MS;
           const barColorClass = isCritical
             ? "bg-status-danger"
@@ -146,13 +147,6 @@ export function IVTimerPanel() {
               : progressPercent < 80
                 ? "bg-status-warning"
                 : "bg-status-danger";
-          const textToneClass = isCritical
-            ? "text-status-danger"
-            : progressPercent < 50
-              ? "text-content-secondary"
-              : progressPercent < 80
-                ? "text-status-warning"
-                : "text-status-danger";
 
           const info = infoByPatientId.get(item.patientId);
           const roomBed = info?.roomBed ?? "";
@@ -198,14 +192,10 @@ export function IVTimerPanel() {
                 />
               </div>
 
-              {/* 4행: 잔여 시간 — 모바일은 "경과/총" 이지만 웹은 잔여만으로 충분 (사용자 멘탈 모델 일치) */}
-              <span
-                className={cn("text-body-xs font-medium leading-none", textToneClass)}
-              >
+              {/* 4행: 잔여 시간 — 종료시각과 동일하게 차분한 톤. 사용자 안전 강조는 게이지 색 + 1행 종료시각이 담당. */}
+              <span className="text-body-xs font-medium text-content-tertiary leading-none">
                 남은 시간{" "}
-                <span className="font-mono font-bold">
-                  {formatDuration(remainingMs)}
-                </span>
+                <span className="font-mono">{formatDuration(remainingMs)}</span>
               </span>
             </PanelCard>
           );
