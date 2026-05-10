@@ -285,7 +285,7 @@ function PatientItem({
         onClick={onClick}
         className="flex flex-col gap-1 min-w-0 flex-1 px-4 py-2.5 text-left"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="relative inline-block shrink-0">
             <span
               className={cn(
@@ -304,9 +304,30 @@ function PatientItem({
               />
             )}
           </div>
+          {/* 이름 옆 호실-침대 칩 — EMR 헤더 buildHeaderFromApi 와 동일한 "{roomName-호}-{bedName}" 패턴 */}
+          {(() => {
+            const roomBed = [
+              patient.roomName.replace(/호$/, ""),
+              patient.bedName,
+            ]
+              .filter(Boolean)
+              .join("-");
+            return roomBed ? (
+              <span
+                className={cn(
+                  "px-1.5 py-0.5 rounded text-[11px] font-bold leading-none shrink-0",
+                  isActive
+                    ? "bg-brand-primary text-white"
+                    : "bg-brand-surface text-brand-primary",
+                )}
+              >
+                {roomBed}
+              </span>
+            ) : null;
+          })()}
           <div
             className={cn(
-              "flex items-center gap-1 text-[13px] font-mono shrink-0",
+              "flex items-center gap-1 text-[13px] font-mono shrink-0 ml-auto",
               isActive
                 ? "text-sub-primary/70 font-bold"
                 : "text-content-muted",
