@@ -5,12 +5,14 @@ import com.happynurse.data.remote.model.AppProfileResponse
 import com.happynurse.data.remote.model.NursingNoteDto
 import com.happynurse.data.remote.model.OrderDto
 import com.happynurse.data.remote.model.PatientDetailDto
+import com.happynurse.data.remote.model.SttReminderListItemResponse
 import com.happynurse.data.remote.model.WardPatientDto
 import com.happynurse.domain.model.Note
 import com.happynurse.domain.model.NurseProfile
 import com.happynurse.domain.model.Order
 import com.happynurse.domain.model.OrderKind
 import com.happynurse.domain.model.Patient
+import com.happynurse.domain.model.WatchAlarm
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -116,6 +118,13 @@ fun NursingNoteDto.toDomain(): Note {
         editable = editable,
     )
 }
+
+fun SttReminderListItemResponse.toDomain(): WatchAlarm = WatchAlarm(
+    sttReminderId = sttReminderId,
+    contentSummary = contentSummary.orEmpty(),
+    fireAtEpochMillis = fireAtEpochMillis,
+    sttText = sttText.orEmpty(),
+)
 
 fun OrderDto.toDomain(): Order {
     val kind = when (orderType) {

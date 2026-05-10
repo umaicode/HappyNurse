@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,11 +19,11 @@ import com.happynurse.presentation.components.HnTab
 import com.happynurse.presentation.components.IVTimerLayout
 import com.happynurse.presentation.components.NotificationsSheet
 import com.happynurse.presentation.components.PatientLayout
-import com.happynurse.presentation.screens.alarms.AlarmsScreen
-import com.happynurse.presentation.screens.alarms.AlarmsViewModel
 import com.happynurse.presentation.screens.handoff.HandoffScreen
 import com.happynurse.presentation.screens.mypage.MyPageScreen
 import com.happynurse.presentation.screens.patients.PatientsScreen
+import com.happynurse.presentation.screens.tasks.TasksScreen
+import com.happynurse.presentation.screens.tasks.TasksViewModel
 import com.happynurse.presentation.theme.HnColors
 
 @Composable
@@ -34,16 +33,15 @@ fun MainScaffold(
 ) {
     var tab by remember { mutableStateOf(HnTab.PATIENTS) }
     var notifOpen by remember { mutableStateOf(false) }
-    // AlarmsViewModel 은 같은 NavBackStackEntry scope — AlarmsScreen 과 instance 공유
-    val alarmsViewModel: AlarmsViewModel = hiltViewModel()
-    val notifs by alarmsViewModel.notifs.collectAsStateWithLifecycle()
+    // TasksViewModel 은 같은 NavBackStackEntry scope — TasksScreen 과 instance 공유
+    val tasksViewModel: TasksViewModel = hiltViewModel()
+    val notifs by tasksViewModel.notifs.collectAsStateWithLifecycle()
     // 종 아이콘 배지 = 24시간 이내 알림 개수
     val upcoming = notifs.count { it.minutesAgo in 0..1440 }
     // 탭 전환 시마다 refresh (담당환자 변경 후 다른 탭 → 벨 카운트 / 시트 자동 갱신)
-    LaunchedEffect(tab) { alarmsViewModel.refreshAlarms() }
-    // 벨 클릭 시 한 번 더 refresh — 같은 탭에 머물러 있는 동안 변경된 경우 대비
+    LaunchedEffect(tab) { tasksViewModel.refreshBellNotifs() }
     val openNotifications: () -> Unit = {
-        alarmsViewModel.refreshAlarms()
+        tasksViewModel.refreshBellNotifs()
         notifOpen = true
     }
 
@@ -57,15 +55,18 @@ fun MainScaffold(
                         upcomingCount = upcoming,
                         layout = PatientLayout.CARD,
                     )
-                    HnTab.ALARMS -> AlarmsScreen(
+                    HnTab.TASKS -> TasksScreen(
                         onOpenNotifications = openNotifications,
                         upcomingCount = upcoming,
+                        onOpenPatient = onOpenPatient,
                         ivLayout = IVTimerLayout.BAR,
                     )
                     HnTab.HANDOFF -> HandoffScreen()
                     HnTab.ME -> MyPageScreen(
                         onLogout = onLogout,
                         onOpenPatient = onOpenPatient,
+                        onOpenNotifications = openNotifications,
+                        upcomingCount = upcoming,
                     )
                 }
             }

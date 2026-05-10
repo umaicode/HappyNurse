@@ -532,8 +532,8 @@ private fun NoteRow(n: Note) {
                 if (validTags.isNotEmpty()) {
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         validTags.forEach { t ->
-                            if (t == "투약") TagChip("투약", fg = HnColors.Info, bg = HnColors.TagInjBg)
-                            else TagChip("음성", fg = HnColors.Purple, bg = HnColors.TagFluidBg)
+                            if (t == "투약") TagChip("투약", fg = HnColors.TagInjFg, bg = HnColors.TagInjBg)
+                            else TagChip("음성", fg = HnColors.TagFluidFg, bg = HnColors.TagFluidBg)
                         }
                     }
                     Spacer(Modifier.height(6.dp))
@@ -569,12 +569,12 @@ private fun OrderDateHeader(date: String, count: Int) {
 @Composable
 private fun OrderRow(o: Order) {
     val (label, fg, bg) = when (o.kind) {
-        OrderKind.INJ   -> Triple("투약", HnColors.Info,          HnColors.TagInjBg)
-        OrderKind.FLUID -> Triple("수액", HnColors.Purple,        HnColors.TagFluidBg)
-        OrderKind.ORDER -> Triple("지시", HnColors.TextSecondary, HnColors.TagOrderBg)
-        OrderKind.LIS   -> Triple("LIS",  HnColors.Warning,       HnColors.TagLisBg)
-        OrderKind.IMG   -> Triple("영상", HnColors.Cyan,          HnColors.TagImgBg)
-        OrderKind.PILL  -> Triple("알약", HnColors.Success,       HnColors.TagPillBg)
+        OrderKind.INJ   -> Triple("투약", HnColors.TagInjFg,   HnColors.TagInjBg)
+        OrderKind.FLUID -> Triple("수액", HnColors.TagFluidFg, HnColors.TagFluidBg)
+        OrderKind.ORDER -> Triple("지시", HnColors.TagOrderFg, HnColors.TagOrderBg)
+        OrderKind.LIS   -> Triple("LIS",  HnColors.TagLisFg,   HnColors.TagLisBg)
+        OrderKind.IMG   -> Triple("영상", HnColors.TagImgFg,   HnColors.TagImgBg)
+        OrderKind.PILL  -> Triple("알약", HnColors.TagPillFg,  HnColors.TagPillBg)
     }
     Row(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.width(56.dp).padding(top = 12.dp)) {
@@ -612,7 +612,7 @@ private fun OrderCard(
             }
             if (o.note.isNotBlank()) {
                 Spacer(Modifier.height(8.dp))
-                Text("참고: ${o.note}", fontSize = 16.sp, color = HnColors.TextSecondary)
+                Text(o.note, fontSize = 16.sp, color = HnColors.TextSecondary)
             }
         }
     }

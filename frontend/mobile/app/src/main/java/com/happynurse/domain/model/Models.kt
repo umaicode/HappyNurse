@@ -1,4 +1,4 @@
-// 도메인 모델 — 환자/간호일지/오더/프로필 + 알람/수액/알림/인계 (알람 이하는 SampleData)
+// 도메인 모델 — 환자/간호일지/오더/프로필 + 수액타이머/워치알람/알림함
 package com.happynurse.domain.model
 
 data class NfcPatientInfo(
@@ -82,18 +82,6 @@ data class NurseProfile(
     val organizationName: String,
 )
 
-// ⚠️ SampleData — 백엔드 API 미구현 (SampleData.nurseAlarms)
-data class NurseAlarm(
-    val id: String,
-    val patient: String,
-    val room: String,
-    val date: String,
-    val time: String,
-    val text: String,
-    val createdTime: String,
-)
-
-// ⚠️ SampleData — 백엔드 API 미구현 (SampleData.ivTimers)
 data class IVTimer(
     val id: String,
     val patientId: Long = -1L,
@@ -108,10 +96,8 @@ data class IVTimer(
     val currentRateMlPerHr: Double? = null,  // 서버 slim 응답에서 받음 — gtt 환산용
 )
 
-// ⚠️ SampleData — 백엔드 API 미구현 (SampleData.notifications)
 enum class NotifCategory { FLUID, WATCH, REQUEST }
 
-// ⚠️ SampleData — 백엔드 API 미구현 (SampleData.notifications)
 data class Notif(
     val id: String,
     val category: NotifCategory,
@@ -124,17 +110,23 @@ data class Notif(
     val upcoming: Boolean,
 )
 
-// ⚠️ SampleData — 백엔드 API 미구현 (SampleData.handoffs)
-data class HandoffItem(
-    val id: String,
-    val patient: String,
-    val room: String,
-    val tag: String,
-    val note: String,
-    val aiSummary: List<String>,
-    val warnings: String,
-    val checklist: List<HandoffCheck>,
+// 업무 페이지 워치알람 탭 — GET /reminders/stt 응답
+data class WatchAlarm(
+    val sttReminderId: Long,
+    val contentSummary: String,
+    val fireAtEpochMillis: Long?,
+    val sttText: String,
 )
 
-// ⚠️ SampleData — 백엔드 API 미구현 (SampleData.handoffs)
-data class HandoffCheck(val text: String, val done: Boolean)
+// 업무 페이지 의사오더변경 탭 placeholder — 백엔드 변경 API 추가 시 사용
+data class DoctorOrderChange(
+    val medicationOrderId: Long,
+    val patientId: Long,
+    val encounterId: Long,
+    val patientName: String,
+    val room: String,
+    val bed: String,
+    val orderKind: OrderKind,
+    val orderName: String,
+    val changedAtIso: String,
+)

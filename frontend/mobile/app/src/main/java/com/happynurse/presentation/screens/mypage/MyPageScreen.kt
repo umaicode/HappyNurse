@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.happynurse.presentation.components.HnCard
+import com.happynurse.presentation.components.NotifBell
 import com.happynurse.presentation.components.PageHeader
 import com.happynurse.presentation.components.PatientCard
 import com.happynurse.presentation.components.PatientLayout
@@ -41,6 +42,8 @@ import com.happynurse.presentation.theme.HnColors
 fun MyPageScreen(
     onLogout: () -> Unit,
     onOpenPatient: (String) -> Unit,
+    onOpenNotifications: () -> Unit,
+    upcomingCount: Int,
     vm: MyPageViewModel = hiltViewModel(),
 ) {
     val profile by vm.profile.collectAsStateWithLifecycle()
@@ -48,7 +51,10 @@ fun MyPageScreen(
     val myName = profile?.name ?: ""
 
     Column(Modifier.fillMaxWidth()) {
-        PageHeader(title = "마이페이지")
+        PageHeader(
+            title = "마이페이지",
+            right = { NotifBell(unreadCount = upcomingCount, onClick = onOpenNotifications) },
+        )
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(14.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 4.dp),
