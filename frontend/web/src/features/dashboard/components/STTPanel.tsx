@@ -20,6 +20,7 @@ import {
   type OrderType,
 } from "@/features/dashboard/types/order";
 import { useOrders } from "../hooks/useOrders";
+import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
 import { formatMonthDayHHmm } from "@/lib/time";
 
 type STTPanelProps = {
@@ -37,12 +38,22 @@ const ORDER_TYPE_OPTIONS: OrderType[] = [
 
 export function STTPanel({ encounterId }: STTPanelProps) {
   const { data, isPending, isError } = useOrders(encounterId);
+  const { data: wardPatients } = useWardPatients();
 
   // null = 전체. 단일 선택 — 사이드바 폭 한정으로 multi 보다 단일이 깔끔.
   const [filterType, setFilterType] = useState<OrderType | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
 
   const patientName = data?.patientName ?? "";
+  // encounterId → 호실-침대 ("{roomName-호}-{bedName}") — EMR 헤더와 동일 패턴.
+  const roomBed = useMemo(() => {
+    if (encounterId === null) return "";
+    const match = wardPatients?.find((patient) => patient.encounterId === encounterId);
+    if (!match) return "";
+    return [match.roomName.replace(/호$/, ""), match.bedName]
+      .filter(Boolean)
+      .join("-");
+  }, [encounterId, wardPatients]);
 
   const filteredOrders = useMemo(() => {
     const orders = data?.orders ?? [];
@@ -179,9 +190,16 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                 </p>
 
                 {patientName && (
-                  <span className="text-body-sm font-bold text-content-primary leading-none truncate">
-                    {patientName}
-                  </span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-body-sm font-bold text-content-primary leading-none truncate">
+                      {patientName}
+                    </span>
+                    {roomBed && (
+                      <span className="px-1.5 py-0.5 rounded bg-brand-surface text-brand-primary text-[11px] font-bold leading-none shrink-0">
+                        {roomBed}
+                      </span>
+                    )}
+                  </div>
                 )}
 
                 {/* Info Grid */}
