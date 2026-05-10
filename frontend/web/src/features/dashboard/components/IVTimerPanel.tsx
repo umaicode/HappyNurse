@@ -178,9 +178,10 @@ export function IVTimerPanel() {
                     </span>
                   )}
                 </div>
+                {/* STTPanel/PatientAlerts 카드의 시간 표시와 동일한 폰트/크기 톤. 색만 잔여시간/진행률에 따라 분기. */}
                 <span
                   className={cn(
-                    "font-mono font-bold text-body-sm shrink-0 leading-none",
+                    "text-body-xs font-medium shrink-0 leading-none",
                     textToneClass,
                   )}
                 >
