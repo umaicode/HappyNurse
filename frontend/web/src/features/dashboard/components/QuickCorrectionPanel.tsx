@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, RotateCcw } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Popover,
   PopoverContent,
@@ -16,14 +17,25 @@ import type {
 const correctionKey = (correction: CorrectionItem) =>
   `${correction.start}-${correction.end}-${correction.original}`;
 
+// 한 칩에 대해 어떤 후보가 적용됐는지(또는 원본 유지) 추적. 다시 누르면 원본으로 undo 가능.
+type AppliedState = {
+  // 현재 본문에 들어간 단어 (원본 유지면 original 과 동일)
+  currentWord: string;
+  // 사용자 마지막으로 선택한 type
+  type: "exact" | "fuzzy" | "manual" | "original";
+};
+
 /**
  * STT 행 수정 모드 폼 아래에 띄우는 퀵수정 패널.
  *
  * - 마운트 시 1회 analyzeCorrections 호출 (수정 모드 진입 = 마운트).
  * - 응답의 corrections 를 start 오름차순으로 정렬해 칩 N개 표시.
  * - 칩 클릭 → Popover 로 후보 메뉴. 후보 선택 → 본문 정확 치환 + applyCorrection 피드백 저장.
+ * - 한 번 적용한 칩도 목록에 그대로 남는다 (사라지지 않음). 다시 클릭해 다른 후보 또는 원본으로 되돌릴 수 있다 (undo).
  *
  * 본문 갱신은 부모(NoteRow) 의 draftContent state 를 onApply 콜백으로 위임 (slice + replace + slice).
+ * 본문이 바뀌면 (start, end) offset 이 어긋날 수 있어 하이라이트는 시각적으로만 정확하지 않을 수 있다.
+ * 그러나 칩의 origin 위치 정보는 분석 응답 시점 기준 그대로 유지된다.
  */
 export function QuickCorrectionPanel({
   nursingRecordId,
@@ -47,16 +59,16 @@ export function QuickCorrectionPanel({
     true,
   );
   const applyMutation = useApplyCorrection();
-  // 한 번 처리된(적용 또는 원본 유지) 칩은 화면에서 제거 — 같은 위치를 다시 누를 일 없음.
-  const [resolvedKeys, setResolvedKeys] = useState<Set<string>>(() => new Set());
+  // 칩별 마지막 선택 상태. 칩이 사라지지 않고 적용 표시만 바뀐다.
+  const [appliedByKey, setAppliedByKey] = useState<Map<string, AppliedState>>(
+    () => new Map(),
+  );
 
-  // 본문 등장 순서 (사용자 결정) + 이미 처리된 항목 제외.
+  // 본문 등장 순서 (사용자 결정) — 적용 여부와 무관하게 분석된 모든 칩을 유지.
   const sortedCorrections = useMemo<CorrectionItem[]>(
     () =>
-      [...(data?.corrections ?? [])]
-        .filter((correction) => !resolvedKeys.has(correctionKey(correction)))
-        .sort((a, b) => a.start - b.start),
-    [data, resolvedKeys],
+      [...(data?.corrections ?? [])].sort((a, b) => a.start - b.start),
+    [data],
   );
 
   if (isPending) {
@@ -78,55 +90,89 @@ export function QuickCorrectionPanel({
         <Sparkles className="size-3" />
         <span>퀵수정 후보 ({sortedCorrections.length})</span>
       </div>
-      {sortedCorrections.map((correction) => (
-        <CorrectionChip
-          key={correctionKey(correction)}
-          correction={correction}
-          onSelectCandidate={(candidate) => {
-            const key = correctionKey(correction);
-            // "원본 유지" 는 본문/피드백 모두 noop — 칩만 사라진다 (사용자가 명시적으로 "안 바꿈" 선택).
-            if (candidate.type !== "original") {
+      {sortedCorrections.map((correction) => {
+        const key = correctionKey(correction);
+        const applied = appliedByKey.get(key);
+        return (
+          <CorrectionChip
+            key={key}
+            correction={correction}
+            applied={applied}
+            onSelectCandidate={(candidate) => {
+              // 현재 본문에 있는 단어 (적용된 단어 또는 원본)
+              const currentWord = applied?.currentWord ?? correction.original;
+              if (candidate.word === currentWord) {
+                // 같은 후보 재선택은 noop.
+                return;
+              }
+              // 본문 갱신 — 다른 칩의 적용으로 본문 길이가 바뀌었더라도 currentWord 기준 첫 위치를 잡는 책임은 부모에 위임.
+              // 여기선 분석 시점의 (start, end) 와 currentWord 를 같이 넘긴다 (부모가 currentWord 로 치환 후 새 word 삽입).
               onApply(
                 correction.start,
-                correction.end,
+                correction.start + currentWord.length,
                 candidate.word,
-                correction.original,
-                candidate.type,
+                currentWord,
+                candidate.type === "original" ? "manual" : candidate.type,
               );
-              applyMutation.mutate({
-                nursing_record_id: nursingRecordId,
-                original_word: correction.original,
-                replaced_word: candidate.word,
-                correction_type: candidate.type,
+              if (candidate.type !== "original") {
+                applyMutation.mutate({
+                  nursing_record_id: nursingRecordId,
+                  original_word: correction.original,
+                  replaced_word: candidate.word,
+                  correction_type: candidate.type,
+                });
+              }
+              setAppliedByKey((previous) => {
+                const next = new Map(previous);
+                next.set(key, {
+                  currentWord: candidate.word,
+                  type: candidate.type,
+                });
+                return next;
               });
-            }
-            setResolvedKeys((previous) => {
-              const next = new Set(previous);
-              next.add(key);
-              return next;
-            });
-          }}
-        />
-      ))}
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
 
 function CorrectionChip({
   correction,
+  applied,
   onSelectCandidate,
 }: {
   correction: CorrectionItem;
+  applied: AppliedState | undefined;
   onSelectCandidate: (candidate: CorrectionCandidate) => void;
 }) {
+  // 칩 라벨: 적용된 단어가 있으면 그걸 표시, 없으면 원본. 본문에 무엇이 들어가 있는지가 사용자 멘탈모델에 가깝다.
+  const displayWord = applied?.currentWord ?? correction.original;
+  const isModified =
+    applied !== undefined &&
+    applied.type !== "original" &&
+    applied.currentWord !== correction.original;
+
   return (
     <Popover>
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="px-2 py-0.5 rounded-full border border-brand-primary/30 bg-brand-surface text-brand-primary text-body-micro font-bold hover:bg-brand-primary hover:text-white transition-colors"
+          title={
+            isModified
+              ? `원본: ${correction.original} → ${applied!.currentWord}`
+              : correction.original
+          }
+          className={cn(
+            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-body-micro font-bold transition-colors",
+            isModified
+              ? "border-brand-primary bg-brand-primary text-white hover:bg-brand-hover"
+              : "border-brand-primary/30 bg-brand-surface text-brand-primary hover:bg-brand-primary hover:text-white",
+          )}
         >
-          {correction.original}
+          {isModified && <RotateCcw className="size-2.5" />}
+          {displayWord}
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -135,27 +181,44 @@ function CorrectionChip({
         className="w-auto min-w-[140px] p-1"
       >
         <div className="flex flex-col">
-          {correction.candidates.map((candidate, index) => (
-            <button
-              key={`${candidate.word}-${index}`}
-              type="button"
-              onClick={() => onSelectCandidate(candidate)}
-              className="w-full text-left px-2.5 py-1.5 rounded text-body-sm hover:bg-brand-surface transition-colors flex items-center justify-between gap-2"
-            >
-              <span
-                className={
-                  candidate.type === "original"
-                    ? "text-content-tertiary"
-                    : "text-content-primary font-medium"
-                }
+          {correction.candidates.map((candidate, index) => {
+            const isCurrent =
+              applied?.currentWord === candidate.word ||
+              (applied === undefined && candidate.type === "original");
+            return (
+              <button
+                key={`${candidate.word}-${index}`}
+                type="button"
+                onClick={() => onSelectCandidate(candidate)}
+                className={cn(
+                  "w-full text-left px-2.5 py-1.5 rounded text-body-sm hover:bg-brand-surface transition-colors flex items-center justify-between gap-2",
+                  isCurrent && "bg-brand-surface",
+                )}
               >
-                {candidate.word}
-              </span>
-              {candidate.type === "original" && (
-                <span className="text-body-micro text-content-muted">원본</span>
-              )}
-            </button>
-          ))}
+                <span
+                  className={
+                    candidate.type === "original"
+                      ? "text-content-tertiary"
+                      : "text-content-primary font-medium"
+                  }
+                >
+                  {candidate.word}
+                </span>
+                <span className="flex items-center gap-1.5 shrink-0">
+                  {isCurrent && (
+                    <span className="text-body-micro font-bold text-brand-primary">
+                      현재
+                    </span>
+                  )}
+                  {candidate.type === "original" && (
+                    <span className="text-body-micro text-content-muted">
+                      원본
+                    </span>
+                  )}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </PopoverContent>
     </Popover>
