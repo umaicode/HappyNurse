@@ -23,7 +23,19 @@ class STTPipeline:
             }
 
         print("\n=== 2단계: 형태소 분석 ===")
-        candidates = self.morpheme.extract_medical_candidates(original_text)
+        morpheme_candidates = self.morpheme.extract_medical_candidates(original_text)
+
+        # 사전 매칭이 형태소 후보보다 정확하므로 dict hit 을 먼저 둠.
+        # 형태소 후보가 사전 hit 범위 안에 포함되거나 같은 시작점이면 버림
+        # (예: Kiwi 가 "오메프라졸졸"을 "오메프라졸"+"졸"로 분해해 dict hit 을 가리는 케이스 방지).
+        dictionary_hits = self.mapper.find_dictionary_matches(original_text)
+        candidates = list(dictionary_hits)
+        hit_ranges = [(h["start"], h["end"]) for h in dictionary_hits]
+        for cand in morpheme_candidates:
+            covered = any(s <= cand["start"] and cand["end"] <= e for s, e in hit_ranges)
+            if not covered:
+                candidates.append(cand)
+        print(f"사전 hit {len(dictionary_hits)}개, 형태소 후보 {len(morpheme_candidates)}개, 병합 {len(candidates)}개")
 
         print("\n=== 3단계: 용어 매핑 ===")
         mapping_result = self.mapper.process_text(original_text, candidates)

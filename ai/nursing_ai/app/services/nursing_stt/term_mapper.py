@@ -1,6 +1,21 @@
+import re
+
 from rapidfuzz import fuzz, process
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+
+UNIT_PATTERNS = [
+    (re.compile(r"(\d+)\s*밀리그램"), r"\1mg"),
+    (re.compile(r"(\d+)\s*그램(?!당)"), r"\1g"),
+    (re.compile(r"(\d+)\s*킬로그램"), r"\1kg"),
+    (re.compile(r"(\d+)\s*마이크로그램"), r"\1mcg"),
+    (re.compile(r"(\d+)\s*밀리리터"), r"\1ml"),
+    (re.compile(r"(\d+)\s*시시"), r"\1cc"),
+    (re.compile(r"(\d+)\s*리터"), r"\1L"),
+    (re.compile(r"(\d+)\s*(?:유니트|유닛)"), r"\1 unit"),
+    (re.compile(r"(\d+)\s*퍼센트"), r"\1%"),
+]
+
 
 class TermMapper:
     def __init__(self, db: Session = None):
@@ -156,10 +171,18 @@ class TermMapper:
                     })
                     print(f"  퍼지 매칭 (후보 제시): {word} → {fuzzy_results}")
 
+        corrected_text = self.normalize_units(corrected_text)
+
         return {
             "corrected_text": corrected_text,
             "corrections": corrections
         }
+
+    def normalize_units(self, text: str) -> str:
+        """숫자 + 한글 단위 표현을 표준 단위로 정규화 (예: '40밀리그램' → '40mg')."""
+        for pattern, replacement in UNIT_PATTERNS:
+            text = pattern.sub(replacement, text)
+        return text
 
     def find_dictionary_matches(self, text: str) -> list:
         """텍스트에서 매핑 사전에 있는 오인식 단어를 직접 검색"""
