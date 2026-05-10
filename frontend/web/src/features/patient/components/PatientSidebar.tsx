@@ -212,7 +212,7 @@ export function PatientSidebar({
         <div className="flex items-center justify-between gap-3 p-2.5 bg-surface-base rounded-xl border border-border-subtle/50 transition-all hover:border-brand-primary/20">
           <div className="flex flex-col min-w-0 pl-1">
             <span className="text-[14px] font-black text-content-primary truncate leading-tight">
-              {user?.name ?? ""}
+              {user?.name ? `${user.name} 간호사` : ""}
             </span>
             <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider mt-0.5">
               {user?.wardName ?? ""}

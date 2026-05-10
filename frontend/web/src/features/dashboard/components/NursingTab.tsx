@@ -702,9 +702,7 @@ function NoteRow({
 
       {/* 기록자 */}
       <div className="text-body-sm text-content-tertiary pt-1.5 truncate h-full border-r border-border-base/50 pr-4 flex items-center justify-center">
-        <span className="truncate font-bold">
-          {note.authorName ? `${note.authorName} 간호사` : ""}
-        </span>
+        <span className="truncate font-bold">{note.authorName}</span>
       </div>
 
       {/* 동작 — 확정은 위, 수정/삭제는 아래 줄 */}
