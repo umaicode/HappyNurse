@@ -70,7 +70,14 @@ type RetryConfig = AxiosRequestConfig & { _retry?: boolean }
 // 인증을 "얻으려는" 엔드포인트 목록.
 // 이 요청들이 401 을 받으면 자격증명 자체의 실패라 refresh 로 살릴 수 없다.
 // 인터셉터에서 글로벌 처리하지 말고 호출 컴포넌트의 onError 가 안내하도록 그대로 reject.
-const AUTH_ENTRY_PATHS = ['/auth/login', '/auth/dev-login', '/auth/refresh']
+// /practitioners/me 도 세션 entry 성격 — 401 = 비로그인 상태. 자동 로그아웃 직후 race 로
+// me 가 401 떨어졌을 때 refresh 도미노로 번지는 것을 막는다 ((web)/layout 이 onError 에서 /login 처리).
+const AUTH_ENTRY_PATHS = [
+  '/auth/login',
+  '/auth/dev-login',
+  '/auth/refresh',
+  '/practitioners/me',
+]
 
 const isAuthEntryRequest = (url: string | undefined) =>
   !!url && AUTH_ENTRY_PATHS.some((path) => url.includes(path))

@@ -20,7 +20,7 @@ export function Modal({ isOpen, onClose, children }: Props) {
     >
       <div
         className="bg-white rounded-lg shadow-lg p-6 min-w-80"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         {children}
       </div>

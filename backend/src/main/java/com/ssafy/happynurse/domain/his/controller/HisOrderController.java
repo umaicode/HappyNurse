@@ -55,7 +55,7 @@ public class HisOrderController {
     }
 
     @GetMapping("/encounters/{encounterId}/orders")
-    public ResponseEntity<ApiResponse<List<HisOrderItemResponse>>> getOrders(
+    public ResponseEntity<ApiResponse<List<HisOrderItemResponse>>> getOrdersByEncounter(
             @PathVariable Long encounterId) {
         return ResponseEntity.ok(
                 ApiResponse.ok("의사 오더 목록 조회 성공", hisOrderSimulatorService.getOrdersByEncounter(encounterId)));

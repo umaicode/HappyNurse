@@ -19,8 +19,30 @@ import {
   NOTE_TYPE_TONE,
   type MedicationItem,
   type NursingNoteItem,
+  type NursingRecordUpdateRequest,
 } from "../types/nursing-note";
+import type { NursingNoteMedicationEditRequest } from "../types/medication-administration";
 import { QuickCorrectionPanel } from "./QuickCorrectionPanel";
+
+// 행마다 mutation hook 을 만들면 N행 = 4N 개의 인스턴스가 되므로 부모에서 단일
+// 인스턴스를 운용하고 NoteRow 에 콜백 + pending\*Id 로 전달한다.
+type NoteRowCallbacks = {
+  onUpdateStt: (
+    nursingRecordId: number,
+    request: NursingRecordUpdateRequest,
+    options?: { onSuccess?: () => void },
+  ) => void;
+  onUpdateMedication: (
+    taggingId: string,
+    request: NursingNoteMedicationEditRequest,
+    options?: { onSuccess?: () => void },
+  ) => void;
+  onConfirm: (itemId: number | string) => void;
+  onDelete: (itemId: number | string) => void;
+  pendingConfirmId: number | string | null;
+  pendingDeleteId: number | string | null;
+  pendingUpdateId: number | string | null;
+};
 
 type NursingTabProps = {
   encounterId: number | null;
@@ -45,6 +67,40 @@ export function NursingTab({
   onFocusHandled,
 }: NursingTabProps) {
   const { data, isPending, isError } = useNursingNotes(encounterId, date);
+
+  // 단일 mutation 인스턴스 — 모든 행이 공유.
+  const updateNoteMutation = useUpdateNursingRecord(encounterId);
+  const updateMedicationMutation = useUpdateMedicationGroup(encounterId);
+  const confirmMutation = useConfirmNursingNoteItem(encounterId);
+  const deleteMutation = useDeleteNursingNoteItem(encounterId);
+
+  // mutation.variables 로 어떤 itemId 가 진행 중인지 식별 → 해당 행 버튼만 disabled.
+  const pendingConfirmId = confirmMutation.isPending
+    ? confirmMutation.variables ?? null
+    : null;
+  const pendingDeleteId = deleteMutation.isPending
+    ? deleteMutation.variables ?? null
+    : null;
+  const pendingUpdateId: number | string | null = updateNoteMutation.isPending
+    ? updateNoteMutation.variables?.nursingRecordId ?? null
+    : updateMedicationMutation.isPending
+      ? updateMedicationMutation.variables?.taggingId ?? null
+      : null;
+
+  const handleUpdateStt: NoteRowCallbacks["onUpdateStt"] = (
+    nursingRecordId,
+    request,
+    options,
+  ) => updateNoteMutation.mutate({ nursingRecordId, request }, options);
+  const handleUpdateMedication: NoteRowCallbacks["onUpdateMedication"] = (
+    taggingId,
+    request,
+    options,
+  ) => updateMedicationMutation.mutate({ taggingId, request }, options);
+  const handleConfirm = (itemId: number | string) =>
+    confirmMutation.mutate(itemId);
+  const handleDelete = (itemId: number | string) =>
+    deleteMutation.mutate(itemId);
 
   // 백엔드는 occurredAt desc 로 내려주지만, 화면은 시간 asc (오래된 위 / 최신 아래) 로 표시 후
   // 현재 시각 근처 카드를 가운데로 자동 스크롤한다 (PatientAlerts 와 동일 패턴).
@@ -149,8 +205,14 @@ export function NursingTab({
                       // isEditMode 토글 시 row 를 자연 remount 시켜 작성 중 draft state 도 같이 초기화 (사용자 의도).
                       key={`${key}-${isEditMode ? "edit" : "view"}`}
                       note={note}
-                      encounterId={encounterId}
                       isEditMode={isEditMode}
+                      onUpdateStt={handleUpdateStt}
+                      onUpdateMedication={handleUpdateMedication}
+                      onConfirm={handleConfirm}
+                      onDelete={handleDelete}
+                      pendingConfirmId={pendingConfirmId}
+                      pendingDeleteId={pendingDeleteId}
+                      pendingUpdateId={pendingUpdateId}
                       rowRef={(element) => {
                         if (element) itemRefs.current.set(key, element);
                         else itemRefs.current.delete(key);
@@ -431,16 +493,21 @@ function InlineAddForm({
 
 function NoteRow({
   note,
-  encounterId,
   isEditMode,
+  onUpdateStt,
+  onUpdateMedication,
+  onConfirm,
+  onDelete,
+  pendingConfirmId,
+  pendingDeleteId,
+  pendingUpdateId,
   rowRef,
 }: {
   note: NursingNoteItem;
-  encounterId: number;
   // 편집 모드 (수정/삭제 노출 여부). false 면 draft 행의 "확정"만.
   isEditMode: boolean;
   rowRef?: (element: HTMLDivElement | null) => void;
-}) {
+} & NoteRowCallbacks) {
   const isMedication = note.type === "MEDICATION";
 
   // STT_NOTE: content + occurredAt / MEDICATION: dosageQuantity + confirmedAt
@@ -451,8 +518,9 @@ function NoteRow({
   const [medicationDrafts, setMedicationDrafts] = useState<
     Record<number, number>
   >({});
-  const updateNoteMutation = useUpdateNursingRecord(encounterId);
-  const updateMedicationMutation = useUpdateMedicationGroup(encounterId);
+
+  const ownItemId = note.type === "STT_NOTE" ? note.nursingRecordId : note.taggingId;
+  const isUpdating = pendingUpdateId === ownItemId;
 
   const startEdit = () => {
     setDraftTime(formatHHmm(note.occurredAt));
@@ -494,14 +562,12 @@ function NoteRow({
         cancelEdit();
         return;
       }
-      updateNoteMutation.mutate(
+      onUpdateStt(
+        note.nursingRecordId,
         {
-          nursingRecordId: note.nursingRecordId,
-          request: {
-            ...(contentChanged ? { content: trimmed } : {}),
-            // 백엔드 명세상 시간 필드는 confirmedAt — UI 의 시간 컬럼이 confirmedAt 에 매핑됨.
-            ...(newOccurredAt ? { confirmedAt: newOccurredAt } : {}),
-          },
+          ...(contentChanged ? { content: trimmed } : {}),
+          // 백엔드 명세상 시간 필드는 confirmedAt — UI 의 시간 컬럼이 confirmedAt 에 매핑됨.
+          ...(newOccurredAt ? { confirmedAt: newOccurredAt } : {}),
         },
         {
           onSuccess: () => {
@@ -529,13 +595,11 @@ function NoteRow({
       cancelEdit();
       return;
     }
-    updateMedicationMutation.mutate(
+    onUpdateMedication(
+      note.taggingId,
       {
-        taggingId: note.taggingId,
-        request: {
-          ...(changedMeds.length > 0 ? { medications: changedMeds } : {}),
-          ...(newOccurredAt ? { confirmedAt: newOccurredAt } : {}),
-        },
+        ...(changedMeds.length > 0 ? { medications: changedMeds } : {}),
+        ...(newOccurredAt ? { confirmedAt: newOccurredAt } : {}),
       },
       {
         onSuccess: () => {
@@ -605,10 +669,11 @@ function NoteRow({
             <QuickCorrectionPanel
               nursingRecordId={note.nursingRecordId}
               content={note.content}
-              onApply={(start, end, replaced) => {
-                // 본문 정확 치환 — 응답의 start/end 는 원본 content 인덱스 기준이라 note.content 에서 자른다.
-                // 사용자가 textarea 를 직접 편집한 후라면 인덱스가 어긋날 수 있어 안전 가드 추가.
-                const original = note.content.slice(start, end);
+              onApply={(start, end, replaced, original) => {
+                // 첫 적용 (draftContent === note.content) 은 원본 인덱스 기준 정확 치환.
+                // 그 이후 적용은 draftContent 가 이미 변경된 상태라 currentWord(original)을 첫 매치로 replace.
+                // currentWord 는 QuickCorrectionPanel 이 칩별 마지막 적용 단어를 추적하므로
+                // "사무실 → 3호실" 후 "3호실 → 사무실" 토글 시에도 정확히 동작한다.
                 const next =
                   draftContent === note.content
                     ? note.content.slice(0, start) +
@@ -651,17 +716,11 @@ function NoteRow({
                 size="sm"
                 className="h-7 px-2.5 rounded text-body-micro font-bold"
                 disabled={
-                  isMedication
-                    ? updateMedicationMutation.isPending
-                    : updateNoteMutation.isPending || !draftContent.trim()
+                  isUpdating || (!isMedication && !draftContent.trim())
                 }
                 onClick={submitEdit}
               >
-                {(isMedication
-                  ? updateMedicationMutation.isPending
-                  : updateNoteMutation.isPending)
-                  ? "저장 중..."
-                  : "완료"}
+                {isUpdating ? "저장 중..." : "완료"}
               </Button>
               <Button
                 variant="neutral"
@@ -675,16 +734,30 @@ function NoteRow({
           ) : isMedication ? (
             <MedicationActions
               note={note}
-              encounterId={encounterId}
               isEditMode={isEditMode}
               onStartEdit={startEdit}
+              onConfirm={onConfirm}
+              onDelete={onDelete}
+              isConfirming={pendingConfirmId === note.taggingId}
+              isDeleting={pendingDeleteId === note.taggingId}
             />
           ) : (
             <SttNoteActions
               note={note as Extract<NursingNoteItem, { type: "STT_NOTE" }>}
-              encounterId={encounterId}
               isEditMode={isEditMode}
               onStartEdit={startEdit}
+              onConfirm={onConfirm}
+              onDelete={onDelete}
+              isConfirming={
+                pendingConfirmId ===
+                (note as Extract<NursingNoteItem, { type: "STT_NOTE" }>)
+                  .nursingRecordId
+              }
+              isDeleting={
+                pendingDeleteId ===
+                (note as Extract<NursingNoteItem, { type: "STT_NOTE" }>)
+                  .nursingRecordId
+              }
             />
           )
         ) : (
@@ -697,21 +770,29 @@ function NoteRow({
 
 function SttNoteActions({
   note,
-  encounterId,
   isEditMode,
   onStartEdit,
+  onConfirm,
+  onDelete,
+  isConfirming,
+  isDeleting,
 }: {
   note: Extract<NursingNoteItem, { type: "STT_NOTE" }>;
-  encounterId: number;
   isEditMode: boolean;
   onStartEdit: () => void;
+  onConfirm: (itemId: number | string) => void;
+  onDelete: (itemId: number | string) => void;
+  isConfirming: boolean;
+  isDeleting: boolean;
 }) {
-  const confirmMutation = useConfirmNursingNoteItem(encounterId);
-  const deleteMutation = useDeleteNursingNoteItem(encounterId);
-
   return (
     <>
-      {note.status === "draft" && <ConfirmButton onClick={() => confirmMutation.mutate(note.nursingRecordId)} disabled={confirmMutation.isPending} />}
+      {note.status === "draft" && (
+        <ConfirmButton
+          onClick={() => onConfirm(note.nursingRecordId)}
+          disabled={isConfirming}
+        />
+      )}
       {isEditMode && (
         <div className="flex gap-1">
           <Button
@@ -726,10 +807,10 @@ function SttNoteActions({
             variant="neutral"
             size="sm"
             className="h-7 px-2.5 rounded text-body-micro font-bold"
-            disabled={deleteMutation.isPending}
+            disabled={isDeleting}
             onClick={() => {
               if (window.confirm("이 기록을 삭제하시겠습니까?")) {
-                deleteMutation.mutate(note.nursingRecordId);
+                onDelete(note.nursingRecordId);
               }
             }}
           >
@@ -743,21 +824,29 @@ function SttNoteActions({
 
 function MedicationActions({
   note,
-  encounterId,
   isEditMode,
   onStartEdit,
+  onConfirm,
+  onDelete,
+  isConfirming,
+  isDeleting,
 }: {
   note: Extract<NursingNoteItem, { type: "MEDICATION" }>;
-  encounterId: number;
   isEditMode: boolean;
   onStartEdit: () => void;
+  onConfirm: (itemId: number | string) => void;
+  onDelete: (itemId: number | string) => void;
+  isConfirming: boolean;
+  isDeleting: boolean;
 }) {
-  const confirmMutation = useConfirmNursingNoteItem(encounterId);
-  const deleteMutation = useDeleteNursingNoteItem(encounterId);
-
   return (
     <>
-      {note.status === "draft" && <ConfirmButton onClick={() => confirmMutation.mutate(note.taggingId)} disabled={confirmMutation.isPending} />}
+      {note.status === "draft" && (
+        <ConfirmButton
+          onClick={() => onConfirm(note.taggingId)}
+          disabled={isConfirming}
+        />
+      )}
       {isEditMode && (
         <div className="flex gap-1">
           <Button
@@ -772,10 +861,10 @@ function MedicationActions({
             variant="neutral"
             size="sm"
             className="h-7 px-2.5 rounded text-body-micro font-bold"
-            disabled={deleteMutation.isPending}
+            disabled={isDeleting}
             onClick={() => {
               if (window.confirm("이 투약 기록을 삭제하시겠습니까?")) {
-                deleteMutation.mutate(note.taggingId);
+                onDelete(note.taggingId);
               }
             }}
           >

@@ -49,8 +49,8 @@ export function AssignPatientModal({
 
   const filteredPatients = useMemo(() => {
     if (!normalizedQuery) return patients;
-    return patients.filter((p) =>
-      p.name.toLowerCase().includes(normalizedQuery),
+    return patients.filter((patient) =>
+      patient.name.toLowerCase().includes(normalizedQuery),
     );
   }, [patients, normalizedQuery]);
 
@@ -70,8 +70,8 @@ export function AssignPatientModal({
 
   const getRoomCheckedState = (roomPatients: WardPatient[]): RoomCheckedState => {
     if (roomPatients.length === 0) return false;
-    const selectedCount = roomPatients.filter((p) =>
-      selectedIds.has(p.encounterId),
+    const selectedCount = roomPatients.filter((patient) =>
+      selectedIds.has(patient.encounterId),
     ).length;
     if (selectedCount === 0) return false;
     if (selectedCount === roomPatients.length) return true;
@@ -81,13 +81,13 @@ export function AssignPatientModal({
   const toggleRoom = (roomPatients: WardPatient[]) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      const allSelected = roomPatients.every((p) =>
-        next.has(p.encounterId),
+      const allSelected = roomPatients.every((patient) =>
+        next.has(patient.encounterId),
       );
       if (allSelected) {
-        roomPatients.forEach((p) => next.delete(p.encounterId));
+        roomPatients.forEach((patient) => next.delete(patient.encounterId));
       } else {
-        roomPatients.forEach((p) => next.add(p.encounterId));
+        roomPatients.forEach((patient) => next.add(patient.encounterId));
       }
       return next;
     });
@@ -114,7 +114,7 @@ export function AssignPatientModal({
     >
       <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-hidden flex flex-col rounded-2xl p-0 border border-border-base bg-white shadow-2xl">
         <DialogHeader className="px-7 pt-7 pb-4 border-b border-border-subtle">
-          <DialogTitle className="text-2xl font-bold text-[var(--color-sub-primary)]">
+          <DialogTitle className="text-2xl font-bold text-sub-primary">
             담당 환자 설정
           </DialogTitle>
           <DialogDescription className="text-[14px] text-content-tertiary">
@@ -129,8 +129,8 @@ export function AssignPatientModal({
               type="text"
               placeholder="환자명 검색..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 bg-white border-border-subtle focus-visible:ring-1 focus-visible:ring-[var(--color-brand-primary)]"
+              onChange={(event) => setSearchQuery(event.target.value)}
+              className="pl-9 h-9 bg-white border-border-subtle focus-visible:ring-1 focus-visible:ring-brand-primary"
             />
           </div>
         </div>
@@ -150,7 +150,7 @@ export function AssignPatientModal({
                 <div key={roomName} className="flex flex-col">
                   <label
                     htmlFor={roomCheckboxId}
-                    className="flex items-center gap-2 px-2 py-1.5 border-b border-border-subtle mb-1 cursor-pointer select-none hover:bg-[var(--color-surface-hover)] rounded-md"
+                    className="flex items-center gap-2 px-2 py-1.5 border-b border-border-subtle mb-1 cursor-pointer select-none hover:bg-surface-hover rounded-md"
                   >
                     <span className="text-[13px] font-bold text-content-muted tracking-wider uppercase">
                       {roomName}
@@ -174,7 +174,7 @@ export function AssignPatientModal({
                         <label
                           key={patient.encounterId}
                           htmlFor={checkboxId}
-                          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md hover:bg-[var(--color-surface-hover)] transition-all cursor-pointer select-none"
+                          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md hover:bg-surface-hover transition-all cursor-pointer select-none"
                         >
                           <Checkbox
                             id={checkboxId}
