@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Sparkles, RotateCcw } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -86,8 +86,8 @@ export function QuickCorrectionPanel({
 
   return (
     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-      <div className="flex items-center gap-1 text-body-micro font-bold text-brand-primary">
-        <Sparkles className="size-3" />
+      <div className="flex items-center gap-1 text-[11px] font-medium text-content-tertiary">
+        <Sparkles className="size-3 text-brand-primary" />
         <span>퀵수정 후보 ({sortedCorrections.length})</span>
       </div>
       {sortedCorrections.map((correction) => {
@@ -165,14 +165,21 @@ function CorrectionChip({
               : correction.original
           }
           className={cn(
-            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-body-micro font-bold transition-colors",
+            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-medium transition-colors",
             isModified
-              ? "border-brand-primary bg-brand-primary text-white hover:bg-brand-hover"
+              ? "border-brand-primary border-1.5 bg-white text-brand-primary hover:bg-brand-surface"
               : "border-brand-primary/30 bg-brand-surface text-brand-primary hover:bg-brand-primary hover:text-white",
           )}
         >
-          {isModified && <RotateCcw className="size-2.5" />}
-          {displayWord}
+          {isModified && (
+            <span className="flex items-baseline gap-1 text-content-muted">
+              <span className="line-through">{correction.original}</span>
+              <span className="text-content-tertiary">→</span>
+            </span>
+          )}
+          <span className={cn(isModified && "font-semibold")}>
+            {displayWord}
+          </span>
         </button>
       </PopoverTrigger>
       <PopoverContent
