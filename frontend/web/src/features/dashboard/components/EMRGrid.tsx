@@ -12,6 +12,8 @@ import { format, addDays, subDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useAuthStore } from "@/features/auth/stores/auth";
 import { usePatientDetail } from "../hooks/usePatientDetail";
+import { useMonthNursingCounts } from "../hooks/useMonthNursingCounts";
+import { toIsoDate } from "@/lib/time";
 import type { PatientDetailResponse } from "../types/patient-detail";
 import {
   calculateAge,
@@ -125,8 +127,15 @@ export function EMRGrid({
 
   const [myRecordsOnly, setMyRecordsOnly] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  // 캘린더 popover 가 보고 있는 월 — 사용자가 prev/next 로 넘기면 갱신, 그 월의 카운트만 fetch.
+  const [calendarMonth, setCalendarMonth] = useState<Date>(selectedDate);
 
   const dateIso = useMemo(() => format(selectedDate, "yyyy-MM-dd"), [selectedDate]);
+  // 캘린더 셀에 일자별 간호기록 건수 표시. 모바일과 동일하게 28~31× 일자 호출 (캐시 공유로 NursingTab 진입 시 재사용).
+  const monthCounts = useMonthNursingCounts(
+    patientDetailQuery.data?.encounterId ?? null,
+    calendarMonth,
+  );
 
   // 헤더는 API 응답을 그대로 표시한다 (수정 불가).
   const patientInfo: PatientHeader = useMemo(
@@ -199,6 +208,8 @@ export function EMRGrid({
                   <Calendar
                     mode="single"
                     selected={selectedDate}
+                    month={calendarMonth}
+                    onMonthChange={setCalendarMonth}
                     onSelect={(date) => {
                       if (!date) return;
                       onChangeSelectedDate(date);
@@ -207,6 +218,34 @@ export function EMRGrid({
                     formatters={{
                       formatCaption: (date) =>
                         format(date, "yyyy년 M월", { locale: ko }),
+                    }}
+                    components={{
+                      DayButton: ({ day, modifiers, ...buttonProps }) => {
+                        const count = monthCounts.get(toIsoDate(day.date)) ?? 0;
+                        const isSelected = modifiers.selected ?? false;
+                        return (
+                          <button
+                            {...buttonProps}
+                            className="flex flex-col items-center justify-center size-9 p-0 font-normal hover:bg-accent rounded-md transition-colors data-[selected-single=true]:bg-brand-primary data-[selected-single=true]:text-white aria-selected:bg-brand-primary aria-selected:text-white"
+                          >
+                            <span className="text-body-xs leading-none">
+                              {day.date.getDate()}
+                            </span>
+                            <span
+                              className={cn(
+                                "text-[9px] font-bold leading-none mt-0.5 h-2.5",
+                                count > 0
+                                  ? isSelected
+                                    ? "text-white"
+                                    : "text-brand-primary"
+                                  : "opacity-0",
+                              )}
+                            >
+                              {count > 0 ? `${count}건` : "·"}
+                            </span>
+                          </button>
+                        );
+                      },
                     }}
                   />
                 </PopoverContent>
