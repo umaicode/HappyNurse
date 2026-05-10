@@ -178,13 +178,9 @@ export function IVTimerPanel() {
                     </span>
                   )}
                 </div>
-                {/* STTPanel/PatientAlerts 카드의 시간 표시와 동일한 폰트/크기 톤. 색만 잔여시간/진행률에 따라 분기. */}
-                <span
-                  className={cn(
-                    "text-body-xs font-medium shrink-0 leading-none",
-                    textToneClass,
-                  )}
-                >
+                {/* STTPanel/PatientAlerts 카드의 시간 표시와 동일 — text-body-xs font-medium text-content-tertiary.
+                    잔여시간/진행률 강조는 4행 잔여시간 텍스트 + 게이지 색이 담당. */}
+                <span className="text-body-xs font-medium text-content-tertiary shrink-0 leading-none">
                   종료 {endLabel}
                 </span>
               </div>
