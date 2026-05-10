@@ -75,6 +75,7 @@ fun IVTimerActiveScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val actionState by viewModel.actionState.collectAsStateWithLifecycle()
     val remainingSec by viewModel.remainingSec.collectAsStateWithLifecycle()
+    val patientLocation by viewModel.patientLocation.collectAsStateWithLifecycle()
 
     // 종료 성공 → 1.5s 후 자동 닫기
     LaunchedEffect(actionState) {
@@ -87,7 +88,7 @@ fun IVTimerActiveScreen(
     var showRateDialog by remember { mutableStateOf(false) }
     var showCompleteDialog by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize().background(HnColors.Bg)) {
+    Column(Modifier.fillMaxSize().background(Color(0xFFF5F5F5))) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(12.dp)) {
             Icon(
                 Icons.Outlined.Close, "닫기",
@@ -106,6 +107,7 @@ fun IVTimerActiveScreen(
                 tagUid = s.tagUid,
                 remainingSec = remainingSec,
                 actionState = actionState,
+                patientLocation = patientLocation,
                 onRequestRateChange = { showRateDialog = true },
                 onRequestComplete = { showCompleteDialog = true },
                 onConsumeActionError = viewModel::consumeActionError,
@@ -203,6 +205,7 @@ private fun LoadedBody(
     tagUid: String?,
     remainingSec: Long?,
     actionState: IvTimerActiveViewModel.ActionState,
+    patientLocation: Pair<String, String>?,
     onRequestRateChange: () -> Unit,
     onRequestComplete: () -> Unit,
     onConsumeActionError: () -> Unit,
@@ -285,7 +288,20 @@ private fun LoadedBody(
                 }
                 infusion.patientName?.let {
                     Spacer(Modifier.height(8.dp))
-                    Text("환자: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
+                    // 호실/침대: IvInfusionResponse 에는 없으므로 WardPatientListResponse 룩업값 사용
+                    val room = patientLocation?.first?.takeIf { s -> s.isNotBlank() }
+                    val bed = patientLocation?.second?.takeIf { s -> s.isNotBlank() }
+                    val roomBed = listOfNotNull(room, bed).joinToString("-")
+                    val patientLine = if (roomBed.isNotBlank()) "환자: $it · $roomBed" else "환자: $it"
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFF1F3F5))
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                    ) {
+                        Text(patientLine, fontSize = 12.sp, color = HnColors.TextSecondary)
+                    }
                 }
                 infusion.note?.let {
                     Spacer(Modifier.height(2.dp))

@@ -48,6 +48,11 @@ import com.happynurse.presentation.components.PageHeader
 import com.happynurse.presentation.components.PatientCard
 import com.happynurse.presentation.components.PatientLayout
 import com.happynurse.presentation.theme.HnColors
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 
 @Composable
 fun PatientsScreen(
@@ -68,7 +73,7 @@ fun PatientsScreen(
     Column(Modifier.fillMaxSize()) {
         PageHeader(
             title = "환자",
-            sub = "2026년 4월 30일 (목) · 데이 근무",
+            sub = buildHeaderSubtitle(),
             right = { NotifBell(unreadCount = upcomingCount, onClick = onOpenNotifications) },
         )
         TabRow(
@@ -117,6 +122,19 @@ fun PatientsScreen(
             },
         )
     }
+}
+
+private fun buildHeaderSubtitle(): String {
+    val today = LocalDate.now()
+    val dow = today.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN)
+    val dateLabel = today.format(DateTimeFormatter.ofPattern("yyyy년 M월 d일")) + " ($dow)"
+    return "$dateLabel · ${currentShiftLabel()} 근무"
+}
+
+internal fun currentShiftLabel(now: LocalTime = LocalTime.now()): String = when {
+    now >= LocalTime.of(8, 0) && now < LocalTime.of(16, 0) -> "데이"
+    now >= LocalTime.of(16, 0) -> "이브닝"
+    else -> "나이트"
 }
 
 @Composable
