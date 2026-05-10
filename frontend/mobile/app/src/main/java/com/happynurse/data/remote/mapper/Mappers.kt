@@ -30,10 +30,9 @@ private fun ageFromBirth(birthDate: String?): Int {
 
 private fun daysSince(periodStart: String?): Int {
     val start = runCatching { OffsetDateTime.parse(periodStart).toLocalDate() }.getOrNull()
-        ?: runCatching { LocalDate.parse(periodStart) }.getOrNull()
+        ?: runCatching { LocalDate.parse(periodStart?.take(10)) }.getOrNull()
         ?: return 0
-    return Period.between(start, LocalDate.now()).days.coerceAtLeast(0)
-        .takeIf { it > 0 } ?: java.time.temporal.ChronoUnit.DAYS.between(start, LocalDate.now()).toInt()
+    return java.time.temporal.ChronoUnit.DAYS.between(start, LocalDate.now()).toInt().coerceAtLeast(0)
 }
 
 fun AppProfileResponse.toDomain(): NurseProfile = NurseProfile(
@@ -132,6 +131,11 @@ fun OrderDto.toDomain(): Order {
     ).joinToString("").ifBlank { "-" }
     val freqStr = frequency?.let { "q${it}h" } ?: "-"
     val dateOnly = dateWritten?.take(10).orEmpty()
+    val timeOnly = run {
+        val ldt = runCatching { OffsetDateTime.parse(dateWritten).toLocalDateTime() }.getOrNull()
+            ?: runCatching { LocalDateTime.parse(dateWritten) }.getOrNull()
+        ldt?.format(DateTimeFormatter.ofPattern("HH:mm")).orEmpty()
+    }
     return Order(
         kind = kind,
         code = orderCode.orEmpty(),
@@ -143,6 +147,7 @@ fun OrderDto.toDomain(): Order {
         status = status.orEmpty(),
         note = remarks.orEmpty(),
         dateWritten = dateOnly,
+        timeWritten = timeOnly,
         medicationOrderId = medicationOrderId,
         prescriberId = prescriberId,
         prescriberName = prescriberName.orEmpty(),

@@ -34,6 +34,7 @@ import com.happynurse.presentation.components.HnCard
 import com.happynurse.presentation.components.PageHeader
 import com.happynurse.presentation.components.PatientCard
 import com.happynurse.presentation.components.PatientLayout
+import com.happynurse.presentation.screens.patients.currentShiftLabel
 import com.happynurse.presentation.theme.HnColors
 
 @Composable
@@ -56,30 +57,30 @@ fun MyPageScreen(
                 HnCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.Bottom) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     profile?.name ?: "-",
                                     fontSize = 22.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = HnColors.Text,
                                 )
-                                Spacer(Modifier.size(4.dp))
+                                Spacer(Modifier.size(6.dp))
                                 Text(
                                     "간호사",
-                                    fontSize = 14.sp,
-                                    color = HnColors.TextSecondary,
-                                    modifier = Modifier.padding(bottom = 3.dp),
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = HnColors.Text,
                                 )
                             }
                             Text(
                                 profile?.organizationName ?: "-",
-                                fontSize = 12.sp,
+                                fontSize = 16.sp,
                                 color = HnColors.TextSecondary,
                                 modifier = Modifier.padding(top = 2.dp),
                             )
                             Text(
-                                "${profile?.wardName ?: "-"} 병동",
-                                fontSize = 15.sp,
+                                "${profile?.wardName ?: "-"} · ${currentShiftLabel()} 근무",
+                                fontSize = 16.sp,
                                 color = HnColors.TextSecondary,
                             )
                         }

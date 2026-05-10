@@ -19,11 +19,11 @@ object HnColors {
 
     // Text
     val Text          = Color(0xFF1A1A1A)
-    val TextSecondary = Color(0xFF6B7280)
+    val TextSecondary = Color(0xFF464B50)
     val TextTertiary  = Color(0xFF9CA3AF)
 
     // Status
-    val Success       = Color(0xFF10B981)
+    val Success       = Color(0xFF0B6C4C)
     val Warning       = Color(0xFFF59E0B)
     val Danger        = Color(0xFFEF4444)
     val Info          = Color(0xFF3B82F6)

@@ -37,6 +37,7 @@ data class Order(
     val status: String,
     val note: String,
     val dateWritten: String = "",
+    val timeWritten: String = "",
     val medicationOrderId: Long = 0L,
     val prescriberId: Long = 0L,
     val prescriberName: String = "",
