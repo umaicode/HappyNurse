@@ -86,7 +86,7 @@ export function QuickCorrectionPanel({
 
   return (
     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-      <div className="flex items-center gap-1 text-body-micro font-medium text-content-tertiary">
+      <div className="flex items-center gap-1 text-[12px] leading-none font-medium text-content-tertiary">
         <Sparkles className="size-3 text-brand-primary" />
         <span>퀵수정 후보 ({sortedCorrections.length})</span>
       </div>
@@ -165,7 +165,7 @@ function CorrectionChip({
               : correction.original
           }
           className={cn(
-            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-body-micro font-medium transition-colors",
+            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[12px] leading-none font-medium transition-colors",
             isModified
               ? "border-brand-primary border-1.5 bg-white text-brand-primary hover:bg-brand-surface"
               : "border-brand-primary/30 bg-brand-surface text-brand-primary hover:bg-brand-primary hover:text-white",
