@@ -1,20 +1,11 @@
 'use client'
 
 import { useMemo } from "react";
-import {
-  Activity,
-  AlertCircle,
-  Bell,
-  ClipboardList,
-  Clock,
-  Droplet,
-  Info,
-  Loader2,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PanelCard } from "./PanelCard";
 import { useMyNotifications } from "../hooks/useNotifications";
+import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
 import {
   SOURCE_TYPE_LABEL,
   SOURCE_TYPE_TONE,
@@ -23,16 +14,24 @@ import {
 } from "../types/notification";
 import { formatRelativeTime } from "@/lib/time";
 
-const SOURCE_TYPE_ICON: Record<SourceType, LucideIcon> = {
-  self_report: Bell,
-  iv_alert: Droplet,
-  timer: Clock,
-  order_change: ClipboardList,
-  vital_alert: Activity,
-};
-
 export function PatientAlerts() {
   const { data, isPending, isError } = useMyNotifications();
+  const { data: wardPatients } = useWardPatients();
+
+  // patientId → 호실-침대 join — slim 알림 응답엔 호실 정보 없음.
+  const roomBedByPatientId = useMemo(() => {
+    const map = new Map<number, string>();
+    wardPatients?.forEach((patient) => {
+      const roomBed = [
+        patient.roomName.replace(/호$/, ""),
+        patient.bedName,
+      ]
+        .filter(Boolean)
+        .join("-");
+      if (roomBed) map.set(patient.patientId, roomBed);
+    });
+    return map;
+  }, [wardPatients]);
 
   // createdAt desc — 최신이 위. 정렬은 시간순 고정 (요구사항).
   const sorted = useMemo<NotificationListItem[]>(() => {
@@ -54,7 +53,15 @@ export function PatientAlerts() {
           <EmptyState>표시할 알림 없음</EmptyState>
         ) : (
           sorted.map((alert) => (
-            <NotificationCard key={alert.notificationId} alert={alert} />
+            <NotificationCard
+              key={alert.notificationId}
+              alert={alert}
+              roomBed={
+                alert.patientId !== null
+                  ? roomBedByPatientId.get(alert.patientId) ?? ""
+                  : ""
+              }
+            />
           ))
         )}
       </div>
@@ -62,39 +69,45 @@ export function PatientAlerts() {
   );
 }
 
-function NotificationCard({ alert }: { alert: NotificationListItem }) {
+function NotificationCard({
+  alert,
+  roomBed,
+}: {
+  alert: NotificationListItem;
+  roomBed: string;
+}) {
   const sourceType = alert.sourceType as SourceType;
-  const Icon =
-    sourceType in SOURCE_TYPE_ICON
-      ? SOURCE_TYPE_ICON[sourceType]
-      : AlertCircle;
   const label = SOURCE_TYPE_LABEL[sourceType] ?? alert.sourceType;
   const tone = SOURCE_TYPE_TONE[sourceType] ?? "text-content-tertiary";
 
   return (
     <PanelCard>
-      {/* 1행: 아이콘 + 라벨 (좌) / 상대시간 (우) — 색은 라벨/아이콘 글자색에만 */}
+      {/* 1행: 라벨 (좌) / 상대시간 (우) — 색은 라벨 글자색에만 */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <Icon className={cn("w-4 h-4 shrink-0", tone)} />
-          <span
-            className={cn(
-              "text-body-sm font-semibold tracking-tight shrink-0 leading-none",
-              tone,
-            )}
-          >
-            {label}
-          </span>
-        </div>
+        <span
+          className={cn(
+            "text-body-sm font-semibold tracking-tight shrink-0 leading-none",
+            tone,
+          )}
+        >
+          {label}
+        </span>
         <span className="text-body-xs font-medium text-content-tertiary shrink-0 leading-none">
           {formatRelativeTime(alert.createdAt)}
         </span>
       </div>
 
       {alert.patientName && (
-        <span className="text-body-sm font-bold text-content-primary truncate leading-tight">
-          {alert.patientName}
-        </span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-body-sm font-bold text-content-primary truncate leading-tight">
+            {alert.patientName}
+          </span>
+          {roomBed && (
+            <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
+              {roomBed}
+            </span>
+          )}
+        </div>
       )}
       {alert.body && (
         <p className="text-body-sm text-content-secondary leading-snug break-words">

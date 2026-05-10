@@ -52,6 +52,7 @@ function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  components: userComponents,
   ...props
 }: React.ComponentProps<typeof DayPicker>) {
   return (
@@ -101,6 +102,8 @@ function Calendar({
             <ChevronRight className={cn("size-4", className)} {...props} />
           ),
         MonthCaption: InlineMonthCaption,
+        // 사용자가 components 를 넘기면 기본 Chevron/MonthCaption 위에 merge.
+        ...(userComponents ?? {}),
       }}
       {...props}
     />

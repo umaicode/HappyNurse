@@ -35,7 +35,7 @@ export interface NotificationListResponse {
 
 // UI 라벨 매핑 — sourceType 별 한글 라벨/색상.
 export const SOURCE_TYPE_LABEL: Record<SourceType, string> = {
-  self_report: "환자 호출",
+  self_report: "환자 요청",
   iv_alert: "수액 타이머",
   timer: "타이머",
   order_change: "오더 변경",
