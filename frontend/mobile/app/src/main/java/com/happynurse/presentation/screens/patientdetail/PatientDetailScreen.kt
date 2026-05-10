@@ -2,7 +2,6 @@
 package com.happynurse.presentation.screens.patientdetail
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -108,7 +107,7 @@ fun PatientDetailScreen(
             Box {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { patientMenuOpen = true }.padding(vertical = 4.dp),
+                    modifier = Modifier.clickable { patientMenuOpen = true }.padding(vertical = 6.dp),
                 ) {
                     Text(p.name, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
                     Spacer(Modifier.size(8.dp))
@@ -133,7 +132,7 @@ fun PatientDetailScreen(
                     if (myPatients.isEmpty()) {
                         Box(
                             modifier = Modifier
-                                .width(260.dp)
+                                .width(160.dp)
                                 .padding(horizontal = 16.dp, vertical = 14.dp),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -209,7 +208,7 @@ fun PatientDetailScreen(
                         Row(modifier = Modifier.fillMaxWidth()) {
                             InfoCell("생년월일", formatDotDate(p.birthdate), modifier = Modifier.weight(1f))
                             Box(Modifier.width(1.dp).height(36.dp).background(HnColors.Border))
-                            InfoCell("주증상", p.chief, modifier = Modifier.weight(1f).padding(start = 12.dp))
+                            InfoCell("병명", p.diseaseName.ifBlank { "-" }, modifier = Modifier.weight(1f).padding(start = 12.dp))
                         }
                         Spacer(Modifier.height(8.dp))
                         HorizontalDivider(color = HnColors.Border, thickness = 1.dp)
@@ -225,7 +224,7 @@ fun PatientDetailScreen(
                             Spacer(Modifier.height(12.dp))
                             InfoRow("진료부서", p.department)
                             InfoRow("담당의", "${p.doctor} 의사")
-                            InfoRow("병명", p.diseaseName.ifBlank { "-" })
+                            InfoRow("주증상", p.chief.ifBlank { "-" })
                             InfoRow("수술", p.surgery.ifBlank { "-" })
                             InfoRow("입원일", formatAdmittedOn(p.admittedOn, p.daysSince))
                             InfoRow("휴대폰", p.phone.ifBlank { "-" })
@@ -470,12 +469,7 @@ private fun MonthGrid(
                                     .aspectRatio(1f)
                                     .padding(2.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isSelected) HnColors.Primary else Color.Transparent)
-                                    .let {
-                                        if (isToday && !isSelected) {
-                                            it.border(1.dp, HnColors.Primary, RoundedCornerShape(8.dp))
-                                        } else it
-                                    }
+                                    .background(if (isSelected) Color(0xFFDCEEFB) else Color.Transparent)
                                     .clickable { onPick(date) }
                                     .padding(vertical = 4.dp),
                             ) {
@@ -484,20 +478,29 @@ private fun MonthGrid(
                                     fontSize = 13.sp,
                                     fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Medium,
                                     color = when {
-                                        isSelected -> Color.White
+                                        isToday -> HnColors.Primary
                                         col == 0 -> HnColors.Danger
                                         col == 6 -> HnColors.Info
                                         else -> HnColors.Text
                                     },
                                 )
+                                if (isToday) {
+                                    Spacer(Modifier.height(2.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .size(4.dp)
+                                            .clip(CircleShape)
+                                            .background(HnColors.Primary),
+                                    )
+                                }
                                 if (cnt > 0) {
                                     Text(
                                         "${cnt}건",
-                                        fontSize = 9.sp,
+                                        fontSize = 14.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = if (isSelected) Color.White else HnColors.Primary,
+                                        color = HnColors.Primary,
                                     )
-                                } else {
+                                } else if (!isToday) {
                                     Spacer(Modifier.height(11.dp))
                                 }
                             }
@@ -556,7 +559,7 @@ private fun OrderDateHeader(date: String, count: Int) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text)
             Spacer(Modifier.weight(1f))
-            Text("${count}건", fontSize = 12.sp, color = HnColors.TextTertiary)
+            Text("${count}건", fontSize = 14.sp, color = HnColors.TextTertiary)
         }
         Spacer(Modifier.height(6.dp))
         Box(Modifier.fillMaxWidth().height(1.dp).background(HnColors.Border))

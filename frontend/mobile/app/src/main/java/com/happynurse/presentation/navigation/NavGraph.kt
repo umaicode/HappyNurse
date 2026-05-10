@@ -3,9 +3,6 @@ package com.happynurse.presentation.navigation
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.snap
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,7 +47,6 @@ fun NavGraph(
         exitTransition = { ExitTransition.None },
         popEnterTransition = { EnterTransition.None },
         popExitTransition = { ExitTransition.None },
-        sizeTransform = { SizeTransform(clip = false) { _, _ -> snap<IntSize>() } },
     ) {
         composable(NavRoutes.LOGIN) {
             LoginScreen(onLoggedIn = {
@@ -76,7 +72,6 @@ fun NavGraph(
             exitTransition = { ExitTransition.None },
             popEnterTransition = { EnterTransition.None },
             popExitTransition = { ExitTransition.None },
-            sizeTransform = { SizeTransform(clip = false) { _, _ -> snap<IntSize>() } },
         ) { entry ->
             val id = entry.arguments?.getString("id") ?: ""
             PatientDetailScreen(

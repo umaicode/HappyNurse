@@ -62,11 +62,12 @@ fun WardPatientDto.toDomain(): Patient = Patient(
     department = "",
     doctor = "",
     chief = chiefComplaint.orEmpty(),
-    surgery = "",
+    surgery = surgeryName.orEmpty(),
     patientId = patientId,
     encounterId = encounterId,
     unconfirmedNursingCount = unconfirmedNursingCount,
     isMyPatient = isMyPatient,
+    diseaseName = diseaseName.orEmpty(),
 )
 
 fun PatientDetailDto.toDomain(): Patient = Patient(

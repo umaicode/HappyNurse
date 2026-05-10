@@ -66,11 +66,14 @@ class AlarmsViewModel @Inject constructor(
         viewModelScope.launch {
             val wardId = authRepository.wardId.firstOrNull() ?: return@launch
             _loading.value = true
-            val myPatientIds = loadMyPatientIds()
+            val wardPatients = patientRepository.getMyWardPatients().getOrNull() ?: emptyList()
+            val myPatientIds = wardPatients.filter { it.isMyPatient }.map { it.patientId }.toSet()
+            // patientId → (roomName, bedName) 룩업 맵 — slim IV 응답에 없는 호실/침대 보완
+            val locationMap = wardPatients.associate { it.patientId to (it.room to it.bed) }
             ivRepository.getByWard(wardId, status = "IN_PROGRESS").fold(
                 onSuccess = { list ->
                     val filtered = list.filter { it.patientId in myPatientIds }
-                    _ivTimers.value = filtered.mapNotNull { it.toIvTimerOrNull() }
+                    _ivTimers.value = filtered.mapNotNull { it.toIvTimerOrNull(locationMap) }
                     _error.value = null
                 },
                 onFailure = { _error.value = it.message ?: "수액 보드 조회 실패" },
@@ -143,7 +146,10 @@ private fun NotificationListItemResponse.toNurseAlarm(): NurseAlarm {
 }
 
 // 서버 slim 응답 → UI 모델 변환. startedAt/expectedEndAt 파싱 실패 시 null 반환해 리스트에서 제외.
-private fun IvInfusionListItemResponse.toIvTimerOrNull(): IVTimer? {
+// locationMap: patientId → (roomName, bedName) — WardPatientListResponse 에서 미리 구성해 전달.
+private fun IvInfusionListItemResponse.toIvTimerOrNull(
+    locationMap: Map<Long, Pair<String, String>> = emptyMap(),
+): IVTimer? {
     val started = parseInstantOrNull(startedAt) ?: return null
     val expected = parseInstantOrNull(expectedEndAt) ?: return null
     val totalSec = Duration.between(started, expected).seconds.coerceAtLeast(0L)
@@ -154,15 +160,19 @@ private fun IvInfusionListItemResponse.toIvTimerOrNull(): IVTimer? {
     val endsAt = expected.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
     val startedAtStr = started.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
     val drug = if (medicationNames.isNotEmpty()) medicationNames.joinToString(" + ") else "—"
+    val (room, bed) = locationMap[patientId] ?: ("" to "")
     return IVTimer(
         id = ivInfusionId.toString(),
+        patientId = patientId,
         patient = patientName ?: "환자 #$patientId",
-        room = "",  // slim 응답에 roomName 미포함 — 백엔드 보강 시 노출
+        room = room,
+        bed = bed,
         drug = drug,
         totalMin = totalMin,
         elapsedMin = elapsedMin,
         endsAt = endsAt,
         startedAt = startedAtStr,
+        currentRateMlPerHr = currentRateMlPerHr,
     )
 }
 

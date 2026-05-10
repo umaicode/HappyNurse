@@ -50,9 +50,9 @@ object SampleData {
     // ── 수액 타이머 (AlarmsScreen 내 수액 카드) ──────────────────────────────
     // TODO(backend): 수액 모니터링 API 생성 후 IVTimerRepository.getActive() 로 교체
     val ivTimers: List<IVTimer> = listOf(
-        IVTimer("iv1", "김가민", "701-1", "0.9% 생리식염수 1L",     totalMin = 750,  elapsedMin = 270, endsAt = "21:30", startedAt = "09:00"),
-        IVTimer("iv2", "이승연", "701-2", "5% 포도당 1L",            totalMin = 1000, elapsedMin = 820, endsAt = "17:50", startedAt = "01:30"),
-        IVTimer("iv3", "박서영", "702-1", "0.45% 생리식염수 500mL", totalMin = 480,  elapsedMin = 100, endsAt = "20:10", startedAt = "12:10"),
+        IVTimer(id = "iv1", patient = "김가민", room = "701호", bed = "1", drug = "0.9% 생리식염수 1L",     totalMin = 750,  elapsedMin = 270, endsAt = "21:30", startedAt = "09:00"),
+        IVTimer(id = "iv2", patient = "이승연", room = "701호", bed = "2", drug = "5% 포도당 1L",            totalMin = 1000, elapsedMin = 820, endsAt = "17:50", startedAt = "01:30"),
+        IVTimer(id = "iv3", patient = "박서영", room = "702호", bed = "1", drug = "0.45% 생리식염수 500mL", totalMin = 480,  elapsedMin = 100, endsAt = "20:10", startedAt = "12:10"),
     )
 
     // ── 알림 (NotificationsSheet + MainScaffold 알림 벨 카운트) ──────────────

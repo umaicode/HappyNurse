@@ -39,21 +39,16 @@ import androidx.compose.ui.unit.sp
 import com.happynurse.core.sample.SampleData
 import com.happynurse.domain.model.HandoffItem
 import com.happynurse.presentation.components.HnCard
-import com.happynurse.presentation.components.NotifBell
 import com.happynurse.presentation.components.PageHeader
 import com.happynurse.presentation.components.TagChip
 import com.happynurse.presentation.theme.HnColors
 
 @Composable
-fun HandoffScreen(
-    onOpenNotifications: () -> Unit,
-    upcomingCount: Int,
-) {
+fun HandoffScreen() {
     Column(Modifier.fillMaxWidth()) {
         PageHeader(
             title = "인수인계",
             sub = "데이 → 이브닝",
-            right = { NotifBell(unreadCount = upcomingCount, onClick = onOpenNotifications) },
         )
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp),

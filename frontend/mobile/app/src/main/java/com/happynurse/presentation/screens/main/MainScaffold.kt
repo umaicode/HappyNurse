@@ -37,7 +37,8 @@ fun MainScaffold(
     // AlarmsViewModel 은 같은 NavBackStackEntry scope — AlarmsScreen 과 instance 공유
     val alarmsViewModel: AlarmsViewModel = hiltViewModel()
     val notifs by alarmsViewModel.notifs.collectAsStateWithLifecycle()
-    val upcoming = notifs.count { it.upcoming }
+    // 종 아이콘 배지 = 24시간 이내 알림 개수
+    val upcoming = notifs.count { it.minutesAgo in 0..1440 }
     // 탭 전환 시마다 refresh (담당환자 변경 후 다른 탭 → 벨 카운트 / 시트 자동 갱신)
     LaunchedEffect(tab) { alarmsViewModel.refreshAlarms() }
     // 벨 클릭 시 한 번 더 refresh — 같은 탭에 머물러 있는 동안 변경된 경우 대비
@@ -61,10 +62,7 @@ fun MainScaffold(
                         upcomingCount = upcoming,
                         ivLayout = IVTimerLayout.BAR,
                     )
-                    HnTab.HANDOFF -> HandoffScreen(
-                        onOpenNotifications = openNotifications,
-                        upcomingCount = upcoming,
-                    )
+                    HnTab.HANDOFF -> HandoffScreen()
                     HnTab.ME -> MyPageScreen(
                         onLogout = onLogout,
                         onOpenPatient = onOpenPatient,

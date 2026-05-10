@@ -96,13 +96,16 @@ data class NurseAlarm(
 // ⚠️ SampleData — 백엔드 API 미구현 (SampleData.ivTimers)
 data class IVTimer(
     val id: String,
+    val patientId: Long = -1L,
     val patient: String,
     val room: String,
+    val bed: String = "",
     val drug: String,
     val totalMin: Int,
     val elapsedMin: Int,
     val endsAt: String,
     val startedAt: String,
+    val currentRateMlPerHr: Double? = null,  // 서버 slim 응답에서 받음 — gtt 환산용
 )
 
 // ⚠️ SampleData — 백엔드 API 미구현 (SampleData.notifications)

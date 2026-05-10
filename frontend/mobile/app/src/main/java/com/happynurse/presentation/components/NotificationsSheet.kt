@@ -63,7 +63,9 @@ fun NotificationsSheet(
                 Icon(Icons.Outlined.Close, contentDescription = "닫기", tint = HnColors.TextSecondary)
             }
         }
-        if (notifications.isEmpty()) {
+        // 현재 시간 기준 24시간(1440분) 이내 알림만 표시
+        val recent = notifications.filter { it.minutesAgo in 0..1440 }
+        if (recent.isEmpty()) {
             // 담당 환자가 없거나 그 환자에 대한 알림이 없을 때
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -86,8 +88,8 @@ fun NotificationsSheet(
                 Spacer(Modifier.height(20.dp))
             }
         } else {
-            val sorted = notifications.sortedWith(
-                compareByDescending<Notif> { it.upcoming }.thenByDescending { it.minutesAgo },
+            val sorted = recent.sortedWith(
+                compareBy<Notif> { it.minutesAgo },
             )
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
