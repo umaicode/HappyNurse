@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from "react";
-import { ClipboardList, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOrders } from "../hooks/useOrders";
 import {
@@ -109,8 +109,7 @@ export function OrderTab({ encounterId, date }: OrderTabProps) {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="flex flex-col items-center justify-center flex-1 gap-2 py-16 text-content-muted">
-      <ClipboardList className="w-10 h-10 opacity-40" />
+    <div className="flex flex-col items-center justify-center flex-1 py-16 text-content-muted">
       <p className="text-body-sm font-bold">{message}</p>
     </div>
   );
