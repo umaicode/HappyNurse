@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.happynurse.data.nfc.NfcReaderManager
 import com.happynurse.data.remote.model.IvInfusionResponse
 import com.happynurse.data.repository.IvRepository
+import com.happynurse.data.repository.PatientRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,6 +25,7 @@ import javax.inject.Inject
 class IvTimerActiveViewModel @Inject constructor(
     private val ivRepository: IvRepository,
     private val readerManager: NfcReaderManager,
+    private val patientRepository: PatientRepository,
 ) : ViewModel() {
 
     sealed interface ActiveState {
@@ -48,6 +50,10 @@ class IvTimerActiveViewModel @Inject constructor(
 
     private val _remainingSec = MutableStateFlow<Long?>(null)
     val remainingSec: StateFlow<Long?> = _remainingSec.asStateFlow()
+
+    // 환자 호실/침대 — IvInfusionResponse 에 없으므로 환자 리스트에서 patientId 로 룩업
+    private val _patientLocation = MutableStateFlow<Pair<String, String>?>(null)
+    val patientLocation: StateFlow<Pair<String, String>?> = _patientLocation.asStateFlow()
 
     private var tickJob: Job? = null
     private var initialized = false
@@ -136,6 +142,16 @@ class IvTimerActiveViewModel @Inject constructor(
     private fun applyLoaded(infusion: IvInfusionResponse, tagUid: String?) {
         _state.value = ActiveState.Loaded(infusion, tagUid)
         startTicker(infusion)
+        loadPatientLocation(infusion.patientId)
+    }
+
+    private fun loadPatientLocation(patientId: Long) {
+        if (patientId <= 0L) return
+        viewModelScope.launch {
+            patientRepository.getMyWardPatients().getOrNull()
+                ?.firstOrNull { it.patientId == patientId }
+                ?.let { p -> _patientLocation.value = p.room to p.bed }
+        }
     }
 
     private fun startTicker(infusion: IvInfusionResponse) {

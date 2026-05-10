@@ -2,7 +2,6 @@
 package com.happynurse.presentation.screens.patientdetail
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +25,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -72,10 +72,14 @@ fun PatientDetailScreen(
     LaunchedEffect(patientId) {
         patientId.toLongOrNull()?.let { vm.loadPatient(it) }
     }
-    val p: Patient = vm.patient.collectAsStateWithLifecycle().value ?: return
+    val loadedPatient = vm.patient.collectAsStateWithLifecycle().value
     val notes by vm.notes.collectAsStateWithLifecycle()
     val orders by vm.orders.collectAsStateWithLifecycle()
     val myPatients by vm.myPatients.collectAsStateWithLifecycle()
+    // 상세 API 응답 전에는 담당환자 목록에서 매칭되는 항목으로 즉시 표시 (깜빡임 방지)
+    val p: Patient = loadedPatient
+        ?: myPatients.firstOrNull { it.id == patientId }
+        ?: return
     val selectedDate by vm.selectedDate.collectAsStateWithLifecycle()
     val visibleMonth by vm.visibleMonth.collectAsStateWithLifecycle()
     val monthCounts by vm.monthCounts.collectAsStateWithLifecycle()
@@ -103,7 +107,7 @@ fun PatientDetailScreen(
             Box {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { patientMenuOpen = true }.padding(vertical = 4.dp),
+                    modifier = Modifier.clickable { patientMenuOpen = true }.padding(vertical = 6.dp),
                 ) {
                     Text(p.name, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
                     Spacer(Modifier.size(8.dp))
@@ -128,7 +132,7 @@ fun PatientDetailScreen(
                     if (myPatients.isEmpty()) {
                         Box(
                             modifier = Modifier
-                                .width(260.dp)
+                                .width(160.dp)
                                 .padding(horizontal = 16.dp, vertical = 14.dp),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -196,36 +200,23 @@ fun PatientDetailScreen(
         ) {
             item {
                 HnCard(padding = 14.dp) {
-                    Column {
-                        // 접힘 상태: 2x2 정보 그리드 + 토글 아이콘
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { expanded = !expanded },
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Row(modifier = Modifier.fillMaxWidth()) {
-                                    InfoCell("생년월일", p.birthdate, modifier = Modifier.weight(1f))
-                                    Box(Modifier.width(1.dp).height(36.dp).background(HnColors.Border))
-                                    InfoCell("주증상", p.chief, modifier = Modifier.weight(1f).padding(start = 12.dp))
-                                }
-                                Spacer(Modifier.height(8.dp))
-                                HorizontalDivider(color = HnColors.Border, thickness = 1.dp)
-                                Spacer(Modifier.height(8.dp))
-                                Row(modifier = Modifier.fillMaxWidth()) {
-                                    InfoCell("호실/침대", "${p.room}호 ${p.bed}", modifier = Modifier.weight(1f))
-                                    Box(Modifier.width(1.dp).height(36.dp).background(HnColors.Border))
-                                    InfoCell("MRN", p.mrn.ifBlank { "-" }, modifier = Modifier.weight(1f).padding(start = 12.dp))
-                                }
-                            }
-                            Spacer(Modifier.size(8.dp))
-                            Icon(
-                                Icons.Outlined.ExpandMore,
-                                contentDescription = null,
-                                tint = HnColors.TextSecondary,
-                                modifier = Modifier.size(22.dp),
-                            )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { expanded = !expanded },
+                    ) {
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            InfoCell("생년월일", formatDotDate(p.birthdate), modifier = Modifier.weight(1f))
+                            Box(Modifier.width(1.dp).height(36.dp).background(HnColors.Border))
+                            InfoCell("병명", p.diseaseName.ifBlank { "-" }, modifier = Modifier.weight(1f).padding(start = 12.dp))
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        HorizontalDivider(color = HnColors.Border, thickness = 1.dp)
+                        Spacer(Modifier.height(8.dp))
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            InfoCell("호실/침대", "${p.room}호 ${p.bed}", modifier = Modifier.weight(1f))
+                            Box(Modifier.width(1.dp).height(36.dp).background(HnColors.Border))
+                            InfoCell("MRN", p.mrn.ifBlank { "-" }, modifier = Modifier.weight(1f).padding(start = 12.dp))
                         }
                         if (expanded) {
                             Spacer(Modifier.height(12.dp))
@@ -233,10 +224,19 @@ fun PatientDetailScreen(
                             Spacer(Modifier.height(12.dp))
                             InfoRow("진료부서", p.department)
                             InfoRow("담당의", "${p.doctor} 의사")
-                            InfoRow("병명", p.diseaseName.ifBlank { "-" })
+                            InfoRow("주증상", p.chief.ifBlank { "-" })
                             InfoRow("수술", p.surgery.ifBlank { "-" })
-                            InfoRow("입원일", p.admittedOn.ifBlank { "-" })
+                            InfoRow("입원일", formatAdmittedOn(p.admittedOn, p.daysSince))
                             InfoRow("휴대폰", p.phone.ifBlank { "-" })
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Icon(
+                                if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                                contentDescription = if (expanded) "접기" else "펼치기",
+                                tint = HnColors.TextSecondary,
+                                modifier = Modifier.size(22.dp),
+                            )
                         }
                     }
                 }
@@ -469,12 +469,7 @@ private fun MonthGrid(
                                     .aspectRatio(1f)
                                     .padding(2.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isSelected) HnColors.Primary else Color.Transparent)
-                                    .let {
-                                        if (isToday && !isSelected) {
-                                            it.border(1.dp, HnColors.Primary, RoundedCornerShape(8.dp))
-                                        } else it
-                                    }
+                                    .background(if (isSelected) Color(0xFFDCEEFB) else Color.Transparent)
                                     .clickable { onPick(date) }
                                     .padding(vertical = 4.dp),
                             ) {
@@ -483,20 +478,29 @@ private fun MonthGrid(
                                     fontSize = 13.sp,
                                     fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Medium,
                                     color = when {
-                                        isSelected -> Color.White
+                                        isToday -> HnColors.Primary
                                         col == 0 -> HnColors.Danger
                                         col == 6 -> HnColors.Info
                                         else -> HnColors.Text
                                     },
                                 )
+                                if (isToday) {
+                                    Spacer(Modifier.height(2.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .size(4.dp)
+                                            .clip(CircleShape)
+                                            .background(HnColors.Primary),
+                                    )
+                                }
                                 if (cnt > 0) {
                                     Text(
                                         "${cnt}건",
-                                        fontSize = 9.sp,
+                                        fontSize = 14.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = if (isSelected) Color.White else HnColors.Primary,
+                                        color = HnColors.Primary,
                                     )
-                                } else {
+                                } else if (!isToday) {
                                     Spacer(Modifier.height(11.dp))
                                 }
                             }
@@ -528,8 +532,8 @@ private fun NoteRow(n: Note) {
                 if (validTags.isNotEmpty()) {
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         validTags.forEach { t ->
-                            if (t == "투약") TagChip("투약", fg = HnColors.Info, bg = HnColors.TagInjBg)
-                            else TagChip("음성", fg = HnColors.Purple, bg = HnColors.TagFluidBg)
+                            if (t == "투약") TagChip("투약", fg = HnColors.TagInjFg, bg = HnColors.TagInjBg)
+                            else TagChip("음성", fg = HnColors.TagFluidFg, bg = HnColors.TagFluidBg)
                         }
                     }
                     Spacer(Modifier.height(6.dp))
@@ -555,7 +559,7 @@ private fun OrderDateHeader(date: String, count: Int) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text)
             Spacer(Modifier.weight(1f))
-            Text("${count}건", fontSize = 12.sp, color = HnColors.TextTertiary)
+            Text("${count}건", fontSize = 14.sp, color = HnColors.TextTertiary)
         }
         Spacer(Modifier.height(6.dp))
         Box(Modifier.fillMaxWidth().height(1.dp).background(HnColors.Border))
@@ -565,14 +569,30 @@ private fun OrderDateHeader(date: String, count: Int) {
 @Composable
 private fun OrderRow(o: Order) {
     val (label, fg, bg) = when (o.kind) {
-        OrderKind.INJ   -> Triple("투약", HnColors.Info,          HnColors.TagInjBg)
-        OrderKind.FLUID -> Triple("수액", HnColors.Purple,        HnColors.TagFluidBg)
-        OrderKind.ORDER -> Triple("지시", HnColors.TextSecondary, HnColors.TagOrderBg)
-        OrderKind.LIS   -> Triple("LIS",  HnColors.Warning,       HnColors.TagLisBg)
-        OrderKind.IMG   -> Triple("영상", HnColors.Cyan,          HnColors.TagImgBg)
-        OrderKind.PILL  -> Triple("알약", HnColors.Success,       HnColors.TagPillBg)
+        OrderKind.INJ   -> Triple("투약", HnColors.TagInjFg,   HnColors.TagInjBg)
+        OrderKind.FLUID -> Triple("수액", HnColors.TagFluidFg, HnColors.TagFluidBg)
+        OrderKind.ORDER -> Triple("지시", HnColors.TagOrderFg, HnColors.TagOrderBg)
+        OrderKind.LIS   -> Triple("LIS",  HnColors.TagLisFg,   HnColors.TagLisBg)
+        OrderKind.IMG   -> Triple("영상", HnColors.TagImgFg,   HnColors.TagImgBg)
+        OrderKind.PILL  -> Triple("알약", HnColors.TagPillFg,  HnColors.TagPillBg)
     }
-    HnCard(padding = 14.dp) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.width(56.dp).padding(top = 12.dp)) {
+            Text(o.timeWritten, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+        }
+        OrderCard(o, label, fg, bg, modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun OrderCard(
+    o: Order,
+    label: String,
+    fg: Color,
+    bg: Color,
+    modifier: Modifier = Modifier,
+) {
+    HnCard(padding = 14.dp, modifier = modifier) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TagChip(label, fg = fg, bg = bg)
@@ -592,7 +612,7 @@ private fun OrderRow(o: Order) {
             }
             if (o.note.isNotBlank()) {
                 Spacer(Modifier.height(8.dp))
-                Text("참고: ${o.note}", fontSize = 12.sp, color = HnColors.TextSecondary)
+                Text(o.note, fontSize = 16.sp, color = HnColors.TextSecondary)
             }
         }
     }
@@ -604,4 +624,16 @@ private fun GridCell(label: String, value: String) {
         Text(label, fontSize = 11.sp, color = HnColors.TextTertiary, modifier = Modifier.size(width = 56.dp, height = 16.dp))
         Text(value, fontSize = 13.sp, color = HnColors.Text, fontWeight = FontWeight.SemiBold)
     }
+}
+
+private fun formatDotDate(raw: String): String {
+    if (raw.isBlank()) return "-"
+    val parsed = runCatching { LocalDate.parse(raw.take(10)) }.getOrNull() ?: return raw
+    return parsed.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
+}
+
+private fun formatAdmittedOn(raw: String, daysSince: Int): String {
+    val date = formatDotDate(raw)
+    if (date == "-") return "-"
+    return "$date (D+$daysSince)"
 }

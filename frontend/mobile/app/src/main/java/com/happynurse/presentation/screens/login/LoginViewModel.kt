@@ -103,10 +103,4 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-    fun loginWithBiometric() {
-        // 생체인증 성공 후 저장된 토큰으로 로그인된 상태로 전환
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(loggedIn = true)
-        }
-    }
 }
