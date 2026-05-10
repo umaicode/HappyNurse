@@ -29,9 +29,11 @@ export function useAuth() {
     } catch {
       // 서버 호출 실패해도 클라이언트 측 정리는 진행
     }
+    // queryClient.clear() 를 reset() 보다 먼저 — user reset 직후 (web)/layout 의 useQuery
+    // (enabled: !user) 가 발동되어 만료된 쿠키로 getMe → refresh 도미노가 생기는 race 차단.
+    queryClient.clear()
     reset()
     devTokenStorage.clear()
-    queryClient.clear()
     router.push('/login')
   }, [reset, queryClient, router])
 
