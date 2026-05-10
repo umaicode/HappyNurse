@@ -1,16 +1,17 @@
-// SttListTab — 홈 STT 타이머 탭. 카드 탭 시 s20a SttTimerDetailScreen 진입.
+// SttListTab — 홈 타이머 탭. 본인이 등록한 음성메모 알람 리스트(/reminders/stt)를 표시한다.
+// 카드 탭 시 SttTimerDetailScreen 으로 진입한다.
 package com.happynurse.wear.presentation.screens.home.tabs
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
@@ -21,81 +22,66 @@ import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.happynurse.wear.data.model.SttTimer
-import com.happynurse.wear.presentation.components.HnSwipeToDeleteCard
-import com.happynurse.wear.presentation.theme.HnSttPurple
+import com.happynurse.wear.presentation.theme.remainingTimeColor
 
 @Composable
 fun SttListTab(
     items: List<SttTimer>,
     onCardClick: (SttTimer) -> Unit,
-    onDelete: (String) -> Unit,
+    isLoading: Boolean = false,
+    errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    if (items.isEmpty()) {
-        EmptyMessage(text = "예약된 타이머가 없어요", modifier = modifier)
-        return
-    }
-    val listState = rememberScalingLazyListState()
-    ScalingLazyColumn(
-        state = listState,
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        items(items, key = { it.sttTimerId }) { stt ->
-            HnSwipeToDeleteCard(
-                onDelete = { onDelete(stt.sttTimerId) },
-                onClick = { onCardClick(stt) },
+    when {
+        isLoading && items.isEmpty() -> StatusMessage("불러오는 중…", modifier)
+        errorMessage != null && items.isEmpty() -> StatusMessage(errorMessage, modifier)
+        items.isEmpty() -> StatusMessage("등록한 알람이 없어요", modifier)
+        else -> {
+            val listState = rememberScalingLazyListState()
+            ScalingLazyColumn(
+                state = listState,
+                modifier = modifier.fillMaxSize(),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 40.dp, start = 8.dp, end = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                SttCardContent(stt)
+                items(items, key = { it.sttReminderId }) { stt ->
+                    SttCardContent(stt = stt, onClick = { onCardClick(stt) })
+                }
             }
         }
     }
 }
 
 @Composable
-private fun SttCardContent(stt: SttTimer) {
+private fun SttCardContent(stt: SttTimer, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable { onClick() }
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = stt.patientName,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = "  ·  ${stt.contentSummary}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
         Text(
-            text = "STT · ${formatRemain(stt.remainingSec)}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (stt.isUrgent) MaterialTheme.colorScheme.error else HnSttPurple,
-            fontWeight = FontWeight.Medium,
+            text = stt.contentSummary,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
         )
         Text(
-            text = stt.patientRoomBed,
-            style = MaterialTheme.typography.labelSmall,
+            text = "종료 ${stt.endAtDisplay}",
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
         )
-    }
-}
-
-private fun formatRemain(sec: Int): String {
-    if (sec <= 0) return "0분 남음"
-    val m = sec / 60
-    val s = sec % 60
-    return when {
-        m >= 60 -> "${m / 60}h ${m % 60}m 남음"
-        m > 0 -> "${m}분 남음"
-        else -> "${s}초 남음"
+        Text(
+            text = stt.remainingTimeText,
+            style = MaterialTheme.typography.bodyMedium,
+            color = remainingTimeColor(stt.remainingSec),
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+        )
     }
 }

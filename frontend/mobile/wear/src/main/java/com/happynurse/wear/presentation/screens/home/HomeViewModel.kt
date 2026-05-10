@@ -1,16 +1,26 @@
-// HomeViewModel — 홈 화면(수액/타이머 2-tab)의 상태와 카드 삭제 액션을 보유.
+// HomeViewModel — 홈 화면(수액/타이머)의 상태와 API 연동을 담당.
+// 폰에서 동기화된 토큰/병동 식별자가 준비되면 /iv 와 /reminders/stt 를 주기적으로 호출한다.
 package com.happynurse.wear.presentation.screens.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.happynurse.wear.data.auth.PhoneTokenSyncClient
+import com.happynurse.wear.data.auth.WearTokenStore
 import com.happynurse.wear.data.model.IvInfusionTimer
-import com.happynurse.wear.data.model.MockData
 import com.happynurse.wear.data.model.SttTimer
-import com.happynurse.wear.data.notification.WearEventBus
+import com.happynurse.wear.data.repository.IvInfusionRepository
+import com.happynurse.wear.data.repository.SttReminderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.time.Duration
+import java.time.Instant
 import javax.inject.Inject
 
 enum class HomeTab(val label: String) {
@@ -19,23 +29,99 @@ enum class HomeTab(val label: String) {
 
 data class HomeUiState(
     val selectedTab: HomeTab = HomeTab.IV,
-    val ivList: List<IvInfusionTimer> = MockData.ivList,
-    val sttList: List<SttTimer> = MockData.sttList,
+    val ivList: List<IvInfusionTimer> = emptyList(),
+    val sttList: List<SttTimer> = emptyList(),
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
 )
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    @Suppress("UNUSED_PARAMETER") eventBus: WearEventBus,
+    private val ivInfusionRepository: IvInfusionRepository,
+    private val sttReminderRepository: SttReminderRepository,
+    private val tokenStore: WearTokenStore,
+    private val phoneTokenSyncClient: PhoneTokenSyncClient,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeUiState())
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
 
+    init {
+        observeWardId()
+        startCountdownTicker()
+        viewModelScope.launch {
+            // 첫 진입 시 토큰이 없으면 폰에 요청
+            if (tokenStore.accessToken().isNullOrBlank()) {
+                phoneTokenSyncClient.requestToken()
+            }
+        }
+    }
+
+    private fun observeWardId() {
+        viewModelScope.launch {
+            tokenStore.wardIdFlow.distinctUntilChanged().collectLatest { wardId ->
+                if (wardId == null) {
+                    _state.update { it.copy(ivList = emptyList(), sttList = emptyList()) }
+                    return@collectLatest
+                }
+                while (true) {
+                    refresh(wardId)
+                    delay(REFRESH_INTERVAL_MS)
+                }
+            }
+        }
+    }
+
+    private suspend fun refresh(wardId: Long) {
+        _state.update { it.copy(isLoading = true, errorMessage = null) }
+        val ivResult = ivInfusionRepository.fetch(wardId)
+        val sttResult = sttReminderRepository.fetch()
+        _state.update { current ->
+            current.copy(
+                isLoading = false,
+                ivList = ivResult.getOrDefault(current.ivList),
+                sttList = sttResult.getOrDefault(current.sttList),
+                errorMessage = listOfNotNull(
+                    ivResult.exceptionOrNull()?.message,
+                    sttResult.exceptionOrNull()?.message,
+                ).firstOrNull(),
+            )
+        }
+    }
+
+    private fun startCountdownTicker() {
+        viewModelScope.launch {
+            while (true) {
+                delay(TICK_INTERVAL_MS)
+                val now = Instant.now()
+                _state.update { current ->
+                    current.copy(
+                        ivList = current.ivList.map { it.tickedTo(now) },
+                        sttList = current.sttList.map { it.tickedTo(now) },
+                    )
+                }
+            }
+        }
+    }
+
     fun selectTab(tab: HomeTab) {
         _state.update { it.copy(selectedTab = tab) }
     }
 
-    fun deleteStt(id: String) {
-        _state.update { it.copy(sttList = it.sttList.filterNot { stt -> stt.sttTimerId == id }) }
+    private fun IvInfusionTimer.tickedTo(now: Instant): IvInfusionTimer {
+        val end = expectedEndAt ?: return this
+        val newRemaining = Duration.between(now, end).seconds.toInt().coerceAtLeast(0)
+        return if (newRemaining == remainingSec) this else copy(remainingSec = newRemaining)
+    }
+
+    private fun SttTimer.tickedTo(now: Instant): SttTimer {
+        val fire = fireAt ?: return this
+        val newRemaining = Duration.between(now, fire).seconds.toInt().coerceAtLeast(0)
+        return if (newRemaining == remainingSec) this else copy(remainingSec = newRemaining)
+    }
+
+    private companion object {
+        const val REFRESH_INTERVAL_MS = 30_000L
+        const val TICK_INTERVAL_MS = 1_000L
     }
 }

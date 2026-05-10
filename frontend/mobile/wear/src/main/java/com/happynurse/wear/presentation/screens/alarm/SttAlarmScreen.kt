@@ -8,7 +8,7 @@ import androidx.wear.compose.material3.EdgeButton
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.happynurse.wear.presentation.components.HnFullScreenAlarmScaffold
-import com.happynurse.wear.presentation.theme.HnAlarmPink
+import com.happynurse.wear.presentation.theme.HnAccent
 
 @Composable
 fun SttAlarmScreen(
@@ -19,7 +19,7 @@ fun SttAlarmScreen(
 ) {
     HnFullScreenAlarmScaffold(
         badgeText = "ALARM",
-        badgeColor = HnAlarmPink,
+        badgeColor = HnAccent,
         patientName = patientName,
         content = contentSummary,
         roomBedTime = roomBedTime,

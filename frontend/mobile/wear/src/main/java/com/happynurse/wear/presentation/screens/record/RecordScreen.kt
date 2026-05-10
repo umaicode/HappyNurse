@@ -1,8 +1,12 @@
-// RecordScreen — 워치 녹음 화면(명세 §2). IDLE/RECORDING 두 상태를 한 화면에서 처리.
-// IDLE/RECORDING의 중앙 버튼(80dp, error 컬러)이 동일 위치/크기로 배치되어
-// AnimatedContent fade+scale 전환 시 자연스럽게 mic↔stop 이 모핑되는 듯한 인상을 준다.
+// RecordScreen — 워치 녹음 화면. 마이크 권한 → 녹음 → STT 인식/시간 파싱 진행 상태를 한 화면에서 처리.
+// 결과(RESULT) 단계가 되면 onShowResult 콜백으로 SttResultScreen 으로 이동시킨다.
 package com.happynurse.wear.presentation.screens.record
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -27,80 +31,92 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.material3.AppScaffold
+import androidx.wear.compose.material3.CircularProgressIndicator
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
 import com.happynurse.wear.presentation.components.HnPagerIndicator
 import com.happynurse.wear.presentation.components.HnPulseRing
 import com.happynurse.wear.presentation.components.HnPulsingDot
 import com.happynurse.wear.presentation.theme.TabularNumStyle
-import kotlinx.coroutines.delay
 
-private enum class RecordState { IDLE, RECORDING }
-private const val MAX_RECORD_SEC = 60
 private val ButtonSize = 80.dp
 
 @Composable
 fun RecordScreen(
-    onRecordingComplete: () -> Unit,
+    viewModel: RecordViewModel,
+    onShowResult: () -> Unit,
     pagerCurrentPage: Int = 1,
 ) {
-    var state by remember { mutableStateOf(RecordState.IDLE) }
-    var elapsed by remember { mutableIntStateOf(0) }
-
-    LaunchedEffect(state) {
-        if (state == RecordState.RECORDING) {
-            elapsed = 0
-            while (elapsed < MAX_RECORD_SEC) {
-                delay(1000)
-                elapsed += 1
-            }
-            state = RecordState.IDLE
-            onRecordingComplete()
-        }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) viewModel.startRecording()
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-    ) {
-        AnimatedContent(
-            targetState = state,
-            transitionSpec = {
-                (fadeIn(tween(220)) + scaleIn(tween(220), initialScale = 0.92f)) togetherWith
-                    (fadeOut(tween(160)) + scaleOut(tween(160), targetScale = 0.96f))
-            },
-            label = "recordStateAnim",
-        ) { currentState ->
-            when (currentState) {
-                RecordState.IDLE -> IdleContent(onMicTap = { state = RecordState.RECORDING })
-                RecordState.RECORDING -> RecordingContent(
-                    elapsed = elapsed,
-                    onStop = {
-                        state = RecordState.IDLE
-                        onRecordingComplete()
+    LaunchedEffect(state.phase) {
+        if (state.phase == RecordPhase.RESULT) onShowResult()
+    }
+
+    AppScaffold(timeText = {}) {
+        ScreenScaffold {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+            ) {
+                AnimatedContent(
+                    targetState = state.phase,
+                    transitionSpec = {
+                        (fadeIn(tween(220)) + scaleIn(tween(220), initialScale = 0.92f)) togetherWith
+                            (fadeOut(tween(160)) + scaleOut(tween(160), targetScale = 0.96f))
                     },
+                    label = "recordPhaseAnim",
+                ) { phase ->
+                    when (phase) {
+                        RecordPhase.IDLE -> IdleContent(
+                            onMicTap = {
+                                if (hasRecordPermission(context)) viewModel.startRecording()
+                                else permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                            },
+                        )
+                        RecordPhase.RECORDING -> RecordingContent(
+                            elapsed = state.elapsedSec,
+                            onStop = viewModel::stopRecording,
+                        )
+                        RecordPhase.PROCESSING -> ProcessingContent("음성 인식 중…")
+                        RecordPhase.SUBMITTING -> ProcessingContent("등록 중…")
+                        RecordPhase.RESULT,
+                        RecordPhase.DONE -> ProcessingContent("결과 준비 중…")
+                        RecordPhase.ERROR -> ErrorContent(
+                            message = state.errorMessage ?: "다시 시도해 주세요",
+                            onRetry = viewModel::reset,
+                        )
+                    }
+                }
+                HnPagerIndicator(
+                    pageCount = 2,
+                    currentPage = pagerCurrentPage,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 6.dp),
                 )
             }
         }
-        HnPagerIndicator(
-            pageCount = 2,
-            currentPage = pagerCurrentPage,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 6.dp),
-        )
     }
 }
 
@@ -113,12 +129,13 @@ private fun IdleContent(onMicTap: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        // 상단: "환자 타이머" 라벨 (시간 칩 대체)
-        TitleLabel(text = "환자 타이머")
-
+        Text(
+            text = "알람 설정",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.SemiBold,
+        )
         Spacer(Modifier.weight(1f))
-
-        // 중앙 — 정지 버튼과 동일 위치/사이즈의 빨간 마이크 버튼
         Box(
             modifier = Modifier
                 .size(ButtonSize)
@@ -134,7 +151,6 @@ private fun IdleContent(onMicTap: () -> Unit) {
                 modifier = Modifier.size(36.dp),
             )
         }
-
         Spacer(Modifier.weight(1f))
     }
 }
@@ -148,17 +164,10 @@ private fun RecordingContent(elapsed: Int, onStop: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        // 상단 시간 칩 — 점멸 도트 + 경과 시간
         TimeChip(text = formatMmSs(elapsed))
-
         Spacer(Modifier.weight(1f))
-
-        // 중앙 펄스 링 + 빨간 Stop 버튼 (IDLE의 mic 버튼과 동일 사이즈/위치)
         Box(contentAlignment = Alignment.Center) {
-            HnPulseRing(
-                diameterDp = 110,
-                color = MaterialTheme.colorScheme.error,
-            )
+            HnPulseRing(diameterDp = 110, color = MaterialTheme.colorScheme.error)
             Box(
                 modifier = Modifier
                     .size(ButtonSize)
@@ -175,19 +184,63 @@ private fun RecordingContent(elapsed: Int, onStop: () -> Unit) {
                 )
             }
         }
-
         Spacer(Modifier.weight(1f))
     }
 }
 
 @Composable
-private fun TitleLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onSurface,
-        fontWeight = FontWeight.SemiBold,
-    )
+private fun ProcessingContent(message: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 18.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(48.dp),
+        )
+        Spacer(Modifier.size(14.dp))
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun ErrorContent(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 18.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.size(12.dp))
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .clickable { onRetry() }
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+        ) {
+            Text(
+                text = "다시 시도",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
 }
 
 @Composable
@@ -209,6 +262,10 @@ private fun TimeChip(text: String) {
         )
     }
 }
+
+private fun hasRecordPermission(context: Context): Boolean =
+    ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+        PackageManager.PERMISSION_GRANTED
 
 private fun formatMmSs(sec: Int): String {
     val m = sec / 60

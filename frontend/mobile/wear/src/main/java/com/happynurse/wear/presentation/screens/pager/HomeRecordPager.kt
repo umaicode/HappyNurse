@@ -10,12 +10,14 @@ import com.happynurse.wear.data.model.IvInfusionTimer
 import com.happynurse.wear.data.model.SttTimer
 import com.happynurse.wear.presentation.screens.home.HomeScreen
 import com.happynurse.wear.presentation.screens.record.RecordScreen
+import com.happynurse.wear.presentation.screens.record.RecordViewModel
 
 @Composable
 fun HomeRecordPager(
+    recordViewModel: RecordViewModel,
     onIvClick: (IvInfusionTimer) -> Unit,
     onSttClick: (SttTimer) -> Unit,
-    onRecordingComplete: () -> Unit,
+    onShowResult: () -> Unit,
 ) {
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
     HorizontalPager(
@@ -29,7 +31,8 @@ fun HomeRecordPager(
                 pagerCurrentPage = pagerState.currentPage,
             )
             1 -> RecordScreen(
-                onRecordingComplete = onRecordingComplete,
+                viewModel = recordViewModel,
+                onShowResult = onShowResult,
                 pagerCurrentPage = pagerState.currentPage,
             )
         }
