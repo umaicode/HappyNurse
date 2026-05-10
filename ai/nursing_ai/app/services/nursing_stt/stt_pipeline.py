@@ -10,9 +10,9 @@ class STTPipeline:
         self.mapper = TermMapper(db=db)
         print("STT 파이프라인 초기화 완료")
 
-    async def process(self, audio_data: bytes, filename: str = "audio.wav") -> dict:
-        print("\n=== 1단계: 클로바 STT ===")
-        original_text = await self.clova.recognize(audio_data, filename)
+    async def process(self, audio_data: bytes, filename: str = "audio.wav", apply_nc: bool = False) -> dict:
+        print(f"\n=== 1단계: 클로바 STT (NC={'on' if apply_nc else 'off'}) ===")
+        original_text = await self.clova.recognize(audio_data, filename, apply_nc=apply_nc)
         print(f"STT 결과: {original_text}")
 
         if not original_text:
