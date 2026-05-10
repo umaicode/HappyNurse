@@ -224,7 +224,7 @@ export function EMRGrid({
           {/* Row 1: Department · Doctor · Birthday (1:1:1) */}
           <div className="col-span-8 grid grid-cols-3 border-b border-border-base">
             <div className="flex items-stretch border-r border-border-base">
-              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-sub-primary flex items-center whitespace-nowrap w-[100px] shrink-0">
                 진료부서
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
@@ -234,7 +234,7 @@ export function EMRGrid({
               </div>
             </div>
             <div className="flex items-stretch border-r border-border-base">
-              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-sub-primary flex items-center whitespace-nowrap w-[100px] shrink-0">
                 진료의
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
@@ -244,7 +244,7 @@ export function EMRGrid({
               </div>
             </div>
             <div className="flex items-stretch">
-              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-sub-primary flex items-center whitespace-nowrap w-[100px] shrink-0">
                 생년월일
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
@@ -257,7 +257,7 @@ export function EMRGrid({
           {/* Row 2: Room/Bed (read-only) · Admission Date · Phone (1:1:1) — Row 3 와 정렬 */}
           <div className="col-span-8 grid grid-cols-3 border-b border-border-base">
             <div className="flex items-stretch border-r border-border-base">
-              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-sub-primary flex items-center whitespace-nowrap w-[100px] shrink-0">
                 호실/침대
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
@@ -267,7 +267,7 @@ export function EMRGrid({
               </div>
             </div>
             <div className="flex items-stretch border-r border-border-base">
-              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-sub-primary flex items-center whitespace-nowrap w-[100px] shrink-0">
                 입원일
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
@@ -277,7 +277,7 @@ export function EMRGrid({
               </div>
             </div>
             <div className="flex items-stretch">
-              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-sub-primary flex items-center whitespace-nowrap w-[100px] shrink-0">
                 휴대폰
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
@@ -290,7 +290,7 @@ export function EMRGrid({
           {/* Row 3: Disease Name · CC · Surgery Name (1:1:1) */}
           <div className="col-span-8 grid grid-cols-3">
             <div className="flex items-stretch border-r border-border-base">
-              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-sub-primary flex items-center whitespace-nowrap w-[100px] shrink-0">
                 병명
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
@@ -300,7 +300,7 @@ export function EMRGrid({
               </div>
             </div>
             <div className="flex items-stretch border-r border-border-base">
-              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-sub-primary flex items-center whitespace-nowrap w-[100px] shrink-0">
                 주증상
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
@@ -310,7 +310,7 @@ export function EMRGrid({
               </div>
             </div>
             <div className="flex items-stretch">
-              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap w-[100px] shrink-0">
+              <div className="bg-action-blue-surface/40 border-r border-border-base px-2.5 py-1 font-bold text-sub-primary flex items-center whitespace-nowrap w-[100px] shrink-0">
                 수술명
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
@@ -419,7 +419,7 @@ export function EMRGrid({
                 <AlertCircle className="size-8" />
               </div>
               <div className="text-center">
-                <h3 className="text-title-md font-bold text-[var(--color-sub-primary)] mb-1">AI 인수인계 준비 중</h3>
+                <h3 className="text-title-md font-bold text-sub-primary mb-1">AI 인수인계 준비 중</h3>
                 <p className="text-body-sm text-content-muted">더 나은 서비스를 위해 현재 화면을 개발 중입니다.</p>
               </div>
             </div>

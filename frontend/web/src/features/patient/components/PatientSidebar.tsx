@@ -56,21 +56,21 @@ export function PatientSidebar({
 
   const duplicateNames = useMemo(
     () =>
-      patients.reduce<Record<string, number>>((acc, p) => {
-        acc[p.name] = (acc[p.name] || 0) + 1;
-        return acc;
+      patients.reduce<Record<string, number>>((accumulator, patient) => {
+        accumulator[patient.name] = (accumulator[patient.name] || 0) + 1;
+        return accumulator;
       }, {}),
     [patients],
   );
 
   const filteredPatients = useMemo(
-    () => patients.filter((p) => p.name.includes(searchQuery)),
+    () => patients.filter((patient) => patient.name.includes(searchQuery)),
     [patients, searchQuery],
   );
 
   // 내 담당 환자 — 호실별 그룹핑
   const myPatientsByRoom = useMemo(
-    () => groupByRoom(filteredPatients.filter((p) => p.isMyPatient)),
+    () => groupByRoom(filteredPatients.filter((patient) => patient.isMyPatient)),
     [filteredPatients],
   );
 
@@ -81,7 +81,7 @@ export function PatientSidebar({
   );
 
   return (
-    <div className="flex flex-col h-full bg-[var(--color-surface-base)]">
+    <div className="flex flex-col h-full bg-surface-base">
       {/* Brand & Search Header */}
       <div className="p-3 border-b border-border-base flex flex-col gap-3">
         <div className="flex items-center px-1">
@@ -98,8 +98,8 @@ export function PatientSidebar({
             type="text"
             placeholder="환자명 검색..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 bg-white border-border-subtle shadow-sm h-8 text-body-sm focus-visible:ring-1 focus-visible:ring-[var(--color-brand-primary)]"
+            onChange={(event) => setSearchQuery(event.target.value)}
+            className="pl-8 bg-white border-border-subtle shadow-sm h-8 text-body-sm focus-visible:ring-1 focus-visible:ring-brand-primary"
           />
         </div>
       </div>
@@ -113,7 +113,7 @@ export function PatientSidebar({
         >
           <div className="w-full px-4 py-2.5 flex items-center justify-between bg-white border-b border-border-subtle hover:bg-slate-50 transition-colors">
             <CollapsibleTrigger className="flex-1 flex items-center justify-between gap-2 group">
-              <span className="text-[14px] font-black text-[var(--color-brand-primary)]">
+              <span className="text-[14px] font-black text-brand-primary">
                 내 담당 환자
               </span>
               <ChevronRight
@@ -128,7 +128,7 @@ export function PatientSidebar({
                 type="button"
                 onClick={onOpenAssignModal}
                 aria-label="담당 환자 설정"
-                className="ml-2 flex h-7 w-7 items-center justify-center rounded-md text-content-muted hover:bg-[var(--color-brand-surface)] hover:text-[var(--color-brand-primary)] transition"
+                className="ml-2 flex h-7 w-7 items-center justify-center rounded-md text-content-muted hover:bg-brand-surface hover:text-brand-primary transition"
               >
                 <Settings className="h-4 w-4" />
               </button>
@@ -209,7 +209,7 @@ export function PatientSidebar({
 
       {/* User profile + logout */}
       <div className="p-3 border-t border-border-base bg-white">
-        <div className="flex items-center justify-between gap-3 p-2.5 bg-[var(--color-surface-base)] rounded-xl border border-border-subtle/50 transition-all hover:border-[var(--color-brand-primary)]/20">
+        <div className="flex items-center justify-between gap-3 p-2.5 bg-surface-base rounded-xl border border-border-subtle/50 transition-all hover:border-brand-primary/20">
           <div className="flex flex-col min-w-0 pl-1">
             <span className="text-[14px] font-black text-content-primary truncate leading-tight">
               {user?.name ?? ""}
@@ -224,7 +224,7 @@ export function PatientSidebar({
               reset();
               router.push("/login");
             }}
-            className="p-2 text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-surface)] rounded-xl transition-all shadow-xs border border-[var(--color-brand-primary)]/10"
+            className="p-2 text-brand-primary hover:bg-brand-surface rounded-xl transition-all shadow-xs border border-brand-primary/10"
             title="로그아웃"
           >
             <LogOut className="size-5" />
@@ -276,7 +276,7 @@ function PatientItem({
       className={cn(
         "flex items-center justify-between w-full text-left transition-colors relative border-b border-border-subtle/20",
         isActive
-          ? "bg-[var(--color-brand-surface)]/60 border-l-[4px] border-l-[var(--color-brand-primary)]"
+          ? "bg-brand-surface/60 border-l-[4px] border-l-brand-primary"
           : "hover:bg-slate-50 bg-white border-l-[4px] border-l-transparent",
       )}
     >
@@ -291,7 +291,7 @@ function PatientItem({
               className={cn(
                 "text-base tracking-tight truncate",
                 isActive
-                  ? "font-bold text-[var(--color-sub-primary)]"
+                  ? "font-bold text-sub-primary"
                   : "font-semibold text-content-secondary",
               )}
             >
@@ -299,7 +299,7 @@ function PatientItem({
             </span>
             {isDuplicate && (
               <div
-                className="absolute top-0 -right-1 size-1 rounded-full bg-[var(--color-brand-primary)] shadow-[0_0_4px_var(--color-brand-primary)]/40"
+                className="absolute top-0 -right-1 size-1 rounded-full bg-brand-primary shadow-[0_0_4px_var(--color-brand-primary)]/40"
                 title="동명이인"
               />
             )}
@@ -308,7 +308,7 @@ function PatientItem({
             className={cn(
               "flex items-center gap-1 text-[13px] font-mono shrink-0",
               isActive
-                ? "text-[var(--color-sub-primary)]/70 font-bold"
+                ? "text-sub-primary/70 font-bold"
                 : "text-content-muted",
             )}
           >
@@ -358,7 +358,7 @@ function PatientItem({
         // 전체 환자 영역: 카운트 > 0 일 때만 정적 뱃지.
         <span
           title={`확정 전 기록 ${draftCount}건`}
-          className="flex items-center justify-center min-w-[22px] h-5 px-1.5 mr-3 bg-[var(--color-brand-surface)] text-[var(--color-brand-primary)] text-[11px] font-bold rounded-full shrink-0"
+          className="flex items-center justify-center min-w-[22px] h-5 px-1.5 mr-3 bg-brand-surface text-brand-primary text-[11px] font-bold rounded-full shrink-0"
         >
           {draftCount}
         </span>
