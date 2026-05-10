@@ -167,7 +167,7 @@ export function IVTimerPanel() {
                     {item.patientName}
                   </span>
                   {roomBed && (
-                    <span className="px-1.5 py-0.5 rounded bg-brand-surface text-brand-primary text-body-micro font-bold leading-none shrink-0">
+                    <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
                       {roomBed}
                     </span>
                   )}

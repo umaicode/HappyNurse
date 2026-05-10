@@ -304,21 +304,6 @@ function PatientItem({
               />
             )}
           </div>
-          {/* 이름 옆 호실-침대 칩 — EMR 헤더 buildHeaderFromApi 와 동일한 "{roomName-호}-{bedName}" 패턴.
-              칩 색은 환자 선택 여부와 무관하게 고정 (선택은 카드 배경/borderLeft 가 담당). */}
-          {(() => {
-            const roomBed = [
-              patient.roomName.replace(/호$/, ""),
-              patient.bedName,
-            ]
-              .filter(Boolean)
-              .join("-");
-            return roomBed ? (
-              <span className="px-1.5 py-0.5 rounded text-[11px] font-bold leading-none shrink-0 bg-brand-surface text-brand-primary">
-                {roomBed}
-              </span>
-            ) : null;
-          })()}
           <div
             className={cn(
               "flex items-center gap-1 text-[13px] font-mono shrink-0 ml-auto",
