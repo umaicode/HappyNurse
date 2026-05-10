@@ -6,7 +6,8 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 
 # pnpm 활성화 (Node 16.13+에 내장된 corepack 사용)
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# pnpm-lock.yaml 이 10.33 으로 작성되어 있으므로 버전 고정 (latest 쓰면 11.x 가 깔려 깨짐)
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 # 의존성 파일만 먼저 복사 → 이 레이어는 의존성 변경 없으면 캐시
 COPY package.json pnpm-lock.yaml ./
@@ -19,7 +20,7 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 # 의존성 복사
 COPY --from=deps /app/node_modules ./node_modules
