@@ -29,6 +29,11 @@ import com.happynurse.presentation.theme.HnColors
 
 enum class IVTimerLayout { BAR, RING }
 
+// IV 타이머 카드 전용 색상 — 그린(여유) / 옐로우(주의) / 테라코타(임박)
+private val IvSafeColor    = Color(0xFF2E7D5B)  // deep emerald   ─ 진행 < 50%   (여유)
+private val IvCautionColor = Color(0xFFD4A017)  // mustard yellow ─ 50% ≤ 진행 < 80% (주의)
+private val IvUrgentColor  = Color(0xFFC84B4B)  // terracotta     ─ 80% 이상      (임박)
+
 @Composable
 fun IVTimerCard(
     iv: IVTimer,
@@ -36,48 +41,84 @@ fun IVTimerCard(
 ) {
     val pct = (iv.elapsedMin.toFloat() / iv.totalMin).coerceIn(0f, 1f)
     val color: Color = when {
-        pct < 0.5f -> HnColors.Success
-        pct < 0.8f -> HnColors.Warning
-        else       -> HnColors.Danger
+        pct < 0.5f -> IvSafeColor
+        pct < 0.8f -> IvCautionColor
+        else       -> IvUrgentColor
     }
     if (layout == IVTimerLayout.RING) RingCard(iv, pct, color) else BarCard(iv, pct, color)
 }
 
+/** mL/hr → gtt/min 환산. 성인 20gtt/mL 가정 (백엔드 환자타입 보강 전 임시). */
+private fun mlPerHrToGttPerMin(mlPerHr: Double?): Int? {
+    val v = mlPerHr ?: return null
+    if (v <= 0.0) return null
+    return ((v * 20.0) / 60.0).toInt().coerceAtLeast(1)
+}
+
 @Composable
 private fun BarCard(iv: IVTimer, pct: Float, color: Color) {
+    val fillRatio = (1f - pct).coerceIn(0f, 1f)
+    val gtt = mlPerHrToGttPerMin(iv.currentRateMlPerHr)
+    val drugLines = iv.drug.split(" + ").map { it.trim() }.filter { it.isNotEmpty() }
+    val remainingMin = (iv.totalMin - iv.elapsedMin).coerceAtLeast(0)
     HnCard {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(iv.patient, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                Spacer(Modifier.size(6.dp))
-                TagChip(iv.room, fg = HnColors.Primary, bg = HnColors.PrimarySoft)
-                Spacer(Modifier.weight(1f))
-                Text("종료 ${iv.endsAt}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(iv.drug, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text)
-            Spacer(Modifier.height(10.dp))
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(HnColors.Border),
-            ) {
+        Row(verticalAlignment = Alignment.Top) {
+            // 좌측: IV 백 + 똑똑 떨어지는 방울 (chamber 옆에 gtt/min 라벨이 함께 그려짐)
+            IvDripAnimation(
+                fillRatio = fillRatio,
+                color = color,
+                gttPerMin = gtt,
+                modifier = Modifier.size(width = 90.dp, height = 120.dp),
+            )
+            Spacer(Modifier.size(4.dp))
+            // 우측: 환자 + 약물 + 진행 바 + 남은시간
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(iv.patient, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                    Spacer(Modifier.size(6.dp))
+                    // 호실-침대: WardPatientListResponse 룩업값 사용 (slim IV 응답에 없음)
+                    val roomBed = listOfNotNull(
+                        iv.room.takeIf { it.isNotBlank() },
+                        iv.bed.takeIf { it.isNotBlank() },
+                    ).joinToString("-")
+                    if (roomBed.isNotBlank()) TagChip(roomBed)
+                    Spacer(Modifier.weight(1f))
+                    Text("종료 ${iv.endsAt}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                }
+                Spacer(Modifier.height(12.dp))
+                // 약물 — 1개면 한 줄, 2개 이상이면 줄바꿈해서 깔끔히 나열
+                drugLines.forEachIndexed { idx, line ->
+                    Text(
+                        line,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = HnColors.Text,
+                    )
+                    if (idx < drugLines.lastIndex) Spacer(Modifier.height(2.dp))
+                }
+                Spacer(Modifier.height(10.dp))
                 Box(
                     Modifier
-                        .fillMaxWidth(pct)
+                        .fillMaxWidth()
                         .height(8.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(color),
+                        .background(HnColors.Border),
+                ) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth(pct)
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(color),
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "남은시간 ${remainingMin / 60}시간 ${remainingMin % 60}분 / ${iv.totalMin / 60}시간 ${iv.totalMin % 60}분",
+                    fontSize = 12.sp,
+                    color = HnColors.Text,
                 )
             }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "${iv.elapsedMin / 60}시간 ${iv.elapsedMin % 60}분 / ${iv.totalMin / 60}시간 ${iv.totalMin % 60}분",
-                fontSize = 12.sp,
-                color = HnColors.Text,
-            )
         }
     }
 }

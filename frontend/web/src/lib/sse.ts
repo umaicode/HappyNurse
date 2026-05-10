@@ -19,6 +19,16 @@ const resolveSseUrl = (path: string): string => {
   return `${base}${path}`;
 };
 
+// AI 서버 (FastAPI) SSE 용 — baseURL 다름. lib/ai-client.ts 의 분기 규칙과 동일.
+const resolveAiSseUrl = (path: string): string => {
+  if (typeof window === "undefined") return path;
+  if (window.location.hostname === "localhost") {
+    return `/ai-proxy${path}`;
+  }
+  const base = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "";
+  return `${base}${path}`;
+};
+
 export type SseEventHandler = (event: MessageEvent<string>) => void;
 
 export interface OpenSseOptions {
@@ -32,9 +42,18 @@ export interface OpenSseOptions {
  * SSE 채널 구독. cleanup 함수를 반환한다 (useEffect 의 return 에 그대로 둘 것).
  *
  * heartbeat 는 자동 무시 — 호출자는 onEvent 에 'heartbeat' 키를 둘 필요 없다.
+ *
+ * variant:
+ *   - "backend" (기본): 백엔드 (`/api`) SSE — sourceType 별 알림 채널
+ *   - "ai": AI 서버 (`/ai`) SSE — 인수인계 generate 진행 추적 등
  */
-export function openSse(path: string, options: OpenSseOptions): () => void {
-  const source = new EventSource(resolveSseUrl(path), {
+export function openSse(
+  path: string,
+  options: OpenSseOptions & { variant?: "backend" | "ai" } = { onEvent: {} },
+): () => void {
+  const variant = options.variant ?? "backend";
+  const url = variant === "ai" ? resolveAiSseUrl(path) : resolveSseUrl(path);
+  const source = new EventSource(url, {
     withCredentials: true,
   });
 
