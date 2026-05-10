@@ -669,10 +669,11 @@ function NoteRow({
             <QuickCorrectionPanel
               nursingRecordId={note.nursingRecordId}
               content={note.content}
-              onApply={(start, end, replaced) => {
-                // 본문 정확 치환 — 응답의 start/end 는 원본 content 인덱스 기준이라 note.content 에서 자른다.
-                // 사용자가 textarea 를 직접 편집한 후라면 인덱스가 어긋날 수 있어 안전 가드 추가.
-                const original = note.content.slice(start, end);
+              onApply={(start, end, replaced, original) => {
+                // 첫 적용 (draftContent === note.content) 은 원본 인덱스 기준 정확 치환.
+                // 그 이후 적용은 draftContent 가 이미 변경된 상태라 currentWord(original)을 첫 매치로 replace.
+                // currentWord 는 QuickCorrectionPanel 이 칩별 마지막 적용 단어를 추적하므로
+                // "사무실 → 3호실" 후 "3호실 → 사무실" 토글 시에도 정확히 동작한다.
                 const next =
                   draftContent === note.content
                     ? note.content.slice(0, start) +

@@ -213,6 +213,11 @@ export function PatientSidebar({
           <div className="flex flex-col min-w-0 pl-1">
             <span className="text-[14px] font-black text-content-primary truncate leading-tight">
               {user?.name ?? ""}
+              {user?.name && (
+                <span className="ml-1 text-body-xs font-medium text-content-tertiary">
+                  간호사
+                </span>
+              )}
             </span>
             <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider mt-0.5">
               {user?.wardName ?? ""}
@@ -285,7 +290,7 @@ function PatientItem({
         onClick={onClick}
         className="flex flex-col gap-1 min-w-0 flex-1 px-4 py-2.5 text-left"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="relative inline-block shrink-0">
             <span
               className={cn(
@@ -306,7 +311,7 @@ function PatientItem({
           </div>
           <div
             className={cn(
-              "flex items-center gap-1 text-[13px] font-mono shrink-0",
+              "flex items-center gap-1 text-[13px] font-mono shrink-0 ml-auto",
               isActive
                 ? "text-sub-primary/70 font-bold"
                 : "text-content-muted",
