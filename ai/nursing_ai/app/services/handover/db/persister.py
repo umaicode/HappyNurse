@@ -10,8 +10,8 @@ async def save_handover(
     payload: dict,
 ) -> ShiftHandover:
     h = ShiftHandover(
-        encounter_id=encounter_id,
-        from_practitioner_id=from_practitioner_id,
+        encounter_id=int(encounter_id),
+        from_practitioner_id=int(from_practitioner_id),
         auto_summary=text,
         auto_summary_json=payload,
     )
