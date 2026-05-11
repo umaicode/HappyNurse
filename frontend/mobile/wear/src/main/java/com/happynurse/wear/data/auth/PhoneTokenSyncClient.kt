@@ -19,13 +19,21 @@ class PhoneTokenSyncClient @Inject constructor(
 
     suspend fun requestToken(): Result<Unit> = runCatching {
         val nodes = nodeClient.connectedNodes.await()
+        android.util.Log.d("PhoneSync", "connectedNodes count=${nodes.size}")
+        nodes.forEach { node ->
+            android.util.Log.d(
+                "PhoneSync",
+                "node id=${node.id} name=${node.displayName} nearby=${node.isNearby}",
+            )
+        }
         if (nodes.isEmpty()) error("연결된 폰을 찾지 못했습니다")
         nodes.forEach { node ->
-            messageClient.sendMessage(
+            val result = messageClient.sendMessage(
                 node.id,
                 WearableMessagePaths.WEAR_AUTH_TOKEN_REQUEST,
                 ByteArray(0),
             ).await()
+            android.util.Log.d("PhoneSync", "sendMessage to ${node.id} requestId=$result")
         }
     }
 }

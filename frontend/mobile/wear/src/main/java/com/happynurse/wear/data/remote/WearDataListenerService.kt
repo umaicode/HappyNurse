@@ -27,6 +27,10 @@ class WearDataListenerService : WearableListenerService() {
 
     override fun onMessageReceived(messageEvent: MessageEvent) {
         super.onMessageReceived(messageEvent)
+        android.util.Log.d(
+            "WearListener",
+            "onMessageReceived path=${messageEvent.path} size=${messageEvent.data.size}",
+        )
         when (messageEvent.path) {
             WearableMessagePaths.IV_ALERT ->
                 handleNotification(messageEvent.data, NotificationType.IV_ALERT)
@@ -38,6 +42,8 @@ class WearDataListenerService : WearableListenerService() {
                 handleAuthTokenResponse(messageEvent.data)
             WearableMessagePaths.SESSION_LOGOUT ->
                 handleLogout()
+            else ->
+                android.util.Log.w("WearListener", "unknown path=${messageEvent.path}")
         }
     }
 
@@ -56,11 +62,20 @@ class WearDataListenerService : WearableListenerService() {
     }
 
     private fun handleAuthTokenResponse(data: ByteArray) {
+        val raw = data.decodeToString()
+        android.util.Log.d("WearListener", "auth response raw=$raw")
         runCatching {
-            val payload = Json.decodeFromString<WearAuthTokenPayload>(data.decodeToString())
+            val payload = Json.decodeFromString<WearAuthTokenPayload>(raw)
+            android.util.Log.d(
+                "WearListener",
+                "parsed payload wardId=${payload.wardId} tokenBlank=${payload.accessToken.isBlank()}",
+            )
             scope.launch {
                 tokenStore.save(accessToken = payload.accessToken, wardId = payload.wardId)
+                android.util.Log.d("WearListener", "tokenStore.save done wardId=${payload.wardId}")
             }
+        }.onFailure {
+            android.util.Log.e("WearListener", "handleAuthTokenResponse failed", it)
         }
     }
 

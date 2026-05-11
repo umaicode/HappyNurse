@@ -93,7 +93,8 @@ data class IVTimer(
     val elapsedMin: Int,
     val endsAt: String,
     val startedAt: String,
-    val currentRateMlPerHr: Double? = null,  // 서버 slim 응답에서 받음 — gtt 환산용
+    val currentRateMlPerHr: Double? = null,
+    val rateGttPerMin: Int? = null,  // 서버 slim 응답의 실제 gtt/min — patientType 기반 역환산값
 )
 
 enum class NotifCategory { FLUID, ORDER, WATCH, REQUEST }
@@ -118,15 +119,3 @@ data class WatchAlarm(
     val sttText: String,
 )
 
-// 업무 페이지 의사오더변경 탭 placeholder — 백엔드 변경 API 추가 시 사용
-data class DoctorOrderChange(
-    val medicationOrderId: Long,
-    val patientId: Long,
-    val encounterId: Long,
-    val patientName: String,
-    val room: String,
-    val bed: String,
-    val orderKind: OrderKind,
-    val orderName: String,
-    val changedAtIso: String,
-)

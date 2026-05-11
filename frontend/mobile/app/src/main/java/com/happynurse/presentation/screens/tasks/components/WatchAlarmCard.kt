@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -33,8 +34,8 @@ private val FIRE_AT_FORMATTER: DateTimeFormatter =
 
 @Composable
 fun WatchAlarmCard(alarm: WatchAlarm) {
-    HnCard(padding = 14.dp) {
-        Column {
+    HnCard(modifier = Modifier.fillMaxWidth(), padding = 14.dp) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -73,7 +74,33 @@ fun WatchAlarmCard(alarm: WatchAlarm) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+            val remaining = formatRemaining(alarm.fireAtEpochMillis)
+            if (remaining != null) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = remaining,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = HnColors.TextSecondary,
+                )
+            }
         }
+    }
+}
+
+private fun formatRemaining(epochMillis: Long?): String? {
+    if (epochMillis == null) return null
+    val diffMs = epochMillis - System.currentTimeMillis()
+    if (diffMs <= 0L) return null
+    val totalMin = diffMs / 60_000L
+    val days = totalMin / (60 * 24)
+    val hours = (totalMin % (60 * 24)) / 60
+    val minutes = totalMin % 60
+    return buildString {
+        append("남은 시간 ")
+        if (days > 0) append("${days}일 ")
+        if (hours > 0 || days > 0) append("${hours}시간 ")
+        append("${minutes}분")
     }
 }
 

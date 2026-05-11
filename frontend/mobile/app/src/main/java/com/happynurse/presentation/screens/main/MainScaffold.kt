@@ -36,8 +36,8 @@ fun MainScaffold(
     // TasksViewModel 은 같은 NavBackStackEntry scope — TasksScreen 과 instance 공유
     val tasksViewModel: TasksViewModel = hiltViewModel()
     val notifs by tasksViewModel.notifs.collectAsStateWithLifecycle()
-    // 종 아이콘 배지 = 24시간 이내 알림 개수
-    val upcoming = notifs.count { it.minutesAgo in 0..1440 }
+    // 종 아이콘 배지 = 과거/미래 24시간 이내 알림 개수 (워치알람은 minutesAgo 음수)
+    val upcoming = notifs.count { it.minutesAgo in -1440..1440 }
     // 탭 전환 시마다 refresh (담당환자 변경 후 다른 탭 → 벨 카운트 / 시트 자동 갱신)
     LaunchedEffect(tab) { tasksViewModel.refreshBellNotifs() }
     val openNotifications: () -> Unit = {
@@ -58,7 +58,6 @@ fun MainScaffold(
                     HnTab.TASKS -> TasksScreen(
                         onOpenNotifications = openNotifications,
                         upcomingCount = upcoming,
-                        onOpenPatient = onOpenPatient,
                         ivLayout = IVTimerLayout.BAR,
                     )
                     HnTab.HANDOFF -> HandoffScreen()
@@ -76,6 +75,8 @@ fun MainScaffold(
             visible = notifOpen,
             notifications = notifs,
             onClose = { notifOpen = false },
+            onDelete = tasksViewModel::dismissNotif,
+            onDeleteAll = tasksViewModel::dismissAllNotifs,
         )
     }
 }

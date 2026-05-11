@@ -47,24 +47,34 @@ class HomeViewModel @Inject constructor(
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
 
     init {
+        android.util.Log.d("HomeVM", "init called")
         observeWardId()
         startCountdownTicker()
         viewModelScope.launch {
+            val token = tokenStore.accessToken()
+            android.util.Log.d("HomeVM", "init token isBlank=${token.isNullOrBlank()}")
             // 첫 진입 시 토큰이 없으면 폰에 요청
-            if (tokenStore.accessToken().isNullOrBlank()) {
-                phoneTokenSyncClient.requestToken()
+            if (token.isNullOrBlank()) {
+                android.util.Log.d("HomeVM", "requesting token from phone...")
+                runCatching { phoneTokenSyncClient.requestToken() }
+                    .onSuccess { android.util.Log.d("HomeVM", "requestToken success") }
+                    .onFailure { android.util.Log.e("HomeVM", "requestToken failed", it) }
             }
         }
     }
 
     private fun observeWardId() {
         viewModelScope.launch {
+            android.util.Log.d("HomeVM", "observeWardId start")
             tokenStore.wardIdFlow.distinctUntilChanged().collectLatest { wardId ->
+                android.util.Log.d("HomeVM", "wardId emitted=$wardId")
                 if (wardId == null) {
+                    android.util.Log.w("HomeVM", "wardId is null -> skip refresh")
                     _state.update { it.copy(ivList = emptyList(), sttList = emptyList()) }
                     return@collectLatest
                 }
                 while (true) {
+                    android.util.Log.d("HomeVM", "refresh start wardId=$wardId")
                     refresh(wardId)
                     delay(REFRESH_INTERVAL_MS)
                 }
