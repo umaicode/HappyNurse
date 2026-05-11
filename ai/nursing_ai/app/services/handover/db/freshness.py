@@ -16,6 +16,6 @@ class FreshnessRepo:
             ts = row.auto_summary_json.get("meta", {}).get("last_record_ts")
             if not ts:
                 return {"new_records_since_report": 0}
-            after_ts = datetime.fromisoformat(ts)
+            after_ts = datetime.fromisoformat(ts).replace(tzinfo=None)
             cnt = await self._records.count_records_after(str(row.encounter_id), after_ts)
             return {"new_records_since_report": int(cnt)}

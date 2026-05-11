@@ -23,7 +23,7 @@ class DBRecordRepository:
                 AND status = 'confirmed'
                 AND confirmed_at BETWEEN :start AND :end
                 ORDER BY confirmed_at ASC
-            """), {"eid": int(encounter_id), "start": start, "end": end})
+            """), {"eid": int(encounter_id), "start": start.replace(tzinfo=None), "end": end.replace(tzinfo=None)})
             rows = result.mappings().all()
         return [
             NursingRecord(
@@ -91,7 +91,7 @@ class DBRecordRepository:
                 AND ma.status = 'confirmed'
                 AND ma.effective_datetime BETWEEN :start AND :end
                 ORDER BY ma.effective_datetime ASC
-            """), {"eid": int(encounter_id), "start": start, "end": end})
+            """), {"eid": int(encounter_id), "start": start.replace(tzinfo=None), "end": end.replace(tzinfo=None)})
             rows = result.mappings().all()
         return [
             NfcMedRecord(
@@ -113,7 +113,7 @@ class DBRecordRepository:
                 WHERE encounter_id = :eid
                 AND status = 'confirmed'
                 AND confirmed_at > :after
-            """), {"eid": int(encounter_id), "after": after_ts})
+            """), {"eid": int(encounter_id), "after": after_ts.replace(tzinfo=None)})
             return result.scalar_one()
 
 
