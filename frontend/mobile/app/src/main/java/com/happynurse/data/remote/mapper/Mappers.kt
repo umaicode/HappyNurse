@@ -5,12 +5,14 @@ import com.happynurse.data.remote.model.AppProfileResponse
 import com.happynurse.data.remote.model.NursingNoteDto
 import com.happynurse.data.remote.model.OrderDto
 import com.happynurse.data.remote.model.PatientDetailDto
+import com.happynurse.data.remote.model.SttReminderListItemResponse
 import com.happynurse.data.remote.model.WardPatientDto
 import com.happynurse.domain.model.Note
 import com.happynurse.domain.model.NurseProfile
 import com.happynurse.domain.model.Order
 import com.happynurse.domain.model.OrderKind
 import com.happynurse.domain.model.Patient
+import com.happynurse.domain.model.WatchAlarm
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -30,10 +32,9 @@ private fun ageFromBirth(birthDate: String?): Int {
 
 private fun daysSince(periodStart: String?): Int {
     val start = runCatching { OffsetDateTime.parse(periodStart).toLocalDate() }.getOrNull()
-        ?: runCatching { LocalDate.parse(periodStart) }.getOrNull()
+        ?: runCatching { LocalDate.parse(periodStart?.take(10)) }.getOrNull()
         ?: return 0
-    return Period.between(start, LocalDate.now()).days.coerceAtLeast(0)
-        .takeIf { it > 0 } ?: java.time.temporal.ChronoUnit.DAYS.between(start, LocalDate.now()).toInt()
+    return java.time.temporal.ChronoUnit.DAYS.between(start, LocalDate.now()).toInt().coerceAtLeast(0)
 }
 
 fun AppProfileResponse.toDomain(): NurseProfile = NurseProfile(
@@ -63,11 +64,12 @@ fun WardPatientDto.toDomain(): Patient = Patient(
     department = "",
     doctor = "",
     chief = chiefComplaint.orEmpty(),
-    surgery = "",
+    surgery = surgeryName.orEmpty(),
     patientId = patientId,
     encounterId = encounterId,
     unconfirmedNursingCount = unconfirmedNursingCount,
     isMyPatient = isMyPatient,
+    diseaseName = diseaseName.orEmpty(),
 )
 
 fun PatientDetailDto.toDomain(): Patient = Patient(
@@ -117,6 +119,13 @@ fun NursingNoteDto.toDomain(): Note {
     )
 }
 
+fun SttReminderListItemResponse.toDomain(): WatchAlarm = WatchAlarm(
+    sttReminderId = sttReminderId,
+    contentSummary = contentSummary.orEmpty(),
+    fireAtEpochMillis = fireAtEpochMillis,
+    sttText = sttText.orEmpty(),
+)
+
 fun OrderDto.toDomain(): Order {
     val kind = when (orderType) {
         "MEDICATION" -> OrderKind.INJ
@@ -132,6 +141,11 @@ fun OrderDto.toDomain(): Order {
     ).joinToString("").ifBlank { "-" }
     val freqStr = frequency?.let { "q${it}h" } ?: "-"
     val dateOnly = dateWritten?.take(10).orEmpty()
+    val timeOnly = run {
+        val ldt = runCatching { OffsetDateTime.parse(dateWritten).toLocalDateTime() }.getOrNull()
+            ?: runCatching { LocalDateTime.parse(dateWritten) }.getOrNull()
+        ldt?.format(DateTimeFormatter.ofPattern("HH:mm")).orEmpty()
+    }
     return Order(
         kind = kind,
         code = orderCode.orEmpty(),
@@ -143,6 +157,7 @@ fun OrderDto.toDomain(): Order {
         status = status.orEmpty(),
         note = remarks.orEmpty(),
         dateWritten = dateOnly,
+        timeWritten = timeOnly,
         medicationOrderId = medicationOrderId,
         prescriberId = prescriberId,
         prescriberName = prescriberName.orEmpty(),

@@ -88,9 +88,6 @@ dependencies {
     // DataStore
     implementation(libs.androidx.datastore.preferences)
 
-    // Biometric
-    implementation(libs.androidx.biometric)
-
     // Kotlin Serialization
     implementation(libs.kotlinx.serialization.json)
 
