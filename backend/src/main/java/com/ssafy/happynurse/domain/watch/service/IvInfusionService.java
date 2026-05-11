@@ -91,7 +91,7 @@ public class IvInfusionService {
                 nurse,
                 req.totalVolumeMl(),
                 rate,
-                req.patientType(),
+                req.dropSet(),
                 now,
                 req.note());
         IvInfusion saved = repository.save(iv);
@@ -109,7 +109,7 @@ public class IvInfusionService {
         IvInfusion iv = resolveActiveByTagUid(tagUid);
         BigDecimal newRate = req.resolveRateMlPerHr();
         LocalDateTime now = LocalDateTime.now();
-        iv.updatePatientType(req.patientType());
+        iv.updateDropSet(req.dropSet());
         iv.changeRate(newRate, now);
 
         afterCommit(() -> {

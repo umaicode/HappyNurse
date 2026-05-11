@@ -209,7 +209,7 @@ class IvInfusionTest {
                 stub(Patient.class), stub(Encounter.class),
                 List.of(order),
                 stub(Practitioner.class),
-                totalVolumeMl, rate, PatientType.ADULT, now, null);
+                totalVolumeMl, rate, DropSet.SET_20, now, null);
     }
 
     private static <T> T stub(Class<T> clazz) {
