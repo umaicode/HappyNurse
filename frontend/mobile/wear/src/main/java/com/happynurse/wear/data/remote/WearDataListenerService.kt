@@ -4,21 +4,33 @@ package com.happynurse.wear.data.remote
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
 import com.happynurse.wear.data.notification.NotificationType
+import com.happynurse.wear.data.notification.WearAuthTokenPayload
 import com.happynurse.wear.data.notification.WearEventBus
 import com.happynurse.wear.data.notification.WearNotification
 import com.happynurse.wear.data.notification.WearNotificationPayload
+import com.happynurse.wear.data.auth.WearTokenStore
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import java.nio.ByteBuffer
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class WearDataListenerService : WearableListenerService() {
 
     @Inject lateinit var eventBus: WearEventBus
+    @Inject lateinit var tokenStore: WearTokenStore
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onMessageReceived(messageEvent: MessageEvent) {
         super.onMessageReceived(messageEvent)
+        android.util.Log.d(
+            "WearListener",
+            "onMessageReceived path=${messageEvent.path} size=${messageEvent.data.size}",
+        )
         when (messageEvent.path) {
             WearableMessagePaths.IV_ALERT ->
                 handleNotification(messageEvent.data, NotificationType.IV_ALERT)
@@ -26,10 +38,12 @@ class WearDataListenerService : WearableListenerService() {
                 handleNotification(messageEvent.data, NotificationType.TIMER_ALARM)
             WearableMessagePaths.PATIENT_CALL ->
                 handleNotification(messageEvent.data, NotificationType.PATIENT_CALL)
-            WearableMessagePaths.TIMER_START ->
-                handleTimerStart(messageEvent.data)
+            WearableMessagePaths.WEAR_AUTH_TOKEN_RESPONSE ->
+                handleAuthTokenResponse(messageEvent.data)
             WearableMessagePaths.SESSION_LOGOUT ->
                 handleLogout()
+            else ->
+                android.util.Log.w("WearListener", "unknown path=${messageEvent.path}")
         }
     }
 
@@ -47,13 +61,25 @@ class WearDataListenerService : WearableListenerService() {
         }
     }
 
-    private fun handleTimerStart(data: ByteArray) {
-        if (data.size != Long.SIZE_BYTES) return
-        val millis = ByteBuffer.wrap(data).long
-        eventBus.emitTimerStart(millis)
+    private fun handleAuthTokenResponse(data: ByteArray) {
+        val raw = data.decodeToString()
+        android.util.Log.d("WearListener", "auth response raw=$raw")
+        runCatching {
+            val payload = Json.decodeFromString<WearAuthTokenPayload>(raw)
+            android.util.Log.d(
+                "WearListener",
+                "parsed payload wardId=${payload.wardId} tokenBlank=${payload.accessToken.isBlank()}",
+            )
+            scope.launch {
+                tokenStore.save(accessToken = payload.accessToken, wardId = payload.wardId)
+                android.util.Log.d("WearListener", "tokenStore.save done wardId=${payload.wardId}")
+            }
+        }.onFailure {
+            android.util.Log.e("WearListener", "handleAuthTokenResponse failed", it)
+        }
     }
 
     private fun handleLogout() {
-        // TODO 워치 로컬 세션 파기
+        scope.launch { tokenStore.clear() }
     }
 }

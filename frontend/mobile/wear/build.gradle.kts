@@ -16,7 +16,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.happynurse.wear"
+        applicationId = "com.happynurse"
         minSdk = 31
         targetSdk = 35
         versionCode = 1
@@ -24,11 +24,33 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"https://k14e101.p.ssafy.io/dev/api/\""
+            )
+            buildConfigField(
+                "String",
+                "AI_BASE_URL",
+                "\"https://k14e101.p.ssafy.io/dev/ai/\""
+            )
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
+            )
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"https://k14e101.p.ssafy.io/api/\""
+            )
+            buildConfigField(
+                "String",
+                "AI_BASE_URL",
+                "\"https://k14e101.p.ssafy.io/ai/\""
             )
         }
     }
@@ -38,42 +60,52 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
 dependencies {
     // Wear OS Compose (Material 3 Expressive)
     implementation(platform(libs.androidx.compose.bom))
-    implementation("androidx.wear.compose:compose-material3:1.5.0-beta04")
-    implementation("androidx.wear.compose:compose-foundation:1.5.0-beta04")
-    implementation("androidx.wear.compose:compose-navigation:1.5.0-beta04")
-    implementation("androidx.wear:wear-tooling-preview:1.0.0")
+    implementation(libs.androidx.wear.compose.material3)
+    implementation(libs.androidx.wear.compose.foundation)
+    implementation(libs.androidx.wear.compose.navigation)
+    implementation(libs.androidx.wear.tooling.preview)
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
     // Foundation extras (Pager 등)
-    implementation("androidx.compose.foundation:foundation")
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.material.icons.extended)
 
     // Wear OS Core
-    implementation("androidx.wear:wear:1.3.0")
-    implementation("com.google.android.gms:play-services-wearable:18.1.0")
+    implementation(libs.androidx.wear)
+    implementation(libs.play.services.wearable)
 
     // DataLayer (폰-워치 통신)
-    implementation("androidx.wear:wear-remote-interactions:1.1.0")
-    implementation("androidx.wear:wear-phone-interactions:1.1.0")
+    implementation(libs.androidx.wear.remote.interactions)
+    implementation(libs.androidx.wear.phone.interactions)
 
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.59.2")
-    ksp("com.google.dagger:hilt-compiler:2.59.2")
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
 
     // ViewModel + Coroutine
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.play.services)
 
     // Kotlin Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation(libs.kotlinx.serialization.json)
+
+    // 네트워크 — 워치가 직접 백엔드 REST API 호출
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
+
+    // 토큰 캐시 — 폰에서 동기화한 accessToken/wardId 영속 저장
+    implementation(libs.androidx.datastore.preferences)
 
     // Firebase Cloud Messaging — 워치 직접 푸시 수신
     implementation(libs.firebase.messaging)
