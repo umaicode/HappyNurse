@@ -57,6 +57,10 @@ public class IvInfusion {
     @Column(name = "current_rate_ml_per_hr", nullable = false, precision = 8, scale = 2)
     private BigDecimal currentRateMlPerHr;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "patient_type", nullable = false, length = 16)
+    private PatientType patientType;
+
     @Column(name = "started_at", nullable = false)
     private LocalDateTime startedAt;
 
@@ -106,6 +110,7 @@ public class IvInfusion {
             Practitioner practitioner,
             BigDecimal totalVolumeMl,
             BigDecimal initialRateMlPerHr,
+            PatientType patientType,
             LocalDateTime now,
             String note
     ) {
@@ -118,6 +123,9 @@ public class IvInfusion {
         if (orders == null || orders.isEmpty()) {
             throw new IllegalArgumentException("orders must contain at least 1 order");
         }
+        if (patientType == null) {
+            throw new IllegalArgumentException("patientType must not be null");
+        }
         IvInfusion iv = new IvInfusion();
         iv.patient = patient;
         iv.encounter = encounter;
@@ -125,6 +133,7 @@ public class IvInfusion {
         iv.practitioner = practitioner;
         iv.totalVolumeMl = totalVolumeMl;
         iv.currentRateMlPerHr = initialRateMlPerHr;
+        iv.patientType = patientType;
         iv.startedAt = now;
         iv.expectedEndAt = computeEndAt(now, totalVolumeMl, initialRateMlPerHr);
         iv.status = InfusionStatus.IN_PROGRESS;
@@ -155,6 +164,13 @@ public class IvInfusion {
         this.currentRateMlPerHr = newRate;
         this.expectedEndAt = computeEndAt(now, remaining, newRate);
         this.fiveMinAlertSentAt = null;
+    }
+
+    /** 속도 변경 요청이 새 patientType 을 동반하면 저장값 갱신 */
+    public void updatePatientType(PatientType patientType) {
+        if (patientType != null) {
+            this.patientType = patientType;
+        }
     }
 
     public void markFiveMinAlertSent(LocalDateTime now) {
