@@ -8,7 +8,7 @@ import androidx.wear.compose.material3.EdgeButton
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.happynurse.wear.presentation.components.HnFullScreenAlarmScaffold
-import com.happynurse.wear.presentation.theme.HnIvBlue
+import com.happynurse.wear.presentation.theme.HnAccent
 
 @Composable
 fun IvAlarmScreen(
@@ -19,7 +19,7 @@ fun IvAlarmScreen(
 ) {
     HnFullScreenAlarmScaffold(
         badgeText = "수액 완료",
-        badgeColor = HnIvBlue,
+        badgeColor = HnAccent,
         patientName = patientName,
         content = medicationName,
         roomBedTime = roomBedTime,

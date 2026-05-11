@@ -1,4 +1,4 @@
-// 업무 페이지 — 수액타이머 / 의사오더변경 / 워치알람 3탭
+// 업무 페이지 — 수액타이머 / 워치알람 2탭
 package com.happynurse.presentation.screens.tasks
 
 import androidx.compose.foundation.background
@@ -37,19 +37,16 @@ import com.happynurse.presentation.components.IVTimerCard
 import com.happynurse.presentation.components.IVTimerLayout
 import com.happynurse.presentation.components.NotifBell
 import com.happynurse.presentation.components.PageHeader
-import com.happynurse.presentation.screens.tasks.components.DoctorOrderChangeCard
 import com.happynurse.presentation.screens.tasks.components.WatchAlarmCard
 import com.happynurse.presentation.theme.HnColors
 
 private const val TAB_IV = "iv"
-private const val TAB_ORDER = "order"
 private const val TAB_WATCH = "watch"
 
 @Composable
 fun TasksScreen(
     onOpenNotifications: () -> Unit,
     upcomingCount: Int,
-    onOpenPatient: (String) -> Unit,
     ivLayout: IVTimerLayout = IVTimerLayout.BAR,
     viewModel: TasksViewModel = hiltViewModel(),
 ) {
@@ -59,7 +56,6 @@ fun TasksScreen(
         viewModel.refreshWatchAlarms()
     }
     val ivTimers by viewModel.ivTimers.collectAsStateWithLifecycle()
-    val orderChanges by viewModel.orderChanges.collectAsStateWithLifecycle()
     val watchAlarms by viewModel.watchAlarms.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxWidth()) {
@@ -81,28 +77,6 @@ fun TasksScreen(
                         ),
                     ) {
                         items(timers, key = { it.id }) { IVTimerCard(it, layout = ivLayout) }
-                    }
-                }
-            }
-            TAB_ORDER -> {
-                if (orderChanges.isEmpty()) {
-                    EmptyState(
-                        title = "변경된 오더가 없습니다",
-                        sub = "준비중인 기능입니다",
-                    )
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            start = 20.dp, end = 20.dp, top = 14.dp, bottom = 24.dp,
-                        ),
-                    ) {
-                        items(orderChanges, key = { it.medicationOrderId }) { change ->
-                            DoctorOrderChangeCard(
-                                change = change,
-                                onClick = { onOpenPatient(change.patientId.toString()) },
-                            )
-                        }
                     }
                 }
             }
@@ -131,7 +105,6 @@ fun TasksScreen(
 private fun TasksTabBar(active: String, onChange: (String) -> Unit) {
     val tabs = listOf(
         TAB_IV to "수액타이머",
-        TAB_ORDER to "오더변경",
         TAB_WATCH to "워치알람",
     )
     Column(Modifier.fillMaxWidth()) {

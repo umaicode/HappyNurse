@@ -53,6 +53,8 @@ data class IvInfusionListItemResponse(
     @SerializedName("patientName") val patientName: String?,
     @SerializedName("medicationNames") val medicationNames: List<String> = emptyList(),
     @SerializedName("currentRateMlPerHr") val currentRateMlPerHr: Double?,
+    @SerializedName("rateGttPerMin") val rateGttPerMin: Int?,
+    @SerializedName("patientType") val patientType: String?, // "ADULT" | "PEDIATRIC"
     @SerializedName("status") val status: String, // IN_PROGRESS|PAUSED|COMPLETED|CANCELLED|EXPIRED
     @SerializedName("startedAt") val startedAt: String?,
     @SerializedName("expectedEndAt") val expectedEndAt: String?,

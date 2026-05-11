@@ -1,33 +1,37 @@
-// PhoneDataListenerService — 워치 → 폰 Wearable Data Layer 메시지 수신.
-// AUDIO_TIMER (STT raw 오디오) / WEAR_FCM_TOKEN (워치 FCM 토큰 대행 등록) / WEAR_STT_TIMER_CREATE 처리.
+// PhoneDataListenerService — 워치 → 폰 Wearable Data Layer 메시지 수신 서비스.
+// 워치 FCM 토큰 등록 위임과 인증 토큰 응답을 처리한다.
 package com.happynurse.data.wearable
 
 import android.util.Log
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
 import com.happynurse.data.remote.fcm.FcmTokenRegistrar
+import com.happynurse.data.repository.AuthRepository
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class PhoneDataListenerService : WearableListenerService() {
 
     @Inject lateinit var fcmTokenRegistrar: FcmTokenRegistrar
+    @Inject lateinit var authRepository: AuthRepository
+    @Inject lateinit var phoneDataClient: PhoneDataClient
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onMessageReceived(messageEvent: MessageEvent) {
         super.onMessageReceived(messageEvent)
         Log.d(TAG, "워치 → 폰 수신: path=${messageEvent.path} bytes=${messageEvent.data.size}")
         when (messageEvent.path) {
-            WearableMessagePaths.AUDIO_TIMER -> handleAudioTimer(messageEvent.data)
             WearableMessagePaths.WEAR_FCM_TOKEN -> handleWearFcmToken(messageEvent.data)
-            WearableMessagePaths.WEAR_STT_TIMER_CREATE -> handleWearSttCreate(messageEvent.data)
+            WearableMessagePaths.WEAR_AUTH_TOKEN_REQUEST -> handleAuthTokenRequest()
         }
-    }
-
-    // 워치에서 받은 raw audio → 서버 STT API 업로드 → 응답으로 받은 시간(millis) 을
-    // WearableMessagePaths.TIMER_START 로 워치에 회신
-    private fun handleAudioTimer(data: ByteArray) {
-        // TODO 백엔드 STT 엔드포인트 업로드 + millis 응답 수신 + WearDataClient.send(TIMER_START, millisBytes)
     }
 
     /** 워치 FCM 토큰을 받아 백엔드 /devices/fcm-token 에 deviceType=watch 로 대행 등록. */
@@ -41,15 +45,24 @@ class PhoneDataListenerService : WearableListenerService() {
         fcmTokenRegistrar.registerWearToken(token)
     }
 
-    /**
-     * 워치에서 등록한 STT 타이머를 백엔드 timer/reminder API 에 등록.
-     * TODO: 백엔드 STT/Reminder endpoint 합의 후 실제 API 호출 구현.
-     */
-    private fun handleWearSttCreate(data: ByteArray) {
-        val payload = runCatching { String(data, Charsets.UTF_8) }.getOrNull()
-        Log.d(TAG, "워치 STT 등록 요청 수신: $payload")
-        // TODO: kotlinx.serialization 으로 WearSttCreatePayload 디코드 후
-        //       ReminderApi.createReminder(...) 호출 + 등록 결과를 워치에 회신
+    /** 워치가 시작 시 토큰을 모를 때 발송하는 요청 — DataStore 의 accessToken/wardId 를 워치에 회신. */
+    private fun handleAuthTokenRequest() {
+        scope.launch {
+            val token = authRepository.accessToken.firstOrNull()
+            val wardId = authRepository.wardId.firstOrNull()
+            if (token.isNullOrBlank() || wardId == null) {
+                Log.d(TAG, "워치 토큰 요청 무시 — 폰이 로그아웃 상태")
+                return@launch
+            }
+            val payload = Json.encodeToString(
+                WearAuthTokenPayload.serializer(),
+                WearAuthTokenPayload(accessToken = token, wardId = wardId),
+            )
+            phoneDataClient.send(
+                WearableMessagePaths.WEAR_AUTH_TOKEN_RESPONSE,
+                payload.toByteArray(Charsets.UTF_8),
+            )
+        }
     }
 
     companion object {

@@ -1,52 +1,57 @@
-// HappyNurse Wear 컬러 팔레트 — Material 3 Expressive 톤(채도 ↑, surface 단계 분리).
+// HappyNurse Wear 컬러 팔레트 — 모노톤(거의 검정→짙은 회색) + 인디고 단일 강조색.
+// 진단/위험 신호인 잔여시간 색은 RemainingTimeColor 에서 따로 관리.
 package com.happynurse.wear.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 import androidx.wear.compose.material3.ColorScheme
 
-// ── HappyNurse 브랜드/도메인 컬러 ──────────────────────────────────────────────
-val HnIvBlue = Color(0xFF5BB0FF)
-val HnIvBlueDeep = Color(0xFF1E73C7)
-val HnSttPurple = Color(0xFFC4A7FF)
-val HnSttOrange = Color(0xFFFFB74D)
-val HnAlarmPink = Color(0xFFFF8FB8)
-val HnUrgent = Color(0xFFFF6B6B)
-val HnSuccess = Color(0xFF4CAF50)
-val HnPatientBg = Color(0xFFE91E63)
+// ── 단일 강조색(Indigo) ─────────────────────────────────────────────
+val HnAccent = Color(0xFF7C8CFF)
+val HnAccentDeep = Color(0xFF4F5FCC)
+val HnAccentSoft = Color(0xFF2A3068)
+private val HnOnAccent = Color(0xFF0B0C12)
+private val HnOnAccentSoft = Color(0xFFE6E9FF)
 
-// Surface 단계(Expressive: Container/High/Highest 분리)
-val HnSurfaceDim = Color(0xFF0B0C10)
-val HnSurface = Color(0xFF14171D)
-val HnSurfaceContainer = Color(0xFF1B1F26)
-val HnSurfaceContainerHigh = Color(0xFF242932)
-val HnSurfaceContainerHighest = Color(0xFF2D333E)
-val HnSurfaceBright = Color(0xFF353C48)
-val HnOnSurface = Color(0xFFEEF0F4)
-val HnOnSurfaceVariant = Color(0xFFB6BBC4)
-val HnOutline = Color(0xFF3A3F47)
+// ── 모노톤 표면 단계 ────────────────────────────────────────────────
+private val MonoBackground = Color(0xFF0A0A0B)
+private val MonoSurface = Color(0xFF131316)
+private val MonoSurfaceContainerLow = Color(0xFF18181B)
+private val MonoSurfaceContainer = Color(0xFF1F1F24)
+private val MonoSurfaceContainerHigh = Color(0xFF26262C)
+private val MonoSurfaceContainerHighest = Color(0xFF2D2D34)
+private val MonoOutline = Color(0xFF3F3F46)
+
+// ── 텍스트 ─────────────────────────────────────────────────────────
+private val MonoOnSurface = Color(0xFFE8E8EA)
+private val MonoOnSurfaceVariant = Color(0xFF9C9CA3)
+
+// ── 위험 신호(에러/긴급) ─────────────────────────────────────────────
+private val HnDanger = Color(0xFFEF4444)
+private val HnDangerContainer = Color(0xFF5A1A1A)
 
 internal fun happyNurseColorScheme(): ColorScheme = ColorScheme().copy(
-    primary = HnIvBlue,
-    onPrimary = Color(0xFF002347),
-    primaryContainer = Color(0xFF124B85),
-    onPrimaryContainer = Color(0xFFD9EBFF),
-    secondary = HnSttPurple,
-    onSecondary = Color(0xFF22113F),
-    secondaryContainer = Color(0xFF4A357A),
-    onSecondaryContainer = Color(0xFFEFE5FF),
-    tertiary = HnAlarmPink,
-    onTertiary = Color(0xFF40081C),
-    tertiaryContainer = Color(0xFF6A2240),
-    onTertiaryContainer = Color(0xFFFFDCE7),
-    onSurface = HnOnSurface,
-    onSurfaceVariant = HnOnSurfaceVariant,
-    surfaceContainer = HnSurfaceContainer,
-    surfaceContainerHigh = HnSurfaceContainerHigh,
-    outline = HnOutline,
-    background = HnSurfaceDim,
-    onBackground = HnOnSurface,
-    error = HnUrgent,
+    primary = HnAccent,
+    onPrimary = HnOnAccent,
+    primaryContainer = HnAccentSoft,
+    onPrimaryContainer = HnOnAccentSoft,
+    secondary = HnAccent,
+    onSecondary = HnOnAccent,
+    secondaryContainer = HnAccentSoft,
+    onSecondaryContainer = HnOnAccentSoft,
+    tertiary = HnAccent,
+    onTertiary = HnOnAccent,
+    tertiaryContainer = HnAccentSoft,
+    onTertiaryContainer = HnOnAccentSoft,
+    background = MonoBackground,
+    onBackground = MonoOnSurface,
+    onSurface = MonoOnSurface,
+    onSurfaceVariant = MonoOnSurfaceVariant,
+    surfaceContainerLow = MonoSurfaceContainerLow,
+    surfaceContainer = MonoSurfaceContainer,
+    surfaceContainerHigh = MonoSurfaceContainerHigh,
+    outline = MonoOutline,
+    error = HnDanger,
     onError = Color(0xFF410001),
-    errorContainer = Color(0xFF7A1D1D),
+    errorContainer = HnDangerContainer,
     onErrorContainer = Color(0xFFFFDAD4),
 )

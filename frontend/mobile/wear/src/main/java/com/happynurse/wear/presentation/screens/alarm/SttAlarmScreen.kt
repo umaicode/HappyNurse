@@ -8,7 +8,7 @@ import androidx.wear.compose.material3.EdgeButton
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.happynurse.wear.presentation.components.HnFullScreenAlarmScaffold
-import com.happynurse.wear.presentation.theme.HnAlarmPink
+import com.happynurse.wear.presentation.theme.HnAccent
 
 @Composable
 fun SttAlarmScreen(
@@ -18,8 +18,8 @@ fun SttAlarmScreen(
     onDismiss: () -> Unit,
 ) {
     HnFullScreenAlarmScaffold(
-        badgeText = "ALARM",
-        badgeColor = HnAlarmPink,
+        badgeText = "알람",
+        badgeColor = HnAccent,
         patientName = patientName,
         content = contentSummary,
         roomBedTime = roomBedTime,
@@ -28,7 +28,7 @@ fun SttAlarmScreen(
                 onClick = onDismiss,
                 modifier = Modifier,
             ) {
-                Text("완료", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiary)
+                Text("확인", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiary)
             }
         },
     )

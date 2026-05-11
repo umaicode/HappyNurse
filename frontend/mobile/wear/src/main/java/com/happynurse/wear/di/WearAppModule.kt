@@ -1,10 +1,10 @@
-// 워치 Hilt 모듈 — Gesture/Audio/DataClient 싱글톤 제공
+// 워치 Hilt 모듈 — @Inject 로 자동 주입 불가능한 외부 클래스(GestureDetector 등) 만 명시 제공한다.
+// AudioRecorder 등 @Singleton + @Inject constructor 로 정의된 클래스는 Hilt 가 자동 주입한다.
 package com.happynurse.wear.di
 
 import android.content.Context
-import com.happynurse.wear.data.audio.AudioRecorder
+import com.happynurse.wear.alarm.AlarmScheduler
 import com.happynurse.wear.data.remote.WearDataClient
-import com.happynurse.wear.data.sensor.GestureDetector
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,17 +18,13 @@ object WearAppModule {
 
     @Provides
     @Singleton
-    fun provideGestureDetector(): GestureDetector = GestureDetector()
-
-    @Provides
-    @Singleton
-    fun provideAudioRecorder(
-        @ApplicationContext context: Context
-    ): AudioRecorder = AudioRecorder(context)
-
-    @Provides
-    @Singleton
     fun provideWearDataClient(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): WearDataClient = WearDataClient(context)
+
+    @Provides
+    @Singleton
+    fun provideAlarmScheduler(
+        @ApplicationContext context: Context,
+    ): AlarmScheduler = AlarmScheduler(context)
 }

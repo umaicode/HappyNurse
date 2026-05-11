@@ -48,17 +48,10 @@ fun IVTimerCard(
     if (layout == IVTimerLayout.RING) RingCard(iv, pct, color) else BarCard(iv, pct, color)
 }
 
-/** mL/hr → gtt/min 환산. 성인 20gtt/mL 가정 (백엔드 환자타입 보강 전 임시). */
-private fun mlPerHrToGttPerMin(mlPerHr: Double?): Int? {
-    val v = mlPerHr ?: return null
-    if (v <= 0.0) return null
-    return ((v * 20.0) / 60.0).toInt().coerceAtLeast(1)
-}
-
 @Composable
 private fun BarCard(iv: IVTimer, pct: Float, color: Color) {
     val fillRatio = (1f - pct).coerceIn(0f, 1f)
-    val gtt = mlPerHrToGttPerMin(iv.currentRateMlPerHr)
+    val gtt = iv.rateGttPerMin?.takeIf { it > 0 }
     val drugLines = iv.drug.split(" + ").map { it.trim() }.filter { it.isNotEmpty() }
     val remainingMin = (iv.totalMin - iv.elapsedMin).coerceAtLeast(0)
     HnCard {
@@ -90,7 +83,7 @@ private fun BarCard(iv: IVTimer, pct: Float, color: Color) {
                 drugLines.forEachIndexed { idx, line ->
                     Text(
                         line,
-                        fontSize = 15.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = HnColors.Text,
                     )
