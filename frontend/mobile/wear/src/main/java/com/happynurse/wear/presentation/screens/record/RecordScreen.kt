@@ -59,6 +59,8 @@ fun RecordScreen(
     viewModel: RecordViewModel,
     onShowResult: () -> Unit,
     pagerCurrentPage: Int = 1,
+    autoStart: Boolean = false,
+    onAutoStartConsumed: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -70,6 +72,18 @@ fun RecordScreen(
 
     LaunchedEffect(state.phase) {
         if (state.phase == RecordPhase.RESULT) onShowResult()
+    }
+
+    // 손목 제스처로 진입한 경우 — 이전 phase 잔여를 reset 한 뒤 즉시 녹음 시작.
+    LaunchedEffect(autoStart) {
+        if (!autoStart) return@LaunchedEffect
+        if (hasRecordPermission(context)) {
+            viewModel.reset()
+            viewModel.startRecording()
+        } else {
+            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+        onAutoStartConsumed()
     }
 
     AppScaffold(timeText = {}) {

@@ -4,6 +4,7 @@ package com.happynurse.wear.presentation.screens.record
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.happynurse.wear.alarm.AlarmScheduler
 import com.happynurse.wear.data.audio.AudioRecorder
 import com.happynurse.wear.data.repository.SttRecognitionRepository
 import com.happynurse.wear.data.repository.SttReminderRepository
@@ -41,6 +42,7 @@ class RecordViewModel @Inject constructor(
     private val audioRecorder: AudioRecorder,
     private val sttRecognitionRepository: SttRecognitionRepository,
     private val sttReminderRepository: SttReminderRepository,
+    private val alarmScheduler: AlarmScheduler,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RecordUiState())
@@ -123,7 +125,19 @@ class RecordViewModel @Inject constructor(
                 fireAtEpochMillis = fireAt,
             )
             result.fold(
-                onSuccess = { _state.update { it.copy(phase = RecordPhase.DONE) } },
+                onSuccess = { resp ->
+                    val content = resp.contentSummary
+                        ?.takeIf { it.isNotBlank() }
+                        ?: current.recognizedText
+                    alarmScheduler.scheduleSttAlarm(
+                        triggerAtMillis = resp.fireAtEpochMillis ?: fireAt,
+                        sttId = resp.sttReminderId.toString(),
+                        patient = "",
+                        content = content,
+                        roomBedTime = "",
+                    )
+                    _state.update { it.copy(phase = RecordPhase.DONE) }
+                },
                 onFailure = { fail(it.message ?: "알람 등록에 실패했어요") },
             )
         }

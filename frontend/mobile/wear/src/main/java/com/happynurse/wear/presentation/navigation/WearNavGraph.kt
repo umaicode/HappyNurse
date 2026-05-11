@@ -22,7 +22,11 @@ import com.happynurse.wear.presentation.screens.record.RecordViewModel
 import com.happynurse.wear.presentation.screens.stt.SttResultScreen
 
 @Composable
-fun WearNavGraph(navController: NavHostController) {
+fun WearNavGraph(
+    navController: NavHostController,
+    autoStartRecord: Boolean = false,
+    onAutoStartConsumed: () -> Unit = {},
+) {
     val activity = LocalContext.current as ComponentActivity
     val recordViewModel: RecordViewModel = hiltViewModel(viewModelStoreOwner = activity)
 
@@ -40,6 +44,8 @@ fun WearNavGraph(navController: NavHostController) {
                         launchSingleTop = true
                     }
                 },
+                autoStartRecord = autoStartRecord,
+                onAutoStartConsumed = onAutoStartConsumed,
             )
         }
         composable(WearRoute.SttResult.path) {

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -65,19 +66,29 @@ private fun IvCardContent(iv: IvInfusionTimer, onClick: () -> Unit) {
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Text(
-            text = buildString {
-                append(iv.patientName.ifBlank { "환자" })
-                if (iv.patientRoomBed.isNotBlank() && iv.patientRoomBed != "-") {
-                    append("  ")
-                    append(iv.patientRoomBed)
-                }
-            },
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-        )
+        Row(verticalAlignment = androidx.compose.ui.Alignment.Top) {
+            Text(
+                text = buildString {
+                    append(iv.patientName.ifBlank { "환자" })
+                    if (iv.patientRoomBed.isNotBlank() && iv.patientRoomBed != "-") {
+                        append("  ")
+                        append(iv.patientRoomBed)
+                    }
+                },
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = iv.endAtDisplay,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+            )
+        }
         Text(
             text = iv.medicationLabel,
             style = MaterialTheme.typography.bodySmall,

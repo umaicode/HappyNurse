@@ -21,6 +21,11 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- 손목 제스처용 ForegroundService -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
+
     <application
         android:name=".WearApplication"
         android:allowBackup="true"
@@ -63,6 +68,21 @@
             android:launchMode="singleTask"
             android:taskAffinity=""
             android:excludeFromRecents="true" />
+
+        <!-- AlarmManager → 풀스크린 알림 발행용 Receiver -->
+        <receiver
+            android:name=".alarm.SttAlarmReceiver"
+            android:exported="false" />
+
+        <!-- 손목 제스처 ForegroundService — 로그인 동안 상시 자이로 listening -->
+        <service
+            android:name=".gesture.GestureService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="wrist-gesture-shortcut" />
+        </service>
 
         <!-- 폰-워치 DataLayer 메시지 수신 서비스 -->
         <service

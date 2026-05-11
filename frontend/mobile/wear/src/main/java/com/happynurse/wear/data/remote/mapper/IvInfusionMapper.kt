@@ -5,13 +5,25 @@ import com.happynurse.wear.data.model.IvInfusionTimer
 import com.happynurse.wear.data.remote.model.IvInfusionListItemResponse
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
+
+private fun parseInstantFlexible(value: String?): Instant? {
+    if (value.isNullOrBlank()) return null
+    return runCatching { Instant.parse(value) }.getOrNull()
+        ?: runCatching { OffsetDateTime.parse(value).toInstant() }.getOrNull()
+        ?: runCatching {
+            LocalDateTime.parse(value).atZone(ZoneId.systemDefault()).toInstant()
+        }.getOrNull()
+}
 
 fun IvInfusionListItemResponse.toDomain(
     roomBed: Pair<String, String>?,
     now: Instant = Instant.now(),
 ): IvInfusionTimer {
-    val expectedEnd = expectedEndAt?.let { runCatching { Instant.parse(it) }.getOrNull() }
-    val started = startedAt?.let { runCatching { Instant.parse(it) }.getOrNull() }
+    val expectedEnd = parseInstantFlexible(expectedEndAt)
+    val started = parseInstantFlexible(startedAt)
     val totalSec = if (started != null && expectedEnd != null) {
         Duration.between(started, expectedEnd).seconds.toInt().coerceAtLeast(0)
     } else {

@@ -3,8 +3,8 @@
 package com.happynurse.wear.di
 
 import android.content.Context
+import com.happynurse.wear.alarm.AlarmScheduler
 import com.happynurse.wear.data.remote.WearDataClient
-import com.happynurse.wear.data.sensor.GestureDetector
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,11 +18,13 @@ object WearAppModule {
 
     @Provides
     @Singleton
-    fun provideGestureDetector(): GestureDetector = GestureDetector()
-
-    @Provides
-    @Singleton
     fun provideWearDataClient(
         @ApplicationContext context: Context,
     ): WearDataClient = WearDataClient(context)
+
+    @Provides
+    @Singleton
+    fun provideAlarmScheduler(
+        @ApplicationContext context: Context,
+    ): AlarmScheduler = AlarmScheduler(context)
 }

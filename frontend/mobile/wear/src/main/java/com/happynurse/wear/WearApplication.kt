@@ -4,6 +4,7 @@ package com.happynurse.wear
 import android.app.Application
 import com.happynurse.wear.data.fcm.SystemNotifBuilder
 import com.happynurse.wear.data.fcm.WearFcmTokenForwarder
+import com.happynurse.wear.gesture.GestureServiceController
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -11,11 +12,14 @@ import javax.inject.Inject
 class WearApplication : Application() {
 
     @Inject lateinit var tokenForwarder: WearFcmTokenForwarder
+    @Inject lateinit var gestureServiceController: GestureServiceController
 
     override fun onCreate() {
         super.onCreate()
         SystemNotifBuilder.ensureChannel(this)
         // 앱 시작 시 현재 FCM 토큰을 폰에 forward — 폰이 백엔드(deviceType=watch)에 대행 등록
         tokenForwarder.forwardCurrentToken()
+        // 로그인 상태이면 손목 제스처 단축 서비스 활성화
+        gestureServiceController.bind()
     }
 }

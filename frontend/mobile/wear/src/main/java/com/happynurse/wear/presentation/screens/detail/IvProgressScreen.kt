@@ -55,14 +55,6 @@ fun IvProgressScreen(
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
             )
-            if (iv.patientRoomBed.isNotBlank() && iv.patientRoomBed != "-") {
-                Text(
-                    text = iv.patientRoomBed,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
-            }
             Text(
                 text = iv.medicationLabel,
                 style = MaterialTheme.typography.bodySmall,
@@ -70,20 +62,16 @@ fun IvProgressScreen(
                 maxLines = 1,
             )
             Text(
-                text = iv.remainingTimeText.replace(" 남음", ""),
-                style = MaterialTheme.typography.displaySmall,
+                text = iv.remainingTimeText,
+                style = MaterialTheme.typography.titleMedium,
                 color = accentColor,
                 fontWeight = FontWeight.Bold,
+                maxLines = 1,
             )
             Text(
-                text = "종료 시간",
-                style = MaterialTheme.typography.labelSmall,
+                text = "종료 ${iv.endAtDisplay}",
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = iv.endAtDisplay,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
             )
         }
     }

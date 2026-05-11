@@ -61,30 +61,40 @@ fun HnFullScreenAlarmScaffold(
                     fontWeight = FontWeight.Bold,
                 )
             }
-            Text(
-                text = patientName,
-                style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-            )
+            if (patientName.isNotBlank()) {
+                Text(
+                    text = patientName,
+                    style = MaterialTheme.typography.displaySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                )
+            }
             Text(
                 text = content,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = if (patientName.isBlank()) {
+                    MaterialTheme.typography.titleMedium
+                } else {
+                    MaterialTheme.typography.titleSmall
+                },
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = if (patientName.isBlank()) FontWeight.SemiBold else FontWeight.Normal,
                 textAlign = TextAlign.Center,
-                maxLines = 2,
+                maxLines = 4,
+                modifier = Modifier.padding(horizontal = 4.dp),
             )
-            Text(
-                text = roomBedTime,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                    .padding(horizontal = 10.dp, vertical = 3.dp),
-            )
+            if (roomBedTime.isNotBlank()) {
+                Text(
+                    text = roomBedTime,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .padding(horizontal = 10.dp, vertical = 3.dp),
+                )
+            }
         }
         Box(
             modifier = Modifier

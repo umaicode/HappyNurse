@@ -18,7 +18,7 @@ fun SttAlarmScreen(
     onDismiss: () -> Unit,
 ) {
     HnFullScreenAlarmScaffold(
-        badgeText = "ALARM",
+        badgeText = "알람",
         badgeColor = HnAccent,
         patientName = patientName,
         content = contentSummary,
@@ -28,7 +28,7 @@ fun SttAlarmScreen(
                 onClick = onDismiss,
                 modifier = Modifier,
             ) {
-                Text("완료", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiary)
+                Text("확인", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiary)
             }
         },
     )

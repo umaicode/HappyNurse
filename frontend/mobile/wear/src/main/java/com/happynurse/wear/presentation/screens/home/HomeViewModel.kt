@@ -4,6 +4,7 @@ package com.happynurse.wear.presentation.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.happynurse.wear.alarm.AlarmScheduler
 import com.happynurse.wear.data.auth.PhoneTokenSyncClient
 import com.happynurse.wear.data.auth.WearTokenStore
 import com.happynurse.wear.data.model.IvInfusionTimer
@@ -41,6 +42,7 @@ class HomeViewModel @Inject constructor(
     private val sttReminderRepository: SttReminderRepository,
     private val tokenStore: WearTokenStore,
     private val phoneTokenSyncClient: PhoneTokenSyncClient,
+    private val alarmScheduler: AlarmScheduler,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeUiState())
@@ -89,8 +91,8 @@ class HomeViewModel @Inject constructor(
         _state.update { current ->
             current.copy(
                 isLoading = false,
-                ivList = ivResult.getOrDefault(current.ivList),
-                sttList = sttResult.getOrDefault(current.sttList),
+                ivList = ivResult.getOrDefault(current.ivList).filter { it.remainingSec > 0 },
+                sttList = sttResult.getOrDefault(current.sttList).filter { it.remainingSec > 0 },
                 errorMessage = listOfNotNull(
                     ivResult.exceptionOrNull()?.message,
                     sttResult.exceptionOrNull()?.message,
@@ -106,8 +108,12 @@ class HomeViewModel @Inject constructor(
                 val now = Instant.now()
                 _state.update { current ->
                     current.copy(
-                        ivList = current.ivList.map { it.tickedTo(now) },
-                        sttList = current.sttList.map { it.tickedTo(now) },
+                        ivList = current.ivList
+                            .map { it.tickedTo(now) }
+                            .filter { it.remainingSec > 0 },
+                        sttList = current.sttList
+                            .map { it.tickedTo(now) }
+                            .filter { it.remainingSec > 0 },
                     )
                 }
             }
@@ -116,6 +122,17 @@ class HomeViewModel @Inject constructor(
 
     fun selectTab(tab: HomeTab) {
         _state.update { it.copy(selectedTab = tab) }
+    }
+
+    fun cancelSttAlarm(stt: SttTimer) {
+        // 낙관적 업데이트 — 리스트에서 즉시 제거, 백엔드 취소 + 로컬 AlarmManager 취소
+        _state.update { current ->
+            current.copy(sttList = current.sttList.filterNot { it.sttReminderId == stt.sttReminderId })
+        }
+        alarmScheduler.cancelSttAlarm(stt.sttReminderId.toString())
+        viewModelScope.launch {
+            sttReminderRepository.cancel(stt.sttReminderId)
+        }
     }
 
     private fun IvInfusionTimer.tickedTo(now: Instant): IvInfusionTimer {

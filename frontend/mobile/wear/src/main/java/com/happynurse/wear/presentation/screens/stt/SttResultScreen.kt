@@ -70,7 +70,7 @@ fun SttResultScreen(
                 ScalingLazyColumn(
                     state = rememberScalingLazyListState(),
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(top = 28.dp, bottom = 60.dp, start = 14.dp, end = 14.dp),
+                    contentPadding = PaddingValues(top = 28.dp, bottom = 96.dp, start = 14.dp, end = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     item { TimeBadge(text = fireAtDisplay.ifBlank { "—" }) }
@@ -112,9 +112,9 @@ private fun TimeBadge(text: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.primaryContainer)
-            .padding(vertical = 14.dp, horizontal = 16.dp),
+            .padding(vertical = 8.dp, horizontal = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -126,8 +126,9 @@ private fun TimeBadge(text: String) {
             Spacer(Modifier.size(2.dp))
             Text(
                 text = text,
-                style = MaterialTheme.typography.titleLarge.merge(TabularNumStyle),
+                style = MaterialTheme.typography.titleSmall.merge(TabularNumStyle),
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
+                fontWeight = FontWeight.Bold,
             )
         }
     }

@@ -41,11 +41,13 @@ data class IvInfusionTimer(
 
         fun formatRemaining(sec: Int): String {
             if (sec <= 0) return "종료"
-            val minutes = sec / 60
+            val totalMin = sec / 60
+            val hours = totalMin / 60
+            val minutes = totalMin % 60
             val seconds = sec % 60
             return when {
-                minutes >= 60 -> "${minutes / 60}h ${minutes % 60}m 남음"
-                minutes > 0 -> "${minutes}분 남음"
+                hours > 0 -> "${hours}시간 ${minutes}분 남음"
+                totalMin > 0 -> "${minutes}분 남음"
                 else -> "${seconds}초 남음"
             }
         }

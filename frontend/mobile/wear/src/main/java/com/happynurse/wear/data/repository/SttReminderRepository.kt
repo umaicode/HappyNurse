@@ -40,4 +40,12 @@ class SttReminderRepository @Inject constructor(
         }
         response.data ?: error("등록 응답이 비어 있어요")
     }
+
+    suspend fun cancel(reminderId: Long): Result<Unit> = runCatching {
+        val response = sttReminderApi.cancel(reminderId)
+        if (!response.success) {
+            error(response.message ?: "알람 취소에 실패했어요")
+        }
+        Unit
+    }
 }

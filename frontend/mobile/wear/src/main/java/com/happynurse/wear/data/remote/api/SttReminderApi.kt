@@ -8,8 +8,10 @@ import com.happynurse.wear.data.remote.model.PreviewSttReminderResponse
 import com.happynurse.wear.data.remote.model.SttReminderListItemResponse
 import com.happynurse.wear.data.remote.model.SttReminderResponse
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 
 interface SttReminderApi {
     @GET("reminders/stt")
@@ -24,4 +26,9 @@ interface SttReminderApi {
     suspend fun create(
         @Body request: CreateSttReminderRequest,
     ): ApiResponse<SttReminderResponse>
+
+    @DELETE("reminders/stt/{reminderId}")
+    suspend fun cancel(
+        @Path("reminderId") reminderId: Long,
+    ): ApiResponse<Unit>
 }

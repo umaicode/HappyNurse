@@ -64,6 +64,7 @@ fun HomeScreen(
                                 isLoading = state.isLoading,
                                 errorMessage = state.errorMessage,
                                 onCardClick = onSttClick,
+                                onDelete = viewModel::cancelSttAlarm,
                             )
                         }
                     }
