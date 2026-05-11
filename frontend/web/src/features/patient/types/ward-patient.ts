@@ -20,6 +20,12 @@ export interface WardPatient {
   unconfirmedNursingCount: number;
   // Redis 저장 기준, 시프트 교대 후에도 보존
   isMyPatient: boolean;
+  // 담당 간호사 — 본인 외 다른 간호사가 담당이면 그 정보, 미배정이면 null.
+  assignedNurseId: number | null;
+  assignedNurseName: string | null;
+  // 입원 시 주 증상 / 수술명 — 인수인계 리포트 미생성 시 fallback 으로 표시.
+  chiefComplaint: string | null;
+  surgeryName: string | null;
 }
 
 export interface AssignMyPatientsResponse {

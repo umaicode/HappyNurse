@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Droplet } from "lucide-react";
 import { isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { formatHHmm, formatMonthDayHHmm } from "@/lib/time";
@@ -111,13 +110,12 @@ export function IVTimerPanel() {
         <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2.5">
           <div
             className={cn(
-              "flex flex-col items-center justify-center py-10 gap-2",
+              "flex flex-col items-center justify-center py-10",
               emptyState.subtle
                 ? "text-content-muted opacity-30"
                 : "text-status-danger",
             )}
           >
-            <Droplet className="w-6 h-6" />
             <p className="text-[11px]">{emptyState.label}</p>
           </div>
         </div>
