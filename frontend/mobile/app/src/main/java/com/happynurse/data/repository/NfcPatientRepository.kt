@@ -37,6 +37,8 @@ class NfcPatientRepository @Inject constructor(
             encounterId = patient.encounterId,
             patientName = patient.name,
             roomName = patient.roomName ?: entry.roomName,
+            bedName = patient.bedName,
+            birthDate = patient.birthDate,
             diseaseName = patient.diseaseName,
             chiefComplaint = patient.chiefComplaint,
             surgeryName = patient.surgeryName,
