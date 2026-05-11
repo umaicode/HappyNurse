@@ -17,7 +17,7 @@ import com.ssafy.happynurse.domain.watch.dto.StartIvRequest;
 import com.ssafy.happynurse.domain.watch.entity.InfusionStatus;
 import com.ssafy.happynurse.domain.watch.entity.IvInfusion;
 import com.ssafy.happynurse.domain.watch.entity.Medication;
-import com.ssafy.happynurse.domain.watch.entity.PatientType;
+import com.ssafy.happynurse.domain.watch.entity.DropSet;
 import com.ssafy.happynurse.domain.watch.repository.IvInfusionRepository;
 import com.ssafy.happynurse.domain.watch.scheduler.AlertType;
 import com.ssafy.happynurse.domain.watch.scheduler.IvAlertScheduler;
@@ -85,7 +85,7 @@ class IvInfusionServiceTest {
         });
 
         StartIvRequest req = new StartIvRequest(ENCOUNTER_ID, List.of(PRIMARY_ORDER_ID),
-                new BigDecimal("500"), 33, PatientType.ADULT, "메모");
+                new BigDecimal("500"), 33, DropSet.SET_20, "메모");
 
         IvInfusionResponse response = service.start(req, PRACTITIONER_ID);
 
@@ -118,7 +118,7 @@ class IvInfusionServiceTest {
 
         StartIvRequest req = new StartIvRequest(ENCOUNTER_ID,
                 List.of(PRIMARY_ORDER_ID, SECOND_ORDER_ID),
-                new BigDecimal("500"), 33, PatientType.ADULT, null);
+                new BigDecimal("500"), 33, DropSet.SET_20, null);
 
         IvInfusionResponse response = service.start(req, PRACTITIONER_ID);
 
@@ -133,7 +133,7 @@ class IvInfusionServiceTest {
         given(encounterRepository.findById(ENCOUNTER_ID)).willReturn(Optional.empty());
 
         StartIvRequest req = new StartIvRequest(ENCOUNTER_ID, List.of(PRIMARY_ORDER_ID),
-                new BigDecimal("500"), 33, PatientType.ADULT, null);
+                new BigDecimal("500"), 33, DropSet.SET_20, null);
 
         assertThatThrownBy(() -> service.start(req, PRACTITIONER_ID))
                 .isInstanceOf(CustomException.class)
@@ -157,7 +157,7 @@ class IvInfusionServiceTest {
 
         StartIvRequest req = new StartIvRequest(ENCOUNTER_ID,
                 List.of(PRIMARY_ORDER_ID, 99999L),
-                new BigDecimal("500"), 33, PatientType.ADULT, null);
+                new BigDecimal("500"), 33, DropSet.SET_20, null);
 
         assertThatThrownBy(() -> service.start(req, PRACTITIONER_ID))
                 .isInstanceOf(CustomException.class)
@@ -179,7 +179,7 @@ class IvInfusionServiceTest {
         given(medicationOrderRepository.findAllById(List.of(PRIMARY_ORDER_ID))).willReturn(List.of(mismatch));
 
         StartIvRequest req = new StartIvRequest(ENCOUNTER_ID, List.of(PRIMARY_ORDER_ID),
-                new BigDecimal("500"), 33, PatientType.ADULT, null);
+                new BigDecimal("500"), 33, DropSet.SET_20, null);
 
         assertThatThrownBy(() -> service.start(req, PRACTITIONER_ID))
                 .isInstanceOf(CustomException.class)
@@ -209,7 +209,7 @@ class IvInfusionServiceTest {
 
         StartIvRequest req = new StartIvRequest(ENCOUNTER_ID,
                 List.of(PRIMARY_ORDER_ID, SECOND_ORDER_ID),
-                new BigDecimal("500"), 33, PatientType.ADULT, null);
+                new BigDecimal("500"), 33, DropSet.SET_20, null);
 
         assertThatThrownBy(() -> service.start(req, PRACTITIONER_ID))
                 .isInstanceOf(CustomException.class)
@@ -230,7 +230,7 @@ class IvInfusionServiceTest {
         given(repository.findActiveByMedicationOrderIdWithRoutingInfo(PRIMARY_ORDER_ID))
                 .willReturn(Optional.of(iv));
 
-        ChangeRateRequest req = new ChangeRateRequest(60, PatientType.ADULT);
+        ChangeRateRequest req = new ChangeRateRequest(60, DropSet.SET_20);
         service.changeRateByTag(TAG_UID, req);
 
         verify(scheduler).cancelAll(50L);
@@ -243,7 +243,7 @@ class IvInfusionServiceTest {
     void changeRate_태그없음() {
         given(nfcTagRepository.findByTagUidAndIsActiveTrue(TAG_UID)).willReturn(Optional.empty());
 
-        ChangeRateRequest req = new ChangeRateRequest(60, PatientType.ADULT);
+        ChangeRateRequest req = new ChangeRateRequest(60, DropSet.SET_20);
 
         assertThatThrownBy(() -> service.changeRateByTag(TAG_UID, req))
                 .isInstanceOf(CustomException.class)
@@ -260,7 +260,7 @@ class IvInfusionServiceTest {
         given(repository.findActiveByMedicationOrderIdWithRoutingInfo(PRIMARY_ORDER_ID))
                 .willReturn(Optional.empty());
 
-        ChangeRateRequest req = new ChangeRateRequest(60, PatientType.ADULT);
+        ChangeRateRequest req = new ChangeRateRequest(60, DropSet.SET_20);
 
         assertThatThrownBy(() -> service.changeRateByTag(TAG_UID, req))
                 .isInstanceOf(CustomException.class)
@@ -316,6 +316,7 @@ class IvInfusionServiceTest {
                 List.of(order),
                 stub(Practitioner.class, "practitionerId", PRACTITIONER_ID),
                 new BigDecimal("500"), new BigDecimal("100"),
+                DropSet.SET_20,
                 LocalDateTime.now(), null);
         setField(iv, "ivInfusionId", id);
         return iv;
