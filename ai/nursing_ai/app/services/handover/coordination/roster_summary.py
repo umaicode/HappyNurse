@@ -22,7 +22,7 @@ def deterministic_aggregate(handovers: list[dict]) -> dict:
             v = s["verification"]
             verification_summary[v] = verification_summary.get(v, 0) + 1
         item = {
-            "encounter_id": h["encounter_id"],
+            "encounter_id":int(h["encounter_id"]),
             "handover_id": h["handover_id"],
             "header": payload["header"],
             "risk_score": _risk_score(h),

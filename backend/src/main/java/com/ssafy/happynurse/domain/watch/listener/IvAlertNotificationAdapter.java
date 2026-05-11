@@ -79,36 +79,11 @@ public class IvAlertNotificationAdapter {
     }
 
     private String bodyOf(AlertType type, IvInfusion iv) {
-        String patientName = iv.getPatient().getName();
         String medLabel = formatMedicationLabel(iv);
-        String locationLabel = formatPatientLocation(iv);
         return switch (type) {
-            case FIVE_MIN_BEFORE -> String.format("[%s] %s 환자의 %s 수액이 5분 후 종료됩니다.",
-                    locationLabel, patientName, medLabel);
-            case COMPLETED       -> String.format("[%s] %s 환자의 %s 수액이 종료되었습니다.",
-                    locationLabel, patientName, medLabel);
+            case FIVE_MIN_BEFORE -> String.format("%s 수액 종료 5분 전", medLabel);
+            case COMPLETED       -> String.format("%s 수액 종료", medLabel);
         };
-    }
-
-    /**
-     * 환자 입원 위치 — "병동 호실 침상"
-     */
-    private String formatPatientLocation(IvInfusion iv) {
-        var encounter = iv.getEncounter();
-        var room = encounter.getRoom();
-        StringBuilder sb = new StringBuilder();
-        if (room != null && room.getWard() != null && room.getWard().getWardName() != null) {
-            sb.append(room.getWard().getWardName());
-        }
-        if (room != null && room.getRoomName() != null) {
-            if (sb.length() > 0) sb.append(' ');
-            sb.append(room.getRoomName());
-        }
-        if (encounter.getBedName() != null && !encounter.getBedName().isBlank()) {
-            if (sb.length() > 0) sb.append(' ');
-            sb.append(encounter.getBedName());
-        }
-        return sb.length() == 0 ? "위치미지정" : sb.toString();
     }
 
     /**

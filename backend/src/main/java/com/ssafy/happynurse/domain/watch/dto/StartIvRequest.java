@@ -1,6 +1,6 @@
 package com.ssafy.happynurse.domain.watch.dto;
 
-import com.ssafy.happynurse.domain.watch.entity.PatientType;
+import com.ssafy.happynurse.domain.watch.entity.DropSet;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -28,14 +28,14 @@ public record StartIvRequest(
         @NotNull @Positive
         Integer rateGttPerMin,
 
-        @Schema(description = "환자 타입 (ADULT=20gtt/mL, PEDIATRIC=60gtt/mL) — 성인, 소아", example = "ADULT")
+        @Schema(description = "수액 세트 (gtt/mL): SET_10, SET_15, SET_20, SET_60", example = "SET_20")
         @NotNull
-        PatientType patientType,
+        DropSet dropSet,
 
         @Schema(description = "메모", example = "6분 알림 테스트")
         String note
 ) {
     public BigDecimal resolveRateMlPerHr() {
-        return RateInputResolver.resolve(rateGttPerMin, patientType);
+        return RateInputResolver.resolve(rateGttPerMin, dropSet);
     }
 }
