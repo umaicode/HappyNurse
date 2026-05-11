@@ -10,7 +10,10 @@ import {
   ChevronRight,
   FileText,
   Loader2,
-  RefreshCw,
+  Shield,
+  ArrowUpRight,
+  Clock,
+  TrendingUp,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -18,6 +21,11 @@ import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
 import {
   useGenerateHandover,
@@ -27,8 +35,10 @@ import {
 } from "@/features/handover/hooks/useHandover";
 import type {
   Citation,
+  HandoverPayload,
   RosterPatientItem,
   Slot,
+  SlotItem,
   Slots,
   VerificationStatus,
 } from "@/features/handover/types/handover";
@@ -44,6 +54,17 @@ const SLOT_LABEL: Record<keyof Slots, string> = {
   recommendation: "권고",
   synthesis: "종합",
 };
+
+// SBAR 흐름에 맞춘 grid 배치 순서 — synthesis/safety 는 상단 콜아웃으로 빠지고 나머지 6 슬롯만.
+// Situation→Action(현재 상태), Assessment→Recommendation(평가→권고), Background→Patient Problem(맥락).
+const SBAR_SLOT_ORDER: Array<keyof Slots> = [
+  "situation",
+  "action",
+  "assessment",
+  "recommendation",
+  "background",
+  "patient_problem",
+];
 
 const VERIFICATION_TONE: Record<VerificationStatus, string> = {
   ok: "bg-status-success-surface text-status-success",
@@ -61,6 +82,29 @@ const SEVERITY_TONE: Record<string, string> = {
   stable: "bg-status-success-surface text-status-success",
   watcher: "bg-status-warning-surface text-status-warning-strong",
   unstable: "bg-status-danger-surface text-status-danger-strong",
+};
+
+// risk_score 는 휴리스틱 (rules_fired severity 합 + verification 미통과 슬롯 수). raw 숫자만 보면
+// nurse 가 의미 파악 어려워 0/4/8 경계로 등급 라벨 + 톤을 함께 표시.
+// 산식 출처: ai/nursing_ai/app/services/handover/coordination/roster_summary.py:_risk_score
+type RiskTier = "low" | "moderate" | "high";
+
+const riskTier = (score: number): RiskTier => {
+  if (score >= 8) return "high";
+  if (score >= 4) return "moderate";
+  return "low";
+};
+
+const RISK_TIER_LABEL: Record<RiskTier, string> = {
+  low: "낮음",
+  moderate: "보통",
+  high: "높음",
+};
+
+const RISK_TIER_TONE: Record<RiskTier, string> = {
+  low: "bg-status-success-surface text-status-success",
+  moderate: "bg-status-warning-surface text-status-warning-strong",
+  high: "bg-status-danger-surface text-status-danger-strong",
 };
 
 // 화면의 base 행 — 담당 환자(wardPatient)는 항상 존재, 인수인계 리포트(roster)는 옵션.
@@ -203,7 +247,7 @@ export function HandoverView() {
         <aside className="w-72 shrink-0 bg-surface-card border-r border-border-base flex flex-col">
           <div className="px-5 py-4 border-b border-border-base shrink-0">
             <div className="flex items-center justify-between">
-              <span className="text-[15px] font-bold text-content-primary leading-none">
+              <span className="text-body-sm font-bold text-content-primary leading-none">
                 담당 환자
               </span>
               <span className="text-body-xs font-semibold text-brand-primary bg-brand-surface px-2.5 py-0.5 rounded-full leading-none">
@@ -253,7 +297,7 @@ export function HandoverView() {
                       {fresh > 0 && (
                         <span
                           title="리포트 이후 신규 간호기록"
-                          className="px-1.5 py-0.5 rounded-full bg-status-warning-surface text-status-warning-strong text-[10px] font-bold leading-none shrink-0"
+                          className="px-1.5 py-0.5 rounded-full bg-status-warning-surface text-status-warning-strong text-[11px] font-bold leading-none shrink-0"
                         >
                           새 {fresh}
                         </span>
@@ -283,7 +327,7 @@ export function HandoverView() {
                     </span>
                   </div>
                   <div className="px-6 py-5">
-                    <Text className="text-[15px] leading-relaxed text-content-primary whitespace-pre-wrap">
+                    <Text className="text-body-sm leading-relaxed text-content-primary whitespace-pre-wrap">
                       {rosterQuery.data.narrative_header}
                     </Text>
                   </div>
@@ -420,7 +464,7 @@ function PatientHandoverCard({
       {/* [CARD HEADER] */}
       <div className="px-5 py-3.5 bg-surface-base/70 border-b border-border-base flex items-center gap-3">
         <div className="flex items-baseline gap-2.5 min-w-0">
-          <h3 className="text-title-lg font-bold text-content-primary truncate leading-tight tracking-tight">
+          <h3 className="text-title-md font-bold text-content-primary truncate leading-tight tracking-tight">
             {wardPatient.name}
           </h3>
           <Text className="text-body-xs text-content-tertiary font-medium shrink-0">
@@ -428,12 +472,7 @@ function PatientHandoverCard({
           </Text>
         </div>
         {roster && (
-          <Badge
-            className="ml-auto bg-[#F7F8FA] text-content-secondary font-bold border-none text-[11px] px-2.5 py-1 hover:bg-[#F7F8FA] shrink-0"
-            title="risk_score"
-          >
-            위험도 {roster.risk_score}
-          </Badge>
+          <RiskBadge score={roster.risk_score} />
         )}
         {roster && (
           <button
@@ -458,7 +497,7 @@ function PatientHandoverCard({
         <>
           {/* [HEADER LINE] */}
           <div className="px-6 pt-5">
-            <Text className="text-[18px] leading-relaxed font-semibold text-content-primary whitespace-pre-wrap">
+            <Text className="text-body-base leading-relaxed font-semibold text-content-primary whitespace-pre-wrap">
               {roster.header}
             </Text>
           </div>
@@ -501,7 +540,6 @@ function PatientHandoverCard({
               ) : (
                 <PassBarDetail
                   payload={detailQuery.data.autoSummaryJson}
-                  createdAt={detailQuery.data.createdAt}
                   onCitationClick={onCitationClick}
                 />
               )}
@@ -530,12 +568,10 @@ function PatientHandoverCard({
 
 function PassBarDetail({
   payload,
-  createdAt,
   onCitationClick,
 }: {
   // payload 는 호출 측에서 null 체크 후 전달 (HandoverPayload 보장).
-  payload: import("@/features/handover/types/handover").HandoverPayload;
-  createdAt: string;
+  payload: HandoverPayload;
   onCitationClick: (citation: Citation) => void;
 }) {
   // citation_id → Citation 매핑 (slot 안 citation_ids 를 풀어 표시)
@@ -547,33 +583,48 @@ function PassBarDetail({
     return map;
   }, [payload.citations]);
 
+  // 한 citation 이 여러 slot 에 인용될 수 있음 — CitationList 에서 어느 슬롯에 인용됐는지 표시.
+  const slotKeysByCitationId = useMemo(() => {
+    const map = new Map<string, Set<keyof Slots>>();
+    (Object.keys(payload.slots) as Array<keyof Slots>).forEach((slotKey) => {
+      payload.slots[slotKey].items.forEach((item) => {
+        item.citation_ids.forEach((cid) => {
+          if (!map.has(cid)) map.set(cid, new Set());
+          map.get(cid)!.add(slotKey);
+        });
+      });
+    });
+    return map;
+  }, [payload.slots]);
+
   return (
     <>
-      <div className="flex items-center gap-2 text-body-micro">
-        <span className="flex items-center gap-1 font-bold text-brand-primary bg-brand-surface px-2.5 py-1 rounded-full leading-none">
-          <Sparkles className="size-3.5" />
-          PASS-BAR
-        </span>
-        <span
-          className={cn(
-            "px-2 py-0.5 rounded-full font-bold uppercase tracking-wider text-[11px] leading-none",
-            SEVERITY_TONE[payload.illness_severity] ??
-              "bg-surface-hover text-content-secondary",
-          )}
-        >
-          {payload.illness_severity}
-        </span>
-        <span className="font-mono text-content-muted">
-          {createdAt.slice(0, 16).replace("T", " ")}
-        </span>
-        <span className="text-content-tertiary">
-          · {payload.meta.model}
-        </span>
-      </div>
+      {/* [1] Synthesis 콜아웃 — 다음 시프트가 가장 먼저 봐야 할 take-away */}
+      {payload.slots.synthesis.items.length > 0 && (
+        <SlotCallout
+          label="Synthesis · 종합"
+          slot={payload.slots.synthesis}
+          accent="brand"
+          citationById={citationById}
+          onCitationClick={onCitationClick}
+        />
+      )}
 
-      {/* PASS-BAR 슬롯 8개 */}
+      {/* [2] Safety 콜아웃 — 낙상/격리/DNR/알러지/금기 등 안전 사항 */}
+      {payload.slots.safety.items.length > 0 && (
+        <SlotCallout
+          label="Safety · 안전"
+          slot={payload.slots.safety}
+          accent="danger"
+          icon={<Shield className="size-4" />}
+          citationById={citationById}
+          onCitationClick={onCitationClick}
+        />
+      )}
+
+      {/* [3] SBAR grid — 나머지 6 슬롯 */}
       <div className="grid grid-cols-2 gap-3">
-        {(Object.keys(SLOT_LABEL) as Array<keyof Slots>).map((key) => (
+        {SBAR_SLOT_ORDER.map((key) => (
           <SlotCard
             key={key}
             label={SLOT_LABEL[key]}
@@ -584,14 +635,104 @@ function PassBarDetail({
         ))}
       </div>
 
-      {/* Citations 전체 목록 */}
+      {/* [4] Citations 전체 목록 — 인용된 슬롯 라벨과 함께 표시 */}
       {payload.citations.length > 0 && (
         <CitationList
           citations={payload.citations}
+          slotKeysByCitationId={slotKeysByCitationId}
           onCitationClick={onCitationClick}
         />
       )}
     </>
+  );
+}
+
+// 위험도 배지 — raw score + tier 라벨, hover 시 산식 안내.
+function RiskBadge({ score }: { score: number }) {
+  const tier = riskTier(score);
+  return (
+    <HoverCard openDelay={120} closeDelay={80}>
+      <HoverCardTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border-none shrink-0 leading-none font-bold text-body-micro cursor-help",
+            RISK_TIER_TONE[tier],
+          )}
+        >
+          <span>위험도 {RISK_TIER_LABEL[tier]}</span>
+          <span className="font-mono opacity-70">{score}</span>
+        </button>
+      </HoverCardTrigger>
+      <HoverCardContent align="end" sideOffset={6} className="w-[320px] p-3.5">
+        <div className="flex flex-col gap-2 text-body-micro text-content-secondary leading-relaxed">
+          <p className="font-bold text-content-primary text-body-sm">위험도 산식</p>
+          <p>
+            발사된 임상 규칙 severity 가중치 합 + 검증(verification) 통과 못한 슬롯 개수.
+          </p>
+          <ul className="space-y-0.5 pl-3 list-disc text-content-tertiary">
+            <li>high 규칙 1건당 +5, medium +3, low +1</li>
+            <li>partial/failed 슬롯 1개당 +1</li>
+          </ul>
+          <p className="text-content-muted">
+            등급 경계 — 낮음 0~3 · 보통 4~7 · 높음 8 이상.
+          </p>
+        </div>
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
+
+// 상단 콜아웃 (Synthesis · Safety) — 풀폭, 강조 톤. SlotCard 와 같은 데이터지만 시각 위계가 다름.
+function SlotCallout({
+  label,
+  slot,
+  accent,
+  icon,
+  citationById,
+  onCitationClick,
+}: {
+  label: string;
+  slot: Slot;
+  accent: "brand" | "danger";
+  icon?: React.ReactNode;
+  citationById: Map<string, Citation>;
+  onCitationClick: (citation: Citation) => void;
+}) {
+  const accentClass =
+    accent === "danger"
+      ? "border-l-4 border-l-status-danger bg-status-danger-surface/30"
+      : "border-l-4 border-l-brand-primary bg-brand-surface/20";
+  const titleClass =
+    accent === "danger" ? "text-status-danger-strong" : "text-brand-primary";
+
+  return (
+    <div className={cn("rounded-xl border border-border-subtle p-4 flex flex-col gap-2.5", accentClass)}>
+      <div className="flex items-center gap-2">
+        {icon}
+        <h4 className={cn("text-body-sm font-bold leading-none", titleClass)}>
+          {label}
+        </h4>
+        <span
+          className={cn(
+            "ml-auto px-1.5 py-0.5 rounded text-[11px] font-bold leading-none",
+            VERIFICATION_TONE[slot.verification],
+          )}
+        >
+          {VERIFICATION_LABEL[slot.verification]}
+        </span>
+      </div>
+      <ul className="space-y-2">
+        {slot.items.map((item, index) => (
+          <SlotItemRow
+            key={index}
+            item={item}
+            citationById={citationById}
+            onCitationClick={onCitationClick}
+          />
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -614,7 +755,7 @@ function SlotCard({
         </h4>
         <span
           className={cn(
-            "ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold leading-none",
+            "ml-auto px-1.5 py-0.5 rounded text-[11px] font-bold leading-none",
             VERIFICATION_TONE[slot.verification],
           )}
         >
@@ -624,32 +765,14 @@ function SlotCard({
       {slot.items.length === 0 ? (
         <Text className="text-body-micro text-content-muted">—</Text>
       ) : (
-        <ul className="space-y-1.5">
+        <ul className="space-y-2">
           {slot.items.map((item, index) => (
-            <li key={index} className="text-body-xs leading-relaxed">
-              <span className="text-content-primary">
-                {item.value ?? item.quote ?? item.kind ?? "(빈 항목)"}
-              </span>
-              {item.citation_ids.length > 0 && (
-                <span className="ml-1.5 inline-flex flex-wrap gap-1">
-                  {item.citation_ids.map((cid) => {
-                    const citation = citationById.get(cid);
-                    if (!citation) return null;
-                    return (
-                      <button
-                        key={cid}
-                        type="button"
-                        onClick={() => onCitationClick(citation)}
-                        title={`${citation.label} (${citation.ts.slice(0, 16).replace("T", " ")})`}
-                        className="px-1.5 py-0.5 rounded bg-brand-surface text-brand-primary text-[10px] font-mono font-bold hover:bg-brand-primary hover:text-brand-text transition-colors leading-none"
-                      >
-                        #{citation.record_id}
-                      </button>
-                    );
-                  })}
-                </span>
-              )}
-            </li>
+            <SlotItemRow
+              key={index}
+              item={item}
+              citationById={citationById}
+              onCitationClick={onCitationClick}
+            />
           ))}
         </ul>
       )}
@@ -657,11 +780,145 @@ function SlotCard({
   );
 }
 
+// 슬롯 안 한 줄짜리 항목 — value / quote 본문 + meta (time_window, trend, severity_flag)
+// + contingency (조건문) + citation chips (hover preview)
+function SlotItemRow({
+  item,
+  citationById,
+  onCitationClick,
+}: {
+  item: SlotItem;
+  citationById: Map<string, Citation>;
+  onCitationClick: (citation: Citation) => void;
+}) {
+  const headline = item.value ?? item.quote ?? item.kind ?? "(빈 항목)";
+  const severityFlag = item.severity_flag;
+  return (
+    <li className="text-body-xs leading-relaxed flex flex-col gap-1">
+      <div className="flex flex-wrap items-start gap-1.5">
+        <span className="text-content-primary flex-1 min-w-0 break-words">
+          {headline}
+        </span>
+        {severityFlag && (
+          <span
+            className={cn(
+              "px-1.5 py-0.5 rounded text-[11px] font-bold leading-none shrink-0",
+              SEVERITY_TONE[severityFlag] ?? "bg-surface-hover text-content-secondary",
+            )}
+          >
+            {severityFlag}
+          </span>
+        )}
+      </div>
+
+      {/* meta 라인: time_window · trend — 둘 다 옵션. 없으면 라인 자체 안 그림. */}
+      {(item.time_window || item.trend) && (
+        <div className="flex items-center gap-2 text-[11px] text-content-tertiary">
+          {item.time_window && (
+            <span className="inline-flex items-center gap-1">
+              <Clock className="size-3" />
+              {item.time_window}
+            </span>
+          )}
+          {item.trend && (
+            <span className="inline-flex items-center gap-1">
+              <TrendingUp className="size-3" />
+              {item.trend}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* contingency — "if X then Y" 형식의 조건부 조치. 안전 카드에서 특히 중요. */}
+      {item.contingency && (
+        <div className="text-[11px] text-status-warning-strong leading-snug pl-2 border-l-2 border-status-warning/40">
+          ↳ {item.contingency}
+        </div>
+      )}
+
+      {/* citation chips — hover 시 popover, 클릭은 dashboard 점프. */}
+      {item.citation_ids.length > 0 && (
+        <div className="inline-flex flex-wrap gap-1 pt-0.5">
+          {item.citation_ids.map((cid) => {
+            const citation = citationById.get(cid);
+            if (!citation) return null;
+            return (
+              <CitationChip
+                key={cid}
+                citation={citation}
+                onClick={() => onCitationClick(citation)}
+              />
+            );
+          })}
+        </div>
+      )}
+    </li>
+  );
+}
+
+// hover 시 popover 로 인용 메타 미리보기. 클릭은 dashboard 점프.
+function CitationChip({
+  citation,
+  onClick,
+}: {
+  citation: Citation;
+  onClick: () => void;
+}) {
+  return (
+    <HoverCard openDelay={120} closeDelay={80}>
+      <HoverCardTrigger asChild>
+        <button
+          type="button"
+          onClick={onClick}
+          className="px-1.5 py-0.5 rounded bg-brand-surface text-brand-primary text-[11px] font-bold hover:bg-brand-primary hover:text-brand-text transition-colors leading-none"
+        >
+          {citation.label}
+        </button>
+      </HoverCardTrigger>
+      <HoverCardContent align="start" sideOffset={6} className="w-[360px] p-3.5">
+        <CitationPreview citation={citation} onClick={onClick} />
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
+
+// hover preview 공용 — chip / citation list 양쪽에서 사용.
+function CitationPreview({
+  citation,
+  onClick,
+}: {
+  citation: Citation;
+  onClick: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <Badge className="bg-brand-surface text-brand-primary border-none text-[11px] font-bold leading-none px-2 py-0.5">
+          {citation.label}
+        </Badge>
+      </div>
+      <div className="text-[11px] font-mono text-content-tertiary leading-none">
+        {citation.ts.slice(0, 16).replace("T", " ")}
+      </div>
+      <button
+        type="button"
+        onClick={onClick}
+        className="self-end inline-flex items-center gap-1 text-body-micro font-semibold text-brand-primary hover:text-brand-primary/80 transition-colors"
+      >
+        원본 기록 열기
+        <ArrowUpRight className="size-3" />
+      </button>
+    </div>
+  );
+}
+
 function CitationList({
   citations,
+  slotKeysByCitationId,
   onCitationClick,
 }: {
   citations: Citation[];
+  slotKeysByCitationId: Map<string, Set<keyof Slots>>;
   onCitationClick: (citation: Citation) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -682,35 +939,48 @@ function CitationList({
       </button>
       {open && (
         <ul className="mt-3 space-y-2">
-          {citations.map((citation) => (
-            <li key={citation.id}>
-              <button
-                type="button"
-                onClick={() => onCitationClick(citation)}
-                className="w-full text-left flex gap-2.5 p-3 rounded-xl border bg-surface-card border-border-subtle hover:border-brand-primary/40 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-body-micro font-mono font-semibold text-content-muted">
-                      #{citation.record_id}
-                    </span>
-                    <Badge className="bg-surface-hover text-content-tertiary font-medium border-none text-[11px] px-2 py-0 hover:bg-surface-hover">
-                      {citation.label}
-                    </Badge>
-                    <span className="text-[11px] font-mono text-content-tertiary">
-                      {citation.ts.slice(0, 16).replace("T", " ")}
-                    </span>
-                  </div>
-                  {citation.line_range.length > 0 && (
-                    <Text className="text-body-micro text-content-tertiary">
-                      줄 {citation.line_range.join("-")}
-                    </Text>
-                  )}
-                </div>
-                <RefreshCw className="size-3.5 text-content-muted opacity-50 self-center" />
-              </button>
-            </li>
-          ))}
+          {citations.map((citation) => {
+            const slotKeys = slotKeysByCitationId.get(citation.id) ?? new Set();
+            const referencedSlotLabels = Array.from(slotKeys).map(
+              (slotKey) => SLOT_LABEL[slotKey],
+            );
+            return (
+              <li key={citation.id}>
+                <HoverCard openDelay={120} closeDelay={80}>
+                  <HoverCardTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => onCitationClick(citation)}
+                      className="w-full text-left flex gap-2.5 p-3 rounded-xl border bg-surface-card border-border-subtle hover:border-brand-primary/40 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                          <Badge className="bg-surface-hover text-content-tertiary font-medium border-none text-[11px] px-2 py-0 hover:bg-surface-hover">
+                            {citation.label}
+                          </Badge>
+                          <span className="text-[11px] font-mono text-content-tertiary">
+                            {citation.ts.slice(0, 16).replace("T", " ")}
+                          </span>
+                          {referencedSlotLabels.length > 0 && (
+                            <span className="text-[11px] text-content-muted">
+                              · {referencedSlotLabels.join(", ")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <ArrowUpRight className="size-3.5 text-content-muted opacity-50 self-center" />
+                    </button>
+                  </HoverCardTrigger>
+                  <HoverCardContent align="start" sideOffset={6} className="w-[420px] p-3.5">
+                    <CitationPreview
+                      citation={citation}
+                      onClick={() => onCitationClick(citation)}
+                    />
+                  </HoverCardContent>
+                </HoverCard>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

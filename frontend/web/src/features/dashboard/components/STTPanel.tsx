@@ -155,7 +155,13 @@ export function STTPanel({ encounterId }: STTPanelProps) {
           </EmptyMessage>
         ) : (
           filteredOrders.map((order) => {
-            const isChanged = order.updatedAt !== order.createdAt;
+            // 종료 상태(completed/stopped) 에선 "변경" 의미가 없어 숨김.
+            // 그 외엔 updatedAt !== createdAt 이면 (이력이 있으면) 시간 제한 없이 노출.
+            // 어떤 컬럼이 바뀌었는지 BE 가 노출 안 함 — BE 가 "변경 종류" 필드 추가하면 칩 폐지 또는 라벨화 재검토.
+            const isTerminal =
+              order.status === "completed" || order.status === "stopped";
+            const isChanged =
+              !isTerminal && order.updatedAt !== order.createdAt;
             const isCompleted = order.status === "completed";
             return (
               <PanelCard
