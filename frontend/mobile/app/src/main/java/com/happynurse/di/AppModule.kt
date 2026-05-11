@@ -7,6 +7,7 @@ import com.happynurse.data.remote.api.AuthApi
 import com.happynurse.data.remote.api.DrugApi
 import com.happynurse.data.remote.api.EncounterApi
 import com.happynurse.data.remote.api.FcmTokenApi
+import com.happynurse.data.remote.api.HandoverApi
 import com.happynurse.data.remote.api.IvApi
 import com.happynurse.data.remote.api.NotificationApi
 import com.happynurse.data.remote.api.SttApi
@@ -95,6 +96,7 @@ object AppModule {
     @Provides @Singleton fun provideIvApi(@AuthRetrofit r: Retrofit): IvApi = r.create(IvApi::class.java)
     @Provides @Singleton fun provideNotificationApi(@AuthRetrofit r: Retrofit): NotificationApi = r.create(NotificationApi::class.java)
     @Provides @Singleton fun provideSttApi(@AiRetrofit r: Retrofit): SttApi = r.create(SttApi::class.java)
+    @Provides @Singleton fun provideHandoverApi(@AiRetrofit r: Retrofit): HandoverApi = r.create(HandoverApi::class.java)
     @Provides @Singleton fun provideSttReminderApi(@AuthRetrofit r: Retrofit): SttReminderApi = r.create(SttReminderApi::class.java)
 
     // AI 서버용 별도 Retrofit — STT/correction 등. Bearer 토큰 동일하게 주입 (AuthRepository 의 access_token 재활용).
