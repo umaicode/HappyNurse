@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from "react";
-import { Loader2, MessageSquare } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useSymptomReports } from "../hooks/useSymptomReports";
 import { formatHHmm, toIsoDate } from "@/lib/time";
 
@@ -72,8 +72,7 @@ export function AlertsTab({ patientId, date }: AlertsTabProps) {
 
 function EmptyMessage({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center py-16 gap-2 text-content-muted">
-      <MessageSquare className="size-6 opacity-40" />
+    <div className="flex-1 flex flex-col items-center justify-center py-16 text-content-muted">
       <p className="text-body-sm font-medium">{children}</p>
     </div>
   );

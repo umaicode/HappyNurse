@@ -1,11 +1,14 @@
 // 환자 리스트 카드 — card / compact 두 가지 변형. 기본값은 card
+// TagChip 공용 컴포넌트도 이 파일에서 정의 (같은 패키지이므로 별도 import 불필요)
 package com.happynurse.presentation.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material3.Icon
@@ -13,11 +16,34 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.happynurse.domain.model.Patient
 import com.happynurse.presentation.theme.HnColors
+
+// ── TagChip ──────────────────────────────────────────────────────────────────
+@Composable
+fun TagChip(
+    text: String,
+    fg: Color = Color(0xFF2D2D2D),
+    bg: Color = Color(0xFFF5F5F5),
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        color = fg,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Medium,
+        modifier = modifier
+            .clip(RoundedCornerShape(5.dp))
+            .background(bg)
+            .padding(horizontal = 6.dp, vertical = 1.dp),
+    )
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 enum class PatientLayout { CARD, COMPACT }
 
@@ -44,7 +70,12 @@ private fun CardRow(p: Patient, onClick: () -> Unit, myNurseName: String) {
                     Spacer(Modifier.size(6.dp))
                     TagChip("${p.sex}/${p.age}")
                 }
-                Text(p.chief, fontSize = 13.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(top = 3.dp))
+                Text(
+                    p.surgery.ifBlank { "-" },
+                    fontSize = 13.sp,
+                    color = HnColors.TextSecondary,
+                    modifier = Modifier.padding(top = 3.dp),
+                )
                 Row(modifier = Modifier.padding(top = 3.dp)) {
                     Text("담당 ", fontSize = 12.sp, color = HnColors.TextTertiary)
                     Text(
@@ -74,7 +105,7 @@ private fun CompactRow(p: Patient, onClick: () -> Unit) {
             Spacer(Modifier.size(8.dp))
             Text("D+${p.daysSince}", fontSize = 12.sp, color = HnColors.TextSecondary)
             Spacer(Modifier.weight(1f))
-            Text(p.chief, fontSize = 12.sp, color = HnColors.TextSecondary)
+            Text(p.surgery.ifBlank { "-" }, fontSize = 12.sp, color = HnColors.TextSecondary)
             Icon(
                 Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                 contentDescription = null,

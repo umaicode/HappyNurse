@@ -123,7 +123,7 @@ async def roster_summary(current_user: dict = Depends(get_current_user)):
     async with _session_factory() as session:
         for enc in encounters:
             r = await session.execute(
-                select(ShiftHandover).where(ShiftHandover.encounter_id == enc)
+                select(ShiftHandover).where(ShiftHandover.encounter_id == int(enc))
                 .order_by(desc(ShiftHandover.created_at)).limit(1)
             )
             row = r.scalar_one_or_none()
@@ -157,7 +157,7 @@ async def get_latest_for_encounter(
     from app.services.handover.db.models import ShiftHandover
     async with _session_factory() as session:
         stmt = select(ShiftHandover).where(
-            ShiftHandover.encounter_id == encounter_id
+            ShiftHandover.encounter_id == int(encounter_id)
         ).order_by(desc(ShiftHandover.created_at))
         if latest:
             stmt = stmt.limit(1)
