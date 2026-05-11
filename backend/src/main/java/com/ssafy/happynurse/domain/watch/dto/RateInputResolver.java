@@ -23,4 +23,14 @@ public final class RateInputResolver {
         }
         throw new CustomException(ErrorCode.IV_RATE_INPUT_INVALID);
     }
+
+    /** mL/hr → gtt/min 역환산 */
+    public static Integer toGttPerMin(BigDecimal mlPerHr, PatientType patientType) {
+        if (mlPerHr == null || patientType == null) {
+            throw new CustomException(ErrorCode.IV_RATE_INPUT_INVALID);
+        }
+        return mlPerHr.multiply(BigDecimal.valueOf(patientType.getDropFactor()))
+                .divide(BigDecimal.valueOf(60L), 0, RoundingMode.HALF_UP)
+                .intValue();
+    }
 }

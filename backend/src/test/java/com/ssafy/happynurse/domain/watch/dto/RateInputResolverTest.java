@@ -44,4 +44,41 @@ class RateInputResolverTest {
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.IV_RATE_INPUT_INVALID);
     }
+
+    @Test
+    @DisplayName("toGttPerMin - ADULT(20): 180 mL/hr → 60 gtt/min")
+    void toGtt_성인_역환산() {
+        Integer result = RateInputResolver.toGttPerMin(new BigDecimal("180"), PatientType.ADULT);
+        assertThat(result).isEqualTo(60);
+    }
+
+    @Test
+    @DisplayName("toGttPerMin - PEDIATRIC(60): 60 mL/hr → 60 gtt/min")
+    void toGtt_소아_역환산() {
+        Integer result = RateInputResolver.toGttPerMin(new BigDecimal("60"), PatientType.PEDIATRIC);
+        assertThat(result).isEqualTo(60);
+    }
+
+    @Test
+    @DisplayName("toGttPerMin - 반올림: 100 mL/hr × 20 / 60 = 33.33... → 33")
+    void toGtt_반올림() {
+        Integer result = RateInputResolver.toGttPerMin(new BigDecimal("100"), PatientType.ADULT);
+        assertThat(result).isEqualTo(33);
+    }
+
+    @Test
+    @DisplayName("toGttPerMin - mlPerHr null → IV_RATE_INPUT_INVALID")
+    void toGtt_mlPerHr_null_실패() {
+        assertThatThrownBy(() -> RateInputResolver.toGttPerMin(null, PatientType.ADULT))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.IV_RATE_INPUT_INVALID);
+    }
+
+    @Test
+    @DisplayName("toGttPerMin - patientType null → IV_RATE_INPUT_INVALID")
+    void toGtt_patientType_null_실패() {
+        assertThatThrownBy(() -> RateInputResolver.toGttPerMin(new BigDecimal("100"), null))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.IV_RATE_INPUT_INVALID);
+    }
 }
