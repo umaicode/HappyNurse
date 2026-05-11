@@ -1,8 +1,8 @@
 package com.ssafy.happynurse.domain.watch.dto;
 
+import com.ssafy.happynurse.domain.watch.entity.DropSet;
 import com.ssafy.happynurse.domain.watch.entity.InfusionStatus;
 import com.ssafy.happynurse.domain.watch.entity.IvInfusion;
-import com.ssafy.happynurse.domain.watch.entity.PatientType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
@@ -17,8 +17,8 @@ public record IvInfusionListItemResponse(
         @Schema(description = "환자 이름") String patientName,
         @Schema(description = "혼합 약물명 목록", example = "[\"5% Dextrose\", \"KCl\"]") List<String> medicationNames,
         @Schema(description = "현재 주입 속도 (mL/hr)") BigDecimal currentRateMlPerHr,
-        @Schema(description = "현재 주입 속도 (gtt/min) — patientType 기반 역환산", example = "40") Integer rateGttPerMin,
-        @Schema(description = "환자 타입 (ADULT=20gtt/mL, PEDIATRIC=60gtt/mL)", example = "ADULT") PatientType patientType,
+        @Schema(description = "현재 주입 속도 (gtt/min) — dropSet 기반 역환산", example = "40") Integer rateGttPerMin,
+        @Schema(description = "수액 세트 (gtt/mL): SET_10, SET_15, SET_20, SET_60", example = "SET_20") DropSet dropSet,
         @Schema(description = "상태") InfusionStatus status,
         @Schema(description = "수액 투여 시작 시각") LocalDateTime startedAt,
         @Schema(description = "예상 종료 시각") LocalDateTime expectedEndAt,
@@ -35,8 +35,8 @@ public record IvInfusionListItemResponse(
                 iv.getPatient().getName(),
                 names,
                 iv.getCurrentRateMlPerHr(),
-                RateInputResolver.toGttPerMin(iv.getCurrentRateMlPerHr(), iv.getPatientType()),
-                iv.getPatientType(),
+                RateInputResolver.toGttPerMin(iv.getCurrentRateMlPerHr(), iv.getDropSet()),
+                iv.getDropSet(),
                 iv.getStatus(),
                 iv.getStartedAt(),
                 iv.getExpectedEndAt(),
