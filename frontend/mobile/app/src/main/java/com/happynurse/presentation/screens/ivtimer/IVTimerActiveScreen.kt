@@ -256,7 +256,7 @@ private fun LoadedBody(
                 Spacer(Modifier.height(6.dp))
                 Text(
                     formatRemaining(remainingSec, isCompleted),
-                    fontSize = 40.sp, fontWeight = FontWeight.Bold, color = Color.White,
+                    fontSize = 42.sp, fontWeight = FontWeight.Black, color = Color.White,
                 )
                 Spacer(Modifier.height(10.dp))
                 Row(modifier = Modifier.fillMaxWidth()) {
