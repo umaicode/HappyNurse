@@ -7,7 +7,7 @@ import { formatHHmm, formatMonthDayHHmm } from "@/lib/time";
 import { useAuthStore } from "@/features/auth/stores/auth";
 import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
 import { useWardIvInfusions } from "../hooks/useIvInfusions";
-import type { IvInfusionListItem } from "../types/iv-infusion";
+import { DROP_SET_LABEL, type IvInfusionListItem } from "../types/iv-infusion";
 import { PanelCard } from "./PanelCard";
 
 const TICK_INTERVAL_MS = 60_000;
@@ -180,6 +180,28 @@ export function IVTimerPanel() {
               {/* 2행: 수액 이름 — 길면 다음 줄로 (truncate 금지) */}
               <span className="text-body-sm font-bold text-content-primary leading-snug break-words">
                 {fluidLabel}
+              </span>
+
+              {/* 2.5행: 주입 속도 + 세트 — BE 5/11 IvInfusionListItemResponse 확장분 (rateGttPerMin · dropSet).
+                  마이그레이션 누락 row 는 둘 다 null 가능 → mL/hr 만 노출. */}
+              <span className="text-body-micro font-medium text-content-tertiary leading-none">
+                <span className="font-mono">
+                  {item.currentRateMlPerHr}
+                </span>{" "}
+                mL/hr
+                {item.rateGttPerMin !== null && (
+                  <>
+                    {" · "}
+                    <span className="font-mono">{item.rateGttPerMin}</span>
+                    {" gtt/min"}
+                  </>
+                )}
+                {item.dropSet && (
+                  <>
+                    {" · "}
+                    {DROP_SET_LABEL[item.dropSet]}
+                  </>
+                )}
               </span>
 
               {/* 3행: 진행 막대바 — startedAt → expectedEndAt 구간 기준 elapsed/total */}

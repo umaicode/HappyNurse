@@ -1,19 +1,31 @@
-// STT 타이머 도메인 모델 — 홈 타이머 탭 카드 / s20a 상세 / s13 풀스크린 알람용.
-// 워치 s11→s12 흐름에서 생성된 사용자 발화 기반 타이머.
+// 음성메모 알람(STT 리마인더) 도메인 모델 — 홈 타이머 탭 카드 / 상세 / 풀스크린 알람용.
+// 백엔드 /reminders/stt 응답을 매핑한 단위 (환자/호실 정보는 응답에 없음).
 package com.happynurse.wear.data.model
 
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
 data class SttTimer(
-    val sttTimerId: String,
-    val patientName: String,
+    val sttReminderId: Long,
     val contentSummary: String,
     val remainingSec: Int,
-    val endAtDisplay: String,
+    val fireAt: Instant?,
     val sttText: String,
-    val highlightStart: Int = -1,
-    val highlightEnd: Int = -1,
-    val room: String,
-    val bedName: String,
 ) {
-    val isUrgent: Boolean get() = remainingSec in 1..(5 * 60)
-    val patientRoomBed: String get() = "$room · $bedName"
+    val sttTimerId: String get() = sttReminderId.toString()
+
+    val endAtDisplay: String
+        get() = fireAt
+            ?.atZone(ZoneId.systemDefault())
+            ?.toLocalTime()
+            ?.format(FIRE_AT_FORMATTER)
+            ?: "--:--"
+
+    val remainingTimeText: String
+        get() = IvInfusionTimer.formatRemaining(remainingSec)
+
+    companion object {
+        private val FIRE_AT_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    }
 }

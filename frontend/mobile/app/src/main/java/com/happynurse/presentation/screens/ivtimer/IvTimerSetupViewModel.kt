@@ -13,9 +13,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class PatientType(val raw: String, val label: String, val gttPerMl: Int) {
-    ADULT("ADULT", "성인", 20),
-    PEDIATRIC("PEDIATRIC", "소아", 60),
+// 백엔드 PatientType 와 1:1 — 점적 계수 (gtt/mL).
+enum class PatientType(val raw: String, val gttPerMl: Int) {
+    SET_10("SET_10", 10),
+    SET_15("SET_15", 15),
+    SET_20("SET_20", 20),
+    SET_60("SET_60", 60),
 }
 
 /** 처방 1건의 표시용 정보. 카드 표시 + 처방 용량 합계 검증에 사용. */

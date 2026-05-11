@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -320,9 +321,23 @@ fun PatientDetailScreen(
 
 @Composable
 private fun InfoRow(label: String, value: String) {
-    Row(modifier = Modifier.padding(vertical = 4.dp)) {
-        Text(label, fontSize = 12.sp, color = HnColors.TextTertiary, modifier = Modifier.size(width = 64.dp, height = 18.dp))
-        Text(value, fontSize = 14.sp, color = HnColors.Text, fontWeight = FontWeight.Medium)
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text(
+            label,
+            fontSize = 12.sp,
+            color = HnColors.TextTertiary,
+            modifier = Modifier.width(64.dp).padding(top = 2.dp),
+        )
+        Text(
+            value,
+            fontSize = 14.sp,
+            color = HnColors.Text,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
@@ -466,8 +481,8 @@ private fun MonthGrid(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .aspectRatio(1f)
-                                    .padding(2.dp)
+                                    .height(56.dp)
+                                    .padding(horizontal = 1.dp, vertical = 2.dp)
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(if (isSelected) Color(0xFFDCEEFB) else Color.Transparent)
                                     .clickable { onPick(date) }
@@ -485,23 +500,25 @@ private fun MonthGrid(
                                     },
                                 )
                                 if (isToday) {
-                                    Spacer(Modifier.height(2.dp))
+                                    Spacer(Modifier.height(1.dp))
                                     Box(
                                         modifier = Modifier
-                                            .size(4.dp)
+                                            .size(3.dp)
                                             .clip(CircleShape)
                                             .background(HnColors.Primary),
                                     )
                                 }
                                 if (cnt > 0) {
+                                    Spacer(Modifier.height(2.dp))
                                     Text(
                                         "${cnt}건",
-                                        fontSize = 14.sp,
+                                        fontSize = 9.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = HnColors.Primary,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.Visible,
                                     )
-                                } else if (!isToday) {
-                                    Spacer(Modifier.height(11.dp))
                                 }
                             }
                         } else {
@@ -620,9 +637,23 @@ private fun OrderCard(
 
 @Composable
 private fun GridCell(label: String, value: String) {
-    Row(modifier = Modifier.padding(vertical = 2.dp)) {
-        Text(label, fontSize = 11.sp, color = HnColors.TextTertiary, modifier = Modifier.size(width = 56.dp, height = 16.dp))
-        Text(value, fontSize = 13.sp, color = HnColors.Text, fontWeight = FontWeight.SemiBold)
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text(
+            label,
+            fontSize = 11.sp,
+            color = HnColors.TextTertiary,
+            modifier = Modifier.width(56.dp).padding(top = 1.dp),
+        )
+        Text(
+            value.ifBlank { "-" },
+            fontSize = 13.sp,
+            color = HnColors.Text,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 

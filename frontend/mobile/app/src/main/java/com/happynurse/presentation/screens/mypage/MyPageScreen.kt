@@ -80,13 +80,13 @@ fun MyPageScreen(
                             }
                             Text(
                                 profile?.organizationName ?: "-",
-                                fontSize = 16.sp,
+                                fontSize = 14.sp,
                                 color = HnColors.TextSecondary,
                                 modifier = Modifier.padding(top = 2.dp),
                             )
                             Text(
                                 "${profile?.wardName ?: "-"} · ${currentShiftLabel()} 근무",
-                                fontSize = 16.sp,
+                                fontSize = 14.sp,
                                 color = HnColors.TextSecondary,
                             )
                         }

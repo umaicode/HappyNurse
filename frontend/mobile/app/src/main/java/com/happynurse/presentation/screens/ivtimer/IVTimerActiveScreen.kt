@@ -365,6 +365,7 @@ private fun LoadedBody(
             enabled = canAct,
             onClick = onRequestRateChange,
         )
+        Spacer(Modifier.height(8.dp))
         HnButton(
             text = if (isCompleted) "닫기" else "수액 종료",
             full = true,
@@ -384,13 +385,13 @@ private fun RateChangeDialog(
     onConfirm: (Int, PatientType) -> Unit,
 ) {
     var rate by remember { mutableIntStateOf(initialRate.coerceIn(1, 100)) }
-    var patientType by remember { mutableStateOf(PatientType.ADULT) }
+    var patientType by remember { mutableStateOf(PatientType.SET_20) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("주입 속도 변경", fontWeight = FontWeight.Bold) },
         text = {
             Column {
-                Text("환자 타입", fontSize = 12.sp, color = HnColors.TextSecondary)
+                Text("수액 세트", fontSize = 12.sp, color = HnColors.TextSecondary)
                 Spacer(Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     PatientType.entries.forEach { p ->
@@ -408,7 +409,7 @@ private fun RateChangeDialog(
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                         ) {
                             Text(
-                                "${p.label} (${p.gttPerMl}gtt/mL)",
+                                p.gttPerMl.toString(),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = if (patientType == p) HnColors.Primary else HnColors.TextSecondary,

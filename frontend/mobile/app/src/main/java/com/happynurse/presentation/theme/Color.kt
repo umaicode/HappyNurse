@@ -25,7 +25,7 @@ object HnColors {
     // Status
     val Success       = Color(0xFF0B6C4C)
     val Warning       = Color(0xFFF59E0B)
-    val Danger        = Color(0xFFEF4444)
+    val Danger        = Color(0xFFC24848)
     val Info          = Color(0xFF3B82F6)
     val Purple        = Color(0xFF8B5CF6)
     val Cyan          = Color(0xFF06B6D4)
