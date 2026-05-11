@@ -7,10 +7,14 @@ import { PanelCard } from "./PanelCard";
 import { useMyNotifications } from "../hooks/useNotifications";
 import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
 import {
+  PRIORITY_BORDER,
+  PRIORITY_CHIP,
+  PRIORITY_LABEL,
   SOURCE_TYPE_LABEL,
   SOURCE_TYPE_TONE,
   type NotificationListItem,
   type SourceType,
+  type SymptomPriority,
 } from "../types/notification";
 import { formatRelativeTime } from "@/lib/time";
 
@@ -79,19 +83,35 @@ function NotificationCard({
   const sourceType = alert.sourceType as SourceType;
   const label = SOURCE_TYPE_LABEL[sourceType] ?? alert.sourceType;
   const tone = SOURCE_TYPE_TONE[sourceType] ?? "text-content-tertiary";
+  // self_report 알림에만 priority 가 채워짐 — CRITICAL/HIGH 면 카드 좌측 강조 보더로 시선 끌기.
+  const priority: SymptomPriority | null =
+    sourceType === "self_report" ? alert.priority : null;
+  const accentBorderClass = priority ? PRIORITY_BORDER[priority] : undefined;
 
   return (
-    <PanelCard>
-      {/* 1행: 라벨 (좌) / 상대시간 (우) — 색은 라벨 글자색에만 */}
+    <PanelCard accentBorderClass={accentBorderClass}>
+      {/* 1행: 라벨 + (선택) priority 칩 (좌) / 상대시간 (우) — 색은 라벨 글자색에만 */}
       <div className="flex items-center justify-between gap-2">
-        <span
-          className={cn(
-            "text-body-sm font-semibold tracking-tight shrink-0 leading-none",
-            tone,
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span
+            className={cn(
+              "text-body-sm font-semibold tracking-tight shrink-0 leading-none",
+              tone,
+            )}
+          >
+            {label}
+          </span>
+          {priority && (
+            <span
+              className={cn(
+                "px-1.5 py-0.5 rounded text-[11px] font-bold leading-none shrink-0",
+                PRIORITY_CHIP[priority],
+              )}
+            >
+              {PRIORITY_LABEL[priority]}
+            </span>
           )}
-        >
-          {label}
-        </span>
+        </div>
         <span className="text-body-xs font-medium text-content-tertiary shrink-0 leading-none">
           {formatRelativeTime(alert.createdAt)}
         </span>
