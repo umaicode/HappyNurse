@@ -316,6 +316,7 @@ class IvInfusionServiceTest {
                 List.of(order),
                 stub(Practitioner.class, "practitionerId", PRACTITIONER_ID),
                 new BigDecimal("500"), new BigDecimal("100"),
+                PatientType.ADULT,
                 LocalDateTime.now(), null);
         setField(iv, "ivInfusionId", id);
         return iv;
