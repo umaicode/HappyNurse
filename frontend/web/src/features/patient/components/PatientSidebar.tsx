@@ -1,10 +1,11 @@
 "use client";
 
 import { Search, LogOut, ChevronRight, Settings, Loader2 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -49,8 +50,27 @@ export function PatientSidebar({
 }: PatientSidebarProps) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const expiresAt = useAuthStore((state) => state.expiresAt);
   const reset = useAuthStore((state) => state.reset);
   const [searchQuery, setSearchQuery] = useState("");
+  // 1초 tick — 카운트다운 mm:ss 갱신. expiresAt 이 null 이면 동작 안 함.
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  useEffect(() => {
+    if (expiresAt === null) return;
+    const handle = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(handle);
+  }, [expiresAt]);
+  const remainingLabel = useMemo(() => {
+    if (expiresAt === null) return null;
+    const remainingSeconds = Math.max(
+      0,
+      Math.floor((expiresAt - nowMs) / 1000),
+    );
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }, [expiresAt, nowMs]);
+
   const [isMyPatientsOpen, setIsMyPatientsOpen] = useState(true);
   const [isAllPatientsOpen, setIsAllPatientsOpen] = useState(true);
 
@@ -84,12 +104,30 @@ export function PatientSidebar({
     <div className="flex flex-col h-full bg-surface-base">
       {/* Brand & Search Header */}
       <div className="p-3 border-b border-border-base flex flex-col gap-3">
-        <div className="flex items-center px-1">
+        <div className="flex items-center justify-between gap-2 px-1">
           <img
             src="/images/logo_ic.png"
             alt="해피너스 로고"
             className="h-5 w-auto object-contain"
           />
+          {remainingLabel !== null && (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="font-mono text-body-xs font-bold text-content-secondary tabular-nums leading-none">
+                {remainingLabel}
+              </span>
+              <Button
+                type="button"
+                variant="brandOutline"
+                size="sm"
+                className="h-6 px-2 text-body-micro font-bold"
+                onClick={() => {
+                  // placeholder — 백엔드 연장 API 추가 전까지 클릭해도 timer 변화 없음.
+                }}
+              >
+                연장
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="relative">

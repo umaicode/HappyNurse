@@ -15,3 +15,8 @@ sse-starlette
 pyyaml
 pydantic-settings
 anthropic
+numpy
+scipy
+noisereduce
+librosa
+matplotlib

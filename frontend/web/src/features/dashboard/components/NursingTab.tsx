@@ -162,7 +162,7 @@ export function NursingTab({
     >
       <div className="min-w-[800px] flex flex-col h-full">
         {/* Header Row */}
-        <div className="grid grid-cols-[90px_1fr_70px_90px_110px] gap-4 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-extrabold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
+        <div className="grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-extrabold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
           <div className="border-r border-border-base pr-4 text-center">시간</div>
           <div className="border-r border-border-base pr-4">기록 내용</div>
           <div className="border-r border-border-base pr-4 text-center">구분</div>
@@ -445,7 +445,7 @@ function InlineAddForm({
   };
 
   return (
-    <div className="grid grid-cols-[90px_1fr_70px_90px_110px] gap-4 px-4 py-2 border-y border-brand-primary/10 bg-brand-surface/30 items-center shadow-inner">
+    <div className="grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-2 border-y border-brand-primary/10 bg-brand-surface/30 items-center shadow-inner">
       <div className="text-center text-body-sm font-mono font-bold text-content-secondary">
         {displayHHmm}
       </div>
@@ -469,7 +469,7 @@ function InlineAddForm({
         <Button
           variant="neutral"
           size="sm"
-          className="h-7 px-2.5 rounded text-body-micro font-bold"
+          className="h-9 px-4 text-body-sm font-bold"
           onClick={handleSubmit}
           disabled={createMutation.isPending || !content.trim()}
         >
@@ -478,7 +478,7 @@ function InlineAddForm({
         <Button
           variant="neutral"
           size="sm"
-          className="h-7 px-2.5 rounded text-body-micro font-bold"
+          className="h-9 px-4 text-body-sm font-bold"
           onClick={() => {
             setContent("");
             onClose();
@@ -615,7 +615,7 @@ function NoteRow({
     <div
       ref={rowRef}
       className={cn(
-        "grid grid-cols-[90px_1fr_70px_90px_110px] gap-4 px-4 py-2 border-b border-border-base/50 items-start hover:bg-surface-hover/40 transition-all relative",
+        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-2 border-b border-border-base/50 items-start hover:bg-surface-hover/40 transition-all relative",
         note.status === "draft" &&
           "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-brand-primary/30",
         isEditing && "bg-brand-surface/15",
@@ -632,8 +632,13 @@ function NoteRow({
         )}
       </div>
 
-      {/* 기록 내용 */}
-      <div className="min-w-0 pr-6 border-r border-border-base/50 py-1.5 relative">
+      {/* 기록 내용 — draft 본문은 흐려서 임시/확정 시각 구분. 편집 중에는 명확하게 보이도록 opacity 해제. */}
+      <div
+        className={cn(
+          "min-w-0 pr-6 border-r border-border-base/50 py-1.5 relative",
+          note.status === "draft" && !isEditing && "opacity-60",
+        )}
+      >
         {isMedication ? (
           <MedicationContent
             note={note}
@@ -714,7 +719,7 @@ function NoteRow({
               <Button
                 variant="neutral"
                 size="sm"
-                className="h-7 px-2.5 rounded text-body-micro font-bold"
+                className="h-9 px-4 text-body-sm font-bold"
                 disabled={
                   isUpdating || (!isMedication && !draftContent.trim())
                 }
@@ -725,7 +730,7 @@ function NoteRow({
               <Button
                 variant="neutral"
                 size="sm"
-                className="h-7 px-2.5 rounded text-body-micro font-bold"
+                className="h-9 px-4 text-body-sm font-bold"
                 onClick={cancelEdit}
               >
                 취소
@@ -798,7 +803,7 @@ function SttNoteActions({
           <Button
             variant="neutral"
             size="sm"
-            className="h-7 px-2.5 rounded text-body-micro font-bold"
+            className="h-9 px-4 text-body-sm font-bold"
             onClick={onStartEdit}
           >
             수정
@@ -806,7 +811,7 @@ function SttNoteActions({
           <Button
             variant="neutral"
             size="sm"
-            className="h-7 px-2.5 rounded text-body-micro font-bold"
+            className="h-9 px-4 text-body-sm font-bold"
             disabled={isDeleting}
             onClick={() => {
               if (window.confirm("이 기록을 삭제하시겠습니까?")) {
@@ -852,7 +857,7 @@ function MedicationActions({
           <Button
             variant="neutral"
             size="sm"
-            className="h-7 px-2.5 rounded text-body-micro font-bold"
+            className="h-9 px-4 text-body-sm font-bold"
             onClick={onStartEdit}
           >
             수정
@@ -860,7 +865,7 @@ function MedicationActions({
           <Button
             variant="neutral"
             size="sm"
-            className="h-7 px-2.5 rounded text-body-micro font-bold"
+            className="h-9 px-4 text-body-sm font-bold"
             disabled={isDeleting}
             onClick={() => {
               if (window.confirm("이 투약 기록을 삭제하시겠습니까?")) {
@@ -887,7 +892,7 @@ function ConfirmButton({
     <Button
       variant="neutral"
       size="sm"
-      className="h-7 px-2.5 rounded text-body-micro font-bold"
+      className="h-9 px-4 text-body-sm font-bold"
       onClick={onClick}
       disabled={disabled}
     >
