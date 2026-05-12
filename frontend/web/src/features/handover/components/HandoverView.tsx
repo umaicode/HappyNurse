@@ -251,7 +251,7 @@ export function HandoverView() {
               <span className="text-body-sm font-bold text-content-primary leading-none">
                 담당 환자
               </span>
-              <span className="text-body-xs font-semibold text-brand-primary bg-brand-surface px-2.5 py-0.5 rounded-full leading-none">
+              <span className="text-body-sm font-semibold text-brand-primary bg-brand-surface px-2.5 py-0.5 rounded-full leading-none">
                 {filteredRows.length}명
               </span>
             </div>
@@ -261,7 +261,7 @@ export function HandoverView() {
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
             {filteredRows.length === 0 ? (
-              <div className="text-center py-8 text-body-xs text-content-muted">
+              <div className="text-center py-8 text-body-sm text-content-muted">
                 {myPatients.length === 0
                   ? "담당 환자가 없습니다. 대시보드에서 담당 환자를 지정하세요."
                   : "검색 결과 없음"}
@@ -287,7 +287,7 @@ export function HandoverView() {
                     <div className="mt-1.5 flex items-center gap-1.5">
                       <span
                         className={cn(
-                          "text-body-xs truncate flex-1",
+                          "text-body-sm truncate flex-1",
                           roster ? "text-content-tertiary" : "text-content-muted italic",
                         )}
                       >
@@ -298,7 +298,7 @@ export function HandoverView() {
                       {fresh > 0 && (
                         <span
                           title="리포트 이후 신규 간호기록"
-                          className="px-1.5 py-0.5 rounded-full bg-status-warning-surface text-status-warning-strong text-[11px] font-bold leading-none shrink-0"
+                          className="px-1.5 py-0.5 rounded-full bg-status-warning-surface text-status-warning-strong text-body-micro font-bold leading-none shrink-0"
                         >
                           새 {fresh}
                         </span>
@@ -396,7 +396,7 @@ function ProgressBanner({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 px-6 py-3 border-b text-body-xs",
+        "flex items-center gap-3 px-6 py-3 border-b text-body-sm",
         progress.done
           ? "bg-status-success-surface border-status-success/30 text-status-success"
           : progress.connectionError
@@ -464,11 +464,11 @@ function PatientHandoverCard({
     >
       {/* [CARD HEADER] */}
       <div className="px-5 py-3.5 bg-surface-base/70 border-b border-border-base flex items-center gap-3">
-        <div className="flex items-baseline gap-2.5 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
           <h3 className="text-title-md font-bold text-content-primary truncate leading-tight tracking-tight">
             {wardPatient.name}
           </h3>
-          <Text className="text-body-xs text-content-tertiary font-medium shrink-0">
+          <Text className="text-body-sm text-content-tertiary font-medium shrink-0">
             {wardPatient.roomName} {wardPatient.bedName}
           </Text>
         </div>
@@ -535,7 +535,7 @@ function PatientHandoverCard({
                   <p className="text-body-micro">PASS-BAR 상세 조회 중...</p>
                 </div>
               ) : detailQuery.isError || !detailQuery.data?.autoSummaryJson ? (
-                <div className="text-center py-8 text-body-xs text-status-danger">
+                <div className="text-center py-8 text-body-sm text-status-danger">
                   상세 리포트를 불러오지 못했습니다
                 </div>
               ) : (
@@ -557,7 +557,7 @@ function PatientHandoverCard({
             우측 상단 &quot;리포트 생성&quot; 버튼으로 만들 수 있어요
           </Text>
           {wardPatient.chiefComplaint && (
-            <Text className="mt-1 text-body-xs text-content-secondary">
+            <Text className="mt-1 text-body-sm text-content-secondary">
               주 증상 · {wardPatient.chiefComplaint}
             </Text>
           )}
@@ -684,7 +684,7 @@ function ChecklistSection({
         )}
       </div>
       {items.length === 0 ? (
-        <p className="text-body-xs text-content-muted leading-relaxed">
+        <p className="text-body-sm text-content-muted leading-relaxed">
           등록된 체크 항목이 없습니다.
         </p>
       ) : (
@@ -788,7 +788,7 @@ function SlotCallout({
         </h4>
         <span
           className={cn(
-            "ml-auto px-1.5 py-0.5 rounded text-[11px] font-bold leading-none",
+            "ml-auto px-1.5 py-0.5 rounded text-body-micro font-bold leading-none",
             VERIFICATION_TONE[slot.verification],
           )}
         >
@@ -808,12 +808,12 @@ function SlotCard({ label, slot }: { label: string; slot: Slot }) {
   return (
     <div className="rounded-xl border border-border-subtle bg-surface-base/70 p-3.5 flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <h4 className="text-body-xs font-bold text-content-primary leading-none">
+        <h4 className="text-body-sm font-bold text-content-primary leading-none">
           {label}
         </h4>
         <span
           className={cn(
-            "ml-auto px-1.5 py-0.5 rounded text-[11px] font-bold leading-none",
+            "ml-auto px-1.5 py-0.5 rounded text-body-micro font-bold leading-none",
             VERIFICATION_TONE[slot.verification],
           )}
         >
@@ -839,7 +839,7 @@ function SlotItemRow({ item }: { item: SlotItem }) {
   const headline = item.value ?? item.quote ?? item.kind ?? "(빈 항목)";
   const severityFlag = item.severity_flag;
   return (
-    <li className="text-body-xs leading-relaxed flex flex-col gap-1">
+    <li className="text-body-sm leading-relaxed flex flex-col gap-1">
       <div className="flex flex-wrap items-start gap-1.5">
         <span className="text-content-primary flex-1 min-w-0 break-words">
           {headline}
@@ -847,7 +847,7 @@ function SlotItemRow({ item }: { item: SlotItem }) {
         {severityFlag && (
           <span
             className={cn(
-              "px-1.5 py-0.5 rounded text-[11px] font-bold leading-none shrink-0",
+              "px-1.5 py-0.5 rounded text-body-micro font-bold leading-none shrink-0",
               SEVERITY_TONE[severityFlag] ?? "bg-surface-hover text-content-secondary",
             )}
           >
@@ -858,7 +858,7 @@ function SlotItemRow({ item }: { item: SlotItem }) {
 
       {/* meta 라인: time_window · trend — 둘 다 옵션. 없으면 라인 자체 안 그림. */}
       {(item.time_window || item.trend) && (
-        <div className="flex items-center gap-2 text-[11px] text-content-tertiary">
+        <div className="flex items-center gap-2 text-body-micro text-content-tertiary">
           {item.time_window && (
             <span className="inline-flex items-center gap-1">
               <Clock className="size-3" />
@@ -876,7 +876,7 @@ function SlotItemRow({ item }: { item: SlotItem }) {
 
       {/* contingency — "if X then Y" 형식의 조건부 조치. 안전 카드에서 특히 중요. */}
       {item.contingency && (
-        <div className="text-[11px] text-status-warning-strong leading-snug pl-2 border-l-2 border-status-warning/40">
+        <div className="text-body-micro text-status-warning-strong leading-snug pl-2 border-l-2 border-status-warning/40">
           ↳ {item.contingency}
         </div>
       )}
@@ -897,11 +897,11 @@ function CitationPreview({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <Badge className="bg-brand-surface text-brand-primary border-none text-[11px] font-bold leading-none px-2 py-0.5">
+        <Badge className="bg-brand-surface text-brand-primary border-none text-body-micro font-bold leading-none px-2 py-0.5">
           {citation.label}
         </Badge>
       </div>
-      <div className="text-[11px] font-mono text-content-tertiary leading-none">
+      <div className="text-body-micro font-mono text-content-tertiary leading-none">
         {citation.ts.slice(0, 16).replace("T", " ")}
       </div>
       <button
@@ -960,14 +960,14 @@ function CitationList({
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                          <Badge className="bg-surface-hover text-content-tertiary font-medium border-none text-[11px] px-2 py-0 hover:bg-surface-hover">
+                          <Badge className="bg-surface-hover text-content-tertiary font-medium border-none text-body-micro px-2 py-0 hover:bg-surface-hover">
                             {citation.label}
                           </Badge>
-                          <span className="text-[11px] font-mono text-content-tertiary">
+                          <span className="text-body-micro font-mono text-content-tertiary">
                             {citation.ts.slice(0, 16).replace("T", " ")}
                           </span>
                           {referencedSlotLabels.length > 0 && (
-                            <span className="text-[11px] text-content-muted">
+                            <span className="text-body-micro text-content-muted">
                               · {referencedSlotLabels.join(", ")}
                             </span>
                           )}
