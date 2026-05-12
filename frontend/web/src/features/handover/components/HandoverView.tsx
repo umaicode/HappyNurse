@@ -16,6 +16,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
@@ -28,6 +29,8 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
+import { getPatientDetail } from "@/features/dashboard/api/patient-detail";
+import { formatBirthShort } from "@/lib/patient-display";
 import {
   useGenerateHandover,
   useHandoverDetail,
@@ -104,6 +107,24 @@ export function HandoverView() {
     () => wardPatients?.filter((patient) => patient.isMyPatient) ?? [],
     [wardPatients],
   );
+
+  // myPatients 각각의 PatientDetail — diseaseName 등 slim 응답에 없는 필드 채우기 위함.
+  // queryKey 는 usePatientDetail (`["patient", id]`) 와 동일 → EMRGrid 진입 시 받은 캐시와 공유, 재요청 없음.
+  const patientDetailQueries = useQueries({
+    queries: myPatients.map((patient) => ({
+      queryKey: ["patient", patient.patientId] as const,
+      queryFn: () => getPatientDetail(patient.patientId),
+      enabled: patient.patientId !== null,
+    })),
+  });
+  const diseaseNameByPatientId = useMemo(() => {
+    const map = new Map<number, string>();
+    myPatients.forEach((patient, index) => {
+      const detail = patientDetailQueries[index]?.data;
+      if (detail?.diseaseName) map.set(patient.patientId, detail.diseaseName);
+    });
+    return map;
+  }, [myPatients, patientDetailQueries]);
 
   const filteredRows = useMemo<HandoverRow[]>(() => {
     const rows: HandoverRow[] = myPatients.map((wardPatient) => ({
@@ -231,6 +252,10 @@ export function HandoverView() {
               filteredRows.map(({ wardPatient, roster }) => {
                 const fresh =
                   roster?.freshness?.new_records_since_report ?? 0;
+                const diseaseName = diseaseNameByPatientId.get(
+                  wardPatient.patientId,
+                );
+                const birthLabel = formatBirthShort(wardPatient.birthDate);
                 return (
                   <button
                     key={wardPatient.encounterId}
@@ -238,9 +263,16 @@ export function HandoverView() {
                     className="w-full text-left px-4 py-3 rounded-xl bg-transparent hover:bg-surface-hover transition-all group"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-body-base font-semibold truncate text-content-primary">
-                        {wardPatient.name}
-                      </span>
+                      <div className="flex items-baseline gap-1.5 min-w-0">
+                        <span className="text-body-base font-semibold truncate text-content-primary">
+                          {wardPatient.name}
+                        </span>
+                        {birthLabel && (
+                          <span className="text-body-micro font-mono text-content-muted shrink-0">
+                            {birthLabel}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-body-micro text-content-muted shrink-0">
                         {wardPatient.roomName} {wardPatient.bedName}
                       </span>
@@ -249,12 +281,14 @@ export function HandoverView() {
                       <span
                         className={cn(
                           "text-body-sm truncate flex-1",
-                          roster ? "text-content-tertiary" : "text-content-muted italic",
+                          diseaseName
+                            ? "text-content-tertiary"
+                            : "text-content-muted italic",
                         )}
                       >
-                        {roster?.header ??
+                        {diseaseName ??
                           wardPatient.chiefComplaint ??
-                          "리포트 미생성"}
+                          "병명 미등록"}
                       </span>
                       {fresh > 0 && (
                         <span
