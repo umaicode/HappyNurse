@@ -212,7 +212,7 @@ export function AssignPatientModal({
           <Button
             type="button"
             variant="brand"
-            size="lg"
+            size="default"
             onClick={handleSave}
             disabled={assignMutation.isPending}
           >
