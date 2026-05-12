@@ -175,7 +175,7 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                       {ORDER_TYPE_LABEL[order.orderType] ?? order.orderType}
                     </span>
                     {isChanged && (
-                      <span className="px-1.5 py-0.5 rounded bg-brand-primary text-white text-[10px] font-bold leading-none shrink-0">
+                      <span className="px-1.5 py-0.5 rounded bg-brand-surface text-brand-primary text-[10px] font-bold leading-none shrink-0">
                         변경
                       </span>
                     )}

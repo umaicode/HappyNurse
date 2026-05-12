@@ -4,11 +4,15 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   generateHandover,
+  getHandoverChecks,
   getHandoverDetail,
   getRosterSummary,
+  patchHandoverChecks,
 } from "../api/handover";
 import { openSse } from "@/lib/sse";
 import type {
+  HandoverChecksPatch,
+  HandoverChecksResponse,
   HandoverDetailResponse,
   HandoverJobResponse,
   RosterSummary,
@@ -21,6 +25,8 @@ import type {
 export const HANDOVER_ROSTER_KEY = ["handover", "roster-summary"] as const;
 export const handoverDetailKey = (handoverId: string | null) =>
   ["handover", "detail", handoverId] as const;
+export const handoverChecksKey = (handoverId: string | null) =>
+  ["handover", "checks", handoverId] as const;
 
 /**
  * 진입 시 즉석 narrative + 환자 brief.
@@ -52,6 +58,37 @@ export const useGenerateHandover = () =>
   useMutation<HandoverJobResponse, Error, void>({
     mutationFn: generateHandover,
   });
+
+/**
+ * 체크리스트 상태 조회 (BE).
+ * PASS-BAR 본체 (useHandoverDetail) 와 다른 도메인 — handoverId 마다 분리.
+ */
+export const useHandoverChecks = (handoverId: string | null) =>
+  useQuery<HandoverChecksResponse>({
+    queryKey: handoverChecksKey(handoverId),
+    queryFn: () => getHandoverChecks(handoverId as string),
+    enabled: handoverId !== null,
+    staleTime: 60_000,
+  });
+
+/**
+ * 체크리스트 토글 (델타 PATCH).
+ * 성공 시 해당 handoverId 의 checks 캐시 invalidate — 다른 사용자가 토글한 항목도 반영.
+ * 호출 측은 optimistic update 를 직접 setQueryData 로 적용해도 OK.
+ */
+export const usePatchHandoverChecks = (handoverId: string | null) => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, HandoverChecksPatch>({
+    mutationFn: (checks) => patchHandoverChecks(handoverId as string, checks),
+    onSuccess: () => {
+      if (handoverId !== null) {
+        queryClient.invalidateQueries({
+          queryKey: handoverChecksKey(handoverId),
+        });
+      }
+    },
+  });
+};
 
 /**
  * 인수인계 generate 진행 SSE 추적.

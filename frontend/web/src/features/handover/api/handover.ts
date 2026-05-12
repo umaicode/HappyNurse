@@ -11,8 +11,11 @@
  *   - GET /api/handover?encounter_id= — handover_id 단건 조회로 대체
  *   - /regenerate — Phase 2
  */
+import { client } from "@/lib/client";
 import { aiClient } from "@/lib/ai-client";
 import type {
+  HandoverChecksPatch,
+  HandoverChecksResponse,
   HandoverDetailResponse,
   HandoverJobResponse,
   HandoverPayload,
@@ -57,3 +60,26 @@ export const getHandoverDetail = (
         createdAt: String(data.created_at ?? ""),
       };
     });
+
+// 체크리스트 상태 조회 — BE (`/handover/{handoverId}`). PASS-BAR 풀 본체는 위 AI detail 이 담당.
+export const getHandoverChecks = (
+  handoverId: string,
+): Promise<HandoverChecksResponse> =>
+  client.get(`/handover/${handoverId}`).then((response) => {
+    const data = response.data ?? {};
+    return {
+      handoverId: String(data.handoverId ?? handoverId),
+      checkedItemsJson:
+        (data.checkedItemsJson as HandoverChecksResponse["checkedItemsJson"]) ??
+        {},
+    };
+  });
+
+// 체크 토글 — 델타 방식. body 에 안 담은 키는 BE 가 그대로 둠.
+export const patchHandoverChecks = (
+  handoverId: string,
+  checks: HandoverChecksPatch,
+): Promise<void> =>
+  client
+    .patch(`/handover/${handoverId}/checks`, { checks })
+    .then(() => undefined);

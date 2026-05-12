@@ -349,10 +349,8 @@ function PatientItem({
           </div>
           <div
             className={cn(
-              "flex items-center gap-1 text-[13px] font-mono shrink-0 ml-auto",
-              isActive
-                ? "text-sub-primary/70 font-bold"
-                : "text-content-muted",
+              "flex items-center gap-1 text-[13px] leading-tight font-bold shrink-0 ml-auto",
+              isActive ? "text-sub-primary/70" : "text-content-tertiary",
             )}
           >
             <span>{formatGenderShort(patient.gender)}</span>
