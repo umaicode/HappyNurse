@@ -257,9 +257,11 @@ export function PatientSidebar({
                 </span>
               )}
             </span>
-            <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider mt-0.5">
-              {user?.wardName ?? ""}
-            </span>
+            {user?.wardName && (
+              <span className="text-body-xs font-semibold text-content-secondary truncate mt-0.5">
+                {user.wardName}
+              </span>
+            )}
           </div>
 
           <button
