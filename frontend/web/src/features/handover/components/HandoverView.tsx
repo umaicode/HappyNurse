@@ -904,12 +904,6 @@ function CitationPreview({
       <div className="text-[11px] font-mono text-content-tertiary leading-none">
         {citation.ts.slice(0, 16).replace("T", " ")}
       </div>
-      {/* 원본 발췌 — BE 가 snippet 필드 보내기 시작하면 자동 표시. 현재는 미응답이라 보통 안 보임. */}
-      {citation.snippet && (
-        <p className="text-body-xs leading-relaxed text-content-primary bg-surface-hover/50 rounded p-2 whitespace-pre-wrap break-words">
-          {citation.snippet}
-        </p>
-      )}
       <button
         type="button"
         onClick={onClick}

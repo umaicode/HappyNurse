@@ -22,8 +22,6 @@ export interface Citation {
   // ISO datetime
   ts: string;
   label: string;
-  // 원본 본문 발췌 — BE 가 보내기 시작하면 자동 사용. 현재는 미응답이라 undefined 일 수 있음.
-  snippet?: string | null;
 }
 
 export interface SlotItem {
