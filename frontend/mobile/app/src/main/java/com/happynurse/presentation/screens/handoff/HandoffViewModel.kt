@@ -116,4 +116,32 @@ class HandoffViewModel @Inject constructor(
     fun collapse() {
         _state.update { it.copy(expandedHandoverId = null) }
     }
+
+    // 페이저로 환자 카드 진입 시 자동 호출 — 이미 캐시되어 있으면 noop.
+    fun ensureDetailLoaded(handoverId: String) {
+        if (handoverId.isBlank()) return
+        val cur = _state.value
+        if (cur.detailByHandoverId.containsKey(handoverId)) return
+        if (cur.loadingDetailIds.contains(handoverId)) return
+        viewModelScope.launch {
+            _state.update { it.copy(loadingDetailIds = it.loadingDetailIds + handoverId) }
+            repo.getHandoverDetail(handoverId)
+                .onSuccess { detail ->
+                    _state.update {
+                        it.copy(
+                            detailByHandoverId = it.detailByHandoverId + (handoverId to detail),
+                            loadingDetailIds = it.loadingDetailIds - handoverId,
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    _state.update {
+                        it.copy(
+                            loadingDetailIds = it.loadingDetailIds - handoverId,
+                            error = e.message,
+                        )
+                    }
+                }
+        }
+    }
 }

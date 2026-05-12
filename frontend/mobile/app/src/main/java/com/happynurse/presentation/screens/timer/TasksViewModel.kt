@@ -1,5 +1,5 @@
 // 업무 페이지 ViewModel — 수액타이머 / 워치알람 2탭 상태 + 알림 벨 데이터 관리
-package com.happynurse.presentation.screens.tasks
+package com.happynurse.presentation.screens.timer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -77,6 +77,13 @@ class TasksViewModel @Inject constructor(
             while (isActive) {
                 refreshBellNotifications()
                 delay(BELL_POLL_INTERVAL_MS)
+            }
+        }
+        // 워치 알람 목록 실시간 갱신 — 워치가 백엔드에 직접 등록하므로 폴링으로 동기화.
+        viewModelScope.launch {
+            while (isActive) {
+                refreshWatchAlarms()
+                delay(WATCH_ALARM_POLL_INTERVAL_MS)
             }
         }
     }
@@ -160,7 +167,8 @@ class TasksViewModel @Inject constructor(
     }
 
     private companion object {
-        const val BELL_POLL_INTERVAL_MS = 15_000L  // 15초마다 벨 카운트 갱신
+        const val BELL_POLL_INTERVAL_MS = 15_000L   // 15초마다 벨 카운트 갱신
+        const val WATCH_ALARM_POLL_INTERVAL_MS = 30_000L  // 30초마다 워치 알람 동기화
     }
 }
 

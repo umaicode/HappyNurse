@@ -69,7 +69,7 @@ fun NotificationsSheet(
             if (recent.isNotEmpty()) {
                 Text(
                     "모두 지우기",
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = HnColors.Primary,
                     modifier = Modifier
@@ -77,12 +77,6 @@ fun NotificationsSheet(
                         .clickable(onClick = onDeleteAll)
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                 )
-            }
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(36.dp).clip(CircleShape).clickable(onClick = onClose),
-            ) {
-                Icon(Icons.Outlined.Close, contentDescription = "닫기", tint = HnColors.TextSecondary)
             }
         }
         if (recent.isEmpty()) {
@@ -209,7 +203,7 @@ private fun NotificationRow(n: Notification) {
     val tagColors = HnColors.notificationTagColors.getValue(n.category)
     val timeLabel = when {
         n.minutesAgo == 0 -> "지금"
-        n.minutesAgo in 1..29 -> "${n.minutesAgo}분 전"
+        n.minutesAgo in 1..59 -> "${n.minutesAgo}분 전"
         else -> n.time
     }
     Box(
@@ -232,23 +226,24 @@ private fun NotificationRow(n: Notification) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TagChip(catLabel, fg = tagColors.fg, bg = tagColors.bg)
                     if (n.patient.isNotBlank()) {
-                        Spacer(Modifier.size(6.dp))
-                        Text(n.patient, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                        Spacer(Modifier.size(8.dp))
+                        Text(n.patient, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
                     }
                     if (n.room.isNotBlank()) {
-                        Spacer(Modifier.size(4.dp))
-                        Text(n.room, fontSize = 12.sp, color = HnColors.TextSecondary)
+                        Spacer(Modifier.size(6.dp))
+                        Text(n.room, fontSize = 14.sp, color = HnColors.TextSecondary)
                     }
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        timeLabel,
+                        fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+                        color = HnColors.Text,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
                 }
-                Spacer(Modifier.height(6.dp))
-                Text(n.text, fontSize = 13.sp, color = HnColors.Text)
+                Spacer(Modifier.height(8.dp))
+                Text(n.text, fontSize = 17.sp, color = HnColors.Text)
             }
-            Text(
-                timeLabel,
-                fontSize = 14.sp, fontWeight = FontWeight.Bold,
-                color = HnColors.Text,
-                modifier = Modifier.padding(start = 8.dp),
-            )
         }
     }
 }

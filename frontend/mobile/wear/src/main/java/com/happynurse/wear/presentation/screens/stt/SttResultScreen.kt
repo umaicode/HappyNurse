@@ -1,5 +1,5 @@
-// SttResultScreen — STT 인식 결과 확인. 상단에 인식된 시간, 중앙에 녹음 내용, 하단에 확인 EdgeButton.
-// 사용자가 EdgeButton 을 누르면 RecordViewModel.confirm() 으로 /reminders/stt 등록을 실행한다.
+// SttResultScreen — STT 인식 결과 표시 화면. 상단에 인식된 시간, 중앙에 녹음 내용.
+// 등록은 RecordViewModel.processRecording() 에서 자동으로 실행되며, 이 화면은 결과 표시 + 진행 상태 안내만 담당.
 package com.happynurse.wear.presentation.screens.stt
 
 import androidx.compose.foundation.background
@@ -29,7 +29,6 @@ import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.CircularProgressIndicator
-import androidx.wear.compose.material3.EdgeButton
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
@@ -90,17 +89,6 @@ fun SttResultScreen(
 
                 if (state.phase == RecordPhase.SUBMITTING) {
                     SubmittingOverlay(modifier = Modifier.align(Alignment.Center))
-                }
-
-                EdgeButton(
-                    onClick = viewModel::confirm,
-                    enabled = state.fireAtEpochMillis != null && state.phase != RecordPhase.SUBMITTING,
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                ) {
-                    Text(
-                        text = "확인",
-                        fontWeight = FontWeight.Bold,
-                    )
                 }
             }
         }
