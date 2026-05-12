@@ -584,15 +584,6 @@ function PassBarDetail({
   const toggleAction = (index: number) =>
     setCheckedActionIndices((prev) => ({ ...prev, [index]: !prev[index] }));
 
-  // citation_id → Citation 매핑 (slot 안 citation_ids 를 풀어 표시)
-  const citationById = useMemo(() => {
-    const map = new Map<string, Citation>();
-    payload.citations.forEach((citation) => {
-      map.set(citation.id, citation);
-    });
-    return map;
-  }, [payload.citations]);
-
   // 한 citation 이 여러 slot 에 인용될 수 있음 — CitationList 에서 어느 슬롯에 인용됐는지 표시.
   const slotKeysByCitationId = useMemo(() => {
     const map = new Map<string, Set<keyof Slots>>();
@@ -607,6 +598,14 @@ function PassBarDetail({
     return map;
   }, [payload.slots]);
 
+  // 체크리스트 항목 소스 — action 우선, 비면 recommendation fallback. 둘 다 비면 빈 메시지 표시 (UI 자체는 항상 노출).
+  const checklistItems = useMemo<SlotItem[]>(() => {
+    if (payload.slots.action.items.length > 0) return payload.slots.action.items;
+    if (payload.slots.recommendation.items.length > 0)
+      return payload.slots.recommendation.items;
+    return [];
+  }, [payload.slots.action.items, payload.slots.recommendation.items]);
+
   return (
     <>
       {/* [1] Synthesis 콜아웃 — 다음 시프트가 가장 먼저 봐야 할 take-away */}
@@ -615,44 +614,37 @@ function PassBarDetail({
           label="Synthesis · 종합"
           slot={payload.slots.synthesis}
           accent="brand"
-          citationById={citationById}
-          onCitationClick={onCitationClick}
         />
       )}
 
-      {/* [2] Safety 콜아웃 — 낙상/격리/DNR/알러지/금기 등 안전 사항 */}
+      {/* [2] 체크리스트 — Synthesis 직후 배치 (mockup 의 AI 요약 박스 안 체크리스트 위치).
+          action 우선, 비면 recommendation fallback, 둘 다 비면 빈 상태 메시지. */}
+      <ChecklistSection
+        items={checklistItems}
+        checkedByIndex={checkedActionIndices}
+        onToggle={toggleAction}
+      />
+
+      {/* [3] Safety 콜아웃 — 낙상/격리/DNR/알러지/금기 등 안전 사항 */}
       {payload.slots.safety.items.length > 0 && (
         <SlotCallout
           label="Safety · 안전"
           slot={payload.slots.safety}
           accent="danger"
           icon={<Shield className="size-4" />}
-          citationById={citationById}
-          onCitationClick={onCitationClick}
         />
       )}
 
-      {/* [3] SBAR grid — 나머지 6 슬롯 */}
+      {/* [4] SBAR grid — 나머지 6 슬롯 */}
       <div className="grid grid-cols-2 gap-3">
         {SBAR_SLOT_ORDER.map((key) => (
           <SlotCard
             key={key}
             label={SLOT_LABEL[key]}
             slot={payload.slots[key]}
-            citationById={citationById}
-            onCitationClick={onCitationClick}
           />
         ))}
       </div>
-
-      {/* [4] 체크리스트 — action 슬롯 items 기반 (데이터 소스 미정, UI 만 우선 구현) */}
-      {payload.slots.action.items.length > 0 && (
-        <ChecklistSection
-          items={payload.slots.action.items}
-          checkedByIndex={checkedActionIndices}
-          onToggle={toggleAction}
-        />
-      )}
 
       {/* [5] Citations 전체 목록 — 인용된 슬롯 라벨과 함께 표시 */}
       {payload.citations.length > 0 && (
@@ -678,47 +670,56 @@ function ChecklistSection({
   checkedByIndex: Record<number, boolean>;
   onToggle: (index: number) => void;
 }) {
+  const doneCount = items.filter((_, index) => checkedByIndex[index]).length;
   return (
     <div className="rounded-xl border border-brand-primary/20 bg-brand-surface/20 p-4 flex flex-col gap-2.5">
       <div className="flex items-center gap-2">
         <h4 className="text-body-sm font-bold text-brand-primary leading-none">
           체크리스트
         </h4>
-        <span className="text-body-micro text-content-muted leading-none">
-          ({items.filter((_, index) => checkedByIndex[index]).length}/{items.length})
-        </span>
+        {items.length > 0 && (
+          <span className="text-body-micro text-content-muted leading-none">
+            ({doneCount}/{items.length})
+          </span>
+        )}
       </div>
-      <ul className="flex flex-col gap-1.5">
-        {items.map((item, index) => {
-          const label = item.value ?? item.quote ?? item.kind ?? "(빈 항목)";
-          const checked = checkedByIndex[index] === true;
-          const checkboxId = `handover-checklist-${index}`;
-          return (
-            <li key={index}>
-              <label
-                htmlFor={checkboxId}
-                className="flex items-center gap-2.5 px-2.5 py-2 rounded-md bg-white border border-border-subtle hover:border-brand-primary/30 cursor-pointer select-none transition-colors"
-              >
-                <Checkbox
-                  id={checkboxId}
-                  checked={checked}
-                  onCheckedChange={() => onToggle(index)}
-                />
-                <span
-                  className={cn(
-                    "text-body-sm leading-snug break-words flex-1 min-w-0",
-                    checked
-                      ? "line-through text-content-muted"
-                      : "text-content-primary",
-                  )}
+      {items.length === 0 ? (
+        <p className="text-body-xs text-content-muted leading-relaxed">
+          등록된 체크 항목이 없습니다.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-1.5">
+          {items.map((item, index) => {
+            const label = item.value ?? item.quote ?? item.kind ?? "(빈 항목)";
+            const checked = checkedByIndex[index] === true;
+            const checkboxId = `handover-checklist-${index}`;
+            return (
+              <li key={index}>
+                <label
+                  htmlFor={checkboxId}
+                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-md bg-white border border-border-subtle hover:border-brand-primary/30 cursor-pointer select-none transition-colors"
                 >
-                  {label}
-                </span>
-              </label>
-            </li>
-          );
-        })}
-      </ul>
+                  <Checkbox
+                    id={checkboxId}
+                    checked={checked}
+                    onCheckedChange={() => onToggle(index)}
+                  />
+                  <span
+                    className={cn(
+                      "text-body-sm leading-snug break-words flex-1 min-w-0",
+                      checked
+                        ? "line-through text-content-muted"
+                        : "text-content-primary",
+                    )}
+                  >
+                    {label}
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }
@@ -765,15 +766,11 @@ function SlotCallout({
   slot,
   accent,
   icon,
-  citationById,
-  onCitationClick,
 }: {
   label: string;
   slot: Slot;
   accent: "brand" | "danger";
   icon?: React.ReactNode;
-  citationById: Map<string, Citation>;
-  onCitationClick: (citation: Citation) => void;
 }) {
   const accentClass =
     accent === "danger"
@@ -800,29 +797,14 @@ function SlotCallout({
       </div>
       <ul className="space-y-2">
         {slot.items.map((item, index) => (
-          <SlotItemRow
-            key={index}
-            item={item}
-            citationById={citationById}
-            onCitationClick={onCitationClick}
-          />
+          <SlotItemRow key={index} item={item} />
         ))}
       </ul>
     </div>
   );
 }
 
-function SlotCard({
-  label,
-  slot,
-  citationById,
-  onCitationClick,
-}: {
-  label: string;
-  slot: Slot;
-  citationById: Map<string, Citation>;
-  onCitationClick: (citation: Citation) => void;
-}) {
+function SlotCard({ label, slot }: { label: string; slot: Slot }) {
   return (
     <div className="rounded-xl border border-border-subtle bg-surface-base/70 p-3.5 flex flex-col gap-2">
       <div className="flex items-center gap-2">
@@ -843,12 +825,7 @@ function SlotCard({
       ) : (
         <ul className="space-y-2">
           {slot.items.map((item, index) => (
-            <SlotItemRow
-              key={index}
-              item={item}
-              citationById={citationById}
-              onCitationClick={onCitationClick}
-            />
+            <SlotItemRow key={index} item={item} />
           ))}
         </ul>
       )}
@@ -856,17 +833,9 @@ function SlotCard({
   );
 }
 
-// 슬롯 안 한 줄짜리 항목 — value / quote 본문 + meta (time_window, trend, severity_flag)
-// + contingency (조건문) + citation chips (hover preview)
-function SlotItemRow({
-  item,
-  citationById,
-  onCitationClick,
-}: {
-  item: SlotItem;
-  citationById: Map<string, Citation>;
-  onCitationClick: (citation: Citation) => void;
-}) {
+// 슬롯 안 한 줄짜리 항목 — value / quote 본문 + meta (time_window, trend, severity_flag) + contingency.
+// citation 표시는 슬롯에서 제거됨 — 출처는 카드 하단 "근거 기록" 영역(CitationList) 에만.
+function SlotItemRow({ item }: { item: SlotItem }) {
   const headline = item.value ?? item.quote ?? item.kind ?? "(빈 항목)";
   const severityFlag = item.severity_flag;
   return (
@@ -912,53 +881,8 @@ function SlotItemRow({
         </div>
       )}
 
-      {/* citation chips — quote 가 있거나 source_layer 가 원문(1/2) 일 때만 노출.
-          value-only(LLM 종합) 항목엔 chip 숨김 — 출처는 "근거"에만 붙도록 한다는 정책. */}
-      {item.citation_ids.length > 0 &&
-        (item.quote !== null ||
-          item.source_layer === 1 ||
-          item.source_layer === 2) && (
-          <div className="inline-flex flex-wrap gap-1 pt-0.5">
-            {item.citation_ids.map((cid) => {
-              const citation = citationById.get(cid);
-              if (!citation) return null;
-              return (
-                <CitationChip
-                  key={cid}
-                  citation={citation}
-                  onClick={() => onCitationClick(citation)}
-                />
-              );
-            })}
-          </div>
-        )}
+      {/* 슬롯 안 citation chip 은 제거 — 출처는 카드 하단의 "근거 기록" 영역(CitationList) 에만 표시. */}
     </li>
-  );
-}
-
-// hover 시 popover 로 인용 메타 미리보기. 클릭은 dashboard 점프.
-function CitationChip({
-  citation,
-  onClick,
-}: {
-  citation: Citation;
-  onClick: () => void;
-}) {
-  return (
-    <HoverCard openDelay={120} closeDelay={80}>
-      <HoverCardTrigger asChild>
-        <button
-          type="button"
-          onClick={onClick}
-          className="px-1.5 py-0.5 rounded bg-brand-surface text-brand-primary text-[11px] font-bold hover:bg-brand-primary hover:text-brand-text transition-colors leading-none"
-        >
-          {citation.label}
-        </button>
-      </HoverCardTrigger>
-      <HoverCardContent align="start" sideOffset={6} className="w-[360px] p-3.5">
-        <CitationPreview citation={citation} onClick={onClick} />
-      </HoverCardContent>
-    </HoverCard>
   );
 }
 

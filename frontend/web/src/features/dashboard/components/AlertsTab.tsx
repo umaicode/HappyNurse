@@ -46,12 +46,12 @@ export function AlertsTab({ patientId, date }: AlertsTabProps) {
             symptoms.map((symptom) => (
               <div
                 key={symptom.selfReportId}
-                className="grid grid-cols-[110px_1fr] gap-2 px-4 py-3 border-b border-border-base/50 items-start hover:bg-surface-hover/30 transition-all text-body-sm text-content-secondary"
+                className="grid grid-cols-[110px_1fr] gap-2 px-4 py-3 border-b border-border-base/50 items-center hover:bg-surface-hover/30 transition-all text-body-sm text-content-secondary"
               >
-                <div className="text-center font-mono font-extrabold text-[15px] text-content-primary pt-0.5">
+                <div className="text-center font-mono font-extrabold text-[15px] text-content-primary">
                   {formatHHmm(symptom.submittedAt)}
                 </div>
-                <div className="pl-2 pt-1">
+                <div className="pl-2">
                   {symptom.buttonLabel && (
                     <span className="inline-block px-1.5 py-0.5 mr-1.5 text-[11px] font-bold rounded bg-brand-surface text-brand-primary leading-none align-middle">
                       {symptom.buttonLabel}

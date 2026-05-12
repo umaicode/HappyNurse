@@ -94,11 +94,6 @@ function NotificationCard({
     : sourceType === "timer"
       ? SOURCE_TYPE_BORDER.timer
       : undefined;
-  // timer 알림은 title (예: "음성 메모 알림") 이 sourceType 라벨("타이머") 보다 더 구체적이라 title 도 함께 노출.
-  const titleLine =
-    sourceType === "timer" && alert.title && alert.title !== label
-      ? alert.title
-      : null;
 
   return (
     <PanelCard accentBorderClass={accentBorderClass}>
@@ -128,12 +123,6 @@ function NotificationCard({
           {formatRelativeTime(alert.createdAt)}
         </span>
       </div>
-
-      {titleLine && (
-        <span className="text-body-sm font-bold text-content-primary leading-tight">
-          {titleLine}
-        </span>
-      )}
 
       {alert.patientName && (
         <div className="flex items-center gap-2 min-w-0">
