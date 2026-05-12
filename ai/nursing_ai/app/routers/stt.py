@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Query
-from app.services.nursing_stt.stt_pipeline import STTPipeline
+from app.services.nursing_stt.stt_pipeline import get_stt_pipeline
 from app.services.audio_storage import AudioStorage
 from app.database.db import get_db
 from app.middleware.jwt_auth import get_current_user
@@ -31,8 +31,8 @@ async def _run_recognize(
         # 1. 음성 파일 저장 (원본 그대로 저장 — NC 적용본은 디스크에 남기지 않음)
         audio_path = audio_storage.save(audio_data, audio.filename)
 
-        # 2. STT + 매핑 처리
-        pipeline = STTPipeline(db=db)
+        # 2. STT + 매핑 처리 (싱글톤 재사용 — Kiwi/DB 사전 init 비용 회피)
+        pipeline = get_stt_pipeline()
         result = await pipeline.process(audio_data, audio.filename, apply_nc=apply_nc)
 
         # 3. nursing_record DB 저장 (환자 정보가 있을 때만)

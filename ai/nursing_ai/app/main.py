@@ -60,6 +60,35 @@ app.include_router(stt.router, prefix="/api", tags=["STT 음성인식"])
 app.include_router(correction.router, prefix="/api", tags=["용어 교정 피드백"])
 app.include_router(handover.router, prefix="/api/handover", tags=["AI 인수인계"])
 
+
+@app.on_event("startup")
+async def _startup_stt_pipeline():
+    """STT 파이프라인 pre-warm — Kiwi 형태소 분석기와 DB 매핑 사전을 부팅 시 1회 로드.
+
+    이렇게 안 하면 매 /api/stt/recognize 요청마다 1-3초의 init 비용이 추가됨
+    (Kiwi 한국어 사전 로드 + quick_correction_dictionary 풀 SELECT).
+    """
+    from app.services.nursing_stt.stt_pipeline import get_stt_pipeline
+    from app.database.db import SessionLocal
+
+    pipeline = get_stt_pipeline()
+    db = SessionLocal()
+    try:
+        pipeline.load_dictionary(db)
+    finally:
+        db.close()
+    print("[startup] STT 파이프라인 pre-warm 완료")
+
+
+@app.on_event("shutdown")
+async def _shutdown_stt_pipeline():
+    """앱 종료 시 httpx 연결 풀 정리."""
+    from app.services.nursing_stt.stt_pipeline import _PIPELINE
+
+    if _PIPELINE is not None:
+        await _PIPELINE.clova.aclose()
+
+
 @app.on_event("startup")                                     # 추가
 async def _startup_handover():
     from app.services.handover.config import get_settings

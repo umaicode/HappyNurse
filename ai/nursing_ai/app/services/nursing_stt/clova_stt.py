@@ -16,7 +16,14 @@ class ClovaSTTClient:
         self.secret_key = os.getenv("CLOVA_SECRET_KEY")
         self.invoke_url = os.getenv("CLOVA_INVOKE_URL")
         self.noise_canceller = get_noise_canceller()
+        # 매 요청마다 새 AsyncClient 를 만들면 TLS handshake + 연결 풀 재생성 비용
+        # (~100-300ms) 이 누적된다. 싱글톤 라이프타임 동안 1개를 재사용.
+        self._http = httpx.AsyncClient(timeout=60.0)
         print(f"Secret Key 확인: {self.secret_key[:10]}...")
+
+    async def aclose(self) -> None:
+        """앱 종료 시 호출 — keep-alive 연결 정리."""
+        await self._http.aclose()
 
     def convert_to_wav(self, audio_data: bytes, filename: str) -> tuple[bytes, float | None]:
         """다양한 오디오 포맷을 WAV(16kHz, mono)로 변환. NC 미적용. (wav_bytes, None) 반환."""
@@ -98,12 +105,11 @@ class ClovaSTTClient:
             "params": (None, json.dumps(params), "application/json")
         }
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                f"{self.invoke_url}/recognizer/upload",
-                headers=headers,
-                files=files
-            )
+        response = await self._http.post(
+            f"{self.invoke_url}/recognizer/upload",
+            headers=headers,
+            files=files,
+        )
 
         print(f"응답 상태 코드: {response.status_code}")
         print(f"응답 원본: {response.text}")
