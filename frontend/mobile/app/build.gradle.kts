@@ -24,7 +24,7 @@ android {
 
     buildTypes {
         // 실기기 배포 BASE_URL — debug=DEV, release=PROD
-        // 에뮬레이터에서 실행 시 AppModule 이 자동으로 http://10.0.2.2:8080/ 로 override
+        // (에뮬레이터에서 로컬 백엔드를 띄울 경우 buildConfigField 를 임시로 http://10.0.2.2:8080/ 로 바꿔서 빌드)
         debug {
             buildConfigField("String", "BASE_URL", "\"https://k14e101.p.ssafy.io/dev/api/\"")
             buildConfigField("String", "AI_BASE_URL", "\"https://k14e101.p.ssafy.io/dev/ai/\"")

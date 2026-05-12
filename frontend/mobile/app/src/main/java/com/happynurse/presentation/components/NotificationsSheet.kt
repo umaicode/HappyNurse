@@ -37,15 +37,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.happynurse.domain.model.Notif
-import com.happynurse.domain.model.NotifCategory
+import com.happynurse.domain.model.Notification
+import com.happynurse.domain.model.NotificationCategory
 import com.happynurse.presentation.theme.HnColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsSheet(
     visible: Boolean,
-    notifications: List<Notif>,
+    notifications: List<Notification>,
     onClose: () -> Unit,
     onDelete: (String) -> Unit = {},
     onDeleteAll: () -> Unit = {},
@@ -109,7 +109,7 @@ fun NotificationsSheet(
             }
         } else {
             val sorted = recent.sortedWith(
-                compareBy<Notif> { it.minutesAgo },
+                compareBy<Notification> { it.minutesAgo },
             )
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -117,9 +117,9 @@ fun NotificationsSheet(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 6.dp),
             ) {
-                items(sorted, key = { it.id }) { notif ->
-                    SwipeToDeleteRow(onDelete = { onDelete(notif.id) }) {
-                        NotifRow(notif)
+                items(sorted, key = { it.id }) { notification ->
+                    SwipeToDeleteRow(onDelete = { onDelete(notification.id) }) {
+                        NotificationRow(notification)
                     }
                 }
                 item { Spacer(Modifier.height(20.dp)) }
@@ -199,13 +199,14 @@ private fun SwipeToDeleteRow(
 }
 
 @Composable
-private fun NotifRow(n: Notif) {
-    val (catLabel, catFg, catBg) = when (n.category) {
-        NotifCategory.FLUID   -> Triple("수액",     HnColors.TagFluidStrongFg,   HnColors.TagFluidStrongBg)
-        NotifCategory.ORDER   -> Triple("의사오더", HnColors.TagOrderStrongFg,   HnColors.TagOrderStrongBg)
-        NotifCategory.REQUEST -> Triple("환자요청", HnColors.TagRequestStrongFg, HnColors.TagRequestStrongBg)
-        NotifCategory.WATCH   -> Triple("워치",     HnColors.TagWatchStrongFg,   HnColors.TagWatchStrongBg)
+private fun NotificationRow(n: Notification) {
+    val catLabel = when (n.category) {
+        NotificationCategory.FLUID   -> "수액"
+        NotificationCategory.ORDER   -> "의사오더"
+        NotificationCategory.REQUEST -> "환자요청"
+        NotificationCategory.WATCH   -> "워치"
     }
+    val tagColors = HnColors.notificationTagColors.getValue(n.category)
     val timeLabel = when {
         n.minutesAgo == 0 -> "지금"
         n.minutesAgo in 1..29 -> "${n.minutesAgo}분 전"
@@ -229,7 +230,7 @@ private fun NotifRow(n: Notif) {
             Spacer(Modifier.size(10.dp))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    TagChip(catLabel, fg = catFg, bg = catBg)
+                    TagChip(catLabel, fg = tagColors.fg, bg = tagColors.bg)
                     if (n.patient.isNotBlank()) {
                         Spacer(Modifier.size(6.dp))
                         Text(n.patient, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)

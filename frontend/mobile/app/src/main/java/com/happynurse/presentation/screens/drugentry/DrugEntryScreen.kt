@@ -45,7 +45,7 @@ import com.happynurse.presentation.components.HnButton
 import com.happynurse.presentation.components.HnButtonVariant
 import com.happynurse.presentation.components.HnCard
 import com.happynurse.presentation.components.TagChip
-import com.happynurse.presentation.screens.nfc.findActivity
+import com.happynurse.presentation.components.findActivity
 import com.happynurse.presentation.theme.HnColors
 
 @Composable

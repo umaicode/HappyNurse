@@ -12,28 +12,28 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private val Context.notifDismissDataStore by preferencesDataStore(name = "notif_dismiss_prefs")
+private val Context.notificationDismissDataStore by preferencesDataStore(name = "notification_dismiss_prefs")
 
 @Singleton
-class NotifDismissRepository @Inject constructor(
+class NotificationDismissRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     private val key = stringSetPreferencesKey("dismissed_ids")
 
     val dismissedIds: Flow<Set<String>> =
-        context.notifDismissDataStore.data.map { it[key].orEmpty() }
+        context.notificationDismissDataStore.data.map { it[key].orEmpty() }
 
     suspend fun snapshot(): Set<String> = dismissedIds.firstOrNull().orEmpty()
 
     suspend fun dismiss(id: String) {
-        context.notifDismissDataStore.edit { prefs ->
+        context.notificationDismissDataStore.edit { prefs ->
             prefs[key] = (prefs[key].orEmpty() + id)
         }
     }
 
     suspend fun dismissAll(ids: Collection<String>) {
         if (ids.isEmpty()) return
-        context.notifDismissDataStore.edit { prefs ->
+        context.notificationDismissDataStore.edit { prefs ->
             prefs[key] = (prefs[key].orEmpty() + ids)
         }
     }

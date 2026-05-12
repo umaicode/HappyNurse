@@ -57,7 +57,7 @@ import com.happynurse.presentation.theme.HnColors
 import kotlinx.coroutines.delay
 
 @Composable
-fun IVTimerSetupScreen(
+fun IvTimerSetupScreen(
     encounterId: Long,
     medicationOrderIds: List<Long>,
     onClose: () -> Unit,
