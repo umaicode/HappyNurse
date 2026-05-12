@@ -32,7 +32,7 @@ fun PageHeader(
         Column(Modifier.weight(1f)) {
             Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
             if (sub != null) {
-                Text(sub, fontSize = 13.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(top = 2.dp))
+                Text(sub, fontSize = 16.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(top = 4.dp))
             }
         }
         if (right != null) Box { right() }

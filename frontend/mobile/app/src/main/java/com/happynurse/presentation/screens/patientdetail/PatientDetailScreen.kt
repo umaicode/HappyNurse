@@ -170,7 +170,7 @@ fun PatientDetailScreen(
                     Spacer(Modifier.size(8.dp))
                     Text(
                         "${p.sex}/${p.age}",
-                        fontSize = 14.sp,
+                        fontSize = 20.sp,
                         color = HnColors.TextSecondary,
                         fontWeight = FontWeight.Medium,
                     )
@@ -201,7 +201,13 @@ fun PatientDetailScreen(
                         }
                     } else {
                         myPatients.forEachIndexed { idx, other ->
-                            if (idx > 0) Spacer(Modifier.height(12.dp))
+                            if (idx > 0) {
+                                HorizontalDivider(
+                                    color = HnColors.Border,
+                                    thickness = 1.dp,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                                )
+                            }
                             val current = other.id == p.id
                             DropdownMenuItem(
                                 text = {

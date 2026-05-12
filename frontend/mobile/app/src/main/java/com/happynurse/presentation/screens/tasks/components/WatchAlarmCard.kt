@@ -62,34 +62,24 @@ fun WatchAlarmCard(alarm: WatchAlarm) {
                 Spacer(Modifier.size(4.dp))
                 Text(
                     text = formatFireAt(alarm.fireAtEpochMillis),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium ,
                     color = HnColors.Primary,
                 )
             }
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(15.dp))
             Text(
                 text = alarm.contentSummary.ifBlank { "(내용 없음)" },
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium ,
                 color = HnColors.Text,
             )
-            if (alarm.sttText.isNotBlank()) {
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = alarm.sttText,
-                    fontSize = 12.sp,
-                    color = HnColors.TextSecondary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
             val remaining = formatRemaining(alarm.fireAtEpochMillis, nowMillis)
             if (remaining != null) {
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = remaining,
-                    fontSize = 12.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = HnColors.TextSecondary,
                 )

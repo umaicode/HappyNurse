@@ -13,7 +13,7 @@ object HnColors {
     val Primary       = Color(0xFF1428A0)
     val PrimaryDark   = Color(0xFF0F1F7A)
     val PrimaryLight  = Color(0xFFE6E9F8)
-    val PrimarySoft   = Color(0xFFF0F4FF)
+    val PrimarySoft   = Color(0xFFFBFBFF)
 
     // Surface / background
     val Bg            = Color(0xFFF7F8FA)

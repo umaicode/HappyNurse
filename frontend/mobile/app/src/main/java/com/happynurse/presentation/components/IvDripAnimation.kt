@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.toArgb
 fun IvDripAnimation(
     fillRatio: Float,
     modifier: Modifier = Modifier,
-    color: Color = Color(0xFF3F8F6E),
+    color: Color = Color(0xFF6EB296),
     animate: Boolean = true,
     cycleMillis: Int? = null,
     gttPerMin: Int? = null,

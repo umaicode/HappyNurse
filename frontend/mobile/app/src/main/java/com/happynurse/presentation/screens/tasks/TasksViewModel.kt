@@ -79,6 +79,13 @@ class TasksViewModel @Inject constructor(
                 delay(BELL_POLL_INTERVAL_MS)
             }
         }
+        // 워치 알람 목록 실시간 갱신 — 워치가 백엔드에 직접 등록하므로 폴링으로 동기화.
+        viewModelScope.launch {
+            while (isActive) {
+                refreshWatchAlarms()
+                delay(WATCH_ALARM_POLL_INTERVAL_MS)
+            }
+        }
     }
 
     fun refreshIvBoard() {
@@ -160,7 +167,8 @@ class TasksViewModel @Inject constructor(
     }
 
     private companion object {
-        const val BELL_POLL_INTERVAL_MS = 15_000L  // 15초마다 벨 카운트 갱신
+        const val BELL_POLL_INTERVAL_MS = 15_000L   // 15초마다 벨 카운트 갱신
+        const val WATCH_ALARM_POLL_INTERVAL_MS = 30_000L  // 30초마다 워치 알람 동기화
     }
 }
 

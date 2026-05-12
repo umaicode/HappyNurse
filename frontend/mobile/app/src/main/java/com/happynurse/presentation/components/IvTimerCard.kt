@@ -30,9 +30,9 @@ import com.happynurse.presentation.theme.HnColors
 enum class IvTimerLayout { BAR, RING }
 
 // IV 타이머 카드 전용 색상 — 그린(여유) / 옐로우(주의) / 테라코타(임박)
-private val IvSafeColor    = Color(0xFF2E7D5B)  // deep emerald   ─ 진행 < 50%   (여유)
-private val IvCautionColor = Color(0xFFD4A017)  // mustard yellow ─ 50% ≤ 진행 < 80% (주의)
-private val IvUrgentColor  = Color(0xFFC84B4B)  // terracotta     ─ 80% 이상      (임박)
+private val IvSafeColor    = Color(0xFF5BAD8A)  // deep emerald   ─ 진행 < 50%   (여유)
+private val IvCautionColor = Color(0xFFE8BE57)  // mustard yellow ─ 50% ≤ 진행 < 80% (주의)
+private val IvUrgentColor  = Color(0xFFD25757)  // terracotta     ─ 80% 이상      (임박)
 
 @Composable
 fun IvTimerCard(
@@ -63,11 +63,10 @@ private fun BarCard(iv: IvTimer, pct: Float, color: Color) {
                 gttPerMin = gtt,
                 modifier = Modifier.size(width = 90.dp, height = 120.dp),
             )
-            Spacer(Modifier.size(4.dp))
             // 우측: 환자 + 약물 + 진행 바 + 남은시간
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(iv.patient, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                    Text(iv.patient, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
                     Spacer(Modifier.size(6.dp))
                     // 호실-침대: WardPatientListResponse 룩업값 사용 (slim IV 응답에 없음)
                     val roomBed = listOfNotNull(
@@ -76,14 +75,14 @@ private fun BarCard(iv: IvTimer, pct: Float, color: Color) {
                     ).joinToString("-")
                     if (roomBed.isNotBlank()) TagChip(roomBed)
                     Spacer(Modifier.weight(1f))
-                    Text("종료 ${iv.endsAt}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                    Text("종료 ${iv.endsAt}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text)
                 }
                 Spacer(Modifier.height(12.dp))
                 // 약물 — 1개면 한 줄, 2개 이상이면 줄바꿈해서 깔끔히 나열
                 drugLines.forEachIndexed { idx, line ->
                     Text(
                         line,
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = HnColors.Text,
                     )
@@ -108,8 +107,9 @@ private fun BarCard(iv: IvTimer, pct: Float, color: Color) {
                 Spacer(Modifier.height(8.dp))
                 Text(
                     "남은시간 ${remainingMin / 60}시간 ${remainingMin % 60}분 / ${iv.totalMin / 60}시간 ${iv.totalMin % 60}분",
-                    fontSize = 12.sp,
-                    color = HnColors.Text,
+                    fontSize = 14.sp,
+                    color = HnColors.TextSecondary,
+                    fontWeight = FontWeight.Medium ,
                 )
             }
         }
@@ -148,12 +148,12 @@ private fun ProgressRing(pct: Float, color: Color, sizeDp: Int = 56) {
             val stroke = 5.dp.toPx()
             val arcSize = Size(size.width - stroke, size.height - stroke)
             val topLeft = androidx.compose.ui.geometry.Offset(stroke / 2, stroke / 2)
-            drawArc(
-                color = HnColors.Border,
-                startAngle = -90f, sweepAngle = 360f, useCenter = false,
-                topLeft = topLeft, size = arcSize,
-                style = Stroke(width = stroke, cap = StrokeCap.Round),
-            )
+//            drawArc(
+//                color = HnColors.Border,
+//                startAngle = -90f, sweepAngle = 360f, useCenter = false,
+//                topLeft = topLeft, size = arcSize,
+//                style = Stroke(width = stroke, cap = StrokeCap.Round),
+//            )
             drawArc(
                 color = color,
                 startAngle = -90f, sweepAngle = 360f * pct, useCenter = false,
@@ -161,6 +161,6 @@ private fun ProgressRing(pct: Float, color: Color, sizeDp: Int = 56) {
                 style = Stroke(width = stroke, cap = StrokeCap.Round),
             )
         }
-        Text("${(pct * 100).toInt()}%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color)
+        Text("${(pct * 100).toInt()}%", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = color)
     }
 }
