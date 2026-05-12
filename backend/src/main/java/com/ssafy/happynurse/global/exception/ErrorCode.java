@@ -89,7 +89,11 @@ public enum ErrorCode implements ResponseCode {
     STT_TIME_NOT_FOUND(HttpStatus.BAD_REQUEST, "발화에서 시간 표현을 찾을 수 없습니다. 예: \"8시 30분\", \"10분 뒤\"."),
     STT_FIRE_AT_INVALID(HttpStatus.BAD_REQUEST, "알람 시각은 현재 시각보다 60초 이상 미래여야 합니다."),
     STT_REMINDER_NOT_FOUND(HttpStatus.NOT_FOUND, "STT 알람을 찾을 수 없습니다."),
-    STT_REMINDER_NOT_OWNER(HttpStatus.FORBIDDEN, "본인이 등록한 STT 알람만 취소할 수 있습니다.");
+    STT_REMINDER_NOT_OWNER(HttpStatus.FORBIDDEN, "본인이 등록한 STT 알람만 취소할 수 있습니다."),
+
+    // Handover
+    HANDOVER_NOT_FOUND(HttpStatus.NOT_FOUND, "인수인계 리포트를 찾을 수 없습니다."),
+    HANDOVER_CHECK_KEY_INVALID(HttpStatus.BAD_REQUEST, "체크리스트 키 형식이 올바르지 않습니다.");
 
     private final HttpStatus status;
     private final String message;

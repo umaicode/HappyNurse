@@ -1,6 +1,7 @@
 // 환자(Patient) Repository — 병동 환자 목록 / 환자 단건 조회
 package com.happynurse.data.repository
 
+import com.happynurse.data.remote.apiCall
 import com.happynurse.data.remote.api.PatientApi
 import com.happynurse.data.remote.api.WardApi
 import com.happynurse.data.remote.mapper.toDomain
@@ -13,17 +14,11 @@ class PatientRepository @Inject constructor(
     private val wardApi: WardApi,
     private val patientApi: PatientApi,
 ) {
-    suspend fun getMyWardPatients(): Result<List<Patient>> = runCatching {
-        val res = wardApi.getMyWardPatients()
-        val body = res.body()
-        if (res.isSuccessful && body?.success == true && body.data != null) body.data.map { it.toDomain() }
-        else throw Exception(body?.message ?: "병동 환자 조회 실패")
-    }
+    suspend fun getMyWardPatients(): Result<List<Patient>> =
+        apiCall("병동 환자 조회 실패") { wardApi.getMyWardPatients() }
+            .map { list -> list.map { it.toDomain() } }
 
-    suspend fun getPatient(patientId: Long): Result<Patient> = runCatching {
-        val res = patientApi.getPatient(patientId)
-        val body = res.body()
-        if (res.isSuccessful && body?.success == true && body.data != null) body.data.toDomain()
-        else throw Exception(body?.message ?: "환자 조회 실패")
-    }
+    suspend fun getPatient(patientId: Long): Result<Patient> =
+        apiCall("환자 조회 실패") { patientApi.getPatient(patientId) }
+            .map { it.toDomain() }
 }

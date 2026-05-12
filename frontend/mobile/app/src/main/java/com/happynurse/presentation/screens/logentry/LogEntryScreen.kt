@@ -17,10 +17,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Stop
@@ -170,15 +171,11 @@ private fun ResultBody(
     ) {
         Text(
             // status='draft' 로 백엔드 저장됨. 확정/수정은 데스크톱 차트에서.
-            if (resp.nursingRecordId != null) "STT 변환 완료 — 데스크톱 차트에서 확정" else "STT 변환 결과",
+            if (resp.nursingRecordId != null) "간호일지 임시 등록 완료" else "STT 변환 결과",
             fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary,
         )
-        HnCard(modifier = Modifier.weight(1f)) {
-            Column {
-                resp.audioUrl?.let {
-                    Text(it, fontSize = 11.sp, color = HnColors.TextTertiary)
-                    Spacer(Modifier.height(6.dp))
-                }
+        HnCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                 resp.correctedText?.let {
                     Text("교정된 본문", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
                     Spacer(Modifier.height(2.dp))
@@ -191,10 +188,12 @@ private fun ResultBody(
                     Text(it, fontSize = 12.sp, color = HnColors.TextSecondary)
                     Spacer(Modifier.height(10.dp))
                 }
-                if (resp.corrections.isNotEmpty()) {
-                    Text("교정 내역 (${resp.corrections.size})", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
+                // exact 는 원본=교정본 동일 의미라 표시 가치 낮음 — fuzzy/manual 만 노출
+                val visibleCorrections = resp.corrections.filter { it.type != "exact" }
+                if (visibleCorrections.isNotEmpty()) {
+                    Text("교정 내역", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
                     Spacer(Modifier.height(2.dp))
-                    resp.corrections.forEach { c ->
+                    visibleCorrections.forEach { c ->
                         Text(
                             "${c.original} → ${c.corrected}" + (c.type?.let { " (${it})" } ?: ""),
                             fontSize = 12.sp, color = HnColors.Text,
@@ -212,8 +211,7 @@ private fun ResultBody(
                 modifier = Modifier.weight(1f),
             )
             HnButton(
-                text = "닫기",
-                icon = Icons.AutoMirrored.Outlined.Send,
+                text = "확인",
                 full = true,
                 onClick = onClose,
                 modifier = Modifier.weight(1f),
