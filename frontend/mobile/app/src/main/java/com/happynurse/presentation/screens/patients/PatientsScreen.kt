@@ -205,8 +205,8 @@ private fun RoomHeader(room: String, count: Int) {
     Column(Modifier.padding(top = 8.dp)) {
         Text(
             "${room}호실 · ${count}명",
-            fontSize = 12.sp, fontWeight = FontWeight.Bold,
-            color = HnColors.TextTertiary, letterSpacing = 1.sp,
+            fontSize = 15.sp, fontWeight = FontWeight.SemiBold ,
+            color = HnColors.Text, letterSpacing = 1.sp,
         )
         Spacer(Modifier.height(6.dp))
         Box(Modifier.fillMaxWidth().height(1.dp).background(HnColors.Border))

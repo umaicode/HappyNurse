@@ -23,12 +23,12 @@ object HnColors {
     val BorderStrong  = Color(0xFFD1D5DB)
 
     // Text
-    val Text          = Color(0xFF1A1A1A)
-    val TextSecondary = Color(0xFF464B50)
-    val TextTertiary  = Color(0xFF9CA3AF)
+    val Text          = Color(0xFF181818)
+    val TextSecondary = Color(0xFF4E4F54)
+    val TextTertiary  = Color(0xFF686970)
 
     // Status
-    val Success       = Color(0xFF0B6C4C)
+    val Success       = Color(0xFF519470)
     val Warning       = Color(0xFFF59E0B)
     val Danger        = Color(0xFFC24848)
     val Info          = Color(0xFF3B82F6)
@@ -39,9 +39,9 @@ object HnColors {
     val TagInjBg     = Color(0xFFEEF6F3); val TagInjFg     = Color(0xFF12543C) // 투약 — Primary 계열
     val TagFluidBg   = Color(0xFFEFEFFA); val TagFluidFg   = Color(0xFF152665) // 수액 — 블루 계열
     val TagOrderBg   = Color(0xFFF3F4F6); val TagOrderFg   = TextSecondary     // 지시 — 뉴트럴
-    val TagLisBg     = Color(0xFFFFF8E1); val TagLisFg     = Color(0xFFB45309) // LIS  — 앰버
+    val TagLisBg     = Color(0xFFFFFAEB); val TagLisFg     = Color(0xFF85410C) // LIS  — 앰버
     val TagImgBg     = Color(0xFFE0F7FA); val TagImgFg     = Color(0xFF00838F) // 영상 — 틸
-    val TagPillBg    = Color(0xFFE8F5E9); val TagPillFg    = Color(0xFF2E7D32) // 알약 — 그린
+    val TagPillBg    = Color(0xFFF5FAF7); val TagPillFg    = Color(0xFF2E7D32) // 알약 — 그린
 
     // 알림 시트 전용 — 진한 톤 카테고리 태그
     val TagFluidStrongBg   = Color(0xFFDBE3FF); val TagFluidStrongFg   = Color(0xFF1428A0) // 수액 — Primary 블루

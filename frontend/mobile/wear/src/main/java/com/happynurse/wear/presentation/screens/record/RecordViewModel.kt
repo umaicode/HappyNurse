@@ -1,5 +1,6 @@
-// RecordViewModel — 녹음 → STT 인식 → 시간 파싱(preview) → 결과 표시 → 등록 흐름을 관리한다.
+// RecordViewModel — 녹음 → STT 인식 → 시간 파싱(preview) → 자동 등록 흐름을 관리한다.
 // RecordScreen 과 SttResultScreen 이 같은 인스턴스를 공유하도록 NavGraph 에서 단일 ViewModel 로 주입한다.
+// GestureService 와는 RecordingControlBus 로 통신: 녹음 중 = isRecording true, 작업 중 = isBusy true.
 package com.happynurse.wear.presentation.screens.record
 
 import androidx.lifecycle.ViewModel
@@ -8,12 +9,15 @@ import com.happynurse.wear.alarm.AlarmScheduler
 import com.happynurse.wear.data.audio.AudioRecorder
 import com.happynurse.wear.data.repository.SttRecognitionRepository
 import com.happynurse.wear.data.repository.SttReminderRepository
+import com.happynurse.wear.gesture.RecordingControlBus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
@@ -43,6 +47,7 @@ class RecordViewModel @Inject constructor(
     private val sttRecognitionRepository: SttRecognitionRepository,
     private val sttReminderRepository: SttReminderRepository,
     private val alarmScheduler: AlarmScheduler,
+    private val recordingBus: RecordingControlBus,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RecordUiState())
@@ -50,6 +55,32 @@ class RecordViewModel @Inject constructor(
 
     private var elapsedJob: Job? = null
     private var currentAudio: File? = null
+
+    init {
+        // 외부(GestureService 등) 의 stop 요청 → 녹음 중일 때만 stop. 다른 phase 면 무시.
+        viewModelScope.launch {
+            recordingBus.stopRequests.collect {
+                if (_state.value.phase == RecordPhase.RECORDING) {
+                    stopRecording()
+                }
+            }
+        }
+        // 현재 phase → bus 의 isRecording / isBusy 상태 동기화
+        viewModelScope.launch {
+            _state
+                .map { it.phase }
+                .distinctUntilChanged()
+                .collect { phase ->
+                    recordingBus.setRecording(phase == RecordPhase.RECORDING)
+                    recordingBus.setBusy(
+                        phase == RecordPhase.RECORDING ||
+                            phase == RecordPhase.PROCESSING ||
+                            phase == RecordPhase.RESULT ||
+                            phase == RecordPhase.SUBMITTING,
+                    )
+                }
+        }
+    }
 
     fun startRecording() {
         runCatching { audioRecorder.start() }
@@ -112,6 +143,8 @@ class RecordViewModel @Inject constructor(
                 fireAtEpochMillis = fireAt,
             )
         }
+        // 사용자 확인 단계 없이 자동으로 등록 — 결과 화면은 진행 표시만 하고 곧 등록 완료/취소로 전환.
+        confirm()
     }
 
     fun confirm() {
@@ -159,6 +192,8 @@ class RecordViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         runCatching { audioRecorder.cancel() }
+        recordingBus.setRecording(false)
+        recordingBus.setBusy(false)
     }
 
     private companion object {

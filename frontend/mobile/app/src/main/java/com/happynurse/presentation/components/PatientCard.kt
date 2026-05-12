@@ -35,7 +35,7 @@ fun TagChip(
     Text(
         text = text,
         color = fg,
-        fontSize = 12.sp,
+        fontSize = 14.sp,
         fontWeight = FontWeight.Medium,
         modifier = modifier
             .clip(RoundedCornerShape(5.dp))
@@ -66,25 +66,26 @@ private fun CardRow(p: Patient, onClick: () -> Unit, myNurseName: String) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(p.name, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                    Spacer(Modifier.size(6.dp))
+                    Text(p.name, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                    Spacer(Modifier.size(10.dp))
                     TagChip("${p.sex}/${p.age}")
                 }
                 Text(
                     p.surgery.ifBlank { "-" },
                     fontSize = 16.sp,
                     color = HnColors.TextSecondary,
-                    modifier = Modifier.padding(top = 3.dp),
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 8.dp),
                 )
-                Row(modifier = Modifier.padding(top = 3.dp)) {
-                    Text("담당 ", fontSize = 14.sp, color = HnColors.TextTertiary)
+                Row(modifier = Modifier.padding(top = 5.dp)) {
+                    Text("담당 ", fontSize = 16.sp, color = HnColors.TextTertiary)
                     Text(
                         p.nurse,
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = if (p.nurse == myNurseName) HnColors.Primary else HnColors.TextSecondary,
                     )
-                    Text(" 간호사", fontSize = 14.sp, color = HnColors.TextTertiary)
+                    Text(" 간호사", fontSize = 16.sp, color = HnColors.TextTertiary)
                 }
             }
             Icon(
