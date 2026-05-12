@@ -789,7 +789,7 @@ function SttNoteActions({
 }) {
   return (
     <>
-      {note.status === "draft" && (
+      {note.status === "draft" && !isEditMode && (
         <ConfirmButton
           onClick={() => onConfirm(note.nursingRecordId)}
           disabled={isConfirming}
@@ -843,7 +843,7 @@ function MedicationActions({
 }) {
   return (
     <>
-      {note.status === "draft" && (
+      {note.status === "draft" && !isEditMode && (
         <ConfirmButton
           onClick={() => onConfirm(note.taggingId)}
           disabled={isConfirming}

@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Search,
   Sparkles,
   AlertTriangle,
   ChevronDown,
@@ -18,7 +17,6 @@ import {
 import { useMemo, useRef, useState } from "react";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -85,7 +83,6 @@ type HandoverRow = {
 
 export function HandoverView() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedHandoverId, setSelectedHandoverId] = useState<string | null>(
     null,
   );
@@ -130,21 +127,61 @@ export function HandoverView() {
     return map;
   }, [myPatients, patientDetailQueries]);
 
-  const filteredRows = useMemo<HandoverRow[]>(() => {
-    const rows: HandoverRow[] = myPatients.map((wardPatient) => ({
-      wardPatient,
-      roster: rosterByEncounterId.get(wardPatient.encounterId) ?? null,
-    }));
-    const query = searchQuery.trim();
-    if (!query) return rows;
-    return rows.filter(({ wardPatient, roster }) => {
-      return (
-        wardPatient.name.includes(query) ||
-        wardPatient.roomName.includes(query) ||
-        (roster?.header.includes(query) ?? false)
-      );
+  const rows = useMemo<HandoverRow[]>(
+    () =>
+      myPatients.map((wardPatient) => ({
+        wardPatient,
+        roster: rosterByEncounterId.get(wardPatient.encounterId) ?? null,
+      })),
+    [myPatients, rosterByEncounterId],
+  );
+
+  // 통합 요약 상단의 4분할 통계 — RosterSummary 응답 합산만 사용 (추가 API 호출 없음).
+  // - 검증 통과율: 환자별 verification_summary 의 ok / (ok+partial+failed). 모수 0 이면 null 로 "—" 표시.
+  const rosterStats = useMemo(() => {
+    const patients = rosterQuery.data?.patients ?? [];
+    if (patients.length === 0) return null;
+    let newRecordTotal = 0;
+    let rulesFiredTotal = 0;
+    let verificationOk = 0;
+    let verificationTotal = 0;
+    patients.forEach((patient) => {
+      newRecordTotal += patient.freshness?.new_records_since_report ?? 0;
+      rulesFiredTotal += patient.rules_fired_brief.length;
+      const summary = patient.verification_summary;
+      const ok = summary.ok ?? 0;
+      const partial = summary.partial ?? 0;
+      const failed = summary.failed ?? 0;
+      verificationOk += ok;
+      verificationTotal += ok + partial + failed;
     });
-  }, [myPatients, rosterByEncounterId, searchQuery]);
+    return {
+      patientCount: patients.length,
+      newRecordTotal,
+      rulesFiredTotal,
+      verificationPercent:
+        verificationTotal > 0
+          ? Math.round((verificationOk / verificationTotal) * 100)
+          : null,
+    };
+  }, [rosterQuery.data]);
+
+  // 리스크 상위 환자 — RosterSummary.patients 는 이미 risk_score desc 정렬돼 들어옴.
+  // wardPatient 매칭으로 이름/병실 채우고, 매칭 안 되는 항목은 제외 (담당 해제된 케이스 방어).
+  const topRiskRows = useMemo<Array<{ roster: RosterPatientItem; wardPatient: WardPatient }>>(() => {
+    const patients = rosterQuery.data?.patients ?? [];
+    const wardPatientByEncounterId = new Map<number, WardPatient>();
+    myPatients.forEach((patient) => {
+      wardPatientByEncounterId.set(patient.encounterId, patient);
+    });
+    const rows: Array<{ roster: RosterPatientItem; wardPatient: WardPatient }> = [];
+    for (const roster of patients) {
+      const wardPatient = wardPatientByEncounterId.get(roster.encounter_id);
+      if (wardPatient) rows.push({ roster, wardPatient });
+      if (rows.length >= 3) break;
+    }
+    return rows;
+  }, [rosterQuery.data, myPatients]);
 
   // 카드별 ref — 좌측 리스트 클릭 시 스크롤
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -194,27 +231,16 @@ export function HandoverView() {
           </h2>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted" />
-            <Input
-              placeholder="환자명, 병실, 헤더 검색..."
-              className="pl-9 bg-surface-hover border-border-base h-10 text-body-sm focus-visible:ring-1 focus-visible:ring-brand-primary"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-          </div>
-          <Button
-            type="button"
-            variant="brand"
-            size="lg"
-            onClick={handleGenerate}
-            disabled={generateMutation.isPending || (activeJobId !== null && !progress.done)}
-          >
-            <Sparkles className="size-4" />
-            리포트 생성
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="brand"
+          size="lg"
+          onClick={handleGenerate}
+          disabled={generateMutation.isPending || (activeJobId !== null && !progress.done)}
+        >
+          <Sparkles className="size-4" />
+          리포트 생성
+        </Button>
       </header>
 
       {/* 진행 토스트 */}
@@ -238,22 +264,20 @@ export function HandoverView() {
                 담당 환자
               </span>
               <span className="text-body-sm font-semibold text-brand-primary bg-brand-surface px-2.5 py-0.5 rounded-full leading-none">
-                {filteredRows.length}명
+                {rows.length}명
               </span>
             </div>
-            <p className="mt-1.5 text-body-micro text-content-muted">
+            <p className="mt-1.5 text-body-micro text-content-tertiary">
               클릭하면 해당 환자 카드로 이동해요
             </p>
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
-            {filteredRows.length === 0 ? (
-              <div className="text-center py-8 text-body-sm text-content-muted">
-                {myPatients.length === 0
-                  ? "담당 환자가 없습니다. 대시보드에서 담당 환자를 지정하세요."
-                  : "검색 결과 없음"}
+            {rows.length === 0 ? (
+              <div className="text-center py-8 text-body-sm text-content-tertiary">
+                담당 환자가 없습니다. 대시보드에서 담당 환자를 지정하세요.
               </div>
             ) : (
-              filteredRows.map(({ wardPatient, roster }) => {
+              rows.map(({ wardPatient, roster }) => {
                 const fresh =
                   roster?.freshness?.new_records_since_report ?? 0;
                 const diseaseName = diseaseNameByPatientId.get(
@@ -277,7 +301,7 @@ export function HandoverView() {
                           </span>
                         )}
                       </div>
-                      <span className="text-body-micro text-content-muted shrink-0">
+                      <span className="text-body-micro text-content-tertiary shrink-0">
                         {wardPatient.roomName} {wardPatient.bedName}
                       </span>
                     </div>
@@ -286,8 +310,8 @@ export function HandoverView() {
                         className={cn(
                           "text-body-sm truncate flex-1",
                           diseaseName
-                            ? "text-content-tertiary"
-                            : "text-content-muted italic",
+                            ? "text-content-secondary"
+                            : "text-content-tertiary italic",
                         )}
                       >
                         {diseaseName ??
@@ -318,12 +342,8 @@ export function HandoverView() {
               {rosterQuery.data && rosterQuery.data.narrative_header && (
                 <div className="bg-surface-card rounded-2xl shadow-sm overflow-hidden">
                   <div className="px-6 py-4 border-b border-border-base flex items-center gap-2">
-                    <span className="flex items-center gap-1.5 font-bold text-brand-primary bg-brand-surface px-3 py-1 rounded-full text-body-micro leading-none">
-                      <Sparkles className="size-3.5" />
+                    <span className="font-bold text-brand-primary text-title-md leading-none">
                       교대 통합 요약
-                    </span>
-                    <span className="text-content-tertiary text-body-micro">
-                      담당 환자 {myPatients.length}명
                     </span>
                   </div>
                   <div className="px-6 py-5">
@@ -334,18 +354,24 @@ export function HandoverView() {
                 </div>
               )}
 
+              {/* [MID-1] 시프트 통계 4분할 — RosterSummary 합산 파생, 아이콘 없이 토큰만으로 위계 구성 */}
+              {rosterStats && <ShiftStatRow stats={rosterStats} />}
+
+              {/* [MID-2] 리스크 상위 환자 — 클릭 시 해당 환자 카드로 스크롤 (handleSelectPatient 재사용) */}
+              {topRiskRows.length > 0 && (
+                <RiskTopList rows={topRiskRows} onSelectPatient={handleSelectPatient} />
+              )}
+
               {/* [BOTTOM] 환자별 카드 */}
-              {filteredRows.length === 0 ? (
-                <div className="bg-surface-card rounded-2xl shadow-sm px-8 py-16 flex flex-col items-center gap-3 text-content-muted">
+              {rows.length === 0 ? (
+                <div className="bg-surface-card rounded-2xl shadow-sm px-8 py-16 flex flex-col items-center gap-3 text-content-tertiary">
                   <Sparkles className="size-6 opacity-50" />
                   <Text className="text-body-sm font-medium">
-                    {myPatients.length === 0
-                      ? "담당 환자가 없습니다"
-                      : "검색 결과 없음"}
+                    담당 환자가 없습니다
                   </Text>
                 </div>
               ) : (
-                filteredRows.map(({ wardPatient, roster }) => (
+                rows.map(({ wardPatient, roster }) => (
                   <PatientHandoverCard
                     key={wardPatient.encounterId}
                     wardPatient={wardPatient}
@@ -380,6 +406,101 @@ export function HandoverView() {
 }
 
 // ---------- Sub Components ----------
+
+// 통합 요약 박스 아래 4분할 통계 카드. 좁은 폭에선 2x2 wrap.
+// 디자인 결정: 아이콘 없이 라벨 + 큰 숫자만으로 위계 구성. Tailwind 4 의 text-body-* 토큰이
+// line-height 를 자체 적용해서 라벨/숫자 모두 leading-none 명시.
+function ShiftStatRow({
+  stats,
+}: {
+  stats: {
+    patientCount: number;
+    newRecordTotal: number;
+    rulesFiredTotal: number;
+    verificationPercent: number | null;
+  };
+}) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <StatCard label="담당 환자" value={`${stats.patientCount}명`} />
+      <StatCard label="새 기록" value={`${stats.newRecordTotal}건`} />
+      <StatCard label="주의 규칙" value={`${stats.rulesFiredTotal}회`} />
+      <StatCard
+        label="검증 통과율"
+        value={
+          stats.verificationPercent !== null
+            ? `${stats.verificationPercent}%`
+            : "—"
+        }
+      />
+    </div>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-4 flex flex-col gap-2">
+      <span className="text-body-micro font-bold text-content-secondary leading-none">
+        {label}
+      </span>
+      <span className="text-title-lg font-bold text-content-primary leading-none tracking-tight">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+// 리스크 상위 환자 행 — RosterSummary.patients 가 이미 risk_score desc 정렬돼 들어오므로 slice 만 한 결과.
+// 클릭 시 onSelectPatient → cardRefs 스크롤 (HandoverView 의 handleSelectPatient 재사용).
+function RiskTopList({
+  rows,
+  onSelectPatient,
+}: {
+  rows: Array<{ roster: RosterPatientItem; wardPatient: WardPatient }>;
+  onSelectPatient: (encounterId: number) => void;
+}) {
+  return (
+    <div className="bg-surface-card rounded-2xl shadow-sm overflow-hidden">
+      <div className="px-6 py-4 border-b border-border-base flex items-center gap-2">
+        <span className="font-bold text-brand-primary text-title-md leading-none">
+          리스크 상위 환자
+        </span>
+      </div>
+      <ul className="divide-y divide-border-subtle">
+        {rows.map(({ roster, wardPatient }) => {
+          const newRecordCount =
+            roster.freshness?.new_records_since_report ?? 0;
+          return (
+            <li key={roster.encounter_id}>
+              <button
+                type="button"
+                onClick={() => onSelectPatient(wardPatient.encounterId)}
+                className="w-full text-left px-6 py-3.5 flex items-center gap-4 hover:bg-surface-hover transition-colors"
+              >
+                <div className="flex items-baseline gap-2 shrink-0 min-w-[120px]">
+                  <span className="text-body-base font-semibold text-content-primary leading-none">
+                    {wardPatient.name}
+                  </span>
+                  <span className="text-body-sm text-content-secondary leading-none">
+                    {wardPatient.roomName} {wardPatient.bedName}
+                  </span>
+                </div>
+                <span className="flex-1 min-w-0 text-body-sm text-content-secondary truncate">
+                  {roster.header}
+                </span>
+                {newRecordCount > 0 && (
+                  <span className="shrink-0 px-2 py-0.5 rounded-full bg-status-warning-surface text-status-warning-strong text-body-micro font-bold leading-none">
+                    새 {newRecordCount}
+                  </span>
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
 
 function ProgressBanner({
   progress,
@@ -485,7 +606,7 @@ function PatientHandoverCard({
           <h3 className="text-title-md font-bold text-content-primary truncate leading-tight tracking-tight">
             {wardPatient.name}
           </h3>
-          <Text className="text-body-sm text-content-tertiary font-medium shrink-0">
+          <Text className="text-body-sm text-content-secondary font-medium shrink-0">
             {wardPatient.roomName} {wardPatient.bedName}
           </Text>
         </div>
@@ -561,7 +682,7 @@ function PatientHandoverCard({
               onClick={(event) => event.stopPropagation()}
             >
               {detailQuery.isPending ? (
-                <div className="flex flex-col items-center gap-2 py-10 text-content-muted">
+                <div className="flex flex-col items-center gap-2 py-10 text-content-tertiary">
                   <Loader2 className="size-5 animate-spin" />
                   <p className="text-body-micro">PASS-BAR 상세 조회 중...</p>
                 </div>
@@ -582,10 +703,10 @@ function PatientHandoverCard({
       ) : (
         <div className="px-6 py-8 flex flex-col items-center gap-2 text-center">
           <Sparkles className="size-5 text-content-muted opacity-50" />
-          <Text className="text-body-sm font-semibold text-content-tertiary">
+          <Text className="text-body-sm font-semibold text-content-secondary">
             아직 인수인계 리포트가 없어요
           </Text>
-          <Text className="text-body-micro text-content-muted">
+          <Text className="text-body-micro text-content-tertiary">
             우측 상단 &quot;리포트 생성&quot; 버튼으로 만들 수 있어요
           </Text>
           {wardPatient.chiefComplaint && (
@@ -726,13 +847,13 @@ function ChecklistSection({
           체크리스트
         </h4>
         {items.length > 0 && (
-          <span className="text-body-micro text-content-muted leading-none">
+          <span className="text-body-micro text-content-tertiary leading-none">
             ({doneCount}/{items.length})
           </span>
         )}
       </div>
       {items.length === 0 ? (
-        <p className="text-body-sm text-content-muted leading-relaxed">
+        <p className="text-body-sm text-content-tertiary leading-relaxed">
           등록된 체크 항목이 없습니다.
         </p>
       ) : (
@@ -773,6 +894,7 @@ function ChecklistSection({
 }
 
 // 상단 콜아웃 (Synthesis · Safety) — 풀폭, 강조 톤. SlotCard 와 같은 데이터지만 시각 위계가 다름.
+// 디자인: 헤더 띠(진한 surface, 위계 강조) + 본문 흰배경(가독성). overflow-hidden 으로 rounded 클리핑.
 function SlotCallout({
   label,
   slot,
@@ -784,22 +906,23 @@ function SlotCallout({
   accent: "brand" | "danger";
   icon?: React.ReactNode;
 }) {
-  const accentClass =
-    accent === "danger"
-      ? "border-l-4 border-l-status-danger bg-status-danger-surface/30"
-      : "border-l-4 border-l-brand-primary bg-brand-surface/20";
-  const titleClass =
-    accent === "danger" ? "text-status-danger-strong" : "text-brand-primary";
+  const isDanger = accent === "danger";
+  const headerClass = isDanger
+    ? "bg-status-danger-surface text-status-danger-strong"
+    : "bg-brand-surface text-brand-primary";
 
   return (
-    <div className={cn("rounded-xl border border-border-subtle p-4 flex flex-col gap-2.5", accentClass)}>
-      <div className="flex items-center gap-2">
+    <div className="rounded-xl border border-border-subtle bg-surface-card overflow-hidden">
+      <div
+        className={cn(
+          "flex items-center gap-2 px-4 py-3 border-b border-border-subtle",
+          headerClass,
+        )}
+      >
         {icon}
-        <h4 className={cn("text-body-base font-bold leading-none", titleClass)}>
-          {label}
-        </h4>
+        <h4 className="text-body-base font-bold leading-none">{label}</h4>
       </div>
-      <ul className="space-y-2">
+      <ul className="px-4 py-3 space-y-2">
         {slot.items.map((item, index) => (
           <SlotItemRow key={index} item={item} />
         ))}
@@ -817,7 +940,7 @@ function SlotCard({ label, slot }: { label: string; slot: Slot }) {
         </h4>
       </div>
       {slot.items.length === 0 ? (
-        <p className="text-body-micro text-content-muted">—</p>
+        <p className="text-body-micro text-content-tertiary">—</p>
       ) : (
         <ul className="space-y-2">
           {slot.items.map((item, index) => (
@@ -844,7 +967,7 @@ function SlotItemRow({ item }: { item: SlotItem }) {
 
       {/* meta 라인: time_window · trend — 둘 다 옵션. 없으면 라인 자체 안 그림. */}
       {(item.time_window || item.trend) && (
-        <div className="flex items-center gap-2 text-body-micro text-content-tertiary">
+        <div className="flex items-center gap-2 text-body-micro text-content-secondary">
           {item.time_window && (
             <span className="inline-flex items-center gap-1">
               <Clock className="size-3" />
@@ -887,7 +1010,7 @@ function CitationPreview({
           {citation.label}
         </Badge>
       </div>
-      <div className="text-body-micro font-mono text-content-tertiary leading-none">
+      <div className="text-body-micro font-mono text-content-secondary leading-none">
         {citation.ts.slice(0, 16).replace("T", " ")}
       </div>
       <button
@@ -945,18 +1068,26 @@ function CitationList({
                       className="w-full text-left flex gap-2.5 p-3 rounded-xl border bg-surface-card border-border-subtle hover:border-brand-primary/40 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                          <Badge className="bg-surface-hover text-content-tertiary font-medium border-none text-body-micro px-2 py-0 hover:bg-surface-hover">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {/* 라벨 — brand 색으로 강조, 인용 ID */}
+                          <span className="text-body-sm font-bold text-brand-primary leading-none">
                             {citation.label}
-                          </Badge>
-                          <span className="text-body-micro font-mono text-content-tertiary">
-                            {citation.ts.slice(0, 16).replace("T", " ")}
                           </span>
+                          {/* 내용 — 어느 슬롯의 근거인지, 가장 또렷한 톤 */}
                           {referencedSlotLabels.length > 0 && (
-                            <span className="text-body-micro text-content-muted">
-                              · {referencedSlotLabels.join(", ")}
+                            <span className="text-body-sm font-semibold text-content-primary leading-none">
+                              {referencedSlotLabels.join(", ")}
                             </span>
                           )}
+                          {/* 날짜 · 시간 — 우측 정렬, mono. 시간만 굵게 처리해 시각적 분리 */}
+                          <span className="ml-auto flex items-baseline gap-2 leading-none">
+                            <span className="text-body-sm font-mono text-content-secondary">
+                              {citation.ts.slice(0, 10).replace(/-/g, ".")}
+                            </span>
+                            <span className="text-body-sm font-mono font-bold text-content-primary">
+                              {citation.ts.slice(11, 16)}
+                            </span>
+                          </span>
                         </div>
                       </div>
                       <ArrowUpRight className="size-3.5 text-content-muted opacity-50 self-center" />
