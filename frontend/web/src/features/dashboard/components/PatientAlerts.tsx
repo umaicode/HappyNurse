@@ -10,6 +10,7 @@ import {
   PRIORITY_BORDER,
   PRIORITY_CHIP,
   PRIORITY_LABEL,
+  SOURCE_TYPE_BORDER,
   SOURCE_TYPE_LABEL,
   SOURCE_TYPE_TONE,
   type NotificationListItem,
@@ -86,7 +87,18 @@ function NotificationCard({
   // self_report 알림에만 priority 가 채워짐 — CRITICAL/HIGH 면 카드 좌측 강조 보더로 시선 끌기.
   const priority: SymptomPriority | null =
     sourceType === "self_report" ? alert.priority : null;
-  const accentBorderClass = priority ? PRIORITY_BORDER[priority] : undefined;
+  // 강조 우선순위: priority(self_report) > sourceType=timer > 일반.
+  // timer 카드는 환자명/호실 없이 body 만 있어 라벨/시각적 단서가 약함 → 카드 자체에 SOURCE_TYPE_BORDER.timer 적용해 식별성 보강.
+  const accentBorderClass = priority
+    ? PRIORITY_BORDER[priority]
+    : sourceType === "timer"
+      ? SOURCE_TYPE_BORDER.timer
+      : undefined;
+  // timer 알림은 title (예: "음성 메모 알림") 이 sourceType 라벨("타이머") 보다 더 구체적이라 title 도 함께 노출.
+  const titleLine =
+    sourceType === "timer" && alert.title && alert.title !== label
+      ? alert.title
+      : null;
 
   return (
     <PanelCard accentBorderClass={accentBorderClass}>
@@ -116,6 +128,12 @@ function NotificationCard({
           {formatRelativeTime(alert.createdAt)}
         </span>
       </div>
+
+      {titleLine && (
+        <span className="text-body-sm font-bold text-content-primary leading-tight">
+          {titleLine}
+        </span>
+      )}
 
       {alert.patientName && (
         <div className="flex items-center gap-2 min-w-0">
