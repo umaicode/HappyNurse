@@ -1,3 +1,4 @@
+// FCM 알림 채널 등록 — Android 8 이상 필수, 앱 시작 시 1회 호출
 package com.happynurse.data.remote.fcm
 
 import android.app.NotificationChannel

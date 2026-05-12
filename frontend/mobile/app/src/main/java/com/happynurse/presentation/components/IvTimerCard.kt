@@ -24,10 +24,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.happynurse.domain.model.IVTimer
+import com.happynurse.domain.model.IvTimer
 import com.happynurse.presentation.theme.HnColors
 
-enum class IVTimerLayout { BAR, RING }
+enum class IvTimerLayout { BAR, RING }
 
 // IV 타이머 카드 전용 색상 — 그린(여유) / 옐로우(주의) / 테라코타(임박)
 private val IvSafeColor    = Color(0xFF2E7D5B)  // deep emerald   ─ 진행 < 50%   (여유)
@@ -35,9 +35,9 @@ private val IvCautionColor = Color(0xFFD4A017)  // mustard yellow ─ 50% ≤ �
 private val IvUrgentColor  = Color(0xFFC84B4B)  // terracotta     ─ 80% 이상      (임박)
 
 @Composable
-fun IVTimerCard(
-    iv: IVTimer,
-    layout: IVTimerLayout = IVTimerLayout.BAR,
+fun IvTimerCard(
+    iv: IvTimer,
+    layout: IvTimerLayout = IvTimerLayout.BAR,
 ) {
     val pct = (iv.elapsedMin.toFloat() / iv.totalMin).coerceIn(0f, 1f)
     val color: Color = when {
@@ -45,11 +45,11 @@ fun IVTimerCard(
         pct < 0.8f -> IvCautionColor
         else       -> IvUrgentColor
     }
-    if (layout == IVTimerLayout.RING) RingCard(iv, pct, color) else BarCard(iv, pct, color)
+    if (layout == IvTimerLayout.RING) RingCard(iv, pct, color) else BarCard(iv, pct, color)
 }
 
 @Composable
-private fun BarCard(iv: IVTimer, pct: Float, color: Color) {
+private fun BarCard(iv: IvTimer, pct: Float, color: Color) {
     val fillRatio = (1f - pct).coerceIn(0f, 1f)
     val gtt = iv.rateGttPerMin?.takeIf { it > 0 }
     val drugLines = iv.drug.split(" + ").map { it.trim() }.filter { it.isNotEmpty() }
@@ -117,7 +117,7 @@ private fun BarCard(iv: IVTimer, pct: Float, color: Color) {
 }
 
 @Composable
-private fun RingCard(iv: IVTimer, pct: Float, color: Color) {
+private fun RingCard(iv: IvTimer, pct: Float, color: Color) {
     HnCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             ProgressRing(pct = pct, color = color)

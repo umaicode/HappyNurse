@@ -72,19 +72,19 @@ private fun CardRow(p: Patient, onClick: () -> Unit, myNurseName: String) {
                 }
                 Text(
                     p.surgery.ifBlank { "-" },
-                    fontSize = 13.sp,
+                    fontSize = 16.sp,
                     color = HnColors.TextSecondary,
                     modifier = Modifier.padding(top = 3.dp),
                 )
                 Row(modifier = Modifier.padding(top = 3.dp)) {
-                    Text("담당 ", fontSize = 12.sp, color = HnColors.TextTertiary)
+                    Text("담당 ", fontSize = 14.sp, color = HnColors.TextTertiary)
                     Text(
                         p.nurse,
-                        fontSize = 12.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = if (p.nurse == myNurseName) HnColors.Primary else HnColors.TextSecondary,
                     )
-                    Text(" 간호사", fontSize = 12.sp, color = HnColors.TextTertiary)
+                    Text(" 간호사", fontSize = 14.sp, color = HnColors.TextTertiary)
                 }
             }
             Icon(
@@ -101,11 +101,11 @@ private fun CardRow(p: Patient, onClick: () -> Unit, myNurseName: String) {
 private fun CompactRow(p: Patient, onClick: () -> Unit) {
     HnCard(onClick = onClick, padding = 12.dp) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(p.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+            Text(p.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
             Spacer(Modifier.size(8.dp))
             Text("D+${p.daysSince}", fontSize = 12.sp, color = HnColors.TextSecondary)
             Spacer(Modifier.weight(1f))
-            Text(p.surgery.ifBlank { "-" }, fontSize = 12.sp, color = HnColors.TextSecondary)
+            Text(p.surgery.ifBlank { "-" }, fontSize = 14.sp, color = HnColors.TextSecondary)
             Icon(
                 Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                 contentDescription = null,

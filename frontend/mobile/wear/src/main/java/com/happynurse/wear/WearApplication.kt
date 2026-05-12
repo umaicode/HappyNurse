@@ -2,6 +2,7 @@
 package com.happynurse.wear
 
 import android.app.Application
+import com.happynurse.wear.alarm.AlarmTtsSpeaker
 import com.happynurse.wear.data.fcm.SystemNotifBuilder
 import com.happynurse.wear.data.fcm.WearFcmTokenForwarder
 import com.happynurse.wear.gesture.GestureServiceController
@@ -13,6 +14,7 @@ class WearApplication : Application() {
 
     @Inject lateinit var tokenForwarder: WearFcmTokenForwarder
     @Inject lateinit var gestureServiceController: GestureServiceController
+    @Inject lateinit var alarmTtsSpeaker: AlarmTtsSpeaker
 
     override fun onCreate() {
         super.onCreate()
@@ -21,5 +23,7 @@ class WearApplication : Application() {
         tokenForwarder.forwardCurrentToken()
         // 로그인 상태이면 손목 제스처 단축 서비스 활성화
         gestureServiceController.bind()
+        // 알람 TTS 엔진 미리 워밍업 — 알람 발화 시점에 즉시 speak() 가능하도록
+        alarmTtsSpeaker.warmUp()
     }
 }

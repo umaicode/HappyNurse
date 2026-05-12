@@ -2,6 +2,11 @@
 package com.happynurse.presentation.theme
 
 import androidx.compose.ui.graphics.Color
+import com.happynurse.domain.model.NotificationCategory
+import com.happynurse.domain.model.OrderKind
+
+// 태그 색상 한 쌍 (배경, 글자) — OrderKind / NotificationCategory 매핑에 사용
+data class TagColors(val bg: Color, val fg: Color)
 
 object HnColors {
     // Primary
@@ -43,4 +48,22 @@ object HnColors {
     val TagOrderStrongBg   = Color(0xFFEDE4FF); val TagOrderStrongFg   = Color(0xFF5B21B6) // 의사오더 — 진한 퍼플
     val TagRequestStrongBg = Color(0xFFFEE2E2); val TagRequestStrongFg = Color(0xFFB91C1C) // 환자요청 — 진한 레드
     val TagWatchStrongBg   = Color(0xFFFEF3C7); val TagWatchStrongFg   = Color(0xFFB45309) // 워치 — 진한 옐로/앰버
+
+    // OrderKind → 옅은 톤 태그 색상 (환자 상세/오더 리스트용)
+    val orderTagColors: Map<OrderKind, TagColors> = mapOf(
+        OrderKind.INJ   to TagColors(TagInjBg,   TagInjFg),
+        OrderKind.FLUID to TagColors(TagFluidBg, TagFluidFg),
+        OrderKind.ORDER to TagColors(TagOrderBg, TagOrderFg),
+        OrderKind.LIS   to TagColors(TagLisBg,   TagLisFg),
+        OrderKind.IMG   to TagColors(TagImgBg,   TagImgFg),
+        OrderKind.PILL  to TagColors(TagPillBg,  TagPillFg),
+    )
+
+    // NotificationCategory → 진한 톤 태그 색상 (알림 시트용)
+    val notificationTagColors: Map<NotificationCategory, TagColors> = mapOf(
+        NotificationCategory.FLUID   to TagColors(TagFluidStrongBg,   TagFluidStrongFg),
+        NotificationCategory.ORDER   to TagColors(TagOrderStrongBg,   TagOrderStrongFg),
+        NotificationCategory.REQUEST to TagColors(TagRequestStrongBg, TagRequestStrongFg),
+        NotificationCategory.WATCH   to TagColors(TagWatchStrongBg,   TagWatchStrongFg),
+    )
 }

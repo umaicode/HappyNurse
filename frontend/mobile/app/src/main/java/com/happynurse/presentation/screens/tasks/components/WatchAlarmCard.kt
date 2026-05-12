@@ -15,6 +15,8 @@ import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.happynurse.domain.model.WatchAlarm
 import com.happynurse.presentation.components.HnCard
 import com.happynurse.presentation.theme.HnColors
+import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -34,6 +37,13 @@ private val FIRE_AT_FORMATTER: DateTimeFormatter =
 
 @Composable
 fun WatchAlarmCard(alarm: WatchAlarm) {
+    // 1초마다 현재 시각 tick — 남은시간 라벨이 실시간으로 줄어들도록 갱신
+    val nowMillis by produceState(initialValue = System.currentTimeMillis(), alarm.fireAtEpochMillis) {
+        while (true) {
+            value = System.currentTimeMillis()
+            delay(1000)
+        }
+    }
     HnCard(modifier = Modifier.fillMaxWidth(), padding = 14.dp) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
@@ -74,7 +84,7 @@ fun WatchAlarmCard(alarm: WatchAlarm) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            val remaining = formatRemaining(alarm.fireAtEpochMillis)
+            val remaining = formatRemaining(alarm.fireAtEpochMillis, nowMillis)
             if (remaining != null) {
                 Spacer(Modifier.height(8.dp))
                 Text(
@@ -88,11 +98,14 @@ fun WatchAlarmCard(alarm: WatchAlarm) {
     }
 }
 
-private fun formatRemaining(epochMillis: Long?): String? {
+private fun formatRemaining(epochMillis: Long?, nowMillis: Long): String? {
     if (epochMillis == null) return null
-    val diffMs = epochMillis - System.currentTimeMillis()
+    val diffMs = epochMillis - nowMillis
     if (diffMs <= 0L) return null
-    val totalMin = diffMs / 60_000L
+    val totalSec = diffMs / 1000L
+    // 1분 미만: 초 단위로 표시
+    if (totalSec < 60L) return "남은 시간 ${totalSec}초"
+    val totalMin = totalSec / 60L
     val days = totalMin / (60 * 24)
     val hours = (totalMin % (60 * 24)) / 60
     val minutes = totalMin % 60

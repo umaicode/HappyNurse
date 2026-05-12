@@ -32,7 +32,6 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -44,7 +43,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,23 +52,22 @@ import com.happynurse.data.remote.model.IvInfusionResponse
 import com.happynurse.presentation.components.HnButton
 import com.happynurse.presentation.components.HnButtonVariant
 import com.happynurse.presentation.components.HnCard
-import com.happynurse.presentation.screens.nfc.findActivity
+import com.happynurse.presentation.components.NfcLifecycleEffect
 import com.happynurse.presentation.theme.HnColors
 import kotlinx.coroutines.delay
 
 @Composable
-fun IVTimerActiveScreen(
+fun IvTimerActiveScreen(
     ivInfusionId: Long,
     onClose: () -> Unit,
     viewModel: IvTimerActiveViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(ivInfusionId) { viewModel.init(ivInfusionId) }
 
-    val activity = LocalContext.current.findActivity()
-    DisposableEffect(activity) {
-        if (activity != null) viewModel.startNfc(activity)
-        onDispose { if (activity != null) viewModel.stopNfc(activity) }
-    }
+    NfcLifecycleEffect(
+        onStart = viewModel::startNfc,
+        onStop = viewModel::stopNfc,
+    )
 
     val state by viewModel.state.collectAsStateWithLifecycle()
     val actionState by viewModel.actionState.collectAsStateWithLifecycle()
