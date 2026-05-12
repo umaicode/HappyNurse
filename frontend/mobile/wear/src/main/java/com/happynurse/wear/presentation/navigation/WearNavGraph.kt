@@ -5,6 +5,7 @@ package com.happynurse.wear.presentation.navigation
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -29,6 +30,17 @@ fun WearNavGraph(
 ) {
     val activity = LocalContext.current as ComponentActivity
     val recordViewModel: RecordViewModel = hiltViewModel(viewModelStoreOwner = activity)
+
+    // 제스처 신호 도착 시 → 어떤 detail 화면에 있었든 HomePager 로 강제 복귀 (popUpTo inclusive 로 백스택 리셋).
+    // 이렇게 해야 HomeRecordPager 가 새로 composed → initialPage=1(record)로 진입 → 자동 녹음 트리거.
+    LaunchedEffect(autoStartRecord) {
+        if (autoStartRecord && navController.currentDestination?.route != WearRoute.HomePager.path) {
+            navController.navigate(WearRoute.HomePager.path) {
+                popUpTo(WearRoute.HomePager.path) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
 
     SwipeDismissableNavHost(
         navController = navController,

@@ -1,5 +1,6 @@
 // GestureService — 로그인 동안 상시 동작하는 ForegroundService.
-// 손목 더블 스냅을 감지하면 WearMainActivity 를 녹음 페이지로 띄운다.
+// 손목 더블 스냅을 감지하면 fullScreenIntent 알림을 발행해 WearMainActivity 를 녹음 페이지로 띄운다.
+// (백그라운드 startActivity 는 Android 10+/Wear OS 5 의 BAL 제한 때문에 차단되므로 알림 우회 사용.)
 package com.happynurse.wear.gesture
 
 import android.app.NotificationChannel
@@ -34,6 +35,7 @@ import javax.inject.Inject
 class GestureService : Service() {
 
     @Inject lateinit var gestureDetector: GestureDetector
+    @Inject lateinit var recordingBus: RecordingControlBus
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var collectJob: Job? = null
@@ -74,15 +76,32 @@ class GestureService : Service() {
         val now = System.currentTimeMillis()
         if (now - lastFireMs < FIRE_COOLDOWN_MS) return
         lastFireMs = now
+
+        // 녹음 진행 중이면 종료 신호만 — 새 녹음 launch X (덮어쓰기 방지).
+        if (recordingBus.isRecording.value) {
+            Log.d(TAG, "WRIST_DOUBLE_SNAP (recording) → stop request")
+            vibrateFeedback()
+            recordingBus.requestStop()
+            return
+        }
+        // 인식/등록 진행 중이면 무시 — 진행 중인 작업 보호.
+        if (recordingBus.isBusy.value) {
+            Log.d(TAG, "WRIST_DOUBLE_SNAP (busy: processing/submitting) → ignore")
+            return
+        }
+
         Log.d(TAG, "WRIST_DOUBLE_SNAP → posting full-screen intent for record screen")
         vibrateFeedback()
         ensureLaunchChannel(this)
 
+        // EXTRA_FIRED_AT 으로 freshness 체크 — 좀비 인텐트가 한참 후 앱 진입 시 자동 녹음하는 버그 방지.
+        // WearMainActivity 가 인텐트 도착 시점이 fired_at 으로부터 GESTURE_INTENT_TTL_MS 안이어야만 autoRecord 적용.
         val activityIntent = Intent(this, WearMainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                 Intent.FLAG_ACTIVITY_CLEAR_TOP or
                 Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra(EXTRA_OPEN_RECORD, true)
+            putExtra(EXTRA_FIRED_AT, now)
         }
         val pi = PendingIntent.getActivity(
             this,
@@ -130,6 +149,9 @@ class GestureService : Service() {
 
     companion object {
         const val EXTRA_OPEN_RECORD = "extra.open_record"
+        const val EXTRA_FIRED_AT = "extra.gesture_fired_at"
+        // 제스처 발생 후 이 시간 안에 Activity 가 살아나야 autoRecord 가 유효 — 좀비 인텐트 방지
+        const val GESTURE_INTENT_TTL_MS = 10_000L
 
         private const val TAG = "GestureService"
         private const val CHANNEL_ID = "happynurse_gesture"
