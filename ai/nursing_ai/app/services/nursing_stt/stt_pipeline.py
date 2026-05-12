@@ -7,8 +7,18 @@ class STTPipeline:
     def __init__(self, db: Session = None):
         self.clova = ClovaSTTClient()
         self.morpheme = MorphemeAnalyzer()
+        # db 가 주어지면 즉시 DB 사전 로드 (기존 호출자 호환).
+        # 싱글톤 라이프타임 동안 한 번만 init 하고, 사전 로드는 load_dictionary() 로 미루는 게 권장.
         self.mapper = TermMapper(db=db)
         print("STT 파이프라인 초기화 완료")
+
+    def load_dictionary(self, db: Session) -> None:
+        """싱글톤 라이프타임 동안 한 번 호출 — TermMapper 의 사전을 DB 에서 reload.
+
+        이미 default 사전으로 init 된 mapper 를 DB 사전으로 교체한다.
+        Kiwi/ClovaSTTClient 는 재초기화 안 함 (비용 큰 컴포넌트 유지).
+        """
+        self.mapper = TermMapper(db=db)
 
     async def process(self, audio_data: bytes, filename: str = "audio.wav", apply_nc: bool = False) -> dict:
         print(f"\n=== 1단계: 클로바 STT (NC={'on' if apply_nc else 'off'}) ===")
@@ -55,3 +65,19 @@ class STTPipeline:
             "stt_segments": stt_segments,
             "nc_latency_ms": nc_latency_ms,
         }
+
+
+_PIPELINE: STTPipeline | None = None
+
+
+def get_stt_pipeline() -> STTPipeline:
+    """프로세스 라이프타임 싱글톤 액세서.
+
+    첫 호출 시 STTPipeline() 을 1회 인스턴스화 (Kiwi 로드 ~1-3초, default 사전).
+    DB 사전은 app 시작 시 main.py 가 load_dictionary() 로 채움 — 그게 누락된 경우
+    여기서 lazy 하게 호출자가 load_dictionary 를 부르도록 default 사전 그대로 유지.
+    """
+    global _PIPELINE
+    if _PIPELINE is None:
+        _PIPELINE = STTPipeline(db=None)
+    return _PIPELINE
