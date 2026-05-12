@@ -2,13 +2,13 @@
 package com.happynurse.presentation.screens.patientdetail
 
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.happynurse.data.repository.EncounterRepository
 import com.happynurse.data.repository.PatientRepository
 import com.happynurse.domain.model.Note
 import com.happynurse.domain.model.Order
 import com.happynurse.domain.model.Patient
+import com.happynurse.presentation.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -25,7 +25,7 @@ class PatientDetailViewModel @Inject constructor(
     private val patientRepository: PatientRepository,
     private val encounterRepository: EncounterRepository,
     savedStateHandle: SavedStateHandle,
-) : ViewModel() {
+) : BaseViewModel() {
 
     private val initialId: Long = savedStateHandle.get<String>("id")?.toLongOrNull() ?: 0L
 
@@ -50,27 +50,19 @@ class PatientDetailViewModel @Inject constructor(
     private val _monthCounts = MutableStateFlow<Map<LocalDate, Int>>(emptyMap())
     val monthCounts: StateFlow<Map<LocalDate, Int>> = _monthCounts.asStateFlow()
 
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
-
     init {
         if (initialId > 0L) loadPatient(initialId)
         loadMyPatients()
     }
 
     fun loadPatient(patientId: Long) {
-        viewModelScope.launch {
-            patientRepository.getPatient(patientId).fold(
-                onSuccess = { p ->
-                    _patient.value = p
-                    if (p.encounterId > 0L) {
-                        loadNotes(p.encounterId, _selectedDate.value)
-                        loadOrders(p.encounterId)
-                        loadMonthNotes(p.encounterId, _visibleMonth.value)
-                    }
-                },
-                onFailure = { _error.value = it.message },
-            )
+        launchWithResult(block = { patientRepository.getPatient(patientId) }) { p ->
+            _patient.value = p
+            if (p.encounterId > 0L) {
+                loadNotes(p.encounterId, _selectedDate.value)
+                loadOrders(p.encounterId)
+                loadMonthNotes(p.encounterId, _visibleMonth.value)
+            }
         }
     }
 
@@ -102,33 +94,20 @@ class PatientDetailViewModel @Inject constructor(
     }
 
     private fun loadNotes(encounterId: Long, date: LocalDate) {
-        viewModelScope.launch {
-            encounterRepository.getNursingNotes(encounterId, date.toString()).fold(
-                onSuccess = { _notes.value = it },
-                onFailure = { _error.value = it.message },
-            )
+        launchWithResult(block = { encounterRepository.getNursingNotes(encounterId, date.toString()) }) {
+            _notes.value = it
         }
     }
 
     private fun loadOrders(encounterId: Long) {
-        viewModelScope.launch {
-            encounterRepository.getOrders(encounterId).fold(
-                onSuccess = { _orders.value = it },
-                onFailure = { _error.value = it.message },
-            )
-        }
+        launchWithResult(block = { encounterRepository.getOrders(encounterId) }) { _orders.value = it }
     }
 
     private fun loadMyPatients() {
-        viewModelScope.launch {
-            patientRepository.getMyWardPatients().fold(
-                onSuccess = { list ->
-                    // 본인 담당 환자 우선, 없으면 같은 병동 환자 전체 표시
-                    val mine = list.filter { it.isMyPatient }
-                    _myPatients.value = if (mine.isNotEmpty()) mine else list
-                },
-                onFailure = { _error.value = it.message },
-            )
+        launchWithResult(block = { patientRepository.getMyWardPatients() }) { list ->
+            // 본인 담당 환자 우선, 없으면 같은 병동 환자 전체 표시
+            val mine = list.filter { it.isMyPatient }
+            _myPatients.value = if (mine.isNotEmpty()) mine else list
         }
     }
 }

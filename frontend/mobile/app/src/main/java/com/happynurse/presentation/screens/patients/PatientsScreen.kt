@@ -43,7 +43,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.happynurse.domain.model.Patient
-import com.happynurse.presentation.components.NotifBell
+import com.happynurse.presentation.components.EmptyStateWithAction
+import com.happynurse.presentation.components.NotificationBell
 import com.happynurse.presentation.components.PageHeader
 import com.happynurse.presentation.components.PatientCard
 import com.happynurse.presentation.components.PatientLayout
@@ -74,7 +75,7 @@ fun PatientsScreen(
         PageHeader(
             title = "환자",
             sub = buildHeaderSubtitle(),
-            right = { NotifBell(unreadCount = upcomingCount, onClick = onOpenNotifications) },
+            right = { NotificationBell(unreadCount = upcomingCount, onClick = onOpenNotifications) },
         )
         TabRow(
             active = listTab,
@@ -84,7 +85,13 @@ fun PatientsScreen(
         val showing: List<Patient> = if (listTab == "mine") mine else all
 
         if (showing.isEmpty()) {
-            EmptyState(onOpenPicker = { pickerOpen = true })
+            EmptyStateWithAction(
+                icon = Icons.Outlined.Settings,
+                title = "담당 환자가 없습니다",
+                subtitle = "톱니바퀴를 눌러 담당 환자를 선택해 주세요.",
+                actionLabel = "담당환자 선택",
+                onAction = { pickerOpen = true },
+            )
         } else {
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -204,39 +211,6 @@ private fun RoomHeader(room: String, count: Int) {
         Spacer(Modifier.height(6.dp))
         Box(Modifier.fillMaxWidth().height(1.dp).background(HnColors.Border))
         Spacer(Modifier.height(6.dp))
-    }
-}
-
-@Composable
-private fun EmptyState(onOpenPicker: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.size(64.dp).clip(CircleShape).background(HnColors.PrimarySoft),
-        ) {
-            Icon(Icons.Outlined.Settings, contentDescription = null, tint = HnColors.Primary, modifier = Modifier.size(30.dp))
-        }
-        Spacer(Modifier.height(16.dp))
-        Text("담당 환자가 없습니다", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "톱니바퀴를 눌러 담당 환자를 선택해 주세요.",
-            fontSize = 14.sp, color = HnColors.TextSecondary,
-        )
-        Spacer(Modifier.height(16.dp))
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
-                .background(HnColors.Primary)
-                .clickable(onClick = onOpenPicker)
-                .padding(horizontal = 18.dp, vertical = 10.dp),
-        ) {
-            Text("담당환자 선택", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-        }
     }
 }
 

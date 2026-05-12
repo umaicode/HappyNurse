@@ -1,6 +1,7 @@
 // 알림함 Repository — me / ward 두 endpoint, cursor 페이지네이션 지원
 package com.happynurse.data.repository
 
+import com.happynurse.data.remote.apiCall
 import com.happynurse.data.remote.api.NotificationApi
 import com.happynurse.data.remote.model.NotificationListResponse
 import javax.inject.Inject
@@ -15,12 +16,8 @@ class NotificationRepository @Inject constructor(
         since: String? = null,
         before: Long? = null,
         limit: Int? = null,
-    ): Result<NotificationListResponse> = runCatching {
-        val res = api.getPersonalInbox(since, before, limit)
-        val body = res.body()
-        if (res.isSuccessful && body?.success == true && body.data != null) body.data
-        else throw Exception(body?.message ?: "개인 알림 조회 실패")
-    }
+    ): Result<NotificationListResponse> =
+        apiCall("개인 알림 조회 실패") { api.getPersonalInbox(since, before, limit) }
 
     // 병동 알림함 — wardId 필수, 응답에 recipientPractitionerId 로 필터링 가능
     suspend fun getWard(
@@ -28,10 +25,6 @@ class NotificationRepository @Inject constructor(
         since: String? = null,
         before: Long? = null,
         limit: Int? = null,
-    ): Result<NotificationListResponse> = runCatching {
-        val res = api.getWardInbox(wardId, since, before, limit)
-        val body = res.body()
-        if (res.isSuccessful && body?.success == true && body.data != null) body.data
-        else throw Exception(body?.message ?: "병동 알림 조회 실패")
-    }
+    ): Result<NotificationListResponse> =
+        apiCall("병동 알림 조회 실패") { api.getWardInbox(wardId, since, before, limit) }
 }

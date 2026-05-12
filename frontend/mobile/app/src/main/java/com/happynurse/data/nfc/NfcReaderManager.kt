@@ -1,3 +1,4 @@
+// NFC reader-mode 매니저 — Activity 단위로 NFC 어댑터 enable/disable + NDEF 메시지 콜백
 package com.happynurse.data.nfc
 
 import android.app.Activity
