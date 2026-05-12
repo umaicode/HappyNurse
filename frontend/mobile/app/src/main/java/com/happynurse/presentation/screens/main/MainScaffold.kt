@@ -60,7 +60,7 @@ fun MainScaffold(
                         upcomingCount = upcoming,
                         ivLayout = IvTimerLayout.BAR,
                     )
-                    HnTab.HANDOFF -> HandoffScreen()
+                    HnTab.HANDOFF -> HandoffScreen(onOpenPatient = onOpenPatient)
                     HnTab.ME -> MyPageScreen(
                         onLogout = onLogout,
                         onOpenPatient = onOpenPatient,
