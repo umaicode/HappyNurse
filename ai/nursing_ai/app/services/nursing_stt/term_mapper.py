@@ -127,55 +127,127 @@ class TermMapper:
         return candidates
 
     def process_text(self, text: str, medical_candidates: list) -> dict:
-        """텍스트 전체를 매핑 사전으로 교정. 형태소 후보를 1차 정확 → 2차 퍼지 매칭 처리."""
-        corrected_text = text
-        corrections = []
+        """텍스트 전체를 매핑 사전으로 교정.
+
+        위치(start/end) 기반 치환을 써서 substring `str.replace` 의 부작용을 회피한다.
+        ① 짧은 hit 이 긴 hit 에 포함되면 (예: "po" ⊂ "Npo") longest-match 가 이김.
+        ② 후보 단어 자리에 이미 replacement 문자열이 들어있으면 (예: "오메프라" 후보의
+           replacement="오메프라졸" 인데 원본이 이미 "오메프라졸") 헛 치환을 막아
+           "오메프라졸졸" 같은 결과를 방지.
+        """
+        decisions = []      # 위치 기반으로 적용할 결정들
+        suggestions = []    # 자동 적용 안 되는 후보 (텍스트 안 건드림)
 
         for candidate in medical_candidates:
             word = candidate["word"]
+            start = candidate.get("start")
+            end = candidate.get("end")
 
             # 1차: 정확 매칭
             exact_result = self.exact_match(word)
-            if exact_result:
-                corrected_text = corrected_text.replace(word, exact_result)
-                corrections.append({
-                    "original": word,
-                    "corrected": exact_result,
-                    "type": "exact",
-                    "confidence": 1.0
+            if exact_result is not None:
+                if start is None or end is None or text[start:end] != word:
+                    # 위치 정보가 없거나 stale 한 후보는 substring 회귀 방지를 위해 skip
+                    continue
+                decisions.append({
+                    "start": start,
+                    "end": end,
+                    "replacement": exact_result,
+                    "correction": {
+                        "original": word,
+                        "corrected": exact_result,
+                        "type": "exact",
+                        "confidence": 1.0,
+                    },
                 })
-                print(f"  정확 매칭: {word} → {exact_result}")
                 continue
 
             # 2차: 퍼지 매칭
             fuzzy_results = self.fuzzy_match(word)
-            if fuzzy_results:
-                best = fuzzy_results[0]
-                if best["confidence_score"] >= 0.85:
-                    corrected_text = corrected_text.replace(word, best["suggested_word"])
-                    corrections.append({
+            if not fuzzy_results:
+                continue
+
+            best = fuzzy_results[0]
+            if best["confidence_score"] >= 0.85:
+                if start is None or end is None or text[start:end] != word:
+                    continue
+                decisions.append({
+                    "start": start,
+                    "end": end,
+                    "replacement": best["suggested_word"],
+                    "correction": {
                         "original": word,
                         "corrected": best["suggested_word"],
                         "type": "fuzzy",
                         "confidence": best["confidence_score"],
-                        "candidates": fuzzy_results
-                    })
-                    print(f"  퍼지 매칭 (자동): {word} → {best['suggested_word']} ({best['confidence_score']})")
-                else:
-                    corrections.append({
-                        "original": word,
-                        "corrected": None,
-                        "type": "candidates",
-                        "confidence": best["confidence_score"],
-                        "candidates": fuzzy_results
-                    })
-                    print(f"  퍼지 매칭 (후보 제시): {word} → {fuzzy_results}")
+                        "candidates": fuzzy_results,
+                    },
+                })
+            else:
+                suggestions.append({
+                    "original": word,
+                    "corrected": None,
+                    "type": "candidates",
+                    "confidence": best["confidence_score"],
+                    "candidates": fuzzy_results,
+                })
+
+        # longest-match dedup: 같은 자리에 겹치는 결정 중 긴 쪽이 이김
+        decisions.sort(key=lambda d: (d["start"], -(d["end"] - d["start"])))
+        accepted = []
+        skipped_overlap = []
+        last_end = -1
+        for d in decisions:
+            if d["start"] < last_end:
+                skipped_overlap.append(d["correction"]["original"])
+                continue
+            accepted.append(d)
+            last_end = d["end"]
+
+        # "이미 정확" 안전망: replacement 가 그 자리에 이미 있으면 헛 치환 방지
+        applied = []
+        skipped_already_correct = []
+        for d in accepted:
+            rep = d["replacement"]
+            if text[d["start"] : d["start"] + len(rep)] == rep:
+                skipped_already_correct.append(d["correction"]["original"])
+                continue
+            applied.append(d)
+
+        # 위치 기반 stitching — str.replace 호출 없음
+        pieces = []
+        cursor = 0
+        for d in applied:
+            pieces.append(text[cursor : d["start"]])
+            pieces.append(d["replacement"])
+            cursor = d["end"]
+        pieces.append(text[cursor:])
+        corrected_text = "".join(pieces)
 
         corrected_text = self.normalize_units(corrected_text)
 
+        # 디버그 로그 (기존 동작 호환)
+        for d in applied:
+            c = d["correction"]
+            if c["type"] == "exact":
+                print(f"  정확 매칭: {c['original']} → {c['corrected']}")
+            else:
+                print(
+                    f"  퍼지 매칭 (자동): {c['original']} → {c['corrected']} "
+                    f"({c['confidence']})"
+                )
+        for s in suggestions:
+            print(f"  퍼지 매칭 (후보 제시): {s['original']} → {s['candidates']}")
+        if skipped_overlap:
+            print(f"  중첩 스킵: {skipped_overlap}")
+        if skipped_already_correct:
+            print(f"  이미 정확 스킵: {skipped_already_correct}")
+
+        corrections = [d["correction"] for d in applied] + suggestions
+
         return {
             "corrected_text": corrected_text,
-            "corrections": corrections
+            "corrections": corrections,
         }
 
     def normalize_units(self, text: str) -> str:

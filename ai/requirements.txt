@@ -18,3 +18,5 @@ anthropic
 numpy
 scipy
 noisereduce
+librosa
+matplotlib

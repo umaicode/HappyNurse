@@ -12,14 +12,21 @@ class STTPipeline:
 
     async def process(self, audio_data: bytes, filename: str = "audio.wav", apply_nc: bool = False) -> dict:
         print(f"\n=== 1단계: 클로바 STT (NC={'on' if apply_nc else 'off'}) ===")
-        original_text = await self.clova.recognize(audio_data, filename, apply_nc=apply_nc)
+        stt_result = await self.clova.recognize(audio_data, filename, apply_nc=apply_nc)
+        original_text = stt_result["text"]
+        stt_confidence = stt_result.get("confidence")
+        stt_segments = stt_result.get("segments", [])
+        nc_latency_ms = stt_result.get("nc_latency_ms")
         print(f"STT 결과: {original_text}")
 
         if not original_text:
             return {
                 "original_text": "",
                 "corrected_text": "",
-                "corrections": []
+                "corrections": [],
+                "stt_confidence": stt_confidence,
+                "stt_segments": stt_segments,
+                "nc_latency_ms": nc_latency_ms,
             }
 
         print("\n=== 2단계: 형태소 분석 ===")
@@ -43,5 +50,8 @@ class STTPipeline:
         return {
             "original_text": original_text,
             "corrected_text": mapping_result["corrected_text"],
-            "corrections": mapping_result["corrections"]
+            "corrections": mapping_result["corrections"],
+            "stt_confidence": stt_confidence,
+            "stt_segments": stt_segments,
+            "nc_latency_ms": nc_latency_ms,
         }

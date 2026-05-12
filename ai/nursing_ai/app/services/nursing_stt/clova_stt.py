@@ -2,6 +2,7 @@ import httpx
 import json
 import os
 import io
+import time
 import numpy as np
 from dotenv import load_dotenv
 from pydub import AudioSegment
@@ -17,12 +18,12 @@ class ClovaSTTClient:
         self.noise_canceller = get_noise_canceller()
         print(f"Secret Key 확인: {self.secret_key[:10]}...")
 
-    def convert_to_wav(self, audio_data: bytes, filename: str) -> bytes:
-        """다양한 오디오 포맷을 WAV(16kHz, mono)로 변환. NC 미적용."""
+    def convert_to_wav(self, audio_data: bytes, filename: str) -> tuple[bytes, float | None]:
+        """다양한 오디오 포맷을 WAV(16kHz, mono)로 변환. NC 미적용. (wav_bytes, None) 반환."""
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "wav"
 
         if ext == "wav":
-            return audio_data
+            return audio_data, None
 
         try:
             # m4a, mp3, webm, ogg 등 → wav 변환
@@ -34,13 +35,13 @@ class ClovaSTTClient:
             wav_data = wav_buffer.getvalue()
 
             print(f"오디오 변환: {ext} → wav ({len(audio_data)} → {len(wav_data)} bytes)")
-            return wav_data
+            return wav_data, None
         except Exception as e:
             print(f"오디오 변환 실패: {e}, 원본 그대로 전송")
-            return audio_data
+            return audio_data, None
 
-    def convert_to_wav_with_nc(self, audio_data: bytes, filename: str) -> bytes:
-        """모든 입력을 16kHz/mono/PCM16으로 정규화 후 노이즈 캔슬링 적용."""
+    def convert_to_wav_with_nc(self, audio_data: bytes, filename: str) -> tuple[bytes, float | None]:
+        """16kHz/mono/PCM16 정규화 후 노이즈 캔슬링 적용. (wav_bytes, nc_latency_ms) 반환."""
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "wav"
 
         try:
@@ -50,7 +51,9 @@ class ClovaSTTClient:
             samples = np.array(audio.get_array_of_samples(), dtype=np.int16)
             pcm = samples.astype(np.float32) / 32768.0
 
+            t0 = time.perf_counter()
             pcm = self.noise_canceller.apply(pcm, sr=16000)
+            nc_latency_ms = (time.perf_counter() - t0) * 1000.0
 
             cleaned_int16 = np.clip(pcm * 32768.0, -32768, 32767).astype(np.int16)
             cleaned = AudioSegment(
@@ -68,18 +71,18 @@ class ClovaSTTClient:
                 f"오디오 변환·정제: {ext} → wav "
                 f"({len(audio_data)} → {len(wav_data)} bytes, NC={self.noise_canceller.name})"
             )
-            return wav_data
+            return wav_data, nc_latency_ms
         except Exception as e:
             print(f"오디오 변환·정제 실패: {e}, NC 없는 fallback 변환 사용")
             return self.convert_to_wav(audio_data, filename)
 
-    async def recognize(self, audio_data: bytes, filename: str = "audio.wav", apply_nc: bool = False) -> str:
+    async def recognize(self, audio_data: bytes, filename: str = "audio.wav", apply_nc: bool = False) -> dict:
         headers = {
             "X-CLOVASPEECH-API-KEY": self.secret_key
         }
 
         # WAV로 변환 (apply_nc=True 면 NC 적용 경로 사용)
-        wav_data = (
+        wav_data, nc_latency_ms = (
             self.convert_to_wav_with_nc(audio_data, filename)
             if apply_nc
             else self.convert_to_wav(audio_data, filename)
@@ -107,7 +110,11 @@ class ClovaSTTClient:
 
         if response.status_code == 200:
             result = response.json()
-            text = result.get("text", "")
-            return text
+            return {
+                "text": result.get("text", ""),
+                "confidence": result.get("confidence"),
+                "segments": result.get("segments", []),
+                "nc_latency_ms": nc_latency_ms,
+            }
         else:
             raise Exception(f"클로바 API 에러: {response.status_code} {response.text}")

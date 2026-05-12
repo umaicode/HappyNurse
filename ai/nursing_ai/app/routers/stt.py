@@ -66,7 +66,10 @@ async def _run_recognize(
             "audio_url": audio_path,
             "original_text": result["original_text"],
             "corrected_text": result["corrected_text"],
-            "corrections": result["corrections"]
+            "corrections": result["corrections"],
+            "stt_confidence": result.get("stt_confidence"),
+            "stt_segments": result.get("stt_segments", []),
+            "nc_latency_ms": result.get("nc_latency_ms"),
         }
 
     except HTTPException:
