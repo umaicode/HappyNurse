@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Info, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PanelCard } from "./PanelCard";
@@ -86,8 +86,29 @@ function NotificationCard({
   const priority: SymptomPriority | null =
     sourceType === "self_report" ? alert.priority : null;
 
+  // body 3줄 초과 시 카드 자체 클릭으로 펼치기/접기. hasOverflow 는 NotificationBody 가 측정 후 보고.
+  const [expanded, setExpanded] = useState(false);
+  const [hasOverflow, setHasOverflow] = useState(false);
+  const isInteractive = !!alert.body && hasOverflow;
+  const toggle = () => setExpanded((prev) => !prev);
+
   return (
-    <PanelCard>
+    <PanelCard
+      onClick={isInteractive ? toggle : undefined}
+      role={isInteractive ? "button" : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      onKeyDown={
+        isInteractive
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                toggle();
+              }
+            }
+          : undefined
+      }
+      className={isInteractive ? "cursor-pointer" : undefined}
+    >
       {/* 1행: 라벨 + (선택) priority 칩 (좌) / 상대시간 (우) — 색은 라벨 글자색에만 */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -128,11 +149,46 @@ function NotificationCard({
         </div>
       )}
       {alert.body && (
-        <p className="text-body-sm text-content-secondary leading-snug break-words">
-          {alert.body}
-        </p>
+        <NotificationBody
+          body={alert.body}
+          expanded={expanded}
+          onOverflowChange={setHasOverflow}
+        />
       )}
     </PanelCard>
+  );
+}
+
+// 3줄 초과 여부만 부모에 보고 — 토글 UI/상태는 부모(NotificationCard) 가 가짐.
+// 펼친 상태에선 clientHeight === scrollHeight 가 되어 측정값이 false 로 잘못 갱신되므로 측정 skip.
+function NotificationBody({
+  body,
+  expanded,
+  onOverflowChange,
+}: {
+  body: string;
+  expanded: boolean;
+  onOverflowChange: (hasOverflow: boolean) => void;
+}) {
+  const bodyRef = useRef<HTMLParagraphElement>(null);
+
+  useLayoutEffect(() => {
+    const element = bodyRef.current;
+    if (!element) return;
+    if (expanded) return;
+    onOverflowChange(element.scrollHeight > element.clientHeight + 1);
+  }, [body, expanded, onOverflowChange]);
+
+  return (
+    <p
+      ref={bodyRef}
+      className={cn(
+        "text-body-sm text-content-secondary leading-snug break-words",
+        !expanded && "line-clamp-3",
+      )}
+    >
+      {body}
+    </p>
   );
 }
 

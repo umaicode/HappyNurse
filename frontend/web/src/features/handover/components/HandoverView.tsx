@@ -16,7 +16,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
@@ -32,13 +32,17 @@ import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
 import { getPatientDetail } from "@/features/dashboard/api/patient-detail";
 import { formatBirthShort } from "@/lib/patient-display";
 import {
+  handoverChecksKey,
   useGenerateHandover,
+  useHandoverChecks,
   useHandoverDetail,
   useHandoverStream,
+  usePatchHandoverChecks,
   useRosterSummary,
 } from "@/features/handover/hooks/useHandover";
 import type {
   Citation,
+  HandoverChecksResponse,
   HandoverPayload,
   RosterPatientItem,
   Slot,
@@ -268,7 +272,7 @@ export function HandoverView() {
                           {wardPatient.name}
                         </span>
                         {birthLabel && (
-                          <span className="text-body-micro font-mono text-content-muted shrink-0">
+                          <span className="text-[13px] leading-tight font-bold text-content-secondary shrink-0">
                             {birthLabel}
                           </span>
                         )}
@@ -457,8 +461,26 @@ function PatientHandoverCard({
         isSelected ? "shadow-xl" : "shadow-sm hover:shadow-md",
       )}
     >
-      {/* [CARD HEADER] */}
-      <div className="px-5 py-3.5 bg-surface-base/70 border-b border-border-base flex items-center gap-3">
+      {/* [CARD HEADER] — roster 있으면 헤더 전체가 토글 영역. 안쪽 "상세" 버튼은 stopPropagation 으로 이중 토글 방지. */}
+      <div
+        className={cn(
+          "px-5 py-3.5 bg-surface-base/70 border-b border-border-base flex items-center gap-3",
+          roster && "cursor-pointer hover:bg-surface-hover/60 transition-colors",
+        )}
+        onClick={roster ? onToggleDetail : undefined}
+        role={roster ? "button" : undefined}
+        tabIndex={roster ? 0 : undefined}
+        onKeyDown={
+          roster
+            ? (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onToggleDetail();
+                }
+              }
+            : undefined
+        }
+      >
         <div className="flex items-center gap-2.5 min-w-0">
           <h3 className="text-title-md font-bold text-content-primary truncate leading-tight tracking-tight">
             {wardPatient.name}
@@ -470,7 +492,10 @@ function PatientHandoverCard({
         {roster && (
           <button
             type="button"
-            onClick={onToggleDetail}
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleDetail();
+            }}
             className="ml-auto flex items-center gap-1 text-body-micro font-semibold text-content-tertiary hover:text-content-primary leading-none"
           >
             {isSelected ? (
@@ -487,7 +512,17 @@ function PatientHandoverCard({
       </div>
 
       {roster ? (
-        <>
+        // 본문 영역도 헤더와 동일하게 토글. nested 버튼/링크 (citation chip 등) 는 closest 체크로 무시.
+        <div
+          className="cursor-pointer"
+          onClick={(event) => {
+            const target = event.target as HTMLElement | null;
+            if (target?.closest("button, a, [role='button']")) return;
+            // 텍스트 드래그(selection) 직후 click 발생 시 토글되지 않게.
+            if (window.getSelection()?.toString()) return;
+            onToggleDetail();
+          }}
+        >
           {/* [HEADER LINE] — 환자별 요약 본문. 박스 영역 안에서 상하 가운데 정렬.
               <Text> 의 size default(text-sm/14px) 가 className 과 충돌해 실제 14px 로 보이는 문제 회피하려고 <p> 로 직접 적용. */}
           <div className="px-6 py-5 min-h-[88px] flex items-center">
@@ -519,9 +554,12 @@ function PatientHandoverCard({
             </div>
           )}
 
-          {/* [DETAIL — PASS-BAR] */}
+          {/* [DETAIL — PASS-BAR] — 펼친 상태에서 이 영역 클릭은 토글하지 않음 (텍스트 읽기/근거 클릭용). */}
           {isSelected && (
-            <div className="px-6 pt-5 pb-6 space-y-5">
+            <div
+              className="px-6 pt-5 pb-6 space-y-5 cursor-auto"
+              onClick={(event) => event.stopPropagation()}
+            >
               {detailQuery.isPending ? (
                 <div className="flex flex-col items-center gap-2 py-10 text-content-muted">
                   <Loader2 className="size-5 animate-spin" />
@@ -533,13 +571,14 @@ function PatientHandoverCard({
                 </div>
               ) : (
                 <PassBarDetail
+                  handoverId={String(roster.handover_id)}
                   payload={detailQuery.data.autoSummaryJson}
                   onCitationClick={onCitationClick}
                 />
               )}
             </div>
           )}
-        </>
+        </div>
       ) : (
         <div className="px-6 py-8 flex flex-col items-center gap-2 text-center">
           <Sparkles className="size-5 text-content-muted opacity-50" />
@@ -561,21 +600,20 @@ function PatientHandoverCard({
 }
 
 function PassBarDetail({
+  handoverId,
   payload,
   onCitationClick,
 }: {
+  handoverId: string;
   // payload 는 호출 측에서 null 체크 후 전달 (HandoverPayload 보장).
   payload: HandoverPayload;
   onCitationClick: (citation: Citation) => void;
 }) {
-  // 체크리스트 — action 슬롯 items 의 value/quote 를 액션 아이템으로 사용.
-  // 데이터 소스 (BE checklist 필드 vs 슬롯 재활용 vs 별도 API) 미정 — 일단 UI 만.
-  // 체크 상태는 PassBarDetail 인스턴스 로컬 (handover_id 별 카드 마운트되므로 자동 격리, 새로고침 시 초기화).
-  const [checkedActionIndices, setCheckedActionIndices] = useState<
-    Record<number, boolean>
-  >({});
-  const toggleAction = (index: number) =>
-    setCheckedActionIndices((prev) => ({ ...prev, [index]: !prev[index] }));
+  // 체크리스트는 synthesis 슬롯 기반 — BE 가 키 포맷 `synthesis.{index}` 만 허용.
+  // 종합 콜아웃([1]) 과 체크리스트 항목이 동일 슬롯이라 콜아웃은 제거하고 체크리스트가 그 자리 대체.
+  const queryClient = useQueryClient();
+  const checksQuery = useHandoverChecks(handoverId);
+  const patchMutation = usePatchHandoverChecks(handoverId);
 
   // 한 citation 이 여러 slot 에 인용될 수 있음 — CitationList 에서 어느 슬롯에 인용됐는지 표시.
   const slotKeysByCitationId = useMemo(() => {
@@ -591,34 +629,51 @@ function PassBarDetail({
     return map;
   }, [payload.slots]);
 
-  // 체크리스트 항목 소스 — action 우선, 비면 recommendation fallback. 둘 다 비면 빈 메시지 표시 (UI 자체는 항상 노출).
-  const checklistItems = useMemo<SlotItem[]>(() => {
-    if (payload.slots.action.items.length > 0) return payload.slots.action.items;
-    if (payload.slots.recommendation.items.length > 0)
-      return payload.slots.recommendation.items;
-    return [];
-  }, [payload.slots.action.items, payload.slots.recommendation.items]);
+  const checklistItems = payload.slots.synthesis.items;
+  const checkedItemsJson = checksQuery.data?.checkedItemsJson;
+  const checkedByIndex = useMemo<Record<number, boolean>>(() => {
+    const map: Record<number, boolean> = {};
+    const checks = checkedItemsJson ?? {};
+    checklistItems.forEach((_, index) => {
+      map[index] = checks[`synthesis.${index}`] !== undefined;
+    });
+    return map;
+  }, [checklistItems, checkedItemsJson]);
+
+  const handleToggle = (index: number) => {
+    const key = `synthesis.${index}`;
+    const nextChecked = checkedByIndex[index] !== true;
+    // Optimistic 업데이트 — 체크박스 즉시 반응. 실패 시 invalidate 가 서버 상태로 되돌림.
+    queryClient.setQueryData<HandoverChecksResponse>(
+      handoverChecksKey(handoverId),
+      (previous) => {
+        const baseChecks = previous?.checkedItemsJson ?? {};
+        const nextChecks = { ...baseChecks };
+        if (nextChecked) {
+          // 누른 사람/시각은 서버가 채움 — 로컬은 빈 객체로 두면 "키 존재 = 체크 ON" 판정만 통과.
+          nextChecks[key] = { by: 0, at: new Date().toISOString() };
+        } else {
+          delete nextChecks[key];
+        }
+        return {
+          handoverId: previous?.handoverId ?? handoverId,
+          checkedItemsJson: nextChecks,
+        };
+      },
+    );
+    patchMutation.mutate({ [key]: nextChecked });
+  };
 
   return (
     <>
-      {/* [1] Synthesis 콜아웃 — 다음 시프트가 가장 먼저 봐야 할 take-away */}
-      {payload.slots.synthesis.items.length > 0 && (
-        <SlotCallout
-          label="Synthesis · 종합"
-          slot={payload.slots.synthesis}
-          accent="brand"
-        />
-      )}
-
-      {/* [2] 체크리스트 — Synthesis 직후 배치 (mockup 의 AI 요약 박스 안 체크리스트 위치).
-          action 우선, 비면 recommendation fallback, 둘 다 비면 빈 상태 메시지. */}
+      {/* [1] 체크리스트 — synthesis 슬롯 기반. BE 영속. */}
       <ChecklistSection
         items={checklistItems}
-        checkedByIndex={checkedActionIndices}
-        onToggle={toggleAction}
+        checkedByIndex={checkedByIndex}
+        onToggle={handleToggle}
       />
 
-      {/* [3] Safety 콜아웃 — 낙상/격리/DNR/알러지/금기 등 안전 사항 */}
+      {/* [2] Safety 콜아웃 — 낙상/격리/DNR/알러지/금기 등 안전 사항 */}
       {payload.slots.safety.items.length > 0 && (
         <SlotCallout
           label="Safety · 안전"
@@ -628,7 +683,7 @@ function PassBarDetail({
         />
       )}
 
-      {/* [4] SBAR grid — 나머지 6 슬롯 */}
+      {/* [3] SBAR grid — synthesis/safety 제외 6 슬롯 */}
       <div className="grid grid-cols-2 gap-3">
         {SBAR_SLOT_ORDER.map((key) => (
           <SlotCard
@@ -639,7 +694,7 @@ function PassBarDetail({
         ))}
       </div>
 
-      {/* [5] Citations 전체 목록 — 인용된 슬롯 라벨과 함께 표시 */}
+      {/* [4] Citations 전체 목록 — 인용된 슬롯 라벨과 함께 표시 */}
       {payload.citations.length > 0 && (
         <CitationList
           citations={payload.citations}

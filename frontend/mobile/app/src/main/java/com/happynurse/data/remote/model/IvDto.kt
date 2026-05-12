@@ -4,12 +4,13 @@ package com.happynurse.data.remote.model
 import com.google.gson.annotations.SerializedName
 
 // --- /iv/start ---
+// BE 는 DropSet enum 으로 받음 → JSON 키는 "dropSet" 이어야 함.
 data class StartIvRequest(
     @SerializedName("encounterId") val encounterId: Long,
     @SerializedName("medicationOrderIds") val medicationOrderIds: List<Long>,
     @SerializedName("totalVolumeMl") val totalVolumeMl: Double,
     @SerializedName("rateGttPerMin") val rateGttPerMin: Int,
-    @SerializedName("patientType") val patientType: String, // "SET_10" | "SET_15" | "SET_20" | "SET_60"
+    @SerializedName("dropSet") val patientType: String, // "SET_10" | "SET_15" | "SET_20" | "SET_60"
     @SerializedName("note") val note: String? = null,
 )
 
@@ -41,9 +42,10 @@ data class MedicationItem(
 )
 
 // --- /iv/by-tag/{tagUid}/rate ---
+// BE 는 DropSet enum 으로 받음 → JSON 키는 "dropSet" 이어야 함.
 data class ChangeRateRequest(
     @SerializedName("rateGttPerMin") val rateGttPerMin: Int,
-    @SerializedName("patientType") val patientType: String, // "SET_10" | "SET_15" | "SET_20" | "SET_60"
+    @SerializedName("dropSet") val patientType: String, // "SET_10" | "SET_15" | "SET_20" | "SET_60"
 )
 
 // --- GET /iv?wardId=&status= 응답 (slim 목록) ---
