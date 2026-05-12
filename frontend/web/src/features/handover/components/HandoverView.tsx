@@ -496,8 +496,8 @@ function PatientHandoverCard({
 
       {roster ? (
         <>
-          {/* [HEADER LINE] */}
-          <div className="px-6 pt-5">
+          {/* [HEADER LINE] — 환자별 요약 본문. 박스 영역 안에서 상하 가운데 정렬. */}
+          <div className="px-6 py-5 min-h-[88px] flex items-center">
             <Text className="text-body-base leading-relaxed font-semibold text-content-primary whitespace-pre-wrap">
               {roster.header}
             </Text>
