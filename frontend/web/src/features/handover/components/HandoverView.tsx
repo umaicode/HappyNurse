@@ -41,7 +41,6 @@ import type {
   Slot,
   SlotItem,
   Slots,
-  VerificationStatus,
 } from "@/features/handover/types/handover";
 import type { WardPatient } from "@/features/patient/types/ward-patient";
 
@@ -67,46 +66,8 @@ const SBAR_SLOT_ORDER: Array<keyof Slots> = [
   "patient_problem",
 ];
 
-const VERIFICATION_TONE: Record<VerificationStatus, string> = {
-  ok: "bg-status-success-surface text-status-success",
-  partial: "bg-status-warning-surface text-status-warning-strong",
-  failed: "bg-status-danger-surface text-status-danger-strong",
-};
-
-const VERIFICATION_LABEL: Record<VerificationStatus, string> = {
-  ok: "검증",
-  partial: "부분",
-  failed: "실패",
-};
-
-const SEVERITY_TONE: Record<string, string> = {
-  stable: "bg-status-success-surface text-status-success",
-  watcher: "bg-status-warning-surface text-status-warning-strong",
-  unstable: "bg-status-danger-surface text-status-danger-strong",
-};
-
-// risk_score 는 휴리스틱 (rules_fired severity 합 + verification 미통과 슬롯 수). raw 숫자만 보면
-// nurse 가 의미 파악 어려워 0/4/8 경계로 등급 라벨 + 톤을 함께 표시.
-// 산식 출처: ai/nursing_ai/app/services/handover/coordination/roster_summary.py:_risk_score
-type RiskTier = "low" | "moderate" | "high";
-
-const riskTier = (score: number): RiskTier => {
-  if (score >= 8) return "high";
-  if (score >= 4) return "moderate";
-  return "low";
-};
-
-const RISK_TIER_LABEL: Record<RiskTier, string> = {
-  low: "낮음",
-  moderate: "보통",
-  high: "높음",
-};
-
-const RISK_TIER_TONE: Record<RiskTier, string> = {
-  low: "bg-status-success-surface text-status-success",
-  moderate: "bg-status-warning-surface text-status-warning-strong",
-  high: "bg-status-danger-surface text-status-danger-strong",
-};
+// verification / severity / risk_tier 라벨/톤은 노출 제거 — 간호사 화면 노이즈로 판단.
+// 데이터(RosterPatientItem.risk_score, SlotItem.severity_flag, Slot.verification) 는 응답에 그대로 유지.
 
 // 화면의 base 행 — 담당 환자(wardPatient)는 항상 존재, 인수인계 리포트(roster)는 옵션.
 // roster-summary 가 빈 응답이어도 환자 카드는 사라지지 않도록 wardPatient 를 1차 키로 둔다.
@@ -473,13 +434,10 @@ function PatientHandoverCard({
           </Text>
         </div>
         {roster && (
-          <RiskBadge score={roster.risk_score} />
-        )}
-        {roster && (
           <button
             type="button"
             onClick={onToggleDetail}
-            className="flex items-center gap-1 text-body-micro font-semibold text-content-tertiary hover:text-content-primary leading-none"
+            className="ml-auto flex items-center gap-1 text-body-micro font-semibold text-content-tertiary hover:text-content-primary leading-none"
           >
             {isSelected ? (
               <>
@@ -496,11 +454,12 @@ function PatientHandoverCard({
 
       {roster ? (
         <>
-          {/* [HEADER LINE] — 환자별 요약 본문. 박스 영역 안에서 상하 가운데 정렬. */}
+          {/* [HEADER LINE] — 환자별 요약 본문. 박스 영역 안에서 상하 가운데 정렬.
+              <Text> 의 size default(text-sm/14px) 가 className 과 충돌해 실제 14px 로 보이는 문제 회피하려고 <p> 로 직접 적용. */}
           <div className="px-6 py-5 min-h-[88px] flex items-center">
-            <Text className="text-body-base leading-relaxed font-semibold text-content-primary whitespace-pre-wrap">
+            <p className="text-body-base leading-relaxed font-semibold text-content-primary whitespace-pre-wrap">
               {roster.header}
-            </Text>
+            </p>
           </div>
 
           {/* [RULES BRIEF] — 항상 보임 */}
@@ -508,7 +467,7 @@ function PatientHandoverCard({
             <div className="px-6 pt-4">
               <div className="flex items-center gap-2 mb-2.5">
                 <AlertTriangle className="size-4 text-status-warning" />
-                <h4 className="text-body-sm font-bold text-status-warning-strong">
+                <h4 className="text-body-base font-bold text-status-warning-strong">
                   주의 규칙
                 </h4>
               </div>
@@ -674,7 +633,7 @@ function ChecklistSection({
   return (
     <div className="rounded-xl border border-brand-primary/20 bg-brand-surface/20 p-4 flex flex-col gap-2.5">
       <div className="flex items-center gap-2">
-        <h4 className="text-body-sm font-bold text-brand-primary leading-none">
+        <h4 className="text-body-base font-bold text-brand-primary leading-none">
           체크리스트
         </h4>
         {items.length > 0 && (
@@ -724,42 +683,6 @@ function ChecklistSection({
   );
 }
 
-// 위험도 배지 — raw score + tier 라벨, hover 시 산식 안내.
-function RiskBadge({ score }: { score: number }) {
-  const tier = riskTier(score);
-  return (
-    <HoverCard openDelay={120} closeDelay={80}>
-      <HoverCardTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border-none shrink-0 leading-none font-bold text-body-micro cursor-help",
-            RISK_TIER_TONE[tier],
-          )}
-        >
-          <span>위험도 {RISK_TIER_LABEL[tier]}</span>
-          <span className="font-mono opacity-70">{score}</span>
-        </button>
-      </HoverCardTrigger>
-      <HoverCardContent align="end" sideOffset={6} className="w-[320px] p-3.5">
-        <div className="flex flex-col gap-2 text-body-micro text-content-secondary leading-relaxed">
-          <p className="font-bold text-content-primary text-body-sm">위험도 산식</p>
-          <p>
-            발사된 임상 규칙 severity 가중치 합 + 검증(verification) 통과 못한 슬롯 개수.
-          </p>
-          <ul className="space-y-0.5 pl-3 list-disc text-content-tertiary">
-            <li>high 규칙 1건당 +5, medium +3, low +1</li>
-            <li>partial/failed 슬롯 1개당 +1</li>
-          </ul>
-          <p className="text-content-muted">
-            등급 경계 — 낮음 0~3 · 보통 4~7 · 높음 8 이상.
-          </p>
-        </div>
-      </HoverCardContent>
-    </HoverCard>
-  );
-}
-
 // 상단 콜아웃 (Synthesis · Safety) — 풀폭, 강조 톤. SlotCard 와 같은 데이터지만 시각 위계가 다름.
 function SlotCallout({
   label,
@@ -783,17 +706,9 @@ function SlotCallout({
     <div className={cn("rounded-xl border border-border-subtle p-4 flex flex-col gap-2.5", accentClass)}>
       <div className="flex items-center gap-2">
         {icon}
-        <h4 className={cn("text-body-sm font-bold leading-none", titleClass)}>
+        <h4 className={cn("text-body-base font-bold leading-none", titleClass)}>
           {label}
         </h4>
-        <span
-          className={cn(
-            "ml-auto px-1.5 py-0.5 rounded text-body-micro font-bold leading-none",
-            VERIFICATION_TONE[slot.verification],
-          )}
-        >
-          {VERIFICATION_LABEL[slot.verification]}
-        </span>
       </div>
       <ul className="space-y-2">
         {slot.items.map((item, index) => (
@@ -808,20 +723,12 @@ function SlotCard({ label, slot }: { label: string; slot: Slot }) {
   return (
     <div className="rounded-xl border border-border-subtle bg-surface-base/70 p-3.5 flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <h4 className="text-body-sm font-bold text-content-primary leading-none">
+        <h4 className="text-body-base font-bold text-content-primary leading-none">
           {label}
         </h4>
-        <span
-          className={cn(
-            "ml-auto px-1.5 py-0.5 rounded text-body-micro font-bold leading-none",
-            VERIFICATION_TONE[slot.verification],
-          )}
-        >
-          {VERIFICATION_LABEL[slot.verification]}
-        </span>
       </div>
       {slot.items.length === 0 ? (
-        <Text className="text-body-micro text-content-muted">—</Text>
+        <p className="text-body-micro text-content-muted">—</p>
       ) : (
         <ul className="space-y-2">
           {slot.items.map((item, index) => (
@@ -833,27 +740,17 @@ function SlotCard({ label, slot }: { label: string; slot: Slot }) {
   );
 }
 
-// 슬롯 안 한 줄짜리 항목 — value / quote 본문 + meta (time_window, trend, severity_flag) + contingency.
-// citation 표시는 슬롯에서 제거됨 — 출처는 카드 하단 "근거 기록" 영역(CitationList) 에만.
+// 슬롯 안 한 줄짜리 항목 — value / quote 본문 + meta (time_window, trend) + contingency.
+// severity_flag(stable/watcher/unstable) 칩은 노출 제거 — 간호사 화면 노이즈 회피.
+// citation 표시도 슬롯에서 제거됨 — 출처는 카드 하단 "근거 기록" 영역(CitationList) 에만.
 function SlotItemRow({ item }: { item: SlotItem }) {
   const headline = item.value ?? item.quote ?? item.kind ?? "(빈 항목)";
-  const severityFlag = item.severity_flag;
   return (
     <li className="text-body-sm leading-relaxed flex flex-col gap-1">
       <div className="flex flex-wrap items-start gap-1.5">
         <span className="text-content-primary flex-1 min-w-0 break-words">
           {headline}
         </span>
-        {severityFlag && (
-          <span
-            className={cn(
-              "px-1.5 py-0.5 rounded text-body-micro font-bold leading-none shrink-0",
-              SEVERITY_TONE[severityFlag] ?? "bg-surface-hover text-content-secondary",
-            )}
-          >
-            {severityFlag}
-          </span>
-        )}
       </div>
 
       {/* meta 라인: time_window · trend — 둘 다 옵션. 없으면 라인 자체 안 그림. */}
@@ -932,7 +829,7 @@ function CitationList({
       <button
         type="button"
         onClick={() => setOpen((previous) => !previous)}
-        className="flex items-center gap-2 text-body-sm font-bold text-brand-primary hover:text-brand-primary/80 transition-colors"
+        className="flex items-center gap-2 text-body-base font-bold text-brand-primary hover:text-brand-primary/80 transition-colors"
       >
         {open ? (
           <ChevronDown className="size-4" />
