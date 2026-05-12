@@ -156,7 +156,7 @@ export function AssignPatientModal({
                       {roomName}
                     </span>
                     <div className="ml-auto flex items-center gap-2">
-                      <span className="text-[12px] font-semibold text-content-tertiary">
+                      <span className="text-body-sm font-semibold text-content-tertiary">
                         전체선택
                       </span>
                       <Checkbox
