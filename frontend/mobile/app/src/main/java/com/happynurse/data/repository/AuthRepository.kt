@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.happynurse.data.remote.apiCall
 import com.happynurse.data.remote.api.AuthApi
 import com.happynurse.data.remote.model.AppLoginResponse
 import com.happynurse.data.remote.model.AppRefreshRequest
@@ -39,7 +40,7 @@ class AuthRepository @Inject constructor(
 
     val isLoggedIn: Flow<Boolean> = accessToken.map { it != null }
 
-    // 본인 wardId 노출 — AlarmsViewModel 의 IV 보드 / 알림 fetch 등에서 사용
+    // 본인 wardId 노출 — IV 보드 / 알림 fetch 등에서 사용
     val wardId: Flow<Long?> = context.authDataStore.data.map { it[KEY_WARD_ID] }
 
     suspend fun login(
@@ -47,37 +48,17 @@ class AuthRepository @Inject constructor(
         wardId: Long,
         employeeNumber: String,
         password: String,
-    ): Result<AppLoginResponse> {
-        return try {
-            val response = authApi.login(LoginRequest(organizationId, wardId, employeeNumber, password))
-            val body = response.body()
-            if (response.isSuccessful && body?.success == true && body.data != null) {
-                saveSession(body.data)
-                Result.success(body.data)
-            } else {
-                Result.failure(Exception(body?.message ?: "로그인 실패"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    ): Result<AppLoginResponse> =
+        apiCall("로그인 실패") {
+            authApi.login(LoginRequest(organizationId, wardId, employeeNumber, password))
+        }.onSuccess { saveSession(it) }
 
     suspend fun refresh(): Result<AppLoginResponse> {
-        return try {
-            val currentRefresh = context.authDataStore.data.firstOrNull()?.get(KEY_REFRESH_TOKEN)
-                ?: return Result.failure(Exception("저장된 refreshToken 없음"))
-            val response = authApi.refresh(AppRefreshRequest(currentRefresh))
-            val body = response.body()
-            if (response.isSuccessful && body?.success == true && body.data != null) {
-                saveSession(body.data)
-                Result.success(body.data)
-            } else {
-                clearSession()
-                Result.failure(Exception(body?.message ?: "토큰 갱신 실패"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        val currentRefresh = context.authDataStore.data.firstOrNull()?.get(KEY_REFRESH_TOKEN)
+            ?: return Result.failure(Exception("저장된 refreshToken 없음"))
+        return apiCall("토큰 갱신 실패") { authApi.refresh(AppRefreshRequest(currentRefresh)) }
+            .onSuccess { saveSession(it) }
+            .onFailure { clearSession() }
     }
 
     suspend fun logout() {

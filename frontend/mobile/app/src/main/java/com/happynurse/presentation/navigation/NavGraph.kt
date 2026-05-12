@@ -14,8 +14,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.happynurse.presentation.screens.drugentry.DrugEntryScreen
-import com.happynurse.presentation.screens.ivtimer.IVTimerActiveScreen
-import com.happynurse.presentation.screens.ivtimer.IVTimerSetupScreen
+import com.happynurse.presentation.screens.ivtimer.IvTimerActiveScreen
+import com.happynurse.presentation.screens.ivtimer.IvTimerSetupScreen
 import com.happynurse.presentation.screens.login.LoginScreen
 import com.happynurse.presentation.screens.logentry.LogEntryScreen
 import com.happynurse.presentation.screens.main.MainScaffold
@@ -150,7 +150,7 @@ fun NavGraph(
                 ?.split(",")
                 ?.mapNotNull { it.toLongOrNull() }
                 ?: emptyList()
-            IVTimerSetupScreen(
+            IvTimerSetupScreen(
                 encounterId = encId,
                 medicationOrderIds = ids,
                 onClose = { navController.popBackStack() },
@@ -168,7 +168,7 @@ fun NavGraph(
             ),
         ) { entry ->
             val ivInfusionId = entry.arguments?.getLong("ivInfusionId") ?: -1L
-            IVTimerActiveScreen(
+            IvTimerActiveScreen(
                 ivInfusionId = ivInfusionId,
                 onClose = { navController.popBackStack() },
             )

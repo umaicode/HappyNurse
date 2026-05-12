@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.happynurse.presentation.theme.HnColors
 
 @Composable
-fun NotifBell(
+fun NotificationBell(
     unreadCount: Int,
     onClick: () -> Unit,
     bgRing: Color = HnColors.Bg,

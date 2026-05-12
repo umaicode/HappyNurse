@@ -305,24 +305,46 @@ fun IvDripAnimation(
             strokeWidth = 2.4f,
         )
 
-        // ── gtt/min 라벨: chamber 우측에 붙여서 렌더 ─────
+        // ── gtt/min 라벨: 수액 백 중앙에 항상 고정 렌더 ─────
         if (gttPerMin != null && gttPerMin > 0) {
-            val labelLeftX = chLeft + chW + w * 0.02f
-            val labelCenterY = (chTop + chBot) / 2f
+            val labelCenterX = cx
+            val labelCenterY = (bagTop + bagBottom) / 2f
 
+            val textColor = Color(0xFFECECEF).toArgb()
+            val strokeColor = Color(0xFF1F2937).copy(alpha = 0.50f).toArgb()
+            val numberStrokePaint = Paint().apply {
+                isAntiAlias = true
+                this.color = strokeColor
+                textSize = h * 0.23f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                textAlign = Paint.Align.CENTER
+                style = Paint.Style.STROKE
+                strokeWidth = 3.5f
+                strokeJoin = Paint.Join.ROUND
+            }
             val numberPaint = Paint().apply {
                 isAntiAlias = true
-                this.color = color.toArgb()
-                textSize = h * 0.105f
+                this.color = textColor
+                textSize = h * 0.23f
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                textAlign = Paint.Align.LEFT
+                textAlign = Paint.Align.CENTER
+            }
+            val unitStrokePaint = Paint().apply {
+                isAntiAlias = true
+                this.color = strokeColor
+                textSize = h * 0.085f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                textAlign = Paint.Align.CENTER
+                style = Paint.Style.STROKE
+                strokeWidth = 2.0f
+                strokeJoin = Paint.Join.ROUND
             }
             val unitPaint = Paint().apply {
                 isAntiAlias = true
-                this.color = Color(0xFF9CA3AF).toArgb()
-                textSize = h * 0.062f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-                textAlign = Paint.Align.LEFT
+                this.color = textColor
+                textSize = h * 0.085f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                textAlign = Paint.Align.CENTER
             }
 
             val numberStr = gttPerMin.toString()
@@ -331,23 +353,16 @@ fun IvDripAnimation(
             val unitFm = unitPaint.fontMetrics
             val unitH = unitFm.descent - unitFm.ascent
 
-            // 숫자/단위가 chamber 세로 중앙에 붙어 한 덩어리로 보이도록 수직 정렬
-            val totalH = numberH + unitH * 0.78f
+            val totalH = numberH + unitH * 0.8f
             val numberBaselineY = labelCenterY - totalH / 2f - numberFm.ascent
-            val unitBaselineY = numberBaselineY + numberFm.descent + unitH * 0.12f - unitFm.ascent
+            val unitBaselineY = numberBaselineY + numberFm.descent + unitH * 0.15f - unitFm.ascent
 
             drawContext.canvas.nativeCanvas.apply {
-                drawText(numberStr, labelLeftX, numberBaselineY, numberPaint)
-                drawText("gtt/min", labelLeftX, unitBaselineY, unitPaint)
+                drawText(numberStr, labelCenterX, numberBaselineY, numberStrokePaint)
+                drawText(numberStr, labelCenterX, numberBaselineY, numberPaint)
+                drawText("gtt/min", labelCenterX, unitBaselineY, unitStrokePaint)
+                drawText("gtt/min", labelCenterX, unitBaselineY, unitPaint)
             }
-
-            // chamber → 라벨 짧은 연결선
-            drawLine(
-                color = Color(0xFFCBD5E1),
-                start = Offset(chLeft + chW, labelCenterY),
-                end = Offset(labelLeftX - 2f, labelCenterY),
-                strokeWidth = 0.9f,
-            )
         }
     }
 }

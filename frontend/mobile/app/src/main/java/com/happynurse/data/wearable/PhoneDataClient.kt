@@ -1,3 +1,4 @@
+// 폰 → 워치 메시지 송신 클라이언트 — Wear OS DataLayer Wearable.MessageClient 래퍼
 package com.happynurse.data.wearable
 
 import android.content.Context

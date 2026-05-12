@@ -1,4 +1,4 @@
-// 업무 페이지 ViewModel — 수액타이머 / 워치알람 2탭 상태 관리
+// 업무 페이지 ViewModel — 수액타이머 / 워치알람 2탭 상태 + 알림 벨 데이터 관리
 package com.happynurse.presentation.screens.tasks
 
 import androidx.lifecycle.ViewModel
@@ -8,13 +8,13 @@ import com.happynurse.data.remote.model.IvInfusionListItemResponse
 import com.happynurse.data.remote.model.NotificationListItemResponse
 import com.happynurse.data.repository.AuthRepository
 import com.happynurse.data.repository.IvRepository
-import com.happynurse.data.repository.NotifDismissRepository
+import com.happynurse.data.repository.NotificationDismissRepository
 import com.happynurse.data.repository.NotificationRepository
 import com.happynurse.data.repository.PatientRepository
 import com.happynurse.data.repository.SttReminderRepository
-import com.happynurse.domain.model.IVTimer
-import com.happynurse.domain.model.Notif
-import com.happynurse.domain.model.NotifCategory
+import com.happynurse.domain.model.IvTimer
+import com.happynurse.domain.model.Notification
+import com.happynurse.domain.model.NotificationCategory
 import com.happynurse.domain.model.WatchAlarm
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -39,29 +39,29 @@ class TasksViewModel @Inject constructor(
     private val notificationRepository: NotificationRepository,
     private val patientRepository: PatientRepository,
     private val sttReminderRepository: SttReminderRepository,
-    private val notifDismissRepository: NotifDismissRepository,
+    private val notificationDismissRepository: NotificationDismissRepository,
 ) : ViewModel() {
 
-    private val _ivTimers = MutableStateFlow<List<IVTimer>>(emptyList())
-    val ivTimers: StateFlow<List<IVTimer>> = _ivTimers.asStateFlow()
+    private val _ivTimers = MutableStateFlow<List<IvTimer>>(emptyList())
+    val ivTimers: StateFlow<List<IvTimer>> = _ivTimers.asStateFlow()
 
     private val _watchAlarms = MutableStateFlow<List<WatchAlarm>>(emptyList())
     val watchAlarms: StateFlow<List<WatchAlarm>> = _watchAlarms.asStateFlow()
 
-    // 상단 알림 벨 시트(MainScaffold) 호환용 — 기존 AlarmsViewModel.notifs 와 동일 역할
-    private val _notifs = MutableStateFlow<List<Notif>>(emptyList())
-    val notifs: StateFlow<List<Notif>> = _notifs.asStateFlow()
+    // 상단 알림 벨 시트(MainScaffold) 데이터 — 병동 알림함 + 본인 워치 알람을 합친 목록
+    private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
+    val notifications: StateFlow<List<Notification>> = _notifications.asStateFlow()
 
-    fun dismissNotif(id: String) {
-        _notifs.value = _notifs.value.filterNot { it.id == id }
-        viewModelScope.launch { notifDismissRepository.dismiss(id) }
+    fun dismissNotification(id: String) {
+        _notifications.value = _notifications.value.filterNot { it.id == id }
+        viewModelScope.launch { notificationDismissRepository.dismiss(id) }
     }
 
-    fun dismissAllNotifs() {
-        val ids = _notifs.value.map { it.id }
+    fun dismissAllNotifications() {
+        val ids = _notifications.value.map { it.id }
         if (ids.isEmpty()) return
-        _notifs.value = emptyList()
-        viewModelScope.launch { notifDismissRepository.dismissAll(ids) }
+        _notifications.value = emptyList()
+        viewModelScope.launch { notificationDismissRepository.dismissAll(ids) }
     }
 
     private val _loading = MutableStateFlow(false)
@@ -75,7 +75,7 @@ class TasksViewModel @Inject constructor(
         // 백엔드에 push 채널이 phone 쪽으로 안 와있어서 폴링이 가장 단순하고 견고함.
         viewModelScope.launch {
             while (isActive) {
-                refreshBellNotifs()
+                refreshBellNotifications()
                 delay(BELL_POLL_INTERVAL_MS)
             }
         }
@@ -117,19 +117,19 @@ class TasksViewModel @Inject constructor(
     }
 
     // 벨 시트 데이터 — 병동 알림함 + 본인 워치 알람을 합쳐 본인 담당 환자만 client-side filter
-    fun refreshBellNotifs() {
+    fun refreshBellNotifications() {
         viewModelScope.launch {
             val wardId = authRepository.wardId.firstOrNull() ?: return@launch
             val wardPatients = patientRepository.getMyWardPatients().getOrNull() ?: emptyList()
             val myPatientIds = wardPatients.filter { it.isMyPatient }.map { it.patientId }.toSet()
             val locationMap = wardPatients.associate { it.patientId to (it.room to it.bed) }
-            val dismissed = notifDismissRepository.snapshot()
+            val dismissed = notificationDismissRepository.snapshot()
 
-            val serverNotifs = notificationRepository.getWard(wardId, limit = 50).fold(
+            val serverNotifications = notificationRepository.getWard(wardId, limit = 50).fold(
                 onSuccess = { res ->
                     res.items
                         .filter { it.patientId != null && it.patientId in myPatientIds }
-                        .map { it.toNotif(locationMap) }
+                        .map { it.toNotification(locationMap) }
                 },
                 onFailure = { e ->
                     _error.value = e.message ?: "알림 조회 실패"
@@ -137,21 +137,21 @@ class TasksViewModel @Inject constructor(
                 },
             )
 
-            val watchNotifs = sttReminderRepository.listMine().fold(
+            val watchNotifications = sttReminderRepository.listMine().fold(
                 onSuccess = { list ->
                     val now = System.currentTimeMillis()
                     list.map { it.toDomain() }
                         .filter { (it.fireAtEpochMillis ?: 0L) > now }
-                        .map { it.toBellNotif(now) }
+                        .map { it.toBellNotification(now) }
                 },
                 onFailure = { emptyList() },
             )
 
-            _notifs.value = (serverNotifs + watchNotifs)
+            _notifications.value = (serverNotifications + watchNotifications)
                 .filterNot { it.id in dismissed }
                 .sortedWith(
                     // 과거 알림(minutesAgo >= 0) 먼저, 그 안에서 최신순. 그 뒤 미래 알림은 가까운 순.
-                    compareBy<Notif>(
+                    compareBy<Notification>(
                         { if (it.minutesAgo >= 0) 0 else 1 },
                         { kotlin.math.abs(it.minutesAgo) },
                     ),
@@ -159,27 +159,20 @@ class TasksViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadMyPatientIds(): Set<Long> =
-        patientRepository.getMyWardPatients().getOrNull()
-            ?.filter { it.isMyPatient }
-            ?.map { it.patientId }
-            ?.toSet()
-            ?: emptySet()
-
     private companion object {
         const val BELL_POLL_INTERVAL_MS = 15_000L  // 15초마다 벨 카운트 갱신
     }
 }
 
-private fun WatchAlarm.toBellNotif(nowMillis: Long): Notif {
+private fun WatchAlarm.toBellNotification(nowMillis: Long): Notification {
     val fireAt = fireAtEpochMillis ?: nowMillis
     val minutesUntil = ((fireAt - nowMillis) / 60_000L).toInt()
     val time = Instant.ofEpochMilli(fireAt)
         .atZone(ZoneId.systemDefault())
         .format(DateTimeFormatter.ofPattern("HH:mm"))
-    return Notif(
+    return Notification(
         id = "watch-$sttReminderId",
-        category = NotifCategory.WATCH,
+        category = NotificationCategory.WATCH,
         patient = "",
         room = "",
         text = contentSummary.ifBlank { sttText.ifBlank { "(내용 없음)" } },
@@ -190,24 +183,24 @@ private fun WatchAlarm.toBellNotif(nowMillis: Long): Notif {
     )
 }
 
-private fun NotificationListItemResponse.toNotif(
+private fun NotificationListItemResponse.toNotification(
     locationMap: Map<Long, Pair<String, String>> = emptyMap(),
-): Notif {
+): Notification {
     val instant = parseInstantOrNull(createdAt) ?: Instant.now()
     val now = Instant.now()
     val minutesAgo = ((now.epochSecond - instant.epochSecond) / 60).toInt().coerceAtLeast(0)
     val zoned = instant.atZone(ZoneId.systemDefault())
     val time = zoned.format(DateTimeFormatter.ofPattern("HH:mm"))
     val cat = when (sourceType) {
-        "iv_alert" -> NotifCategory.FLUID
-        "order_change" -> NotifCategory.ORDER
-        "self_report" -> NotifCategory.REQUEST
-        "vital_alert", "timer" -> NotifCategory.WATCH
-        else -> NotifCategory.REQUEST
+        "iv_alert" -> NotificationCategory.FLUID
+        "order_change" -> NotificationCategory.ORDER
+        "self_report" -> NotificationCategory.REQUEST
+        "vital_alert", "timer" -> NotificationCategory.WATCH
+        else -> NotificationCategory.REQUEST
     }
     val (room, bed) = patientId?.let { locationMap[it] } ?: ("" to "")
     val roomLabel = listOf(room, bed).filter { it.isNotBlank() }.joinToString("-")
-    return Notif(
+    return Notification(
         id = notificationId.toString(),
         category = cat,
         patient = patientName ?: "",
@@ -222,7 +215,7 @@ private fun NotificationListItemResponse.toNotif(
 
 private fun IvInfusionListItemResponse.toIvTimerOrNull(
     locationMap: Map<Long, Pair<String, String>> = emptyMap(),
-): IVTimer? {
+): IvTimer? {
     val started = parseInstantOrNull(startedAt) ?: return null
     val expected = parseInstantOrNull(expectedEndAt) ?: return null
     val totalSec = Duration.between(started, expected).seconds.coerceAtLeast(0L)
@@ -234,7 +227,7 @@ private fun IvInfusionListItemResponse.toIvTimerOrNull(
     val startedAtStr = started.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
     val drug = if (medicationNames.isNotEmpty()) medicationNames.joinToString(" + ") else "—"
     val (room, bed) = locationMap[patientId] ?: ("" to "")
-    return IVTimer(
+    return IvTimer(
         id = ivInfusionId.toString(),
         patientId = patientId,
         patient = patientName ?: "환자 #$patientId",

@@ -42,6 +42,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.happynurse.domain.model.NfcPatientInfo
 import com.happynurse.presentation.components.HnCard
+import com.happynurse.presentation.components.NfcLifecycleEffect
 import com.happynurse.presentation.theme.HnColors
 
 @Composable
@@ -60,7 +61,10 @@ fun NfcPatientScreen(
         if (token != null) viewModel.onTokenScanned(token)
     }
 
-    NfcReaderEffect(viewModel)
+    NfcLifecycleEffect(
+        onStart = viewModel::startNfc,
+        onStop = viewModel::stopNfc,
+    )
 
     Column(Modifier.fillMaxSize().background(HnColors.Bg)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(12.dp)) {

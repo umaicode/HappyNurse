@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.happynurse.presentation.components.HnCard
-import com.happynurse.presentation.components.NotifBell
+import com.happynurse.presentation.components.NotificationBell
 import com.happynurse.presentation.components.PageHeader
 import com.happynurse.presentation.components.PatientCard
 import com.happynurse.presentation.components.PatientLayout
@@ -53,7 +53,7 @@ fun MyPageScreen(
     Column(Modifier.fillMaxWidth()) {
         PageHeader(
             title = "마이페이지",
-            right = { NotifBell(unreadCount = upcomingCount, onClick = onOpenNotifications) },
+            right = { NotificationBell(unreadCount = upcomingCount, onClick = onOpenNotifications) },
         )
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(14.dp),
