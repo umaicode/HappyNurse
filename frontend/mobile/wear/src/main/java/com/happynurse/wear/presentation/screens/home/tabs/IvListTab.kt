@@ -1,4 +1,5 @@
-// IvListTab — 홈 수액 탭. 카드 탭 시 s08 IvProgressScreen 진입(삭제 불가).
+// IvListTab — 홈 수액 탭. 카드 한 장은 환자/호실, 수액 이름, 남은 시간 3줄로 구성된다.
+// 카드 탭 시 수액 진행 상세 화면(IvProgressScreen) 으로 진입한다.
 package com.happynurse.wear.presentation.screens.home.tabs
 
 import androidx.compose.foundation.background
@@ -6,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,26 +25,32 @@ import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.happynurse.wear.data.model.IvInfusionTimer
-import com.happynurse.wear.presentation.theme.HnIvBlue
+import com.happynurse.wear.presentation.theme.remainingTimeColor
 
 @Composable
 fun IvListTab(
     items: List<IvInfusionTimer>,
     onCardClick: (IvInfusionTimer) -> Unit,
+    isLoading: Boolean = false,
+    errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    if (items.isEmpty()) {
-        EmptyMessage(text = "진행 중인 수액이 없어요", modifier = modifier)
-        return
-    }
-    val listState = rememberScalingLazyListState()
-    ScalingLazyColumn(
-        state = listState,
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        items(items, key = { it.ivInfusionId }) { iv ->
-            IvCardContent(iv = iv, onClick = { onCardClick(iv) })
+    when {
+        isLoading && items.isEmpty() -> StatusMessage("불러오는 중…", modifier)
+        errorMessage != null && items.isEmpty() -> StatusMessage(errorMessage, modifier)
+        items.isEmpty() -> StatusMessage("진행 중인 수액이 없어요", modifier)
+        else -> {
+            val listState = rememberScalingLazyListState()
+            ScalingLazyColumn(
+                state = listState,
+                modifier = modifier.fillMaxSize(),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 40.dp, start = 8.dp, end = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                items(items, key = { it.ivInfusionId }) { iv ->
+                    IvCardContent(iv = iv, onClick = { onCardClick(iv) })
+                }
+            }
         }
     }
 }
@@ -58,35 +66,47 @@ private fun IvCardContent(iv: IvInfusionTimer, onClick: () -> Unit) {
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = androidx.compose.ui.Alignment.Top) {
             Text(
-                text = iv.patientName,
+                text = buildString {
+                    append(iv.patientName.ifBlank { "환자" })
+                    if (iv.patientRoomBed.isNotBlank() && iv.patientRoomBed != "-") {
+                        append("  ")
+                        append(iv.patientRoomBed)
+                    }
+                },
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                modifier = Modifier.weight(1f),
             )
             Text(
-                text = "  ·  ${iv.medicationName}",
-                style = MaterialTheme.typography.bodySmall,
+                text = iv.endAtDisplay,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
             )
         }
         Text(
-            text = iv.remainingTimeText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (iv.isUrgent) MaterialTheme.colorScheme.error else HnIvBlue,
-            fontWeight = FontWeight.Medium,
+            text = iv.medicationLabel,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
         )
         Text(
-            text = iv.patientRoomBed,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = iv.remainingTimeText,
+            style = MaterialTheme.typography.bodyMedium,
+            color = remainingTimeColor(iv.remainingSec),
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
         )
     }
 }
 
 @Composable
-internal fun EmptyMessage(text: String, modifier: Modifier = Modifier) {
+internal fun StatusMessage(text: String, modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(
             text = text,

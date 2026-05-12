@@ -13,6 +13,10 @@ export type SourceType =
   | "order_change"
   | "vital_alert";
 
+// BE SymptomPriority (자가보고 분류 LLM 결과). self_report 알림에만 채워지고
+// iv_alert/order_change 등은 항상 null. 5월 초 BE 자가보고 중요도 분류 통합 시 추가.
+export type SymptomPriority = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+
 export interface NotificationListItem {
   notificationId: number;
   // backend 가 enum.name() 으로 직렬화 — string 으로 받되 SourceType 으로 좁혀 사용.
@@ -25,6 +29,8 @@ export interface NotificationListItem {
   // ISO datetime
   createdAt: string;
   recipientPractitionerId: number;
+  // SymptomPriority — self_report 만 채워짐. 다른 sourceType 은 null.
+  priority: SymptomPriority | null;
 }
 
 export interface NotificationListResponse {
@@ -72,4 +78,33 @@ export const SOURCE_TYPE_ICON_BG: Record<SourceType, string> = {
   timer: "bg-surface-hover text-status-neutral",
   order_change: "bg-brand-surface text-brand-primary",
   vital_alert: "bg-status-danger-surface text-status-danger-strong",
+};
+
+// self_report 알림 priority 한글 라벨.
+export const PRIORITY_LABEL: Record<SymptomPriority, string> = {
+  CRITICAL: "긴급",
+  HIGH: "높음",
+  MEDIUM: "보통",
+  LOW: "낮음",
+};
+
+// priority 별 칩 톤 (라벨용 텍스트 + 배경). self_report 카드에 보조 칩으로 노출.
+export const PRIORITY_CHIP: Record<SymptomPriority, string> = {
+  CRITICAL: "bg-status-danger-surface text-status-danger-strong",
+  HIGH: "bg-status-danger-surface text-status-danger",
+  MEDIUM: "bg-status-warning-surface text-status-warning",
+  LOW: "bg-surface-hover text-status-neutral",
+};
+
+// priority 가 채워진 self_report 카드는 SOURCE_TYPE_BORDER 대신 이걸로 override.
+// CRITICAL/HIGH 는 danger 강조, MEDIUM 은 warning, LOW 는 neutral.
+export const PRIORITY_BORDER: Record<SymptomPriority, string> = {
+  CRITICAL:
+    "border-l-4 border-l-status-danger-strong border-status-danger-strong/30 bg-status-danger-surface/40",
+  HIGH:
+    "border-l-4 border-l-status-danger border-status-danger/20 bg-status-danger-surface/30",
+  MEDIUM:
+    "border-l-4 border-l-status-warning border-status-warning/20 bg-status-warning-surface/30",
+  LOW:
+    "border-l-4 border-l-status-neutral border-status-neutral/20",
 };

@@ -42,6 +42,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.happynurse.domain.model.NfcPatientInfo
 import com.happynurse.presentation.components.HnCard
+import com.happynurse.presentation.components.NfcLifecycleEffect
 import com.happynurse.presentation.theme.HnColors
 
 @Composable
@@ -60,7 +61,10 @@ fun NfcPatientScreen(
         if (token != null) viewModel.onTokenScanned(token)
     }
 
-    NfcReaderEffect(viewModel)
+    NfcLifecycleEffect(
+        onStart = viewModel::startNfc,
+        onStop = viewModel::stopNfc,
+    )
 
     Column(Modifier.fillMaxSize().background(HnColors.Bg)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(12.dp)) {
@@ -129,36 +133,48 @@ private fun SuccessSection(
     onIv: () -> Unit,
 ) {
     HnCard(padding = 20.dp) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(56.dp).clip(CircleShape).background(HnColors.TagPillBg),
-            ) {
-                Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = HnColors.Success, modifier = Modifier.size(32.dp))
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // "인식 완료" 배지 + 라벨은 가운데 정렬 유지
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(56.dp).clip(CircleShape).background(HnColors.TagPillBg),
+                ) {
+                    Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = HnColors.Success, modifier = Modifier.size(32.dp))
+                }
+                Spacer(Modifier.height(14.dp))
+                Text("인식 완료", fontSize = 13.sp, color = HnColors.Success, fontWeight = FontWeight.SemiBold)
             }
-            Spacer(Modifier.height(14.dp))
-            Text("인식 완료", fontSize = 13.sp, color = HnColors.Success, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
-            Text(info.patientName, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-            info.roomName?.let {
-                Spacer(Modifier.height(2.dp))
-                Text(it, fontSize = 12.sp, color = HnColors.TextSecondary)
-            }
-            info.diseaseName?.let {
-                Spacer(Modifier.height(6.dp))
-                Text("병명: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
-            }
-            info.chiefComplaint?.let {
-                Spacer(Modifier.height(2.dp))
-                Text("주증상: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
-            }
-            info.surgeryName?.let {
-                Spacer(Modifier.height(2.dp))
-                Text("수술: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
-            }
-            info.attendingPhysicianName?.let {
-                Spacer(Modifier.height(2.dp))
-                Text("담당의: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
+            // 환자 정보 영역만 좌측 정렬
+            Column(horizontalAlignment = Alignment.Start, modifier = Modifier.fillMaxWidth()) {
+                Text(info.patientName, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                // 호실 + 침대 (Mappers.kt 의 room/bed 패턴과 동일)
+                val location = listOfNotNull(info.roomName, info.bedName).joinToString(" - ")
+                if (location.isNotBlank()) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(location, fontSize = 12.sp, color = HnColors.TextSecondary)
+                }
+                info.birthDate?.let {
+                    Spacer(Modifier.height(2.dp))
+                    Text("생년월일: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
+                }
+                info.diseaseName?.let {
+                    Spacer(Modifier.height(6.dp))
+                    Text("병명: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
+                }
+                info.chiefComplaint?.let {
+                    Spacer(Modifier.height(2.dp))
+                    Text("주증상: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
+                }
+                info.surgeryName?.let {
+                    Spacer(Modifier.height(2.dp))
+                    Text("수술: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
+                }
+                info.attendingPhysicianName?.let {
+                    Spacer(Modifier.height(2.dp))
+                    Text("담당의: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
+                }
             }
         }
     }

@@ -9,7 +9,7 @@ data class StartIvRequest(
     @SerializedName("medicationOrderIds") val medicationOrderIds: List<Long>,
     @SerializedName("totalVolumeMl") val totalVolumeMl: Double,
     @SerializedName("rateGttPerMin") val rateGttPerMin: Int,
-    @SerializedName("patientType") val patientType: String, // "ADULT" | "PEDIATRIC"
+    @SerializedName("patientType") val patientType: String, // "SET_10" | "SET_15" | "SET_20" | "SET_60"
     @SerializedName("note") val note: String? = null,
 )
 
@@ -43,7 +43,7 @@ data class MedicationItem(
 // --- /iv/by-tag/{tagUid}/rate ---
 data class ChangeRateRequest(
     @SerializedName("rateGttPerMin") val rateGttPerMin: Int,
-    @SerializedName("patientType") val patientType: String, // "ADULT" | "PEDIATRIC"
+    @SerializedName("patientType") val patientType: String, // "SET_10" | "SET_15" | "SET_20" | "SET_60"
 )
 
 // --- GET /iv?wardId=&status= 응답 (slim 목록) ---
@@ -53,6 +53,8 @@ data class IvInfusionListItemResponse(
     @SerializedName("patientName") val patientName: String?,
     @SerializedName("medicationNames") val medicationNames: List<String> = emptyList(),
     @SerializedName("currentRateMlPerHr") val currentRateMlPerHr: Double?,
+    @SerializedName("rateGttPerMin") val rateGttPerMin: Int?,
+    @SerializedName("patientType") val patientType: String?, // "ADULT" | "PEDIATRIC"
     @SerializedName("status") val status: String, // IN_PROGRESS|PAUSED|COMPLETED|CANCELLED|EXPIRED
     @SerializedName("startedAt") val startedAt: String?,
     @SerializedName("expectedEndAt") val expectedEndAt: String?,

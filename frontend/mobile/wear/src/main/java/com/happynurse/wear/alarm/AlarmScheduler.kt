@@ -27,19 +27,32 @@ class AlarmScheduler(private val context: Context) {
     }
 
     fun scheduleSttAlarm(triggerAtMillis: Long, sttId: String, patient: String, content: String, roomBedTime: String) {
-        val intent = Intent(context, SttAlarmActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            putExtra(SttAlarmActivity.EXTRA_PATIENT, patient)
-            putExtra(SttAlarmActivity.EXTRA_CONTENT, content)
-            putExtra(SttAlarmActivity.EXTRA_ROOM_BED_TIME, roomBedTime)
-        }
-        val pi = PendingIntent.getActivity(
-            context, sttId.hashCode(), intent,
+        // 채널 미리 등록 — 화면 켜져있을 때도 풀스크린이 뜨려면 IMPORTANCE_HIGH 가 필요
+        SttAlarmReceiver.ensureChannel(context)
+        val pi = PendingIntent.getBroadcast(
+            context, sttId.hashCode(), sttBroadcastIntent(sttId, patient, content, roomBedTime),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val am = ContextCompat.getSystemService(context, AlarmManager::class.java) ?: return
         am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
     }
+
+    fun cancelSttAlarm(sttId: String) {
+        val pi = PendingIntent.getBroadcast(
+            context, sttId.hashCode(), sttBroadcastIntent(sttId, "", "", ""),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val am = ContextCompat.getSystemService(context, AlarmManager::class.java) ?: return
+        am.cancel(pi)
+    }
+
+    private fun sttBroadcastIntent(sttId: String, patient: String, content: String, roomBedTime: String) =
+        Intent(context, SttAlarmReceiver::class.java).apply {
+            putExtra(SttAlarmReceiver.EXTRA_STT_ID, sttId)
+            putExtra(SttAlarmReceiver.EXTRA_PATIENT, patient)
+            putExtra(SttAlarmReceiver.EXTRA_CONTENT, content)
+            putExtra(SttAlarmReceiver.EXTRA_ROOM_BED_TIME, roomBedTime)
+        }
 
     /** 5분 전 사전 알림 BroadcastReceiver 의 트리거 등록은 SystemNotifBuilder 와 함께 추후 연결. */
     fun cancel(requestCode: Int) {

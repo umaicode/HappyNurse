@@ -32,7 +32,6 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -44,7 +43,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,23 +52,22 @@ import com.happynurse.data.remote.model.IvInfusionResponse
 import com.happynurse.presentation.components.HnButton
 import com.happynurse.presentation.components.HnButtonVariant
 import com.happynurse.presentation.components.HnCard
-import com.happynurse.presentation.screens.nfc.findActivity
+import com.happynurse.presentation.components.NfcLifecycleEffect
 import com.happynurse.presentation.theme.HnColors
 import kotlinx.coroutines.delay
 
 @Composable
-fun IVTimerActiveScreen(
+fun IvTimerActiveScreen(
     ivInfusionId: Long,
     onClose: () -> Unit,
     viewModel: IvTimerActiveViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(ivInfusionId) { viewModel.init(ivInfusionId) }
 
-    val activity = LocalContext.current.findActivity()
-    DisposableEffect(activity) {
-        if (activity != null) viewModel.startNfc(activity)
-        onDispose { if (activity != null) viewModel.stopNfc(activity) }
-    }
+    NfcLifecycleEffect(
+        onStart = viewModel::startNfc,
+        onStop = viewModel::stopNfc,
+    )
 
     val state by viewModel.state.collectAsStateWithLifecycle()
     val actionState by viewModel.actionState.collectAsStateWithLifecycle()
@@ -256,7 +253,7 @@ private fun LoadedBody(
                 Spacer(Modifier.height(6.dp))
                 Text(
                     formatRemaining(remainingSec, isCompleted),
-                    fontSize = 40.sp, fontWeight = FontWeight.Bold, color = Color.White,
+                    fontSize = 42.sp, fontWeight = FontWeight.Black, color = Color.White,
                 )
                 Spacer(Modifier.height(10.dp))
                 Row(modifier = Modifier.fillMaxWidth()) {
@@ -365,6 +362,7 @@ private fun LoadedBody(
             enabled = canAct,
             onClick = onRequestRateChange,
         )
+        Spacer(Modifier.height(8.dp))
         HnButton(
             text = if (isCompleted) "닫기" else "수액 종료",
             full = true,
@@ -384,13 +382,13 @@ private fun RateChangeDialog(
     onConfirm: (Int, PatientType) -> Unit,
 ) {
     var rate by remember { mutableIntStateOf(initialRate.coerceIn(1, 100)) }
-    var patientType by remember { mutableStateOf(PatientType.ADULT) }
+    var patientType by remember { mutableStateOf(PatientType.SET_20) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("주입 속도 변경", fontWeight = FontWeight.Bold) },
         text = {
             Column {
-                Text("환자 타입", fontSize = 12.sp, color = HnColors.TextSecondary)
+                Text("수액 세트", fontSize = 12.sp, color = HnColors.TextSecondary)
                 Spacer(Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     PatientType.entries.forEach { p ->
@@ -408,7 +406,7 @@ private fun RateChangeDialog(
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                         ) {
                             Text(
-                                "${p.label} (${p.gttPerMl}gtt/mL)",
+                                p.gttPerMl.toString(),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = if (patientType == p) HnColors.Primary else HnColors.TextSecondary,

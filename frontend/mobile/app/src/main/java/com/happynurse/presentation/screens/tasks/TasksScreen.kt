@@ -1,4 +1,4 @@
-// 업무 페이지 — 수액타이머 / 의사오더변경 / 워치알람 3탭
+// 업무 페이지 — 수액타이머 / 워치알람 2탭
 package com.happynurse.presentation.screens.tasks
 
 import androidx.compose.foundation.background
@@ -33,24 +33,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.happynurse.presentation.components.IVTimerCard
-import com.happynurse.presentation.components.IVTimerLayout
-import com.happynurse.presentation.components.NotifBell
+import com.happynurse.presentation.components.EmptyState
+import com.happynurse.presentation.components.IvTimerCard
+import com.happynurse.presentation.components.IvTimerLayout
+import com.happynurse.presentation.components.NotificationBell
 import com.happynurse.presentation.components.PageHeader
-import com.happynurse.presentation.screens.tasks.components.DoctorOrderChangeCard
 import com.happynurse.presentation.screens.tasks.components.WatchAlarmCard
 import com.happynurse.presentation.theme.HnColors
 
 private const val TAB_IV = "iv"
-private const val TAB_ORDER = "order"
 private const val TAB_WATCH = "watch"
 
 @Composable
 fun TasksScreen(
     onOpenNotifications: () -> Unit,
     upcomingCount: Int,
-    onOpenPatient: (String) -> Unit,
-    ivLayout: IVTimerLayout = IVTimerLayout.BAR,
+    ivLayout: IvTimerLayout = IvTimerLayout.BAR,
     viewModel: TasksViewModel = hiltViewModel(),
 ) {
     var tab by remember { mutableStateOf(TAB_IV) }
@@ -59,19 +57,19 @@ fun TasksScreen(
         viewModel.refreshWatchAlarms()
     }
     val ivTimers by viewModel.ivTimers.collectAsStateWithLifecycle()
-    val orderChanges by viewModel.orderChanges.collectAsStateWithLifecycle()
     val watchAlarms by viewModel.watchAlarms.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxWidth()) {
-        PageHeader(title = "업무", right = { NotifBell(unreadCount = upcomingCount, onClick = onOpenNotifications) })
+        PageHeader(title = "업무", right = { NotificationBell(unreadCount = upcomingCount, onClick = onOpenNotifications) })
         TasksTabBar(tab) { tab = it }
         when (tab) {
             TAB_IV -> {
                 val timers = ivTimers.sortedBy { it.endsAt.replace(":", "").toIntOrNull() ?: 0 }
                 if (timers.isEmpty()) {
                     EmptyState(
+                        icon = Icons.Outlined.Inbox,
                         title = "진행 중인 수액이 없습니다",
-                        sub = "담당 환자에게 시작된 수액이 표시됩니다",
+                        subtitle = "담당 환자에게 시작된 수액이 표시됩니다",
                     )
                 } else {
                     LazyColumn(
@@ -80,37 +78,16 @@ fun TasksScreen(
                             start = 20.dp, end = 20.dp, top = 14.dp, bottom = 24.dp,
                         ),
                     ) {
-                        items(timers, key = { it.id }) { IVTimerCard(it, layout = ivLayout) }
-                    }
-                }
-            }
-            TAB_ORDER -> {
-                if (orderChanges.isEmpty()) {
-                    EmptyState(
-                        title = "변경된 오더가 없습니다",
-                        sub = "준비중인 기능입니다",
-                    )
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            start = 20.dp, end = 20.dp, top = 14.dp, bottom = 24.dp,
-                        ),
-                    ) {
-                        items(orderChanges, key = { it.medicationOrderId }) { change ->
-                            DoctorOrderChangeCard(
-                                change = change,
-                                onClick = { onOpenPatient(change.patientId.toString()) },
-                            )
-                        }
+                        items(timers, key = { it.id }) { IvTimerCard(it, layout = ivLayout) }
                     }
                 }
             }
             TAB_WATCH -> {
                 if (watchAlarms.isEmpty()) {
                     EmptyState(
+                        icon = Icons.Outlined.Inbox,
                         title = "예정된 워치 알람이 없습니다",
-                        sub = "워치에서 음성으로 등록한 알람이 표시됩니다",
+                        subtitle = "워치에서 음성으로 등록한 알람이 표시됩니다",
                     )
                 } else {
                     LazyColumn(
@@ -131,7 +108,6 @@ fun TasksScreen(
 private fun TasksTabBar(active: String, onChange: (String) -> Unit) {
     val tabs = listOf(
         TAB_IV to "수액타이머",
-        TAB_ORDER to "오더변경",
         TAB_WATCH to "워치알람",
     )
     Column(Modifier.fillMaxWidth()) {
@@ -166,23 +142,3 @@ private fun TasksTabBar(active: String, onChange: (String) -> Unit) {
     }
 }
 
-@Composable
-private fun EmptyState(title: String, sub: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 80.dp, start = 24.dp, end = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(
-            Icons.Outlined.Inbox,
-            contentDescription = null,
-            tint = HnColors.TextTertiary,
-            modifier = Modifier.size(56.dp),
-        )
-        Spacer(Modifier.height(12.dp))
-        Text(title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary)
-        Spacer(Modifier.height(4.dp))
-        Text(sub, fontSize = 12.sp, color = HnColors.TextTertiary)
-    }
-}

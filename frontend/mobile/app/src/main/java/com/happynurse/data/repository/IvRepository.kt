@@ -1,6 +1,7 @@
 // 수액 IV Repository — PR 3 start, PR 4 by-tag (resolve / complete / changeRate). 캐시는 setup→active 전환용.
 package com.happynurse.data.repository
 
+import com.happynurse.data.remote.apiCall
 import com.happynurse.data.remote.api.IvApi
 import com.happynurse.data.remote.model.ChangeRateRequest
 import com.happynurse.data.remote.model.IvInfusionListItemResponse
@@ -24,58 +25,44 @@ class IvRepository @Inject constructor(
         rateGttPerMin: Int,
         patientType: String,
         note: String? = null,
-    ): Result<IvInfusionResponse> = runCatching {
-        val res = api.start(
-            StartIvRequest(
-                encounterId = encounterId,
-                medicationOrderIds = medicationOrderIds,
-                totalVolumeMl = totalVolumeMl,
-                rateGttPerMin = rateGttPerMin,
-                patientType = patientType,
-                note = note,
-            ),
-        )
-        val body = res.body()
-        if (res.isSuccessful && body?.success == true && body.data != null) body.data.also { lastInfusion = it }
-        else throw Exception(body?.message ?: "수액 시작 실패")
-    }
+    ): Result<IvInfusionResponse> =
+        apiCall("수액 시작 실패") {
+            api.start(
+                StartIvRequest(
+                    encounterId = encounterId,
+                    medicationOrderIds = medicationOrderIds,
+                    totalVolumeMl = totalVolumeMl,
+                    rateGttPerMin = rateGttPerMin,
+                    patientType = patientType,
+                    note = note,
+                ),
+            )
+        }.onSuccess { lastInfusion = it }
 
-    suspend fun resolveByTag(tagUid: String): Result<IvInfusionResponse> = runCatching {
-        val res = api.getByTag(tagUid)
-        val body = res.body()
-        if (res.isSuccessful && body?.success == true && body.data != null) body.data.also { lastInfusion = it }
-        else throw Exception(body?.message ?: "수액 조회 실패")
-    }
+    suspend fun resolveByTag(tagUid: String): Result<IvInfusionResponse> =
+        apiCall("수액 조회 실패") { api.getByTag(tagUid) }
+            .onSuccess { lastInfusion = it }
 
-    suspend fun complete(tagUid: String): Result<IvInfusionResponse> = runCatching {
-        val res = api.completeByTag(tagUid)
-        val body = res.body()
-        if (res.isSuccessful && body?.success == true && body.data != null) body.data.also { lastInfusion = it }
-        else throw Exception(body?.message ?: "수액 종료 실패")
-    }
+    suspend fun complete(tagUid: String): Result<IvInfusionResponse> =
+        apiCall("수액 종료 실패") { api.completeByTag(tagUid) }
+            .onSuccess { lastInfusion = it }
 
     suspend fun changeRate(
         tagUid: String,
         rateGttPerMin: Int,
         patientType: String,
-    ): Result<IvInfusionResponse> = runCatching {
-        val res = api.changeRateByTag(tagUid, ChangeRateRequest(rateGttPerMin, patientType))
-        val body = res.body()
-        if (res.isSuccessful && body?.success == true && body.data != null) body.data.also { lastInfusion = it }
-        else throw Exception(body?.message ?: "속도 변경 실패")
-    }
+    ): Result<IvInfusionResponse> =
+        apiCall("속도 변경 실패") {
+            api.changeRateByTag(tagUid, ChangeRateRequest(rateGttPerMin, patientType))
+        }.onSuccess { lastInfusion = it }
 
     fun cachedById(ivInfusionId: Long): IvInfusionResponse? =
         lastInfusion?.takeIf { it.ivInfusionId == ivInfusionId }
 
-    // 병동 IV 보드 — AlarmsScreen 의 수액타이머 탭에서 30초 polling 또는 진입 시 한 번 로드
+    // 병동 IV 보드 — 업무 페이지 수액타이머 탭에서 진입 시 한 번 로드
     suspend fun getByWard(
         wardId: Long,
         status: String? = null,
-    ): Result<List<IvInfusionListItemResponse>> = runCatching {
-        val res = api.getByWard(wardId, status)
-        val body = res.body()
-        if (res.isSuccessful && body?.success == true && body.data != null) body.data
-        else throw Exception(body?.message ?: "수액 보드 조회 실패")
-    }
+    ): Result<List<IvInfusionListItemResponse>> =
+        apiCall("수액 보드 조회 실패") { api.getByWard(wardId, status) }
 }

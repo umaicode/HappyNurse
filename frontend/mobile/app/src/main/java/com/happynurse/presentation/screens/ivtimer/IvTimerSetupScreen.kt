@@ -57,7 +57,7 @@ import com.happynurse.presentation.theme.HnColors
 import kotlinx.coroutines.delay
 
 @Composable
-fun IVTimerSetupScreen(
+fun IvTimerSetupScreen(
     encounterId: Long,
     medicationOrderIds: List<Long>,
     onClose: () -> Unit,
@@ -66,7 +66,7 @@ fun IVTimerSetupScreen(
 ) {
     var volume by remember { mutableIntStateOf(1000) }
     var rate by remember { mutableIntStateOf(20) }
-    var patientType by remember { mutableStateOf(PatientType.ADULT) }
+    var patientType by remember { mutableStateOf(PatientType.SET_20) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val patientName by viewModel.patientName.collectAsStateWithLifecycle()
     val orders by viewModel.orders.collectAsStateWithLifecycle()
@@ -157,13 +157,17 @@ fun IVTimerSetupScreen(
 
             HnCard {
                 Column {
-                    LabelRow("환자 타입", "(점적 계수)")
+                    LabelRow("수액 세트", "(점적 계수)")
                     Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
                         PatientType.entries.forEach { p ->
                             PresetChip(
-                                label = "${p.label} (${p.gttPerMl}gtt/mL)",
+                                label = p.gttPerMl.toString(),
                                 active = patientType == p,
+                                modifier = Modifier.weight(1f),
                                 onClick = { patientType = p },
                             )
                         }
@@ -199,9 +203,17 @@ fun IVTimerSetupScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
                         listOf(100, 500, 1000, 2000).forEach { v ->
-                            PresetChip(v.toString(), volume == v) { volume = v }
+                            PresetChip(
+                                label = v.toString(),
+                                active = volume == v,
+                                modifier = Modifier.weight(1f),
+                                onClick = { volume = v },
+                            )
                         }
                     }
                     if (volumeExceeded && maxVolumeMl != null) {
@@ -281,7 +293,7 @@ fun IVTimerSetupScreen(
                         Row {
                             Stat("총 용량", "${volume} mL", Modifier.weight(1f))
                             Stat("속도", "%.1f mL/hr".format(mlPerHr), Modifier.weight(1f))
-                            Stat("타입", patientType.label, Modifier.weight(1f))
+                            Stat("세트", "${patientType.gttPerMl}gtt/mL", Modifier.weight(1f))
                         }
                     }
                 }
@@ -336,10 +348,10 @@ private fun LabelRow(title: String, suffix: String) {
 }
 
 @Composable
-private fun PresetChip(label: String, active: Boolean, onClick: () -> Unit) {
+private fun PresetChip(label: String, active: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .background(if (active) HnColors.PrimarySoft else HnColors.Surface)
             .border(1.dp, if (active) HnColors.Primary else HnColors.Border, RoundedCornerShape(8.dp))

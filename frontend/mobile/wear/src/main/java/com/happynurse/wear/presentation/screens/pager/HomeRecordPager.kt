@@ -1,4 +1,5 @@
 // HomeRecordPager — home(0) ↔ record(1) 두 페이지를 좌우 스와이프로 전환하는 HorizontalPager 호스트.
+// autoStartRecord=true 면 record 페이지(1)로 초기 진입하고 RecordScreen 에 자동 시작 신호 전달.
 package com.happynurse.wear.presentation.screens.pager
 
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,14 +11,19 @@ import com.happynurse.wear.data.model.IvInfusionTimer
 import com.happynurse.wear.data.model.SttTimer
 import com.happynurse.wear.presentation.screens.home.HomeScreen
 import com.happynurse.wear.presentation.screens.record.RecordScreen
+import com.happynurse.wear.presentation.screens.record.RecordViewModel
 
 @Composable
 fun HomeRecordPager(
+    recordViewModel: RecordViewModel,
     onIvClick: (IvInfusionTimer) -> Unit,
     onSttClick: (SttTimer) -> Unit,
-    onRecordingComplete: () -> Unit,
+    onShowResult: () -> Unit,
+    autoStartRecord: Boolean = false,
+    onAutoStartConsumed: () -> Unit = {},
 ) {
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
+    val initialPage = if (autoStartRecord) 1 else 0
+    val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { 2 })
     HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize(),
@@ -29,8 +35,11 @@ fun HomeRecordPager(
                 pagerCurrentPage = pagerState.currentPage,
             )
             1 -> RecordScreen(
-                onRecordingComplete = onRecordingComplete,
+                viewModel = recordViewModel,
+                onShowResult = onShowResult,
                 pagerCurrentPage = pagerState.currentPage,
+                autoStart = autoStartRecord,
+                onAutoStartConsumed = onAutoStartConsumed,
             )
         }
     }

@@ -5,7 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.happynurse.presentation.theme.HnColors
 
 @Composable
-fun NotifBell(
+fun NotificationBell(
     unreadCount: Int,
     onClick: () -> Unit,
     bgRing: Color = HnColors.Bg,
@@ -34,24 +34,30 @@ fun NotifBell(
             .size(44.dp)
             .clickable(onClick = onClick),
     ) {
-        Icon(Icons.Outlined.Notifications, contentDescription = "알림", tint = HnColors.Text, modifier = Modifier.size(24.dp))
+        Icon(
+            Icons.Outlined.Notifications,
+            contentDescription = "알림",
+            tint = HnColors.Text,
+            modifier = Modifier.size(28.dp),
+        )
         if (unreadCount > 0) {
+            val display = if (unreadCount > 9) "9+" else unreadCount.toString()
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 2.dp, end = 2.dp)
-                    .size(18.dp)
+                    .offset(x = (-2).dp, y = 2.dp)
+                    .size(22.dp)
                     .clip(CircleShape)
                     .background(HnColors.Danger)
-                    .border(1.5.dp, bgRing, CircleShape)
-                    .padding(horizontal = 3.dp),
             ) {
                 Text(
-                    text = unreadCount.toString(),
+                    text = display,
                     color = Color.White,
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false,
                 )
             }
         }
