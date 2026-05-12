@@ -7,7 +7,6 @@ import { PanelCard } from "./PanelCard";
 import { useMyNotifications } from "../hooks/useNotifications";
 import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
 import {
-  PRIORITY_BORDER,
   PRIORITY_CHIP,
   PRIORITY_LABEL,
   SOURCE_TYPE_LABEL,
@@ -83,13 +82,12 @@ function NotificationCard({
   const sourceType = alert.sourceType as SourceType;
   const label = SOURCE_TYPE_LABEL[sourceType] ?? alert.sourceType;
   const tone = SOURCE_TYPE_TONE[sourceType] ?? "text-content-tertiary";
-  // self_report 알림에만 priority 가 채워짐 — CRITICAL/HIGH 면 카드 좌측 강조 보더로 시선 끌기.
+  // self_report 알림 priority — 카드 보더 강조는 제거됨 (사이드바 카드 보더 전체 제거 정책), 라벨 옆 칩으로만 표시.
   const priority: SymptomPriority | null =
     sourceType === "self_report" ? alert.priority : null;
-  const accentBorderClass = priority ? PRIORITY_BORDER[priority] : undefined;
 
   return (
-    <PanelCard accentBorderClass={accentBorderClass}>
+    <PanelCard>
       {/* 1행: 라벨 + (선택) priority 칩 (좌) / 상대시간 (우) — 색은 라벨 글자색에만 */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
