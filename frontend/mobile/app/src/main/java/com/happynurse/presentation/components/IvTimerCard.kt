@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -64,7 +65,7 @@ private fun BarCard(iv: IvTimer, pct: Float, color: Color) {
                 modifier = Modifier.size(width = 90.dp, height = 120.dp),
             )
             // 우측: 환자 + 약물 + 진행 바 + 남은시간
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f).offset(x = (-14).dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(iv.patient, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
                     Spacer(Modifier.size(6.dp))
@@ -83,7 +84,7 @@ private fun BarCard(iv: IvTimer, pct: Float, color: Color) {
                     Text(
                         line,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         color = HnColors.Text,
                     )
                     if (idx < drugLines.lastIndex) Spacer(Modifier.height(2.dp))

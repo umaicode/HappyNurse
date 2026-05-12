@@ -74,7 +74,7 @@ private fun CardRow(p: Patient, onClick: () -> Unit, myNurseName: String) {
                     p.surgery.ifBlank { "-" },
                     fontSize = 16.sp,
                     color = HnColors.TextSecondary,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(top = 8.dp),
                 )
                 Row(modifier = Modifier.padding(top = 5.dp)) {

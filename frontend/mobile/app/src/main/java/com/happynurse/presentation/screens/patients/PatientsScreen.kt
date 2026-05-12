@@ -172,11 +172,11 @@ private fun TabRow(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                            label, fontSize = 18.sp, fontWeight = FontWeight.SemiBold,
                             color = if (on) HnColors.Primary else HnColors.TextSecondary,
                         )
                         if (id == "mine") {
-                            Spacer(Modifier.size(4.dp))
+                            Spacer(Modifier.size(10.dp))
                             Icon(
                                 Icons.Outlined.Settings,
                                 contentDescription = "담당환자 선택",

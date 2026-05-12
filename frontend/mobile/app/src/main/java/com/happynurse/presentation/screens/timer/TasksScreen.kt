@@ -1,5 +1,5 @@
-// 업무 페이지 — 수액타이머 / 워치알람 2탭
-package com.happynurse.presentation.screens.tasks
+// 타이머 페이지 — 수액타이머 / 워치알람 2탭
+package com.happynurse.presentation.screens.timer
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
@@ -15,17 +15,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Inbox
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,7 +45,6 @@ import com.happynurse.presentation.components.IvTimerCard
 import com.happynurse.presentation.components.IvTimerLayout
 import com.happynurse.presentation.components.NotificationBell
 import com.happynurse.presentation.components.PageHeader
-import com.happynurse.presentation.screens.tasks.components.WatchAlarmCard
 import com.happynurse.presentation.theme.HnColors
 
 private const val TAB_IV = "iv"
@@ -94,8 +90,8 @@ fun TasksScreen(
         )
     }
 
-    Column(Modifier.fillMaxWidth().then(swipeModifier)) {
-        PageHeader(title = "업무", right = { NotificationBell(unreadCount = upcomingCount, onClick = onOpenNotifications) })
+    Column(Modifier.fillMaxSize()) {
+        PageHeader(title = "타이머", right = { NotificationBell(unreadCount = upcomingCount, onClick = onOpenNotifications) })
         TasksTabBar(tab) { newTab ->
             val curIdx = TAB_ORDER.indexOf(tab)
             val newIdx = TAB_ORDER.indexOf(newTab)
@@ -113,7 +109,7 @@ fun TasksScreen(
                             fadeOut(tween(220)),
                     )
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxSize().then(swipeModifier),
             label = "tasks-tab-swipe",
         ) { currentTab ->
             when (currentTab) {
@@ -179,7 +175,7 @@ private fun TasksTabBar(active: String, onChange: (String) -> Unit) {
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                         Text(
                             label,
-                            fontSize = 14.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = if (on) HnColors.Primary else HnColors.TextSecondary,
                         )

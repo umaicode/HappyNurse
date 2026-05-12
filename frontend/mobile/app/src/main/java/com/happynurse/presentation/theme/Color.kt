@@ -30,7 +30,7 @@ object HnColors {
     // Status
     val Success       = Color(0xFF519470)
     val Warning       = Color(0xFFF59E0B)
-    val Danger        = Color(0xFFC24848)
+    val Danger        = Color(0xFFE76565)
     val Info          = Color(0xFF3B82F6)
     val Purple        = Color(0xFF8B5CF6)
     val Cyan          = Color(0xFF06B6D4)
@@ -44,10 +44,10 @@ object HnColors {
     val TagPillBg    = Color(0xFFF5FAF7); val TagPillFg    = Color(0xFF2E7D32) // 알약 — 그린
 
     // 알림 시트 전용 — 진한 톤 카테고리 태그
-    val TagFluidStrongBg   = Color(0xFFDBE3FF); val TagFluidStrongFg   = Color(0xFF1428A0) // 수액 — Primary 블루
-    val TagOrderStrongBg   = Color(0xFFEDE4FF); val TagOrderStrongFg   = Color(0xFF5B21B6) // 의사오더 — 진한 퍼플
-    val TagRequestStrongBg = Color(0xFFFEE2E2); val TagRequestStrongFg = Color(0xFFB91C1C) // 환자요청 — 진한 레드
-    val TagWatchStrongBg   = Color(0xFFFEF3C7); val TagWatchStrongFg   = Color(0xFFB45309) // 워치 — 진한 옐로/앰버
+    val TagFluidStrongBg   = Color(0xFFF0F2FE); val TagFluidStrongFg   = Color(0xFF1428A0) // 수액 — Primary 블루
+    val TagOrderStrongBg   = Color(0xFFF8F5FE); val TagOrderStrongFg   = Color(0xFF5B21B6) // 의사오더 — 진한 퍼플
+    val TagRequestStrongBg = Color(0xFFFFF5F5); val TagRequestStrongFg = Color(0xFFB91C1C) // 환자요청 — 진한 레드
+    val TagWatchStrongBg   = Color(0xFFFEFAED); val TagWatchStrongFg   = Color(0xFFB45309) // 워치 — 진한 옐로/앰버
 
     // OrderKind → 옅은 톤 태그 색상 (환자 상세/오더 리스트용)
     val orderTagColors: Map<OrderKind, TagColors> = mapOf(

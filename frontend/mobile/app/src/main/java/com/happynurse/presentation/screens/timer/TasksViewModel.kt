@@ -1,5 +1,5 @@
 // 업무 페이지 ViewModel — 수액타이머 / 워치알람 2탭 상태 + 알림 벨 데이터 관리
-package com.happynurse.presentation.screens.tasks
+package com.happynurse.presentation.screens.timer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

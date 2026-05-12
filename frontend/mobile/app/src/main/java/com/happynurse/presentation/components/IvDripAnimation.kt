@@ -310,8 +310,8 @@ fun IvDripAnimation(
             val labelCenterX = cx
             val labelCenterY = (bagTop + bagBottom) / 2f
 
-            val textColor = Color(0xFFECECEF).toArgb()
-            val strokeColor = Color(0xFF1F2937).copy(alpha = 0.50f).toArgb()
+            val textColor = Color(0xFFF6F6F8).toArgb()
+            val strokeColor = Color(0xFF707886).copy(alpha = 0.50f).toArgb()
             val numberStrokePaint = Paint().apply {
                 isAntiAlias = true
                 this.color = strokeColor
@@ -336,7 +336,7 @@ fun IvDripAnimation(
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 textAlign = Paint.Align.CENTER
                 style = Paint.Style.STROKE
-                strokeWidth = 2.0f
+                strokeWidth = 1.0f
                 strokeJoin = Paint.Join.ROUND
             }
             val unitPaint = Paint().apply {

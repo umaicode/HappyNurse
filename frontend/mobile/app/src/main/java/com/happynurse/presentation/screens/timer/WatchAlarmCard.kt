@@ -1,5 +1,5 @@
 // 워치알람 카드 — STT 음성 메모 알람 (응답 필드: contentSummary, fireAtEpochMillis, sttText)
-package com.happynurse.presentation.screens.tasks.components
+package com.happynurse.presentation.screens.timer
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -21,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.happynurse.domain.model.WatchAlarm
@@ -80,7 +79,7 @@ fun WatchAlarmCard(alarm: WatchAlarm) {
                 Text(
                     text = remaining,
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = HnColors.TextSecondary,
                 )
             }

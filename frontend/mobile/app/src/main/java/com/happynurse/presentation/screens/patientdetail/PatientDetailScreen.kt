@@ -170,7 +170,7 @@ fun PatientDetailScreen(
                     Spacer(Modifier.size(8.dp))
                     Text(
                         "${p.sex}/${p.age}",
-                        fontSize = 20.sp,
+                        fontSize = 18.sp,
                         color = HnColors.TextSecondary,
                         fontWeight = FontWeight.Medium,
                     )
@@ -625,9 +625,11 @@ private fun NoteRow(n: Note) {
                     }
                     Spacer(Modifier.height(8.dp))
                 }
-                Text(n.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text)
+                Text(n.text, fontSize = 17.sp, fontWeight = FontWeight.Medium, color = HnColors.Text)
                 Spacer(Modifier.height(12.dp))
-                Text(n.author, fontSize = 18.sp, fontWeight = FontWeight.Medium , color = HnColors.TextSecondary)
+                HorizontalDivider(color = HnColors.Border, thickness = 1.dp)
+                Spacer(Modifier.height(12.dp))
+                Text(n.author, fontSize = 16.sp, fontWeight = FontWeight.Medium , color = HnColors.TextSecondary)
 
             }
         }
