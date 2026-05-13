@@ -2,6 +2,7 @@ package com.ssafy.happynurse.domain.handover.controller;
 
 import com.ssafy.happynurse.domain.handover.dto.HandoverChecksPatchRequest;
 import com.ssafy.happynurse.domain.handover.dto.HandoverDetailResponse;
+import com.ssafy.happynurse.domain.handover.dto.WardEventsResponse;
 import com.ssafy.happynurse.domain.handover.service.ShiftHandoverService;
 import com.ssafy.happynurse.global.response.ApiResponse;
 import com.ssafy.happynurse.global.security.CustomUserDetails;
@@ -62,5 +63,21 @@ public class ShiftHandoverController {
     ) {
         service.patchChecks(handoverId, request.checks(), userDetails.getPractitionerId());
         return ResponseEntity.ok(ApiResponse.ok("체크리스트가 갱신되었습니다.", null));
+    }
+
+    @Operation(summary = "오늘 병동 입퇴원 환자 목록",
+            description = """
+                    입/퇴원 환자 목록 반환
+                    인수인계 화면의 입퇴원 섹션에서 사용
+                    """)
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
+    })
+    @GetMapping("/ward-events")
+    public ResponseEntity<ApiResponse<WardEventsResponse>> getTodayWardEvents(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(service.getTodayWardEvents(userDetails.getWardId())));
     }
 }
