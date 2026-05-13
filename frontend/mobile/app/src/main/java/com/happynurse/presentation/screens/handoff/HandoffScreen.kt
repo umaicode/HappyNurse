@@ -23,12 +23,25 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.foundation.clickable
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,16 +53,23 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.happynurse.presentation.components.PageHeader
 import com.happynurse.presentation.screens.handoff.components.HandoverPatientCard
 import com.happynurse.presentation.screens.handoff.components.HandoverSummaryCard
+import com.happynurse.presentation.screens.patients.currentShiftLabel
 import com.happynurse.presentation.theme.HnColors
 
 @Composable
-fun HandoffScreen(vm: HandoffViewModel = hiltViewModel()) {
+fun HandoffScreen(
+    onOpenPatient: (String) -> Unit = {},
+    vm: HandoffViewModel = hiltViewModel(),
+) {
     val state by vm.state.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxSize()) {
         PageHeader(
             title = "인수인계",
-            sub = "데이 → 이브닝 · AI 브리핑",
+            sub = currentShiftLabel().let { cur ->
+                val next = when (cur) { "데이" -> "이브닝"; "이브닝" -> "나이트"; else -> "데이" }
+                "$cur → $next"
+            },
             right = {
                 IconButton(onClick = vm::refresh, enabled = !state.refreshing) {
                     if (state.refreshing) {
@@ -77,16 +97,32 @@ fun HandoffScreen(vm: HandoffViewModel = hiltViewModel()) {
                     EmptyContent()
                 }
             }
-            else -> Content(state, vm)
+            else -> Content(state, vm, onOpenPatient)
         }
     }
 }
 
 @Composable
-private fun Content(state: HandoffUiState, vm: HandoffViewModel) {
+private fun Content(
+    state: HandoffUiState,
+    vm: HandoffViewModel,
+    onOpenPatient: (String) -> Unit,
+) {
     val summary = state.rosterSummary ?: return
     val patients = state.patients
     val pagerState = rememberPagerState(pageCount = { patients.size })
+    val scope = rememberCoroutineScope()
+    var dropdownOpen by remember { mutableStateOf(false) }
+
+    LaunchedEffect(patients) {
+        snapshotFlow { pagerState.currentPage }
+            .distinctUntilChanged()
+            .collect { page ->
+                patients.getOrNull(page)?.handoverId
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { vm.ensureDetailLoaded(it) }
+            }
+    }
 
     Column(Modifier.fillMaxSize()) {
         Spacer(Modifier.height(8.dp))
@@ -96,16 +132,78 @@ private fun Content(state: HandoffUiState, vm: HandoffViewModel) {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
         ) {
-            Text(
-                "담당 환자",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = HnColors.Text,
-            )
+            Box {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { dropdownOpen = true }
+                        .padding(vertical = 4.dp, horizontal = 4.dp),
+                ) {
+                    Text(
+                        "담당 환자",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = HnColors.Text,
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "${patients.size}명",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = HnColors.TextSecondary,
+                    )
+                    Spacer(Modifier.width(2.dp))
+                    Icon(
+                        Icons.Outlined.KeyboardArrowDown,
+                        contentDescription = "환자 목록",
+                        tint = HnColors.TextSecondary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                DropdownMenu(
+                    expanded = dropdownOpen,
+                    onDismissRequest = { dropdownOpen = false },
+                ) {
+                    patients.forEachIndexed { idx, item ->
+                        val patient = state.patientByEncounterId[item.encounterId]
+                        val label = patient?.name ?: "환자 ${idx + 1}"
+                        val sub = patient?.let {
+                            listOfNotNull(
+                                it.sex.takeIf { s -> s.isNotBlank() },
+                                it.birthdate.takeIf { b -> b.isNotBlank() },
+                            ).joinToString(" · ")
+                        } ?: ""
+                        DropdownMenuItem(
+                            text = {
+                                Column {
+                                    Text(
+                                        label,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = HnColors.Text,
+                                    )
+                                    if (sub.isNotBlank()) {
+                                        Text(
+                                            sub,
+                                            fontSize = 11.sp,
+                                            color = HnColors.TextSecondary,
+                                        )
+                                    }
+                                }
+                            },
+                            onClick = {
+                                dropdownOpen = false
+                                scope.launch { pagerState.animateScrollToPage(idx) }
+                            },
+                        )
+                    }
+                }
+            }
             Box(Modifier.weight(1f))
             Text(
                 "좌우로 슬라이드",
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 color = HnColors.TextTertiary,
             )
         }
@@ -124,13 +222,16 @@ private fun Content(state: HandoffUiState, vm: HandoffViewModel) {
                     .verticalScroll(rememberScrollState())
                     .padding(top = 4.dp, bottom = 16.dp),
             ) {
+                val patient = state.patientByEncounterId[item.encounterId]
                 HandoverPatientCard(
                     item = item,
-                    patient = state.patientByEncounterId[item.encounterId],
-                    expanded = state.expandedHandoverId == item.handoverId && item.handoverId.isNotBlank(),
+                    patient = patient,
                     detail = state.detailByHandoverId[item.handoverId],
                     loadingDetail = state.loadingDetailIds.contains(item.handoverId),
-                    onToggle = { vm.toggleExpand(item.handoverId) },
+                    onOpenPatient = {
+                        patient?.patientId?.toString()?.takeIf { it.isNotBlank() && it != "0" }
+                            ?.let(onOpenPatient)
+                    },
                 )
             }
         }

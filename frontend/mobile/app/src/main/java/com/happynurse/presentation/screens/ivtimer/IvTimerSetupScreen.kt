@@ -73,12 +73,19 @@ fun IvTimerSetupScreen(
 
     LaunchedEffect(encounterId) { viewModel.loadContext(encounterId) }
 
-    // 처방의 dose 합계가 max. 모든 선택된 처방의 doseMl 정보가 있을 때만 검증.
+    // 처방의 dose 합계가 max. mL 단위 처방만 합산해 부분 검증.
     val maxVolumeMl: Int? = remember(medicationOrderIds, orders) {
-        if (medicationOrderIds.isEmpty()) return@remember null
-        val doses = medicationOrderIds.map { orders[it]?.doseMl }
-        if (doses.any { it == null }) null
-        else doses.filterNotNull().sum()
+        if (medicationOrderIds.isEmpty()) null
+        else medicationOrderIds.mapNotNull { orders[it]?.doseMl }
+            .takeIf { it.isNotEmpty() }
+            ?.sum()
+    }
+    // orders 로드 완료 후 비-mL 처방이 섞였는지 — mL 만 합산했음을 사용자에게 알리는 용도.
+    val hasNonMlOrders: Boolean = remember(medicationOrderIds, orders) {
+        medicationOrderIds.any { id ->
+            val info = orders[id]
+            info != null && info.doseMl == null
+        }
     }
     val volumeExceeded = maxVolumeMl != null && volume > maxVolumeMl
 
@@ -145,10 +152,18 @@ fun IvTimerSetupScreen(
                         if (maxVolumeMl != null) {
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "처방 총량: ${maxVolumeMl} mL",
+                                if (hasNonMlOrders) "처방 총량: ${maxVolumeMl} mL · mL 단위 처방만 합산"
+                                else "처방 총량: ${maxVolumeMl} mL",
                                 fontSize = 11.sp,
                                 color = HnColors.TextSecondary,
                                 fontWeight = FontWeight.SemiBold,
+                            )
+                        } else if (hasNonMlOrders) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "선택된 처방의 단위가 mL 가 아니어서 총량 자동 검증이 불가합니다",
+                                fontSize = 11.sp,
+                                color = HnColors.TextTertiary,
                             )
                         }
                     }
