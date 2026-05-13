@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -109,5 +110,38 @@ public interface EncounterRepository extends JpaRepository<Encounter, Long> {
             ORDER BY r.roomName ASC, e.bedName ASC
             """)
     List<Encounter> findInProgressByAssignedPractitioner(@Param("nurseId") Long nurseId);
+
+    /**
+     * 인수인계 — 특정 병동에서 [start, end) 사이에 입원한 (periodStart 기준) encounter 목록.
+     */
+    @Query("""
+            SELECT e FROM Encounter e
+            JOIN FETCH e.room r
+            WHERE r.ward.wardId = :wardId
+              AND e.periodStart >= :startInclusive
+              AND e.periodStart < :endExclusive
+            ORDER BY e.periodStart ASC
+            """)
+    List<Encounter> findAdmissionsByWardAndPeriod(
+            @Param("wardId") Long wardId,
+            @Param("startInclusive") LocalDateTime startInclusive,
+            @Param("endExclusive") LocalDateTime endExclusive);
+
+    /**
+     * 인수인계 — 특정 병동에서 [start, end) 사이에 퇴원한 (periodEnd 기준, status=finished) encounter 목록.
+     */
+    @Query("""
+            SELECT e FROM Encounter e
+            JOIN FETCH e.room r
+            WHERE r.ward.wardId = :wardId
+              AND e.status = com.ssafy.happynurse.domain.patient.entity.EncounterStatus.finished
+              AND e.periodEnd >= :startInclusive
+              AND e.periodEnd < :endExclusive
+            ORDER BY e.periodEnd ASC
+            """)
+    List<Encounter> findDischargesByWardAndPeriod(
+            @Param("wardId") Long wardId,
+            @Param("startInclusive") LocalDateTime startInclusive,
+            @Param("endExclusive") LocalDateTime endExclusive);
 
 }
