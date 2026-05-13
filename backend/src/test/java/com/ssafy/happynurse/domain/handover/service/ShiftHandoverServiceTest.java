@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.happynurse.domain.handover.dto.HandoverDetailResponse;
 import com.ssafy.happynurse.domain.handover.entity.ShiftHandover;
 import com.ssafy.happynurse.domain.handover.repository.ShiftHandoverRepository;
+import com.ssafy.happynurse.domain.patient.repository.EncounterRepository;
 import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -32,6 +33,7 @@ import static org.mockito.Mockito.verify;
 class ShiftHandoverServiceTest {
 
     @Mock ShiftHandoverRepository repository;
+    @Mock EncounterRepository encounterRepository;
     @Mock ObjectMapper objectMapper;
     @InjectMocks ShiftHandoverService service;
 

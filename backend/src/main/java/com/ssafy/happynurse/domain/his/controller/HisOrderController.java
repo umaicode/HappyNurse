@@ -8,6 +8,7 @@ import com.ssafy.happynurse.domain.his.dto.HisOrderResponse;
 import com.ssafy.happynurse.domain.his.dto.HisOrderUpdateRequest;
 import com.ssafy.happynurse.domain.his.service.HisOrderSimulatorService;
 import com.ssafy.happynurse.global.response.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "HIS 시뮬레이터", description = "HIS 시뮬레이터 — 의사 오더 / 입퇴원 이벤트 발사")
 @RestController
 @RequestMapping("/his")
 @RequiredArgsConstructor
