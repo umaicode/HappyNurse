@@ -91,7 +91,7 @@ fun TasksScreen(
     }
 
     Column(Modifier.fillMaxSize()) {
-        PageHeader(title = "타이머", right = { NotificationBell(unreadCount = upcomingCount, onClick = onOpenNotifications) })
+        PageHeader(title = "타이머 목록", right = { NotificationBell(unreadCount = upcomingCount, onClick = onOpenNotifications) })
         TasksTabBar(tab) { newTab ->
             val curIdx = TAB_ORDER.indexOf(tab)
             val newIdx = TAB_ORDER.indexOf(newTab)
