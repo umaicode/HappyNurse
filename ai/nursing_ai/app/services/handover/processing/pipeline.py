@@ -133,15 +133,9 @@ datetime.now(timezone.utc).isoformat()),
     }
     for c in raw.get("citations", []):
         rec_text = record_text_by_id.get(c.get("record_id"))
-        line_range = c.get("line_range") or []
-        if not rec_text or not line_range:
+        if not rec_text:
             continue
-        lines = rec_text.splitlines()
-        start_1 = max(1, int(line_range[0]))
-        end_1 = int(line_range[-1]) if len(line_range) >= 2 else start_1
-        if end_1 < start_1:
-            end_1 = start_1
-        snippet = "\n".join(lines[start_1 - 1:end_1]).strip()
+        snippet = rec_text.strip()
         if snippet:
             c["excerpt"] = snippet
 
