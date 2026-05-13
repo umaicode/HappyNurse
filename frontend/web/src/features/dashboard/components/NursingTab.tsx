@@ -615,14 +615,16 @@ function NoteRow({
     <div
       ref={rowRef}
       className={cn(
-        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-2 border-b border-border-base/50 items-start hover:bg-surface-hover/40 transition-all relative",
-        note.status === "draft" &&
-          "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-brand-primary/30",
+        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-1 border-b border-border-base/50 items-start hover:bg-surface-hover/40 transition-all relative",
+        // 우선순위: medication > draft > isEditing (마지막 매치가 이김)
+        // draft 는 hover 도 같은 회색으로 고정 — 임시 기록이라 hover 강조 의미 없음.
+        note.status === "draft" && "bg-[#ecedf0] hover:bg-[#ecedf0]",
+        note.type === "MEDICATION" && "bg-brand-surface/20",
         isEditing && "bg-brand-surface/15",
       )}
     >
       {/* 시간 — 편집 모드에선 HH : mm 분리 입력. STT_NOTE / MEDICATION 모두 body 의 confirmedAt 키로 송신. */}
-      <div className="py-1.5 border-r border-border-base/50 pr-4 min-w-0">
+      <div className="py-1 border-r border-border-base/50 pr-4 min-w-0">
         {isEditing ? (
           <TimeInput value={draftTime} onChange={setDraftTime} />
         ) : (
@@ -632,13 +634,8 @@ function NoteRow({
         )}
       </div>
 
-      {/* 기록 내용 — draft 본문은 흐려서 임시/확정 시각 구분. 편집 중에는 명확하게 보이도록 opacity 해제. */}
-      <div
-        className={cn(
-          "min-w-0 pr-6 border-r border-border-base/50 py-1.5 relative",
-          note.status === "draft" && !isEditing && "opacity-60",
-        )}
-      >
+      {/* 기록 내용 */}
+      <div className="min-w-0 pr-6 border-r border-border-base/50 py-1 relative">
         {isMedication ? (
           <MedicationContent
             note={note}
@@ -695,7 +692,7 @@ function NoteRow({
       </div>
 
       {/* 구분 */}
-      <div className="pt-1.5 h-full flex items-center justify-center border-r border-border-base/50 pr-4">
+      <div className="pt-1 h-full flex items-center justify-center border-r border-border-base/50 pr-4">
         <span
           className={cn(
             "text-body-xs font-semibold",
@@ -707,7 +704,7 @@ function NoteRow({
       </div>
 
       {/* 기록자 */}
-      <div className="text-body-sm text-content-tertiary pt-1.5 truncate h-full border-r border-border-base/50 pr-4 flex items-center justify-center">
+      <div className="text-body-sm text-content-tertiary pt-1 truncate h-full border-r border-border-base/50 pr-4 flex items-center justify-center">
         <span className="truncate font-bold">{note.authorName}</span>
       </div>
 
@@ -792,7 +789,7 @@ function SttNoteActions({
 }) {
   return (
     <>
-      {note.status === "draft" && (
+      {note.status === "draft" && !isEditMode && (
         <ConfirmButton
           onClick={() => onConfirm(note.nursingRecordId)}
           disabled={isConfirming}
@@ -846,7 +843,7 @@ function MedicationActions({
 }) {
   return (
     <>
-      {note.status === "draft" && (
+      {note.status === "draft" && !isEditMode && (
         <ConfirmButton
           onClick={() => onConfirm(note.taggingId)}
           disabled={isConfirming}
@@ -921,7 +918,7 @@ function MedicationContent({
   onChangeDraft: (medicationAdminId: number, value: number) => void;
 }) {
   return (
-    <ul className="flex flex-col gap-1.5">
+    <ul className="flex flex-col gap-1">
       {note.medications.map((medication) => (
         <MedicationRow
           key={medication.medicationAdminId}
@@ -949,7 +946,7 @@ function MedicationRow({
   onChangeDraft: (value: number) => void;
 }) {
   return (
-    <li className="flex flex-col gap-0.5 px-2 py-1.5 rounded bg-brand-surface/30 border-l-2 border-brand-primary/30">
+    <li className="flex flex-col gap-0.5 px-2 py-1 rounded">
       <div className="flex items-baseline gap-2 min-w-0">
         <span className="font-bold text-content-primary text-body-sm truncate">
           {medication.productName}
