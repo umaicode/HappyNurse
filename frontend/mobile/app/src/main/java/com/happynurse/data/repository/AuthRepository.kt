@@ -43,6 +43,9 @@ class AuthRepository @Inject constructor(
     // 본인 wardId 노출 — IV 보드 / 알림 fetch 등에서 사용
     val wardId: Flow<Long?> = context.authDataStore.data.map { it[KEY_WARD_ID] }
 
+    // 본인 이름 노출 — 인수인계 체크리스트 by 메타 표시 등에 사용
+    val displayName: Flow<String?> = context.authDataStore.data.map { it[KEY_NAME] }
+
     suspend fun login(
         organizationId: Long,
         wardId: Long,

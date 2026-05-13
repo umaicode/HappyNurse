@@ -9,6 +9,7 @@ import com.happynurse.data.remote.api.DrugApi
 import com.happynurse.data.remote.api.EncounterApi
 import com.happynurse.data.remote.api.FcmTokenApi
 import com.happynurse.data.remote.api.HandoverApi
+import com.happynurse.data.remote.api.HandoverWebApi
 import com.happynurse.data.remote.api.HappyNurseApi
 import com.happynurse.data.remote.api.IvApi
 import com.happynurse.data.remote.api.NfcTokenApi
@@ -102,5 +103,6 @@ object AppModule {
     @Provides @Singleton fun provideNotificationApi(@AuthRetrofit r: Retrofit): NotificationApi = r.create(NotificationApi::class.java)
     @Provides @Singleton fun provideSttApi(@AiRetrofit r: Retrofit): SttApi = r.create(SttApi::class.java)
     @Provides @Singleton fun provideHandoverApi(@AiRetrofit r: Retrofit): HandoverApi = r.create(HandoverApi::class.java)
+    @Provides @Singleton fun provideHandoverWebApi(@AuthRetrofit r: Retrofit): HandoverWebApi = r.create(HandoverWebApi::class.java)
     @Provides @Singleton fun provideSttReminderApi(@AuthRetrofit r: Retrofit): SttReminderApi = r.create(SttReminderApi::class.java)
 }
