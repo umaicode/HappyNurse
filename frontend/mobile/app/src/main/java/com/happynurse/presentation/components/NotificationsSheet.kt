@@ -104,6 +104,7 @@ private fun NotificationRow(n: Notification) {
         NotificationCategory.ORDER   -> "의사오더"
         NotificationCategory.REQUEST -> "환자요청"
         NotificationCategory.WATCH   -> "워치"
+        NotificationCategory.SESSION -> "웹"
     }
     val tagColors = HnColors.notificationTagColors.getValue(n.category)
     val timeLabel = when {

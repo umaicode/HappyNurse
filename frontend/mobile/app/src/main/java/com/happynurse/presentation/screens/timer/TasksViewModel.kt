@@ -188,6 +188,7 @@ private fun NotificationListItemResponse.toNotification(
         "order_change" -> NotificationCategory.ORDER
         "self_report" -> NotificationCategory.REQUEST
         "vital_alert", "timer" -> NotificationCategory.WATCH
+        "web_login", "web_logout" -> NotificationCategory.SESSION
         else -> NotificationCategory.REQUEST
     }
     val (room, bed) = patientId?.let { locationMap[it] } ?: ("" to "")
