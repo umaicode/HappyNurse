@@ -2,7 +2,7 @@
 
 import { Search, LogOut, ChevronRight, Settings, Loader2 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useLogout } from "@/features/auth/hooks/useLogout";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useAuthStore } from "@/features/auth/stores/auth";
+import { extendSession } from "@/features/auth/api";
 import { useDraftNursingNotes } from "@/features/dashboard/hooks/useDraftNursingNotes";
 import { formatMonthDayHHmm } from "@/lib/time";
 import {
@@ -48,11 +49,27 @@ export function PatientSidebar({
   onOpenAssignModal,
   onJumpToUnconfirmed,
 }: PatientSidebarProps) {
-  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const expiresAt = useAuthStore((state) => state.expiresAt);
-  const reset = useAuthStore((state) => state.reset);
+  const refreshExpiresAt = useAuthStore((state) => state.refreshExpiresAt);
+  const logout = useLogout();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isExtending, setIsExtending] = useState(false);
+
+  // 연장 버튼 — /auth/refresh 호출 + 성공 시 expiresAt 을 now+15분 으로 재계산.
+  // 실패 시 인터셉터가 401 처리 우회하므로 그냥 무시 (15 분 idle 타이머가 자동 로그아웃 담당).
+  const handleExtend = async () => {
+    if (isExtending) return;
+    setIsExtending(true);
+    try {
+      await extendSession();
+      refreshExpiresAt();
+    } catch {
+      // 무시 — useAuth 의 idle 타이머가 만료 처리.
+    } finally {
+      setIsExtending(false);
+    }
+  };
   // 1초 tick — 카운트다운 mm:ss 갱신. expiresAt 이 null 이면 동작 안 함.
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
   useEffect(() => {
@@ -120,11 +137,10 @@ export function PatientSidebar({
                 variant="brandOutline"
                 size="sm"
                 className="h-6 px-2 text-body-micro font-bold"
-                onClick={() => {
-                  // placeholder — 백엔드 연장 API 추가 전까지 클릭해도 timer 변화 없음.
-                }}
+                onClick={handleExtend}
+                disabled={isExtending}
               >
-                연장
+                {isExtending ? "..." : "연장"}
               </Button>
             </div>
           )}
@@ -266,10 +282,9 @@ export function PatientSidebar({
 
           <button
             onClick={() => {
-              reset();
-              router.push("/login");
+              logout();
             }}
-            className="p-2 text-brand-primary hover:bg-brand-surface rounded-xl transition-all shadow-xs border border-brand-primary/10"
+            className="p-2 text-status-danger hover:bg-status-danger-surface rounded-xl transition-all shadow-xs border border-status-danger/20"
             title="로그아웃"
           >
             <LogOut className="size-5" />

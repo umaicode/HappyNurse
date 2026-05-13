@@ -17,6 +17,7 @@ import com.ssafy.happynurse.domain.patient.repository.OrganizationRepository;
 import com.ssafy.happynurse.domain.patient.repository.WardRepository;
 import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
+import com.ssafy.happynurse.global.security.CustomUserDetails;
 import com.ssafy.happynurse.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -148,6 +149,23 @@ public class AuthService {
         refreshTokenRepository.save(refreshToken);
 
         return new AuthResult(token, refreshToken.getTokenValue(), loginResponse);
+    }
+
+    /**
+     * 현재 유효한 access token 보유자가 명시적으로 세션을 연장할 때 호출.
+     * refresh token 은 회전시키지 않고 access token 만 새 만료시간으로 재발급한다.
+     * (자동 401 흐름의 /auth/refresh 와 동시에 발생해도 refresh 재사용 감지가 발동되지 않도록.)
+     */
+    public String extend(CustomUserDetails userDetails) {
+        return jwtTokenProvider.createAccessToken(
+                userDetails.getPractitionerId(),
+                userDetails.getEmployeeNumber(),
+                userDetails.getName(),
+                userDetails.getRole(),
+                userDetails.getSessionId(),
+                userDetails.getOrganizationId(),
+                userDetails.getWardId()
+        );
     }
 
     public AuthResult refresh(String refreshTokenValue) {

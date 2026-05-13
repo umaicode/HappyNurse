@@ -10,8 +10,8 @@ type TabType = 'orders' | 'alerts' | 'iv-timer';
 
 const TABS: { id: TabType; label: string }[] = [
   { id: 'orders', label: '의사 오더' },
-  { id: 'alerts', label: '알림' },
   { id: 'iv-timer', label: '수액 타이머' },
+  { id: 'alerts', label: '알림' },
 ];
 
 interface RightPanelProps {

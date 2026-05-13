@@ -84,4 +84,38 @@ public class Encounter {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public static Encounter admit(Patient patient,
+                                  ClassCode classCode,
+                                  Room room,
+                                  String bedName,
+                                  Practitioner attendingPhysician,
+                                  Practitioner assignedPractitioner,
+                                  String departmentCode,
+                                  String diseaseName,
+                                  String chiefComplaint,
+                                  String surgeryName) {
+        Encounter e = new Encounter();
+        e.patient = patient;
+        e.classCode = classCode;
+        e.room = room;
+        e.bedName = bedName;
+        e.attendingPhysician = attendingPhysician;
+        e.assignedPractitioner = assignedPractitioner;
+        e.departmentCode = departmentCode;
+        e.diseaseName = diseaseName;
+        e.chiefComplaint = chiefComplaint;
+        e.surgeryName = surgeryName;
+        e.name = patient.getName();
+        e.gender = patient.getGender();
+        e.birthDate = patient.getBirthDate();
+        e.status = EncounterStatus.in_progress;
+        e.periodStart = LocalDateTime.now();
+        return e;
+    }
+
+    public void discharge() {
+        this.status = EncounterStatus.finished;
+        this.periodEnd = LocalDateTime.now();
+    }
 }
