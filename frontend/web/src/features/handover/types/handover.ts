@@ -120,6 +120,27 @@ export interface HandoverDetailResponse {
   createdAt: string;
 }
 
+// ---------- 체크리스트 (BE) ----------
+// BE /handover/{handoverId} 는 PASS-BAR 풀 데이터가 아니라 체크 상태만 반환.
+// PASS-BAR 본체는 여전히 AI 서버 (`/api/handover/{id}`) 담당.
+
+// 체크된 항목 1건의 메타 — 누른 사람 / 시각.
+export interface HandoverCheckEntry {
+  by: number;
+  at: string;
+}
+
+// 키 = `{slotKey}.{itemIndex}` (현재 BE 가 synthesis 슬롯만 허용).
+// 키 존재 = 체크 ON, 없으면 OFF.
+export interface HandoverChecksResponse {
+  handoverId: string;
+  checkedItemsJson: Record<string, HandoverCheckEntry>;
+}
+
+// PATCH /handover/{handoverId}/checks body — 델타 방식.
+// 값 true = ON 으로 만들기, false = OFF 로 만들기. 안 보낸 키는 BE 가 유지.
+export type HandoverChecksPatch = Record<string, boolean>;
+
 // ---------- generate 응답 ----------
 
 export interface HandoverJobResponse {

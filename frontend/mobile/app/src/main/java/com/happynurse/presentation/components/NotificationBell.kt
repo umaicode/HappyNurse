@@ -31,7 +31,7 @@ fun NotificationBell(
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(44.dp)
+            .size(48.dp)
             .clickable(onClick = onClick),
     ) {
         Icon(
@@ -47,7 +47,7 @@ fun NotificationBell(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .offset(x = (-2).dp, y = 2.dp)
-                    .size(22.dp)
+                    .size(25.dp)
                     .clip(CircleShape)
                     .background(HnColors.Danger)
             ) {

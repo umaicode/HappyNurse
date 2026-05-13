@@ -80,14 +80,16 @@ fun MyPageScreen(
                             }
                             Text(
                                 profile?.organizationName ?: "-",
-                                fontSize = 14.sp,
-                                color = HnColors.TextSecondary,
-                                modifier = Modifier.padding(top = 2.dp),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = HnColors.TextTertiary,
+                                modifier = Modifier.padding(top = 5.dp),
                             )
                             Text(
                                 "${profile?.wardName ?: "-"} · ${currentShiftLabel()} 근무",
-                                fontSize = 14.sp,
-                                color = HnColors.TextSecondary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = HnColors.TextTertiary,
                             )
                         }
                         Box(

@@ -9,6 +9,7 @@ class Citation(BaseModel):
     line_range: list[int]
     ts: datetime
     label: str
+    excerpt: str | None = None
 
 
 class SlotItem(BaseModel):

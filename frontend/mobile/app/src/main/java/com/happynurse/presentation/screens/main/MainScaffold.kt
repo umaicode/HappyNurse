@@ -22,8 +22,8 @@ import com.happynurse.presentation.components.PatientLayout
 import com.happynurse.presentation.screens.handoff.HandoffScreen
 import com.happynurse.presentation.screens.mypage.MyPageScreen
 import com.happynurse.presentation.screens.patients.PatientsScreen
-import com.happynurse.presentation.screens.tasks.TasksScreen
-import com.happynurse.presentation.screens.tasks.TasksViewModel
+import com.happynurse.presentation.screens.timer.TasksScreen
+import com.happynurse.presentation.screens.timer.TasksViewModel
 import com.happynurse.presentation.theme.HnColors
 
 @Composable
@@ -60,7 +60,7 @@ fun MainScaffold(
                         upcomingCount = upcoming,
                         ivLayout = IvTimerLayout.BAR,
                     )
-                    HnTab.HANDOFF -> HandoffScreen()
+                    HnTab.HANDOFF -> HandoffScreen(onOpenPatient = onOpenPatient)
                     HnTab.ME -> MyPageScreen(
                         onLogout = onLogout,
                         onOpenPatient = onOpenPatient,

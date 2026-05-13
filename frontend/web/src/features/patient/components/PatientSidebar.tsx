@@ -257,9 +257,11 @@ export function PatientSidebar({
                 </span>
               )}
             </span>
-            <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider mt-0.5">
-              {user?.wardName ?? ""}
-            </span>
+            {user?.wardName && (
+              <span className="text-body-xs font-semibold text-content-secondary truncate mt-0.5">
+                {user.wardName}
+              </span>
+            )}
           </div>
 
           <button
@@ -349,10 +351,8 @@ function PatientItem({
           </div>
           <div
             className={cn(
-              "flex items-center gap-1 text-[13px] font-mono shrink-0 ml-auto",
-              isActive
-                ? "text-sub-primary/70 font-bold"
-                : "text-content-muted",
+              "flex items-center gap-1 text-[13px] leading-tight font-bold shrink-0 ml-auto",
+              isActive ? "text-sub-primary/70" : "text-content-tertiary",
             )}
           >
             <span>{formatGenderShort(patient.gender)}</span>

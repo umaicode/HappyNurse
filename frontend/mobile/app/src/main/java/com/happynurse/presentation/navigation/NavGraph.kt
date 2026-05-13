@@ -28,11 +28,13 @@ fun NavGraph(
     sessionViewModel: SessionViewModel = hiltViewModel(),
 ) {
     val loggedIn by sessionViewModel.isLoggedIn.collectAsStateWithLifecycle()
-    // 토큰 결정 후 양방향 진입 분기. null = 결정 전(빈 화면 유지), true → MAIN, false → LOGIN
+    // 토큰 결정 후 양방향 진입 분기. null = 결정 전(빈 화면 유지), true → LOGIN 에서만 MAIN 으로, false → LOGIN.
+    // true 케이스에서 MAIN 이 아닌 모든 화면을 덮어쓰면 MainActivity 가 띄운 모달 라우트(nfc_patient 등)도
+    // popUpTo(0) inclusive=true 로 사라져 NFC 환자 진입이 실패함. LOGIN 화면일 때만 MAIN 으로 보낸다.
     LaunchedEffect(loggedIn) {
         when (loggedIn) {
             null -> Unit
-            true -> if (navController.currentDestination?.route != NavRoutes.MAIN) {
+            true -> if (navController.currentDestination?.route == NavRoutes.LOGIN) {
                 navController.navigate(NavRoutes.MAIN) { popUpTo(0) { inclusive = true } }
             }
             false -> if (navController.currentDestination?.route != NavRoutes.LOGIN) {

@@ -111,6 +111,7 @@ fun RecordScreen(
                         RecordPhase.RECORDING -> RecordingContent(
                             elapsed = state.elapsedSec,
                             onStop = viewModel::stopRecording,
+                            onCancel = viewModel::cancelRecording,
                         )
                         RecordPhase.PROCESSING -> ProcessingContent("음성 인식 중…")
                         RecordPhase.SUBMITTING -> ProcessingContent("등록 중…")
@@ -170,13 +171,13 @@ private fun IdleContent(onMicTap: () -> Unit) {
 }
 
 @Composable
-private fun RecordingContent(elapsed: Int, onStop: () -> Unit) {
+private fun RecordingContent(elapsed: Int, onStop: () -> Unit, onCancel: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 22.dp, bottom = 28.dp),
+            .padding(top = 18.dp, bottom = 22.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         TimeChip(text = formatMmSs(elapsed))
         Spacer(Modifier.weight(1f))
@@ -197,6 +198,22 @@ private fun RecordingContent(elapsed: Int, onStop: () -> Unit) {
                         .background(Color.White),
                 )
             }
+        }
+        Spacer(Modifier.size(6.dp))
+        // 중지 버튼 아래 취소 — 녹음 폐기하고 IDLE 로 복귀 (등록 X)
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(percent = 50))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .clickable { onCancel() }
+                .padding(horizontal = 14.dp, vertical = 6.dp),
+        ) {
+            Text(
+                text = "취소",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
         Spacer(Modifier.weight(1f))
     }
