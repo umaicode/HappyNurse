@@ -1,10 +1,8 @@
-// 인수인계 환자 카드 — Pager 내부에서 1명을 표현. 항상 펼친 상태로 AI 인수인계 본문을 표시.
-// 상단에 확인 체크리스트(요약 항목 평탄화), 본문에 PASS-BAR 섹션, 하단에 근거 리스트.
+// 인수인계 환자 카드 — Pager 내부에서 1명을 표현.
+// 상단: 확인 체크리스트(synthesis 슬롯, 서버 sync), 본문: PASS-BAR 섹션, 하단: 근거 리스트(접힘).
 package com.happynurse.presentation.screens.handoff.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.ExpandLess
@@ -29,18 +26,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.happynurse.domain.model.CheckMeta
 import com.happynurse.domain.model.Citation
 import com.happynurse.domain.model.HandoverDetail
 import com.happynurse.domain.model.Patient
@@ -54,6 +49,9 @@ fun HandoverPatientCard(
     patient: Patient?,
     detail: HandoverDetail?,
     loadingDetail: Boolean,
+    checkedMap: Map<Int, CheckMeta>?,
+    inFlight: Set<Int>,
+    onToggleCheck: (index: Int, newValue: Boolean) -> Unit,
     onOpenPatient: () -> Unit = {},
 ) {
     HnCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), padding = 14.dp) {
@@ -70,7 +68,7 @@ fun HandoverPatientCard(
                         Row(verticalAlignment = Alignment.Bottom) {
                             Text(
                                 patient.name,
-                                fontSize = 16.sp,
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = HnColors.Text,
                             )
@@ -82,7 +80,7 @@ fun HandoverPatientCard(
                             if (sub.isNotBlank()) {
                                 Text(
                                     sub,
-                                    fontSize = 14.sp,
+                                    fontSize = 16.sp,
                                     color = HnColors.TextSecondary,
                                 )
                             }
@@ -94,7 +92,7 @@ fun HandoverPatientCard(
 
             Text(
                 item.header.ifBlank { "AI 요약 준비중입니다." },
-                fontSize = 14.sp,
+                fontSize = 16.sp,
                 color = HnColors.Text,
                 lineHeight = 20.sp,
             )
@@ -104,7 +102,7 @@ fun HandoverPatientCard(
                 RulesRow(item.rulesFiredBrief)
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(15.dp))
             when {
                 loadingDetail -> {
                     Row(
@@ -120,15 +118,20 @@ fun HandoverPatientCard(
                 }
                 detail?.payload != null -> {
                     val payload = detail.payload
-                    // 상단 — 확인 체크리스트(요약 항목들을 평탄화)
-                    val flat = remember(payload) { flattenSlotItems(payload) }
-                    if (flat.isNotEmpty()) {
-                        ConfirmChecklist(items = flat, keyPrefix = item.handoverId.ifBlank { item.encounterId })
+                    // 상단 — synthesis 체크리스트
+                    val synthesisItems = remember(payload) { synthesisItemsOf(payload) }
+                    if (synthesisItems.isNotEmpty()) {
+                        SynthesisChecklist(
+                            items = synthesisItems,
+                            checkedMap = checkedMap,
+                            inFlight = inFlight,
+                            onToggle = onToggleCheck,
+                        )
                         Spacer(Modifier.height(14.dp))
                     }
                     // 본문 PASS-BAR
                     PassBarSlotSection(payload = payload, fallbackText = detail.autoSummary)
-                    // 근거 리스트
+                    // 근거 리스트 (접힘 기본)
                     if (payload.citations.isNotEmpty()) {
                         Spacer(Modifier.height(14.dp))
                         CitationsSection(
@@ -150,90 +153,6 @@ fun HandoverPatientCard(
                         "상세 인수인계 정보를 불러오는 중입니다…",
                         fontSize = 12.sp,
                         color = HnColors.TextTertiary,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ConfirmChecklist(
-    items: List<Pair<String, com.happynurse.domain.model.SlotItem>>,
-    keyPrefix: String,
-) {
-    val checked = remember(keyPrefix) { mutableStateMapOf<Int, Boolean>() }
-
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(HnColors.PrimaryLight.copy(alpha = 0.45f))
-            .padding(12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "확인 체크리스트",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = HnColors.Primary,
-            )
-            Spacer(Modifier.width(6.dp))
-            val doneCount = checked.values.count { it }
-            Text(
-                "$doneCount / ${items.size}",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                color = HnColors.TextSecondary,
-            )
-        }
-        Spacer(Modifier.height(8.dp))
-        items.forEachIndexed { idx, (section, item) ->
-            if (idx > 0) Spacer(Modifier.height(6.dp))
-            val isChecked = checked[idx] == true
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { checked[idx] = !isChecked }
-                    .padding(vertical = 2.dp),
-                verticalAlignment = Alignment.Top,
-            ) {
-                Box(
-                    Modifier
-                        .padding(top = 2.dp)
-                        .size(20.dp)
-                        .clip(RoundedCornerShape(5.dp))
-                        .background(if (isChecked) HnColors.Primary else HnColors.Surface)
-                        .border(
-                            BorderStroke(1.5.dp, if (isChecked) HnColors.Primary else HnColors.BorderStrong),
-                            RoundedCornerShape(5.dp),
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (isChecked) {
-                        Icon(
-                            Icons.Outlined.Check,
-                            null,
-                            tint = Color.White,
-                            modifier = Modifier.size(14.dp),
-                        )
-                    }
-                }
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        section,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = HnColors.Primary,
-                    )
-                    Text(
-                        item.value ?: "",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (isChecked) HnColors.TextTertiary else HnColors.Text,
-                        textDecoration = if (isChecked) TextDecoration.LineThrough else TextDecoration.None,
-                        lineHeight = 18.sp,
                     )
                 }
             }
@@ -270,14 +189,14 @@ private fun CitationsSection(
             Spacer(Modifier.width(6.dp))
             Text(
                 "요약 근거",
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = HnColors.Text,
             )
             Spacer(Modifier.width(6.dp))
             Text(
                 "${citations.size}건",
-                fontSize = 12.sp,
+                fontSize = 14.sp,
                 color = HnColors.TextSecondary,
             )
             Box(Modifier.weight(1f))
@@ -309,18 +228,11 @@ private fun CitationRow(c: Citation, onClick: () -> Unit) {
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            Modifier
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(HnColors.Primary),
-        )
-        Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f)) {
             val label = c.label.ifBlank { c.recordId.ifBlank { "근거" } }
             Text(
                 label,
-                fontSize = 12.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 color = HnColors.Text,
             )
@@ -329,7 +241,7 @@ private fun CitationRow(c: Citation, onClick: () -> Unit) {
                 c.lineRange.takeIf { it.isNotEmpty() }?.joinToString("-")?.let { "L.$it" },
             ).joinToString(" · ")
             if (sub.isNotBlank()) {
-                Text(sub, fontSize = 10.sp, color = HnColors.TextTertiary)
+                Text(sub, fontSize = 12.sp, color = HnColors.TextTertiary)
             }
         }
         Icon(

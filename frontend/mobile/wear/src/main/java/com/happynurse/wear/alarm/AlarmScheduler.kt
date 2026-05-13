@@ -7,6 +7,8 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.util.Log
 import androidx.core.content.ContextCompat
 
 class AlarmScheduler(private val context: Context) {
@@ -22,8 +24,7 @@ class AlarmScheduler(private val context: Context) {
             context, ivId.toInt(), intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val am = ContextCompat.getSystemService(context, AlarmManager::class.java) ?: return
-        am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+        scheduleAlarm(triggerAtMillis, pi)
     }
 
     fun scheduleSttAlarm(triggerAtMillis: Long, sttId: String, patient: String, content: String, roomBedTime: String) {
@@ -33,8 +34,29 @@ class AlarmScheduler(private val context: Context) {
             context, sttId.hashCode(), sttBroadcastIntent(sttId, patient, content, roomBedTime),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+        scheduleAlarm(triggerAtMillis, pi)
+    }
+
+    /**
+     * Android 12+ 에서 setExactAndAllowWhileIdle 은 SCHEDULE_EXACT_ALARM 권한이 사용자 시스템 설정에서
+     * 켜져 있어야 동작. 안 켜진 상태에서 호출하면 SecurityException 으로 호출자 coroutine 이 죽고
+     * 처리되지 않으면 앱 크래시. 권한 체크 후 없으면 inexact 폴백.
+     */
+    private fun scheduleAlarm(triggerAtMillis: Long, pi: PendingIntent) {
         val am = ContextCompat.getSystemService(context, AlarmManager::class.java) ?: return
-        am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+        val canExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms()
+        try {
+            if (canExact) {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+            } else {
+                Log.w(TAG, "Exact alarm permission not granted — falling back to setAndAllowWhileIdle")
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+            }
+        } catch (e: SecurityException) {
+            // 권한이 런타임에 회수된 경우 — inexact 로 폴백
+            Log.w(TAG, "setExactAndAllowWhileIdle threw — falling back to setAndAllowWhileIdle", e)
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+        }
     }
 
     fun cancelSttAlarm(sttId: String) {
@@ -53,6 +75,10 @@ class AlarmScheduler(private val context: Context) {
             putExtra(SttAlarmReceiver.EXTRA_CONTENT, content)
             putExtra(SttAlarmReceiver.EXTRA_ROOM_BED_TIME, roomBedTime)
         }
+
+    private companion object {
+        const val TAG = "AlarmScheduler"
+    }
 
     /** 5분 전 사전 알림 BroadcastReceiver 의 트리거 등록은 SystemNotifBuilder 와 함께 추후 연결. */
     fun cancel(requestCode: Int) {
