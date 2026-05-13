@@ -7,12 +7,8 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
-  FileText,
   Loader2,
-  Shield,
   ArrowUpRight,
-  Clock,
-  TrendingUp,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
@@ -37,6 +33,7 @@ import {
   useHandoverStream,
   usePatchHandoverChecks,
   useRosterSummary,
+  useWardEvents,
 } from "@/features/handover/hooks/useHandover";
 import type {
   Citation,
@@ -46,6 +43,8 @@ import type {
   Slot,
   SlotItem,
   Slots,
+  WardAdmissionItem,
+  WardDischargeItem,
 } from "@/features/handover/types/handover";
 import type { WardPatient } from "@/features/patient/types/ward-patient";
 
@@ -71,6 +70,86 @@ const SBAR_SLOT_ORDER: Array<keyof Slots> = [
   "patient_problem",
 ];
 
+// 슬롯별 시각 톤 — 모바일 PASS-BAR 디자인과 통일. 8 슬롯 각자 고유 색을 갖고,
+// 헤더는 accent 색 7-8% alpha 배경 풀폭 띠 + accent 색 글자 + 우측 N건 카운트로 구성.
+// 채도 낮은 차분한 톤이라 SBAR grid 의 6 카드가 동시 노출돼도 시각 충돌 없음.
+type SlotAccent =
+  | "situation"
+  | "patient-problem"
+  | "background"
+  | "assessment"
+  | "safety"
+  | "action"
+  | "recommendation"
+  | "synthesis";
+
+const SBAR_SLOT_ACCENT: Record<keyof Slots, SlotAccent> = {
+  patient_problem: "patient-problem",
+  assessment: "assessment",
+  situation: "situation",
+  safety: "safety",
+  background: "background",
+  action: "action",
+  recommendation: "recommendation",
+  synthesis: "synthesis",
+};
+
+// header: accent 색 7% alpha 배경(헤더 풀폭 띠) + accent 색 글자.
+// text: 콜아웃 단독 사용 — Safety/Synthesis 가 강조 톤일 때 가독성 위해 8% alpha 헤더 + accent text.
+const SLOT_ACCENT_CLASS: Record<SlotAccent, { header: string; text: string }> = {
+  situation:         { header: "bg-slot-situation/[0.07] text-slot-situation",                 text: "text-slot-situation" },
+  "patient-problem": { header: "bg-slot-patient-problem/[0.07] text-slot-patient-problem",     text: "text-slot-patient-problem" },
+  background:        { header: "bg-slot-background/[0.07] text-slot-background",               text: "text-slot-background" },
+  assessment:        { header: "bg-slot-assessment/[0.08] text-slot-assessment",               text: "text-slot-assessment" },
+  safety:            { header: "bg-slot-safety/[0.08] text-slot-safety",                       text: "text-slot-safety" },
+  action:            { header: "bg-slot-action/[0.07] text-slot-action",                       text: "text-slot-action" },
+  recommendation:    { header: "bg-slot-recommendation/[0.07] text-slot-recommendation",       text: "text-slot-recommendation" },
+  synthesis:         { header: "bg-slot-synthesis/[0.08] text-slot-synthesis",                 text: "text-slot-synthesis" },
+};
+
+// 시프트 자동판정 — 클라이언트 현재 시각 기준. 페이지 마운트 시 1회 산출 (자정 경계 재계산은 SKIP).
+// 08:00–16:00 데이 / 16:00–24:00 이브닝 / 00:00–08:00 나이트.
+// 표시는 인계 받는 간호사 관점 "이전 시프트 → 현재 시프트" 형식.
+type ShiftCode = "DAY" | "EVENING" | "NIGHT";
+
+const SHIFT_LABEL: Record<ShiftCode, string> = {
+  DAY: "데이",
+  EVENING: "이브닝",
+  NIGHT: "나이트",
+};
+
+const SHIFT_WINDOW: Record<ShiftCode, string> = {
+  DAY: "08:00–16:00",
+  EVENING: "16:00–24:00",
+  NIGHT: "00:00–08:00",
+};
+
+// 현재 시각이 어느 시프트인지(= 인계 받는 시프트). 이전 시프트는 직전 슬롯.
+const PREV_SHIFT: Record<ShiftCode, ShiftCode> = {
+  DAY: "NIGHT",
+  EVENING: "DAY",
+  NIGHT: "EVENING",
+};
+
+function getCurrentShiftCode(now: Date): ShiftCode {
+  const hour = now.getHours();
+  if (hour >= 8 && hour < 16) return "DAY";
+  if (hour >= 16) return "EVENING";
+  return "NIGHT";
+}
+
+const SHIFT_TONE: Record<ShiftCode, string> = {
+  DAY: "bg-status-warning-surface text-status-warning-strong border-status-warning/30",
+  EVENING: "bg-action-blue-surface text-sub-primary border-action-blue/30",
+  NIGHT: "bg-sub-primary text-white border-sub-primary",
+};
+
+// citation.ts 는 ISO datetime. 시간부가 00:00:00 인 경우는 BE/AI 가 date-only 데이터를
+// isoformat 할 때 자정으로 채워진 것으로 간주 — UI 에선 시간을 숨겨 오해 방지.
+function hasMeaningfulTime(isoTs: string): boolean {
+  return isoTs.slice(11, 19) !== "00:00:00";
+}
+
 // verification / severity / risk_tier 라벨/톤은 노출 제거 — 간호사 화면 노이즈로 판단.
 // 데이터(RosterPatientItem.risk_score, SlotItem.severity_flag, Slot.verification) 는 응답에 그대로 유지.
 
@@ -87,8 +166,16 @@ export function HandoverView() {
     null,
   );
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  // 현재 시프트 — 페이지 마운트 시 1회 산출. 자정 경계에서 갱신 안 함 (재방문 시 자연 갱신).
+  // 인계 받는 시프트(현재) 와 인계 주는 시프트(이전) 둘 다 노출.
+  const handoverShift = useMemo(() => {
+    const to = getCurrentShiftCode(new Date());
+    const from = PREV_SHIFT[to];
+    return { from, to };
+  }, []);
 
   const rosterQuery = useRosterSummary();
+  const wardEventsQuery = useWardEvents();
   const { data: wardPatients } = useWardPatients();
   const generateMutation = useGenerateHandover();
   const progress = useHandoverStream(activeJobId);
@@ -229,6 +316,17 @@ export function HandoverView() {
           <h2 className="text-title-lg font-bold text-content-primary leading-tight tracking-tight">
             AI 인수인계 리포트
           </h2>
+          <span
+            title={`인계 ${SHIFT_LABEL[handoverShift.from]} 시프트(${SHIFT_WINDOW[handoverShift.from]}) → ${SHIFT_LABEL[handoverShift.to]} 시프트(${SHIFT_WINDOW[handoverShift.to]})`}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-body-micro font-bold leading-none border",
+              SHIFT_TONE[handoverShift.to],
+            )}
+          >
+            <span className="opacity-70">{SHIFT_LABEL[handoverShift.from]}</span>
+            <span className="opacity-60">→</span>
+            <span>{SHIFT_LABEL[handoverShift.to]}</span>
+          </span>
         </div>
 
         <Button
@@ -323,7 +421,7 @@ export function HandoverView() {
                           title="리포트 이후 신규 간호기록"
                           className="px-1.5 py-0.5 rounded-full bg-status-warning-surface text-status-warning-strong text-body-micro font-bold leading-none shrink-0"
                         >
-                          새 {fresh}
+                          {fresh}건
                         </span>
                       )}
                     </div>
@@ -338,21 +436,13 @@ export function HandoverView() {
         <div className="flex-1 min-h-0 p-8 overflow-hidden">
           <div className="max-w-6xl mx-auto h-full flex flex-col">
             <div className="flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar space-y-6 pb-10">
-              {/* [TOP] 교대 통합 narrative_header */}
-              {rosterQuery.data && rosterQuery.data.narrative_header && (
-                <div className="bg-surface-card rounded-2xl shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 border-b border-border-base flex items-center gap-2">
-                    <span className="font-bold text-brand-primary text-title-md leading-none">
-                      교대 통합 요약
-                    </span>
-                  </div>
-                  <div className="px-6 py-5">
-                    <Text className="text-body-sm leading-relaxed text-content-primary whitespace-pre-wrap">
-                      {rosterQuery.data.narrative_header}
-                    </Text>
-                  </div>
-                </div>
-              )}
+              {/* [TOP] 오늘의 입퇴원 — 입원/퇴원 좌·우 2분할 박스. 박스 헤더(타이틀)는 제거하고 본문만 노출. */}
+              <WardEventsBox
+                admissions={wardEventsQuery.data?.admissions ?? []}
+                discharges={wardEventsQuery.data?.discharges ?? []}
+                isPending={wardEventsQuery.isPending}
+                isError={wardEventsQuery.isError}
+              />
 
               {/* [MID-1] 시프트 통계 4분할 — RosterSummary 합산 파생, 아이콘 없이 토큰만으로 위계 구성 */}
               {rosterStats && <ShiftStatRow stats={rosterStats} />}
@@ -407,6 +497,135 @@ export function HandoverView() {
 
 // ---------- Sub Components ----------
 
+// 입원/퇴원 좌·우 2분할 박스 — 타이틀 헤더는 없음(섹션 헤더가 시각 위계 담당).
+function WardEventsBox({
+  admissions,
+  discharges,
+  isPending,
+  isError,
+}: {
+  admissions: WardAdmissionItem[];
+  discharges: WardDischargeItem[];
+  isPending: boolean;
+  isError: boolean;
+}) {
+  return (
+    <div className="bg-surface-card rounded-2xl shadow-sm overflow-hidden">
+      {isPending ? (
+        <div className="px-6 py-8 flex items-center justify-center text-content-tertiary">
+          <Loader2 className="size-4 animate-spin" />
+        </div>
+      ) : isError ? (
+        <div className="px-6 py-8 text-center text-body-sm text-status-danger">
+          입퇴원 목록을 불러오지 못했습니다
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x md:divide-y-0 divide-y divide-border-subtle">
+          <WardEventSection
+            title="입원"
+            toneClass="text-status-success"
+            items={admissions.map((item) => ({
+              key: item.encounterId,
+              patientName: item.patientName,
+              roomName: item.roomName,
+              bedName: item.bedName,
+              diseaseOrCc:
+                item.diseaseName || item.chiefComplaint || item.surgeryName || "-",
+              ts: item.periodStart,
+              classCode: item.classCode,
+            }))}
+            emptyMessage="오늘 입원한 환자가 없습니다"
+          />
+          <WardEventSection
+            title="퇴원"
+            toneClass="text-content-tertiary"
+            items={discharges.map((item) => ({
+              key: item.encounterId,
+              patientName: item.patientName,
+              roomName: item.roomName,
+              bedName: item.bedName,
+              diseaseOrCc:
+                item.diseaseName || item.chiefComplaint || item.surgeryName || "-",
+              ts: item.periodEnd,
+              classCode: item.classCode,
+            }))}
+            emptyMessage="오늘 퇴원한 환자가 없습니다"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WardEventSection({
+  title,
+  toneClass,
+  items,
+  emptyMessage,
+}: {
+  title: string;
+  toneClass: string;
+  items: Array<{
+    key: number;
+    patientName: string;
+    roomName: string;
+    bedName: string;
+    diseaseOrCc: string;
+    ts: string;
+    classCode: string;
+  }>;
+  emptyMessage: string;
+}) {
+  return (
+    <section className="px-6 py-5">
+      <div className="flex items-baseline gap-2 mb-3">
+        <h3 className={cn("text-body-base font-bold leading-none", toneClass)}>
+          {title}
+        </h3>
+        <span className="text-body-micro font-bold text-content-tertiary leading-none">
+          {items.length}건
+        </span>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-body-sm text-content-tertiary">{emptyMessage}</p>
+      ) : (
+        <ul className="flex flex-col gap-2.5">
+          {items.map((item) => {
+            const roomBed = [item.roomName.replace(/호$/, ""), item.bedName]
+              .filter(Boolean)
+              .join("-");
+            return (
+              <li key={item.key} className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-body-sm font-bold text-content-primary truncate">
+                    {item.patientName}
+                  </span>
+                  {roomBed && (
+                    <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
+                      {roomBed}
+                    </span>
+                  )}
+                  {item.classCode && (
+                    <span className="text-body-micro font-bold text-content-tertiary leading-none shrink-0">
+                      {item.classCode}
+                    </span>
+                  )}
+                  <span className="ml-auto text-body-micro font-bold text-content-tertiary leading-none shrink-0">
+                    {item.ts.slice(11, 16)}
+                  </span>
+                </div>
+                <span className="text-body-xs text-content-tertiary leading-snug truncate">
+                  {item.diseaseOrCc}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 // 통합 요약 박스 아래 4분할 통계 카드. 좁은 폭에선 2x2 wrap.
 // 디자인 결정: 아이콘 없이 라벨 + 큰 숫자만으로 위계 구성. Tailwind 4 의 text-body-* 토큰이
 // line-height 를 자체 적용해서 라벨/숫자 모두 leading-none 명시.
@@ -422,24 +641,48 @@ function ShiftStatRow({
 }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <StatCard label="담당 환자" value={`${stats.patientCount}명`} />
-      <StatCard label="새 기록" value={`${stats.newRecordTotal}건`} />
-      <StatCard label="주의 규칙" value={`${stats.rulesFiredTotal}회`} />
       <StatCard
-        label="검증 통과율"
+        label="담당 환자"
+        value={`${stats.patientCount}명`}
+        description="이번 시프트에서 인계받는 환자 수"
+      />
+      <StatCard
+        label="새 기록"
+        value={`${stats.newRecordTotal}건`}
+        description="리포트 생성 이후 추가된 확정 간호기록 수"
+      />
+      <StatCard
+        label="위험 신호"
+        value={`${stats.rulesFiredTotal}회`}
+        description="낙상·고위험 약물·DNR·격리·알러지 등 안전 점검 룰이 환자 상태와 일치한 횟수"
+      />
+      <StatCard
+        label="리포트 신뢰도"
         value={
           stats.verificationPercent !== null
             ? `${stats.verificationPercent}%`
             : "—"
         }
+        description="AI 가 작성한 리포트 슬롯이 원본 기록과 일치하는 비율 — 낮으면 리포트 내용 재확인 권장"
       />
     </div>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({
+  label,
+  value,
+  description,
+}: {
+  label: string;
+  value: string;
+  description?: string;
+}) {
   return (
-    <div className="rounded-xl border border-border-subtle bg-surface-card p-4 flex flex-col gap-2">
+    <div
+      title={description}
+      className="rounded-xl border border-border-subtle bg-surface-card p-4 flex flex-col gap-2"
+    >
       <span className="text-body-micro font-bold text-content-secondary leading-none">
         {label}
       </span>
@@ -489,8 +732,11 @@ function RiskTopList({
                   {roster.header}
                 </span>
                 {newRecordCount > 0 && (
-                  <span className="shrink-0 px-2 py-0.5 rounded-full bg-status-warning-surface text-status-warning-strong text-body-micro font-bold leading-none">
-                    새 {newRecordCount}
+                  <span
+                    title="리포트 이후 신규 간호기록"
+                    className="shrink-0 px-2 py-0.5 rounded-full bg-status-warning-surface text-status-warning-strong text-body-micro font-bold leading-none"
+                  >
+                    {newRecordCount}건
                   </span>
                 )}
               </button>
@@ -655,10 +901,13 @@ function PatientHandoverCard({
           {/* [RULES BRIEF] — 항상 보임 */}
           {roster.rules_fired_brief.length > 0 && (
             <div className="px-6 pt-4">
-              <div className="flex items-center gap-2 mb-2.5">
+              <div
+                className="flex items-center gap-2 mb-2.5"
+                title="낙상·고위험 약물·DNR·격리·알러지 등 안전 점검 룰이 환자 상태와 일치한 항목"
+              >
                 <AlertTriangle className="size-4 text-status-warning" />
                 <h4 className="text-body-base font-bold text-status-warning-strong">
-                  주의 규칙
+                  위험 신호
                 </h4>
               </div>
               <ul className="space-y-1.5 pl-1">
@@ -736,19 +985,32 @@ function PassBarDetail({
   const checksQuery = useHandoverChecks(handoverId);
   const patchMutation = usePatchHandoverChecks(handoverId);
 
+  // 시간 정보 없는 citation 필터링 — AI 가 Tier-2(staticfacts) 인용·환각·시드 자정 케이스를 만들 때
+  // ts 가 00:00:00 으로 떨어지는 패턴. 원본 추적 가능한 정상 citation 만 화면에 노출.
+  const visibleCitations = useMemo(
+    () => payload.citations.filter((citation) => hasMeaningfulTime(citation.ts)),
+    [payload.citations],
+  );
+  const visibleCitationIdSet = useMemo(
+    () => new Set(visibleCitations.map((citation) => citation.id)),
+    [visibleCitations],
+  );
+
   // 한 citation 이 여러 slot 에 인용될 수 있음 — CitationList 에서 어느 슬롯에 인용됐는지 표시.
+  // 위에서 거른 visibleCitationIdSet 에 속하는 id 만 매핑에 포함해 popover 도 일관 처리.
   const slotKeysByCitationId = useMemo(() => {
     const map = new Map<string, Set<keyof Slots>>();
     (Object.keys(payload.slots) as Array<keyof Slots>).forEach((slotKey) => {
       payload.slots[slotKey].items.forEach((item) => {
         item.citation_ids.forEach((cid) => {
+          if (!visibleCitationIdSet.has(cid)) return;
           if (!map.has(cid)) map.set(cid, new Set());
           map.get(cid)!.add(slotKey);
         });
       });
     });
     return map;
-  }, [payload.slots]);
+  }, [payload.slots, visibleCitationIdSet]);
 
   const checklistItems = payload.slots.synthesis.items;
   const checkedItemsJson = checksQuery.data?.checkedItemsJson;
@@ -797,10 +1059,9 @@ function PassBarDetail({
       {/* [2] Safety 콜아웃 — 낙상/격리/DNR/알러지/금기 등 안전 사항 */}
       {payload.slots.safety.items.length > 0 && (
         <SlotCallout
-          label="Safety · 안전"
+          label="Safety"
           slot={payload.slots.safety}
-          accent="danger"
-          icon={<Shield className="size-4" />}
+          accent="safety"
         />
       )}
 
@@ -811,14 +1072,15 @@ function PassBarDetail({
             key={key}
             label={SLOT_LABEL[key]}
             slot={payload.slots[key]}
+            accent={SBAR_SLOT_ACCENT[key]}
           />
         ))}
       </div>
 
       {/* [4] Citations 전체 목록 — 인용된 슬롯 라벨과 함께 표시 */}
-      {payload.citations.length > 0 && (
+      {visibleCitations.length > 0 && (
         <CitationList
-          citations={payload.citations}
+          citations={visibleCitations}
           slotKeysByCitationId={slotKeysByCitationId}
           onCitationClick={onCitationClick}
         />
@@ -894,7 +1156,7 @@ function ChecklistSection({
 }
 
 // 상단 콜아웃 (Synthesis · Safety) — 풀폭, 강조 톤. SlotCard 와 같은 데이터지만 시각 위계가 다름.
-// 디자인: 헤더 띠(진한 surface, 위계 강조) + 본문 흰배경(가독성). overflow-hidden 으로 rounded 클리핑.
+// 디자인: 헤더 풀폭 색띠(accent 8% alpha) + 우측 N건 카운트 + 본문 흰배경(가독성).
 function SlotCallout({
   label,
   slot,
@@ -903,24 +1165,26 @@ function SlotCallout({
 }: {
   label: string;
   slot: Slot;
-  accent: "brand" | "danger";
+  accent: SlotAccent;
   icon?: React.ReactNode;
 }) {
-  const isDanger = accent === "danger";
-  const headerClass = isDanger
-    ? "bg-status-danger-surface text-status-danger-strong"
-    : "bg-brand-surface text-brand-primary";
-
+  const tokens = SLOT_ACCENT_CLASS[accent];
+  const itemCount = slot.items.length;
   return (
     <div className="rounded-xl border border-border-subtle bg-surface-card overflow-hidden">
       <div
         className={cn(
           "flex items-center gap-2 px-4 py-3 border-b border-border-subtle",
-          headerClass,
+          tokens.header,
         )}
       >
         {icon}
         <h4 className="text-body-base font-bold leading-none">{label}</h4>
+        {itemCount > 0 && (
+          <span className="ml-auto text-body-sm font-semibold leading-none">
+            {itemCount}건
+          </span>
+        )}
       </div>
       <ul className="px-4 py-3 space-y-2">
         {slot.items.map((item, index) => (
@@ -931,61 +1195,116 @@ function SlotCallout({
   );
 }
 
-function SlotCard({ label, slot }: { label: string; slot: Slot }) {
+// SBAR grid 의 6 슬롯 카드. 모바일 PASS-BAR 디자인과 통일 — accent 7% alpha 풀폭 헤더 + 우측 N건 카운트.
+function SlotCard({
+  label,
+  slot,
+  accent,
+}: {
+  label: string;
+  slot: Slot;
+  accent: SlotAccent;
+}) {
+  const tokens = SLOT_ACCENT_CLASS[accent];
+  const itemCount = slot.items.length;
   return (
-    <div className="rounded-xl border border-border-subtle bg-surface-base/70 p-3.5 flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <h4 className="text-body-base font-bold text-content-primary leading-none">
-          {label}
-        </h4>
+    <div className="rounded-xl border border-border-subtle bg-surface-card overflow-hidden flex flex-col">
+      <div
+        className={cn(
+          "flex items-center gap-2 px-3.5 py-2.5 border-b border-border-subtle",
+          tokens.header,
+        )}
+      >
+        <h4 className="text-body-sm font-bold leading-none">{label}</h4>
+        {itemCount > 0 && (
+          <span className="ml-auto text-body-xs font-semibold leading-none">
+            {itemCount}건
+          </span>
+        )}
       </div>
-      {slot.items.length === 0 ? (
-        <p className="text-body-micro text-content-tertiary">—</p>
-      ) : (
-        <ul className="space-y-2">
-          {slot.items.map((item, index) => (
-            <SlotItemRow key={index} item={item} />
-          ))}
-        </ul>
-      )}
+      <div className="px-3.5 py-3">
+        {itemCount === 0 ? (
+          <p className="text-body-micro text-content-tertiary">—</p>
+        ) : (
+          <ul className="space-y-2">
+            {slot.items.map((item, index) => (
+              <SlotItemRow key={index} item={item} />
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
 
-// 슬롯 안 한 줄짜리 항목 — value / quote 본문 + meta (time_window, trend) + contingency.
+// value 본문에 박힌 HH:mm 시간 패턴을 추출 — 모든 항목의 시간 노출을 메타 라인 한 곳으로 통일하기 위한 정규화.
+// LLM 이 어떤 항목은 value 안에, 다른 항목은 time_window 에 시간을 박아 평가 슬롯에서 위치가 들쭉날쭉해지는 문제 해결.
+// 정확히 1개 시간 매치만 추출 (다수 시간이 있는 텍스트는 본문 의미가 강하므로 그대로 둠).
+const TIME_HHMM_PATTERN = /\b(\d{1,2}:\d{2})\b/g;
+
+function extractInlineTime(text: string | null): { stripped: string | null; time: string | null } {
+  if (!text) return { stripped: null, time: null };
+  const matches = text.match(TIME_HHMM_PATTERN);
+  if (!matches || matches.length !== 1) return { stripped: text, time: null };
+  const time = matches[0];
+  // 시간 + 주변 구두점/공백 정리
+  const stripped = text
+    .replace(time, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[\s\-·:,]+|[\s\-·:,]+$/g, "")
+    .trim();
+  return { stripped: stripped || null, time };
+}
+
+// 슬롯 안 한 줄짜리 항목 — value(요약) + quote(원문 인용 박스) + meta (time_window, trend) + contingency.
 // severity_flag(stable/watcher/unstable) 칩은 노출 제거 — 간호사 화면 노이즈 회피.
 // citation 표시도 슬롯에서 제거됨 — 출처는 카드 하단 "근거 기록" 영역(CitationList) 에만.
+// value 와 quote 가 둘 다 있을 때 quote 는 별도 인용 박스(brand-surface)로 시각 구분.
 function SlotItemRow({ item }: { item: SlotItem }) {
-  const headline = item.value ?? item.quote ?? item.kind ?? "(빈 항목)";
-  return (
-    <li className="text-body-sm leading-relaxed flex flex-col gap-1">
-      <div className="flex flex-wrap items-start gap-1.5">
-        <span className="text-content-primary flex-1 min-w-0 break-words">
-          {headline}
-        </span>
-      </div>
+  const rawValueText = item.value?.trim() || null;
+  const quoteText = item.quote?.trim() || null;
+  // value 안 시간 패턴을 메타로 끌어올림 — 모든 항목이 같은 위치에 시간 표시.
+  const { stripped: valueText, time: timeFromValue } = extractInlineTime(rawValueText);
+  // value 도 quote 도 없으면 kind 라도 폴백.
+  const headline = valueText ?? (quoteText ? null : (item.kind ?? "(빈 항목)"));
 
-      {/* meta 라인: time_window · trend — 둘 다 옵션. 없으면 라인 자체 안 그림. */}
-      {(item.time_window || item.trend) && (
-        <div className="flex items-center gap-2 text-body-micro text-content-secondary">
-          {item.time_window && (
-            <span className="inline-flex items-center gap-1">
-              <Clock className="size-3" />
-              {item.time_window}
-            </span>
-          )}
-          {item.trend && (
-            <span className="inline-flex items-center gap-1">
-              <TrendingUp className="size-3" />
-              {item.trend}
-            </span>
-          )}
+  // 메타 라인 — 시간(time_window 우선, 없으면 value 에서 추출) + trend. dedup 후 ` · ` join.
+  const timeWindow = item.time_window?.trim() || null;
+  const trendText = item.trend?.trim() || null;
+  const metaParts = Array.from(
+    new Set(
+      [timeWindow ?? timeFromValue, trendText].filter(
+        (part): part is string => !!part,
+      ),
+    ),
+  );
+
+  return (
+    <li className="text-body-sm leading-relaxed flex flex-col gap-1.5">
+      {headline && (
+        <div className="flex flex-wrap items-start gap-1.5">
+          <span className="text-content-primary flex-1 min-w-0 break-words">
+            {headline}
+          </span>
+        </div>
+      )}
+      {quoteText && (
+        <div className="rounded-md bg-brand-surface/40 px-2 py-1.5">
+          <p className="text-body-sm text-content-secondary leading-snug break-words">
+            “{quoteText}”
+          </p>
+        </div>
+      )}
+
+      {metaParts.length > 0 && (
+        <div className="text-body-micro text-content-secondary">
+          {metaParts.join(" · ")}
         </div>
       )}
 
       {/* contingency — "if X then Y" 형식의 조건부 조치. 안전 카드에서 특히 중요. */}
       {item.contingency && (
-        <div className="text-body-micro text-status-warning-strong leading-snug pl-2 border-l-2 border-status-warning/40">
+        <div className="text-body-micro text-status-warning-strong leading-snug">
           ↳ {item.contingency}
         </div>
       )}
@@ -996,6 +1315,7 @@ function SlotItemRow({ item }: { item: SlotItem }) {
 }
 
 // hover preview 공용 — chip / citation list 양쪽에서 사용.
+// popover 영역 어디를 눌러도 원본 기록으로 이동. 별도 "열기" 버튼은 없앰.
 function CitationPreview({
   citation,
   onClick,
@@ -1003,25 +1323,36 @@ function CitationPreview({
   citation: Citation;
   onClick: () => void;
 }) {
+  const showTime = hasMeaningfulTime(citation.ts);
   return (
-    <div className="flex flex-col gap-2">
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left flex flex-col gap-2 cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary/40 rounded"
+    >
       <div className="flex items-center gap-2">
         <Badge className="bg-brand-surface text-brand-primary border-none text-body-micro font-bold leading-none px-2 py-0.5">
           {citation.label}
         </Badge>
+        {/* 날짜/시간 — 카드 리스트와 동일 폰트. 시간부 00:00:00 이면 숨김. */}
+        <span className="ml-auto flex items-baseline gap-2 leading-none">
+          <span className="text-body-sm font-mono font-bold text-content-primary">
+            {citation.ts.slice(0, 10).replace(/-/g, ".")}
+          </span>
+          {showTime && (
+            <span className="text-body-sm font-mono font-bold text-content-primary">
+              {citation.ts.slice(11, 16)}
+            </span>
+          )}
+        </span>
       </div>
-      <div className="text-body-micro font-mono text-content-secondary leading-none">
-        {citation.ts.slice(0, 16).replace("T", " ")}
-      </div>
-      <button
-        type="button"
-        onClick={onClick}
-        className="self-end inline-flex items-center gap-1 text-body-micro font-semibold text-brand-primary hover:text-brand-primary/80 transition-colors"
-      >
-        원본 기록 열기
-        <ArrowUpRight className="size-3" />
-      </button>
-    </div>
+      {/* 본문 발췌 — BE/AI 가 line_range 구간 원본 텍스트를 채워줌. 없으면 행 자체 안 그림. */}
+      {citation.excerpt && (
+        <p className="text-body-sm text-content-secondary leading-relaxed line-clamp-4 break-words whitespace-pre-wrap">
+          {citation.excerpt}
+        </p>
+      )}
+    </button>
   );
 }
 
@@ -1041,15 +1372,14 @@ function CitationList({
       <button
         type="button"
         onClick={() => setOpen((previous) => !previous)}
-        className="flex items-center gap-2 text-body-base font-bold text-brand-primary hover:text-brand-primary/80 transition-colors"
+        className="w-full flex items-center gap-2 text-body-base font-bold text-brand-primary hover:bg-brand-surface/40 transition-colors px-2 py-2 -mx-2 rounded-md"
       >
         {open ? (
           <ChevronDown className="size-4" />
         ) : (
           <ChevronRight className="size-4" />
         )}
-        <FileText className="size-4" />
-        근거 기록 {citations.length}건 {open ? "접기" : "보기"}
+        근거 기록 {citations.length}건
       </button>
       {open && (
         <ul className="mt-3 space-y-2">
@@ -1067,7 +1397,7 @@ function CitationList({
                       onClick={() => onCitationClick(citation)}
                       className="w-full text-left flex gap-2.5 p-3 rounded-xl border bg-surface-card border-border-subtle hover:border-brand-primary/40 transition-colors"
                     >
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 flex flex-col gap-1.5">
                         <div className="flex items-center gap-3 flex-wrap">
                           {/* 라벨 — brand 색으로 강조, 인용 ID */}
                           <span className="text-body-sm font-bold text-brand-primary leading-none">
@@ -1079,16 +1409,24 @@ function CitationList({
                               {referencedSlotLabels.join(", ")}
                             </span>
                           )}
-                          {/* 날짜 · 시간 — 우측 정렬, mono. 시간만 굵게 처리해 시각적 분리 */}
+                          {/* 날짜 · 시간 — 우측 정렬, mono. 폰트 무게/색 통일. 시간부 00:00:00 이면 숨김. */}
                           <span className="ml-auto flex items-baseline gap-2 leading-none">
-                            <span className="text-body-sm font-mono text-content-secondary">
+                            <span className="text-body-sm font-mono font-bold text-content-primary">
                               {citation.ts.slice(0, 10).replace(/-/g, ".")}
                             </span>
-                            <span className="text-body-sm font-mono font-bold text-content-primary">
-                              {citation.ts.slice(11, 16)}
-                            </span>
+                            {hasMeaningfulTime(citation.ts) && (
+                              <span className="text-body-sm font-mono font-bold text-content-primary">
+                                {citation.ts.slice(11, 16)}
+                              </span>
+                            )}
                           </span>
                         </div>
+                        {/* 본문 발췌 — line_range 구간 원본 텍스트. 카드 한 줄 미리보기, 자세한 본문은 hover popover. */}
+                        {citation.excerpt && (
+                          <p className="text-body-xs text-content-secondary leading-snug line-clamp-1 break-words">
+                            {citation.excerpt}
+                          </p>
+                        )}
                       </div>
                       <ArrowUpRight className="size-3.5 text-content-muted opacity-50 self-center" />
                     </button>

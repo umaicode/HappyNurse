@@ -22,6 +22,8 @@ export interface Citation {
   // ISO datetime
   ts: string;
   label: string;
+  // 본문 발췌. BE/AI 가 line_range 구간의 원본 텍스트를 잘라 채워줌. 없을 수도 있음(옛 리포트).
+  excerpt?: string;
 }
 
 export interface SlotItem {
@@ -140,6 +142,44 @@ export interface HandoverChecksResponse {
 // PATCH /handover/{handoverId}/checks body — 델타 방식.
 // 값 true = ON 으로 만들기, false = OFF 로 만들기. 안 보낸 키는 BE 가 유지.
 export type HandoverChecksPatch = Record<string, boolean>;
+
+// ---------- 입퇴원 이벤트 (BE) ----------
+// GET /handover/ward-events — 오늘 우리 병동의 입원/퇴원 환자 목록.
+// 인수인계 화면 상단의 "교대 통합 요약" 자리 대체 (narrative_header 박스 → 입퇴원 박스).
+
+export interface WardAdmissionItem {
+  encounterId: number;
+  patientName: string;
+  roomName: string;
+  bedName: string;
+  // 입원 경로 — "응급" / "외래" / "재원" 등.
+  classCode: string;
+  chiefComplaint: string;
+  diseaseName: string;
+  surgeryName: string;
+  // ISO datetime
+  periodStart: string;
+}
+
+export interface WardDischargeItem {
+  encounterId: number;
+  patientName: string;
+  roomName: string;
+  bedName: string;
+  classCode: string;
+  chiefComplaint: string;
+  diseaseName: string;
+  surgeryName: string;
+  // ISO datetime
+  periodEnd: string;
+}
+
+export interface WardEventsResponse {
+  // periodStart 오름차순
+  admissions: WardAdmissionItem[];
+  // periodEnd 오름차순
+  discharges: WardDischargeItem[];
+}
 
 // ---------- generate 응답 ----------
 

@@ -7,6 +7,7 @@ import {
   getHandoverChecks,
   getHandoverDetail,
   getRosterSummary,
+  getWardEvents,
   patchHandoverChecks,
 } from "../api/handover";
 import { openSse } from "@/lib/sse";
@@ -20,13 +21,26 @@ import type {
   SseErrorPayload,
   SseRosterSummaryPayload,
   SseStartedPayload,
+  WardEventsResponse,
 } from "../types/handover";
 
 export const HANDOVER_ROSTER_KEY = ["handover", "roster-summary"] as const;
+export const HANDOVER_WARD_EVENTS_KEY = ["handover", "ward-events"] as const;
 export const handoverDetailKey = (handoverId: string | null) =>
   ["handover", "detail", handoverId] as const;
 export const handoverChecksKey = (handoverId: string | null) =>
   ["handover", "checks", handoverId] as const;
+
+/**
+ * 오늘 우리 병동의 입퇴원 환자 목록.
+ * narrative_header 박스 대신 인수인계 화면 상단을 채운다.
+ */
+export const useWardEvents = () =>
+  useQuery<WardEventsResponse>({
+    queryKey: HANDOVER_WARD_EVENTS_KEY,
+    queryFn: getWardEvents,
+    staleTime: 60_000,
+  });
 
 /**
  * 진입 시 즉석 narrative + 환자 brief.
