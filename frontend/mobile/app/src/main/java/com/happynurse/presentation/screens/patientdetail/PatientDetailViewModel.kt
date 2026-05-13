@@ -95,7 +95,7 @@ class PatientDetailViewModel @Inject constructor(
 
     private fun loadNotes(encounterId: Long, date: LocalDate) {
         launchWithResult(block = { encounterRepository.getNursingNotes(encounterId, date.toString()) }) {
-            _notes.value = it
+            _notes.value = it.sortedBy { n -> n.time }
         }
     }
 
