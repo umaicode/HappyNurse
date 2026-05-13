@@ -108,6 +108,25 @@ public class AuthController {
                 .body(ApiResponse.ok("로그아웃되었습니다.", null));
     }
 
+    @Operation(summary = "세션 연장", description = "현재 로그인된 사용자가 세션을 연장합니다. ACCESS_TOKEN 쿠키만 재발급되고 REFRESH_TOKEN은 그대로 유지됩니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "세션 연장 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요")
+    })
+    @PostMapping("/extend")
+    public ResponseEntity<ApiResponse<Void>> extend(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        String newAccessToken = authService.extend(userDetails);
+
+        ResponseCookie accessCookie = CookieUtil.createAccessTokenCookie(
+                cookieName, newAccessToken, expirationMs, cookieSecure, cookieSameSite);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .body(ApiResponse.ok("세션이 연장되었습니다.", null));
+    }
+
     @Operation(summary = "토큰 갱신", description = "REFRESH_TOKEN 쿠키로 새로운 ACCESS_TOKEN과 REFRESH_TOKEN을 발급합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "토큰 갱신 성공"),
