@@ -181,7 +181,7 @@ export function AssignPatientModal({
           </DialogTitle>
           <DialogDescription
             className={cn(
-              "text-[14px]",
+              "text-body-sm",
               isOnboarding
                 ? "text-brand-primary font-semibold"
                 : "text-content-tertiary",
@@ -208,7 +208,7 @@ export function AssignPatientModal({
 
         <div className="flex-1 overflow-y-auto">
           {!hasResults ? (
-            <div className="py-12 px-7 text-center text-[14px] font-semibold text-content-muted">
+            <div className="py-12 px-7 text-center text-body-sm font-semibold text-content-muted">
               {patients.length === 0
                 ? "병동에 입원 중인 환자가 없습니다"
                 : "검색 결과가 없습니다 · 환자명·호실·증상으로 다시 검색해보세요"}
@@ -227,7 +227,7 @@ export function AssignPatientModal({
                     htmlFor={roomCheckboxId}
                     className="sticky top-0 z-10 flex items-center gap-2 px-7 py-2 bg-slate-100/95 backdrop-blur border-b border-border-subtle cursor-pointer select-none hover:bg-slate-100"
                   >
-                    <span className="text-[12px] font-bold text-content-secondary tracking-wider uppercase">
+                    <span className="text-body-micro font-bold text-content-secondary tracking-wider uppercase">
                       {roomName}
                     </span>
                     <span className="text-body-micro font-bold text-content-muted">
@@ -249,13 +249,6 @@ export function AssignPatientModal({
                       const checked = selectedIds.has(patient.encounterId);
                       const checkboxId = `assign-${patient.encounterId}`;
                       const isDuplicate = duplicateNames[patient.name] > 1;
-                      // 호실-침대 칩 — 사이드바 IV 카드와 동일 패턴 ("{roomName-호}-{bedName}").
-                      const roomBed = [
-                        patient.roomName.replace(/호$/, ""),
-                        patient.bedName,
-                      ]
-                        .filter(Boolean)
-                        .join("-");
                       return (
                         <label
                           key={patient.encounterId}
@@ -275,10 +268,17 @@ export function AssignPatientModal({
                             }
                             className="shrink-0"
                           />
+                          {/* 사이드바 PatientItem 과 같은 톤·간격. 호실-침대 칩은 그룹 헤더에만 노출(중복 제거). */}
                           <div className="flex items-center gap-2 min-w-0 flex-1">
-                            {/* 이름 + 동명이인 점 */}
                             <div className="relative inline-block shrink-0">
-                              <span className="text-base font-bold text-content-primary truncate">
+                              <span
+                                className={cn(
+                                  "text-base tracking-tight truncate",
+                                  checked
+                                    ? "font-bold text-sub-primary"
+                                    : "font-semibold text-content-secondary",
+                                )}
+                              >
                                 {patient.name}
                               </span>
                               {isDuplicate && (
@@ -288,17 +288,18 @@ export function AssignPatientModal({
                                 />
                               )}
                             </div>
-                            {/* 호실-침대 칩 — 사이드바와 동일 톤 */}
-                            {roomBed && (
-                              <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
-                                {roomBed}
-                              </span>
-                            )}
-                            {/* 성별/생년월일 — 우측 정렬. 폰트는 전역 Pretendard. */}
-                            <span className="ml-auto text-[13px] font-bold text-content-tertiary shrink-0">
-                              {formatGenderShort(patient.gender)}/
-                              {formatBirthShort(patient.birthDate)}
-                            </span>
+                            <div
+                              className={cn(
+                                "flex items-center gap-1 text-[13px] leading-tight font-bold shrink-0 ml-auto",
+                                checked
+                                  ? "text-sub-primary/70"
+                                  : "text-content-tertiary",
+                              )}
+                            >
+                              <span>{formatGenderShort(patient.gender)}</span>
+                              <span>/</span>
+                              <span>{formatBirthShort(patient.birthDate)}</span>
+                            </div>
                           </div>
                         </label>
                       );

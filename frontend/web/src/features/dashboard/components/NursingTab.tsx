@@ -469,7 +469,7 @@ function InlineAddForm({
 
   return (
     <div className="grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-2 border-y border-brand-primary/10 bg-brand-surface/30 items-center shadow-inner">
-      <div className="text-center text-body-sm font-mono font-bold text-content-secondary">
+      <div className="w-full text-center font-mono font-extrabold text-[15px] text-content-primary leading-[1.6]">
         {displayHHmm}
       </div>
       <div className="pr-4">
@@ -641,10 +641,11 @@ function NoteRow({
     <div
       ref={rowRef}
       className={cn(
-        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-1 border-b border-border-base/50 items-start hover:bg-surface-hover/40 transition-[background-color,box-shadow] duration-500 relative",
+        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-1 min-h-[60px] border-b border-border-base/50 items-center hover:bg-surface-hover/40 transition-[background-color,box-shadow] duration-500 relative",
         // 우선순위: medication > draft > isEditing (마지막 매치가 이김)
-        // draft 는 hover 도 같은 회색으로 고정 — 임시 기록이라 hover 강조 의미 없음.
-        note.status === "draft" && "bg-[#ecedf0] hover:bg-[#ecedf0]",
+        // draft 는 hover 도 같은 톤으로 고정 — 임시 기록이라 hover 강조 의미 없음. 좌측 3px accent 로 임시상태 시각화.
+        note.status === "draft" &&
+          "bg-sub-alpha-10 hover:bg-sub-alpha-10 border-l-[3px] border-l-status-warning",
         note.type === "MEDICATION" && "bg-brand-surface/20",
         isEditing && "bg-brand-surface/15",
         // highlighted — 사이드바/인수인계에서 점프해 온 행 잠시 강조. inset shadow 로 외곽 ring 효과.
@@ -792,7 +793,7 @@ function NoteRow({
             />
           )
         ) : (
-          <span className="text-[11px] text-content-muted">-</span>
+          <span className="text-body-micro text-content-muted">-</span>
         )}
       </div>
     </div>

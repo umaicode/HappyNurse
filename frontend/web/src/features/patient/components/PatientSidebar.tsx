@@ -2,7 +2,7 @@
 
 import { Search, LogOut, ChevronRight, Settings, Loader2 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useLogout } from "@/features/auth/hooks/useLogout";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -49,11 +49,10 @@ export function PatientSidebar({
   onOpenAssignModal,
   onJumpToUnconfirmed,
 }: PatientSidebarProps) {
-  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const expiresAt = useAuthStore((state) => state.expiresAt);
   const refreshExpiresAt = useAuthStore((state) => state.refreshExpiresAt);
-  const reset = useAuthStore((state) => state.reset);
+  const logout = useLogout();
   const [searchQuery, setSearchQuery] = useState("");
   const [isExtending, setIsExtending] = useState(false);
 
@@ -283,8 +282,7 @@ export function PatientSidebar({
 
           <button
             onClick={() => {
-              reset();
-              router.push("/login");
+              logout();
             }}
             className="p-2 text-status-danger hover:bg-status-danger-surface rounded-xl transition-all shadow-xs border border-status-danger/20"
             title="로그아웃"
