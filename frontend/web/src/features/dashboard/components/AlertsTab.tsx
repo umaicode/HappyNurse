@@ -28,9 +28,9 @@ export function AlertsTab({ patientId, date }: AlertsTabProps) {
   return (
     <div className="flex-1 overflow-auto bg-surface-card min-h-0 relative text-body-base">
       <div className="min-w-[700px] flex flex-col h-full">
-        <div className="grid grid-cols-[110px_1fr] gap-2 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-extrabold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
-          <div className="text-center border-r border-border-base/50">시간</div>
-          <div className="pl-2">증상</div>
+        <div className="grid grid-cols-[90px_1fr] gap-4 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-extrabold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
+          <div className="border-r border-border-base pr-4 text-center">시간</div>
+          <div>증상</div>
         </div>
 
         <div className="flex flex-col flex-1 pb-10">
@@ -46,14 +46,17 @@ export function AlertsTab({ patientId, date }: AlertsTabProps) {
             symptoms.map((symptom) => (
               <div
                 key={symptom.selfReportId}
-                className="grid grid-cols-[110px_1fr] gap-2 px-4 py-3 border-b border-border-base/50 items-start hover:bg-surface-hover/30 transition-all text-body-sm text-content-secondary"
+                className="grid grid-cols-[90px_1fr] gap-4 px-4 py-3 border-b border-border-base/50 items-start hover:bg-surface-hover/30 transition-all text-body-sm text-content-secondary"
               >
-                <div className="text-center font-mono font-extrabold text-[15px] text-content-primary pt-0.5">
-                  {formatHHmm(symptom.submittedAt)}
+                {/* 시간 — NursingTab 과 동일 패턴 (border-r + pr-4 + 내부 w-full text-center) */}
+                <div className="py-1 border-r border-border-base/50 pr-4">
+                  <div className="w-full text-center font-mono font-extrabold text-[15px] text-content-primary leading-[1.6]">
+                    {formatHHmm(symptom.submittedAt)}
+                  </div>
                 </div>
-                <div className="pl-2 pt-1">
+                <div className="pt-1">
                   {symptom.buttonLabel && (
-                    <span className="inline-block px-1.5 py-0.5 mr-1.5 text-[11px] font-bold rounded bg-brand-surface text-brand-primary leading-none align-middle">
+                    <span className="inline-block px-1.5 py-0.5 mr-1.5 text-body-sm font-bold rounded bg-brand-surface text-brand-primary leading-snug align-middle">
                       {symptom.buttonLabel}
                     </span>
                   )}

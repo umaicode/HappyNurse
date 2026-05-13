@@ -34,19 +34,21 @@ export function OrderTab({ encounterId, date }: OrderTabProps) {
 
   return (
     <div className="flex-1 overflow-auto bg-surface-card min-h-0 relative text-body-base">
-      <div className="min-w-[1100px] flex flex-col h-full">
-        {/* Header Row */}
-        <div className="grid grid-cols-[110px_80px_100px_1fr_220px_70px_50px_60px_70px_90px] gap-2 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-extrabold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
-          <div className="text-center border-r border-border-base/50">시간</div>
-          <div className="border-r border-border-base/50 pl-2">구분</div>
-          <div className="border-r border-border-base/50 pl-2">처방코드</div>
-          <div className="border-r border-border-base/50 pl-2">처방명칭</div>
-          <div className="border-r border-border-base/50 pl-2">참고사항</div>
-          <div className="text-center border-r border-border-base/50">1회량</div>
-          <div className="text-center border-r border-border-base/50">횟수</div>
-          <div className="text-center border-r border-border-base/50">단위</div>
-          <div className="text-center border-r border-border-base/50">용법</div>
-          <div className="text-center">진행상태</div>
+      <div className="min-w-[1150px] flex flex-col h-full">
+        {/* Header Row — 시간 셀은 NursingTab 과 동일하게 border-r + pr-4 패턴.
+            처방명칭/참고사항은 minmax(0,Nfr) 로 가용 공간을 비율 분배 (2.5 : 1).
+            다른 고정 컬럼은 텍스트 길이에 맞춰 좁힘 — 처방명칭이 truncate 안 되게 여유 확보. */}
+        <div className="grid grid-cols-[90px_60px_88px_minmax(0,2.5fr)_60px_48px_56px_60px_80px_minmax(0,1fr)] gap-4 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-extrabold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
+          <div className="border-r border-border-base pr-4 text-center">시간</div>
+          <div className="border-r border-border-base/50 pr-4">구분</div>
+          <div className="border-r border-border-base/50 pr-4">처방코드</div>
+          <div className="border-r border-border-base/50 pr-4">처방명칭</div>
+          <div className="text-center border-r border-border-base/50 pr-4">1회량</div>
+          <div className="text-center border-r border-border-base/50 pr-4">횟수</div>
+          <div className="text-center border-r border-border-base/50 pr-4">단위</div>
+          <div className="text-center border-r border-border-base/50 pr-4">용법</div>
+          <div className="text-center border-r border-border-base/50 pr-4">진행상태</div>
+          <div>참고사항</div>
         </div>
 
         {/* Body */}
@@ -63,22 +65,22 @@ export function OrderTab({ encounterId, date }: OrderTabProps) {
             orders.map((order) => (
               <div
                 key={order.medicationOrderId}
-                className="grid grid-cols-[110px_80px_100px_1fr_220px_70px_50px_60px_70px_90px] gap-2 px-4 py-3 border-b border-border-base/50 items-center hover:bg-surface-hover/30 transition-all text-body-sm text-content-secondary"
+                className="grid grid-cols-[90px_60px_88px_minmax(0,2.5fr)_60px_48px_56px_60px_80px_minmax(0,1fr)] gap-4 px-4 py-3 border-b border-border-base/50 items-center hover:bg-surface-hover/30 transition-all text-body-sm text-content-secondary"
               >
-                <div className="text-center font-mono font-extrabold text-[15px] text-content-primary">
-                  {formatHHmm(order.createdAt)}
+                {/* 시간 — NursingTab 과 동일 패턴 (border-r + pr-4 + 내부 w-full text-center) */}
+                <div className="border-r border-border-base/50 pr-4">
+                  <div className="w-full text-center font-mono font-extrabold text-[15px] text-content-primary leading-[1.6]">
+                    {formatHHmm(order.createdAt)}
+                  </div>
                 </div>
-                <div className="pl-2 font-bold text-content-tertiary">
+                <div className="font-bold text-content-tertiary truncate">
                   {ORDER_TYPE_LABEL[order.orderType] ?? order.orderType}
                 </div>
-                <div className="font-mono font-bold text-content-primary pl-2">
+                <div className="font-mono font-bold text-content-primary truncate">
                   {order.orderCode}
                 </div>
-                <div className="font-medium text-content-secondary truncate pl-2">
+                <div className="font-medium text-content-secondary truncate">
                   {order.orderName}
-                </div>
-                <div className="font-medium text-content-secondary truncate pl-2">
-                  {order.remarks ?? ""}
                 </div>
                 <div className="text-center font-mono font-bold">{order.dose}</div>
                 <div className="text-center font-mono font-bold">{order.frequency}</div>
@@ -97,6 +99,9 @@ export function OrderTab({ encounterId, date }: OrderTabProps) {
                   >
                     {ORDER_STATUS_LABEL[order.status] ?? order.status}
                   </span>
+                </div>
+                <div className="font-medium text-content-secondary truncate">
+                  {order.remarks ?? ""}
                 </div>
               </div>
             ))

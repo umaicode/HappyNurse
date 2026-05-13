@@ -37,6 +37,7 @@ import {
   useHandoverStream,
   usePatchHandoverChecks,
   useRosterSummary,
+  useWardEvents,
 } from "@/features/handover/hooks/useHandover";
 import type {
   Citation,
@@ -46,6 +47,8 @@ import type {
   Slot,
   SlotItem,
   Slots,
+  WardAdmissionItem,
+  WardDischargeItem,
 } from "@/features/handover/types/handover";
 import type { WardPatient } from "@/features/patient/types/ward-patient";
 
@@ -71,6 +74,49 @@ const SBAR_SLOT_ORDER: Array<keyof Slots> = [
   "patient_problem",
 ];
 
+// 시프트 자동판정 — 클라이언트 현재 시각 기준. 페이지 마운트 시 1회 산출 (자정 경계 재계산은 SKIP).
+// 08:00–16:00 데이 / 16:00–24:00 이브닝 / 00:00–08:00 나이트.
+// 표시는 인계 받는 간호사 관점 "이전 시프트 → 현재 시프트" 형식.
+type ShiftCode = "DAY" | "EVENING" | "NIGHT";
+
+const SHIFT_LABEL: Record<ShiftCode, string> = {
+  DAY: "데이",
+  EVENING: "이브닝",
+  NIGHT: "나이트",
+};
+
+const SHIFT_WINDOW: Record<ShiftCode, string> = {
+  DAY: "08:00–16:00",
+  EVENING: "16:00–24:00",
+  NIGHT: "00:00–08:00",
+};
+
+// 현재 시각이 어느 시프트인지(= 인계 받는 시프트). 이전 시프트는 직전 슬롯.
+const PREV_SHIFT: Record<ShiftCode, ShiftCode> = {
+  DAY: "NIGHT",
+  EVENING: "DAY",
+  NIGHT: "EVENING",
+};
+
+function getCurrentShiftCode(now: Date): ShiftCode {
+  const hour = now.getHours();
+  if (hour >= 8 && hour < 16) return "DAY";
+  if (hour >= 16) return "EVENING";
+  return "NIGHT";
+}
+
+const SHIFT_TONE: Record<ShiftCode, string> = {
+  DAY: "bg-status-warning-surface text-status-warning-strong border-status-warning/30",
+  EVENING: "bg-action-blue-surface text-sub-primary border-action-blue/30",
+  NIGHT: "bg-sub-primary text-white border-sub-primary",
+};
+
+// citation.ts 는 ISO datetime. 시간부가 00:00:00 인 경우는 BE/AI 가 date-only 데이터를
+// isoformat 할 때 자정으로 채워진 것으로 간주 — UI 에선 시간을 숨겨 오해 방지.
+function hasMeaningfulTime(isoTs: string): boolean {
+  return isoTs.slice(11, 19) !== "00:00:00";
+}
+
 // verification / severity / risk_tier 라벨/톤은 노출 제거 — 간호사 화면 노이즈로 판단.
 // 데이터(RosterPatientItem.risk_score, SlotItem.severity_flag, Slot.verification) 는 응답에 그대로 유지.
 
@@ -87,8 +133,16 @@ export function HandoverView() {
     null,
   );
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  // 현재 시프트 — 페이지 마운트 시 1회 산출. 자정 경계에서 갱신 안 함 (재방문 시 자연 갱신).
+  // 인계 받는 시프트(현재) 와 인계 주는 시프트(이전) 둘 다 노출.
+  const handoverShift = useMemo(() => {
+    const to = getCurrentShiftCode(new Date());
+    const from = PREV_SHIFT[to];
+    return { from, to };
+  }, []);
 
   const rosterQuery = useRosterSummary();
+  const wardEventsQuery = useWardEvents();
   const { data: wardPatients } = useWardPatients();
   const generateMutation = useGenerateHandover();
   const progress = useHandoverStream(activeJobId);
@@ -229,6 +283,17 @@ export function HandoverView() {
           <h2 className="text-title-lg font-bold text-content-primary leading-tight tracking-tight">
             AI 인수인계 리포트
           </h2>
+          <span
+            title={`인계 ${SHIFT_LABEL[handoverShift.from]} 시프트(${SHIFT_WINDOW[handoverShift.from]}) → ${SHIFT_LABEL[handoverShift.to]} 시프트(${SHIFT_WINDOW[handoverShift.to]})`}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-body-micro font-bold leading-none border",
+              SHIFT_TONE[handoverShift.to],
+            )}
+          >
+            <span className="opacity-70">{SHIFT_LABEL[handoverShift.from]}</span>
+            <span className="opacity-60">→</span>
+            <span>{SHIFT_LABEL[handoverShift.to]}</span>
+          </span>
         </div>
 
         <Button
@@ -323,7 +388,7 @@ export function HandoverView() {
                           title="리포트 이후 신규 간호기록"
                           className="px-1.5 py-0.5 rounded-full bg-status-warning-surface text-status-warning-strong text-body-micro font-bold leading-none shrink-0"
                         >
-                          새 {fresh}
+                          {fresh}건
                         </span>
                       )}
                     </div>
@@ -338,21 +403,13 @@ export function HandoverView() {
         <div className="flex-1 min-h-0 p-8 overflow-hidden">
           <div className="max-w-6xl mx-auto h-full flex flex-col">
             <div className="flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar space-y-6 pb-10">
-              {/* [TOP] 교대 통합 narrative_header */}
-              {rosterQuery.data && rosterQuery.data.narrative_header && (
-                <div className="bg-surface-card rounded-2xl shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 border-b border-border-base flex items-center gap-2">
-                    <span className="font-bold text-brand-primary text-title-md leading-none">
-                      교대 통합 요약
-                    </span>
-                  </div>
-                  <div className="px-6 py-5">
-                    <Text className="text-body-sm leading-relaxed text-content-primary whitespace-pre-wrap">
-                      {rosterQuery.data.narrative_header}
-                    </Text>
-                  </div>
-                </div>
-              )}
+              {/* [TOP] 오늘의 입퇴원 — narrative_header 박스 자리 대체. BE /handover/ward-events. */}
+              <WardEventsBox
+                admissions={wardEventsQuery.data?.admissions ?? []}
+                discharges={wardEventsQuery.data?.discharges ?? []}
+                isPending={wardEventsQuery.isPending}
+                isError={wardEventsQuery.isError}
+              />
 
               {/* [MID-1] 시프트 통계 4분할 — RosterSummary 합산 파생, 아이콘 없이 토큰만으로 위계 구성 */}
               {rosterStats && <ShiftStatRow stats={rosterStats} />}
@@ -407,6 +464,146 @@ export function HandoverView() {
 
 // ---------- Sub Components ----------
 
+// 오늘의 입퇴원 박스 — narrative_header 자리를 대체. 좌(입원) / 우(퇴원) 2분할.
+// 양쪽 모두 비어 있으면 박스 자체는 보이지만 안내 문구로 채움.
+function WardEventsBox({
+  admissions,
+  discharges,
+  isPending,
+  isError,
+}: {
+  admissions: WardAdmissionItem[];
+  discharges: WardDischargeItem[];
+  isPending: boolean;
+  isError: boolean;
+}) {
+  return (
+    <div className="bg-surface-card rounded-2xl shadow-sm overflow-hidden">
+      <div className="px-6 py-4 border-b border-border-base flex items-baseline gap-3">
+        <span className="font-bold text-brand-primary text-title-md leading-none">
+          오늘의 입퇴원
+        </span>
+        {!isPending && !isError && (
+          <span className="text-body-micro font-bold text-content-tertiary leading-none">
+            입원 {admissions.length}건 · 퇴원 {discharges.length}건
+          </span>
+        )}
+      </div>
+      {isPending ? (
+        <div className="px-6 py-8 flex items-center justify-center text-content-tertiary">
+          <Loader2 className="size-4 animate-spin" />
+        </div>
+      ) : isError ? (
+        <div className="px-6 py-8 text-center text-body-sm text-status-danger">
+          입퇴원 목록을 불러오지 못했습니다
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x md:divide-y-0 divide-y divide-border-subtle">
+          <WardEventSection
+            title="입원"
+            toneClass="text-status-success"
+            items={admissions.map((item) => ({
+              key: item.encounterId,
+              patientName: item.patientName,
+              roomName: item.roomName,
+              bedName: item.bedName,
+              diseaseOrCc:
+                item.diseaseName || item.chiefComplaint || item.surgeryName || "-",
+              ts: item.periodStart,
+              classCode: item.classCode,
+            }))}
+            emptyMessage="오늘 입원한 환자가 없습니다"
+          />
+          <WardEventSection
+            title="퇴원"
+            toneClass="text-content-tertiary"
+            items={discharges.map((item) => ({
+              key: item.encounterId,
+              patientName: item.patientName,
+              roomName: item.roomName,
+              bedName: item.bedName,
+              diseaseOrCc:
+                item.diseaseName || item.chiefComplaint || item.surgeryName || "-",
+              ts: item.periodEnd,
+              classCode: item.classCode,
+            }))}
+            emptyMessage="오늘 퇴원한 환자가 없습니다"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WardEventSection({
+  title,
+  toneClass,
+  items,
+  emptyMessage,
+}: {
+  title: string;
+  toneClass: string;
+  items: Array<{
+    key: number;
+    patientName: string;
+    roomName: string;
+    bedName: string;
+    diseaseOrCc: string;
+    ts: string;
+    classCode: string;
+  }>;
+  emptyMessage: string;
+}) {
+  return (
+    <section className="px-6 py-5">
+      <div className="flex items-baseline gap-2 mb-3">
+        <h3 className={cn("text-body-base font-bold leading-none", toneClass)}>
+          {title}
+        </h3>
+        <span className="text-body-micro font-bold text-content-tertiary leading-none">
+          {items.length}건
+        </span>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-body-sm text-content-tertiary">{emptyMessage}</p>
+      ) : (
+        <ul className="flex flex-col gap-2.5">
+          {items.map((item) => {
+            const roomBed = [item.roomName.replace(/호$/, ""), item.bedName]
+              .filter(Boolean)
+              .join("-");
+            return (
+              <li key={item.key} className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-body-sm font-bold text-content-primary truncate">
+                    {item.patientName}
+                  </span>
+                  {roomBed && (
+                    <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
+                      {roomBed}
+                    </span>
+                  )}
+                  {item.classCode && (
+                    <span className="text-body-micro font-bold text-content-tertiary leading-none shrink-0">
+                      {item.classCode}
+                    </span>
+                  )}
+                  <span className="ml-auto text-body-micro font-bold text-content-tertiary leading-none shrink-0">
+                    {item.ts.slice(11, 16)}
+                  </span>
+                </div>
+                <span className="text-body-xs text-content-tertiary leading-snug truncate">
+                  {item.diseaseOrCc}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 // 통합 요약 박스 아래 4분할 통계 카드. 좁은 폭에선 2x2 wrap.
 // 디자인 결정: 아이콘 없이 라벨 + 큰 숫자만으로 위계 구성. Tailwind 4 의 text-body-* 토큰이
 // line-height 를 자체 적용해서 라벨/숫자 모두 leading-none 명시.
@@ -422,24 +619,48 @@ function ShiftStatRow({
 }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <StatCard label="담당 환자" value={`${stats.patientCount}명`} />
-      <StatCard label="새 기록" value={`${stats.newRecordTotal}건`} />
-      <StatCard label="주의 규칙" value={`${stats.rulesFiredTotal}회`} />
       <StatCard
-        label="검증 통과율"
+        label="담당 환자"
+        value={`${stats.patientCount}명`}
+        description="이번 시프트에서 인계받는 환자 수"
+      />
+      <StatCard
+        label="새 기록"
+        value={`${stats.newRecordTotal}건`}
+        description="리포트 생성 이후 추가된 확정 간호기록 수"
+      />
+      <StatCard
+        label="위험 신호"
+        value={`${stats.rulesFiredTotal}회`}
+        description="낙상·고위험 약물·DNR·격리·알러지 등 안전 점검 룰이 환자 상태와 일치한 횟수"
+      />
+      <StatCard
+        label="리포트 신뢰도"
         value={
           stats.verificationPercent !== null
             ? `${stats.verificationPercent}%`
             : "—"
         }
+        description="AI 가 작성한 리포트 슬롯이 원본 기록과 일치하는 비율 — 낮으면 리포트 내용 재확인 권장"
       />
     </div>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({
+  label,
+  value,
+  description,
+}: {
+  label: string;
+  value: string;
+  description?: string;
+}) {
   return (
-    <div className="rounded-xl border border-border-subtle bg-surface-card p-4 flex flex-col gap-2">
+    <div
+      title={description}
+      className="rounded-xl border border-border-subtle bg-surface-card p-4 flex flex-col gap-2"
+    >
       <span className="text-body-micro font-bold text-content-secondary leading-none">
         {label}
       </span>
@@ -489,8 +710,11 @@ function RiskTopList({
                   {roster.header}
                 </span>
                 {newRecordCount > 0 && (
-                  <span className="shrink-0 px-2 py-0.5 rounded-full bg-status-warning-surface text-status-warning-strong text-body-micro font-bold leading-none">
-                    새 {newRecordCount}
+                  <span
+                    title="리포트 이후 신규 간호기록"
+                    className="shrink-0 px-2 py-0.5 rounded-full bg-status-warning-surface text-status-warning-strong text-body-micro font-bold leading-none"
+                  >
+                    {newRecordCount}건
                   </span>
                 )}
               </button>
@@ -655,10 +879,13 @@ function PatientHandoverCard({
           {/* [RULES BRIEF] — 항상 보임 */}
           {roster.rules_fired_brief.length > 0 && (
             <div className="px-6 pt-4">
-              <div className="flex items-center gap-2 mb-2.5">
+              <div
+                className="flex items-center gap-2 mb-2.5"
+                title="낙상·고위험 약물·DNR·격리·알러지 등 안전 점검 룰이 환자 상태와 일치한 항목"
+              >
                 <AlertTriangle className="size-4 text-status-warning" />
                 <h4 className="text-body-base font-bold text-status-warning-strong">
-                  주의 규칙
+                  위험 신호
                 </h4>
               </div>
               <ul className="space-y-1.5 pl-1">
@@ -996,6 +1223,7 @@ function SlotItemRow({ item }: { item: SlotItem }) {
 }
 
 // hover preview 공용 — chip / citation list 양쪽에서 사용.
+// popover 영역 어디를 눌러도 원본 기록으로 이동. 별도 "열기" 버튼은 없앰.
 function CitationPreview({
   citation,
   onClick,
@@ -1003,25 +1231,36 @@ function CitationPreview({
   citation: Citation;
   onClick: () => void;
 }) {
+  const showTime = hasMeaningfulTime(citation.ts);
   return (
-    <div className="flex flex-col gap-2">
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left flex flex-col gap-2 cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary/40 rounded"
+    >
       <div className="flex items-center gap-2">
         <Badge className="bg-brand-surface text-brand-primary border-none text-body-micro font-bold leading-none px-2 py-0.5">
           {citation.label}
         </Badge>
+        {/* 날짜/시간 — 카드 리스트와 동일 폰트. 시간부 00:00:00 이면 숨김. */}
+        <span className="ml-auto flex items-baseline gap-2 leading-none">
+          <span className="text-body-sm font-mono font-bold text-content-primary">
+            {citation.ts.slice(0, 10).replace(/-/g, ".")}
+          </span>
+          {showTime && (
+            <span className="text-body-sm font-mono font-bold text-content-primary">
+              {citation.ts.slice(11, 16)}
+            </span>
+          )}
+        </span>
       </div>
-      <div className="text-body-micro font-mono text-content-secondary leading-none">
-        {citation.ts.slice(0, 16).replace("T", " ")}
-      </div>
-      <button
-        type="button"
-        onClick={onClick}
-        className="self-end inline-flex items-center gap-1 text-body-micro font-semibold text-brand-primary hover:text-brand-primary/80 transition-colors"
-      >
-        원본 기록 열기
-        <ArrowUpRight className="size-3" />
-      </button>
-    </div>
+      {/* 본문 발췌 — BE/AI 가 line_range 구간 원본 텍스트를 채워줌. 없으면 행 자체 안 그림. */}
+      {citation.excerpt && (
+        <p className="text-body-sm text-content-secondary leading-relaxed line-clamp-4 break-words whitespace-pre-wrap">
+          {citation.excerpt}
+        </p>
+      )}
+    </button>
   );
 }
 
@@ -1041,7 +1280,7 @@ function CitationList({
       <button
         type="button"
         onClick={() => setOpen((previous) => !previous)}
-        className="flex items-center gap-2 text-body-base font-bold text-brand-primary hover:text-brand-primary/80 transition-colors"
+        className="w-full flex items-center gap-2 text-body-base font-bold text-brand-primary hover:bg-brand-surface/40 transition-colors px-2 py-2 -mx-2 rounded-md"
       >
         {open ? (
           <ChevronDown className="size-4" />
@@ -1049,7 +1288,7 @@ function CitationList({
           <ChevronRight className="size-4" />
         )}
         <FileText className="size-4" />
-        근거 기록 {citations.length}건 {open ? "접기" : "보기"}
+        근거 기록 {citations.length}건
       </button>
       {open && (
         <ul className="mt-3 space-y-2">
@@ -1067,7 +1306,7 @@ function CitationList({
                       onClick={() => onCitationClick(citation)}
                       className="w-full text-left flex gap-2.5 p-3 rounded-xl border bg-surface-card border-border-subtle hover:border-brand-primary/40 transition-colors"
                     >
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 flex flex-col gap-1.5">
                         <div className="flex items-center gap-3 flex-wrap">
                           {/* 라벨 — brand 색으로 강조, 인용 ID */}
                           <span className="text-body-sm font-bold text-brand-primary leading-none">
@@ -1079,16 +1318,24 @@ function CitationList({
                               {referencedSlotLabels.join(", ")}
                             </span>
                           )}
-                          {/* 날짜 · 시간 — 우측 정렬, mono. 시간만 굵게 처리해 시각적 분리 */}
+                          {/* 날짜 · 시간 — 우측 정렬, mono. 폰트 무게/색 통일. 시간부 00:00:00 이면 숨김. */}
                           <span className="ml-auto flex items-baseline gap-2 leading-none">
-                            <span className="text-body-sm font-mono text-content-secondary">
+                            <span className="text-body-sm font-mono font-bold text-content-primary">
                               {citation.ts.slice(0, 10).replace(/-/g, ".")}
                             </span>
-                            <span className="text-body-sm font-mono font-bold text-content-primary">
-                              {citation.ts.slice(11, 16)}
-                            </span>
+                            {hasMeaningfulTime(citation.ts) && (
+                              <span className="text-body-sm font-mono font-bold text-content-primary">
+                                {citation.ts.slice(11, 16)}
+                              </span>
+                            )}
                           </span>
                         </div>
+                        {/* 본문 발췌 — line_range 구간 원본 텍스트. 카드 한 줄 미리보기, 자세한 본문은 hover popover. */}
+                        {citation.excerpt && (
+                          <p className="text-body-xs text-content-secondary leading-snug line-clamp-1 break-words">
+                            {citation.excerpt}
+                          </p>
+                        )}
                       </div>
                       <ArrowUpRight className="size-3.5 text-content-muted opacity-50 self-center" />
                     </button>
