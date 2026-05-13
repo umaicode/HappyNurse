@@ -4,6 +4,10 @@ import com.ssafy.happynurse.domain.auth.dto.AuthResult;
 import com.ssafy.happynurse.domain.auth.dto.LoginRequest;
 import com.ssafy.happynurse.domain.auth.dto.LoginResponse;
 import com.ssafy.happynurse.domain.auth.service.AuthService;
+import com.ssafy.happynurse.domain.nurse.notification.api.NotificationDispatcher;
+import com.ssafy.happynurse.domain.nurse.notification.api.NotificationEnvelope;
+import com.ssafy.happynurse.domain.nurse.notification.api.PushPolicy;
+import com.ssafy.happynurse.domain.nurse.notification.entity.SourceType;
 import com.ssafy.happynurse.global.response.ApiResponse;
 import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
@@ -16,6 +20,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -26,15 +31,22 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 
+@Slf4j
 @Tag(name = "인증", description = "로그인, 로그아웃, 토큰 갱신 API")
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
+    private static final DateTimeFormatter HHMM = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.of("Asia/Seoul"));
+
     private final AuthService authService;
+    private final NotificationDispatcher notificationDispatcher;
 
     @Value("${jwt.cookie-name}")
     private String cookieName;
@@ -80,10 +92,14 @@ public class AuthController {
                 refreshCookieName, result.refreshToken(), refreshExpirationMs,
                 cookieSecure, cookieSameSite, "/auth");
 
+        LoginResponse loginResponse = result.loginResponse();
+        dispatchSessionEvent(SourceType.web_login,
+                loginResponse.practitionerId(), loginResponse.wardId(), loginResponse.name());
+
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                .body(ApiResponse.ok("로그인에 성공했습니다.", result.loginResponse()));
+                .body(ApiResponse.ok("로그인에 성공했습니다.", loginResponse));
     }
 
     @Operation(summary = "로그아웃", description = "현재 세션을 종료하고 인증 쿠키를 삭제합니다.")
@@ -101,6 +117,9 @@ public class AuthController {
                 cookieName, cookieSecure, cookieSameSite);
         ResponseCookie refreshCookie = CookieUtil.clearTokenCookie(
                 refreshCookieName, cookieSecure, cookieSameSite, "/auth");
+
+        dispatchSessionEvent(SourceType.web_logout,
+                userDetails.getPractitionerId(), userDetails.getWardId(), userDetails.getName());
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
@@ -160,5 +179,45 @@ public class AuthController {
                 .findFirst()
                 .map(Cookie::getValue)
                 .orElse(null);
+    }
+
+    /**
+     * 웹 로그인/로그아웃 시 본인 모바일에 알림 발사.
+     * dispatcher는 @Transactional(REQUIRES_NEW)라 controller 레벨 호출이 안전.
+     * 알림 실패는 로그인/로그아웃 응답에 영향 없도록 swallow.
+     */
+    private void dispatchSessionEvent(SourceType type, Long practitionerId, Long wardId, String name) {
+        if (practitionerId == null || wardId == null) {
+            log.warn("세션 이벤트 알림 skip — practitionerId/wardId 누락 (type={})", type);
+            return;
+        }
+        try {
+            Instant now = Instant.now();
+            String time = HHMM.format(now);
+            boolean isLogin = type == SourceType.web_login;
+            String title = isLogin ? "웹 로그인" : "웹 로그아웃";
+            String body = String.format("%s님, %s에 웹에서 %s되었습니다.",
+                    name == null ? "사용자" : name,
+                    time,
+                    isLogin ? "로그인" : "로그아웃");
+
+            NotificationEnvelope envelope = new NotificationEnvelope(
+                    type,
+                    wardId,
+                    practitionerId,
+                    null,            // patientId
+                    null,            // sourceEntityId
+                    title,
+                    body,
+                    null,            // payload
+                    now,
+                    null,            // notificationId — dispatcher가 채움
+                    PushPolicy.PERSONAL_INFO,
+                    null             // priority
+            );
+            notificationDispatcher.dispatch(envelope);
+        } catch (Exception e) {
+            log.warn("세션 이벤트 알림 발사 실패 (type={}, practitionerId={})", type, practitionerId, e);
+        }
     }
 }
