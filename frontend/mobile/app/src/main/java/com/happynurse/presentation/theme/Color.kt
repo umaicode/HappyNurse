@@ -17,7 +17,7 @@ object HnColors {
 
     // Surface / background
     val Bg            = Color(0xFFF7F8FA)
-    val Surface       = Color(0xFFFFFFFF)
+    val Surface       = Color(0xFFFCFCFC)
     val SurfaceAlt    = Color(0xFFF8FAFC)
     val Border        = Color(0xFFE5E7EB)
     val BorderStrong  = Color(0xFFD1D5DB)
