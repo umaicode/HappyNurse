@@ -1,11 +1,11 @@
 // WearFcmTokenForwarder — FirebaseMessaging.token 을 발급받아 폰에 Wearable Data Layer 로 전달.
 // 폰이 자기 인증 토큰으로 백엔드 /devices/fcm-token (deviceType=watch) 에 대행 등록한다.
-package com.happynurse.wear.data.fcm
+package com.happynurse.wear.data.remote.fcm
 
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessaging
-import com.happynurse.wear.data.remote.WearDataClient
-import com.happynurse.wear.data.remote.WearableMessagePaths
+import com.happynurse.wear.data.remote.wearable.WearDataClient
+import com.happynurse.wear.data.remote.wearable.WearableMessagePaths
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

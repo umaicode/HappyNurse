@@ -1,14 +1,14 @@
 // 폰 → 워치 메시지 수신 서비스. 수신한 페이로드를 WearEventBus 로 emit 해 ViewModel 이 collect
-package com.happynurse.wear.data.remote
+package com.happynurse.wear.data.remote.wearable
 
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
-import com.happynurse.wear.data.notification.NotificationType
-import com.happynurse.wear.data.notification.WearAuthTokenPayload
-import com.happynurse.wear.data.notification.WearEventBus
-import com.happynurse.wear.data.notification.WearNotification
-import com.happynurse.wear.data.notification.WearNotificationPayload
-import com.happynurse.wear.data.auth.WearTokenStore
+import com.happynurse.wear.domain.model.NotificationType
+import com.happynurse.wear.data.remote.wearable.WearAuthTokenPayload
+import com.happynurse.wear.data.eventbus.WearEventBus
+import com.happynurse.wear.domain.model.WearNotification
+import com.happynurse.wear.data.remote.model.WearNotificationPayload
+import com.happynurse.wear.data.remote.WearTokenStore
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

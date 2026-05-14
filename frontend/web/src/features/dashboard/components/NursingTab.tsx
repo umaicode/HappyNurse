@@ -207,7 +207,7 @@ export function NursingTab({
     >
       <div className="min-w-[800px] flex flex-col h-full">
         {/* Header Row */}
-        <div className="grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-extrabold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
+        <div className="grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-bold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
           <div className="border-r border-border-base pr-4 text-center">시간</div>
           <div className="border-r border-border-base pr-4">기록 내용</div>
           <div className="border-r border-border-base pr-4 text-center">구분</div>
@@ -414,7 +414,7 @@ function TimeInput({
   // display 모드 시간 셀 (`text-[15px] font-extrabold leading-[1.6]`) 과 글자 크기/높이 동일하게.
   // 너비는 글자 2자 폭에 맞춰 좁게 — w-9 처럼 넓으면 가운데 정렬에서 양 끝으로 벌어져 보임.
   const cellClass =
-    "w-6 text-center bg-transparent focus:outline-none font-mono font-extrabold text-[15px] leading-[1.6] text-content-primary";
+    "w-6 text-center bg-transparent focus:outline-none font-mono font-bold text-[15px] leading-[1.6] text-content-primary";
 
   return (
     <div className="flex items-center justify-center gap-0.5 w-full border border-border-base rounded bg-white focus-within:ring-1 focus-within:ring-content-primary/20">
@@ -696,7 +696,7 @@ function NoteRow({
     <div
       ref={rowRef}
       className={cn(
-        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-1 min-h-[60px] border-b border-border-base/50 items-center hover:bg-surface-hover/40 transition-[background-color,box-shadow] duration-500 relative",
+        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-1 min-h-[60px] border-b border-border-base/50 items-center hover:bg-surface-hover/60 transition-[background-color,box-shadow] duration-500 relative",
         // 우선순위: medication > draft > isEditing (마지막 매치가 이김)
         // draft 는 hover 도 같은 톤으로 고정 — 임시 기록이라 hover 강조 의미 없음. 좌측 3px accent 로 임시상태 시각화.
         note.status === "draft" &&
@@ -713,7 +713,7 @@ function NoteRow({
         {isEditing ? (
           <TimeInput value={draftTime} onChange={setDraftTime} />
         ) : (
-          <div className="w-full text-center font-mono font-extrabold text-[15px] text-content-primary leading-[1.6]">
+          <div className="w-full text-center font-mono font-bold text-[15px] text-content-primary leading-[1.6]">
             {formatHHmm(note.occurredAt)}
           </div>
         )}
@@ -750,7 +750,7 @@ function NoteRow({
                 target.style.height = "auto";
                 target.style.height = `${target.scrollHeight}px`;
               }}
-              className="w-full bg-white border border-brand-primary/30 rounded px-2 py-1.5 text-body-sm leading-[1.6] text-content-primary resize-none focus:outline-none focus:ring-1 focus:ring-brand-primary/20 shadow-xs"
+              className="w-full bg-white border border-brand-primary/30 rounded px-2 py-1 text-body-sm leading-[1.6] text-content-primary resize-none focus:outline-none focus:ring-1 focus:ring-brand-primary/20 shadow-xs"
               rows={1}
             />
             <QuickCorrectionPanel
@@ -789,8 +789,8 @@ function NoteRow({
       </div>
 
       {/* 기록자 */}
-      <div className="text-body-sm text-content-tertiary pt-1 truncate h-full border-r border-border-base/50 pr-4 flex items-center justify-center">
-        <span className="truncate font-bold">{note.authorName}</span>
+      <div className="text-[16px] text-content-tertiary truncate h-full border-r border-border-base/50 pr-4 flex items-center justify-center">
+        <span className="truncate font-semibold">{note.authorName}</span>
       </div>
 
       {/* 동작 — 확정은 위, 수정/삭제는 아래 줄 */}
@@ -801,7 +801,7 @@ function NoteRow({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2.5 text-body-micro font-bold"
+                className="h-7 px-2.5 text-[14px] font-Bold"
                 disabled={
                   isUpdating || (!isMedication && !draftContent.trim())
                 }
@@ -812,7 +812,7 @@ function NoteRow({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2.5 text-body-micro font-bold"
+                className="h-7 px-2.5 text-[14px] font-Bold"
                 onClick={cancelEdit}
               >
                 취소
@@ -885,7 +885,7 @@ function SttNoteActions({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2.5 text-body-micro font-bold"
+            className="h-7 px-2.5 text-[14px] font-Bold border border-gray-300 rounded-md"
             onClick={onStartEdit}
           >
             수정
@@ -893,7 +893,7 @@ function SttNoteActions({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2.5 text-body-micro font-bold"
+            className="h-7 px-2.5 text-[14px] font-Bold border border-gray-300 rounded-md"
             disabled={isDeleting}
             onClick={() => {
               if (window.confirm("이 기록을 삭제하시겠습니까?")) {
@@ -939,7 +939,7 @@ function MedicationActions({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2.5 text-body-micro font-bold"
+            className="h-7 px-2.5 text-[14px] font-Bold border border-gray-300 rounded-md"
             onClick={onStartEdit}
           >
             수정
@@ -947,7 +947,7 @@ function MedicationActions({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2.5 text-body-micro font-bold"
+            className="h-7 px-2.5 text-[14px] font-Bold border border-gray-300 rounded-md"
             disabled={isDeleting}
             onClick={() => {
               if (window.confirm("이 투약 기록을 삭제하시겠습니까?")) {
@@ -974,7 +974,7 @@ function ConfirmButton({
     <Button
       variant="ghost"
       size="sm"
-      className="h-7 px-2.5 text-body-micro font-bold"
+      className="h-7 px-2.5 font-Bold border border-gray-300 rounded-md"
       onClick={onClick}
       disabled={disabled}
     >

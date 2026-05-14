@@ -1,7 +1,8 @@
 // Service ↔ ViewModel 비차단 브리지. WearableListenerService 가 수신한 알림을
 // SharedFlow 로 발행하면 ViewModel 이 collect 하여 UI 에 반영한다.
-package com.happynurse.wear.data.notification
+package com.happynurse.wear.data.eventbus
 
+import com.happynurse.wear.domain.model.WearNotification
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow

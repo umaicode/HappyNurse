@@ -423,7 +423,7 @@ export function EMRGrid({
                 variant={isEditMode ? "brand" : "neutral"}
                 size="sm"
                 className={cn(
-                  "h-7 px-2.5 rounded text-body-micro font-bold",
+                  "h-7 px-2.5 rounded text-body-xs font-bold",
                   isEditMode && "text-white hover:text-white",
                 )}
                 onClick={() => setIsEditMode((prev) => !prev)}

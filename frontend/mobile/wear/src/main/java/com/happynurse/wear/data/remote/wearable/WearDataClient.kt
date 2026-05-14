@@ -1,5 +1,5 @@
 // 워치 → 폰 DataLayer 송신
-package com.happynurse.wear.data.remote
+package com.happynurse.wear.data.remote.wearable
 
 import android.content.Context
 import com.google.android.gms.wearable.Wearable

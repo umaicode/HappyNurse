@@ -6,10 +6,8 @@ import {
   Plus,
   Share2,
   UserPlus,
-  PanelLeftOpen,
-  PanelLeftClose,
-  SidebarClose,
-  SidebarOpen,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   Popover,
@@ -96,9 +94,9 @@ export function DashboardLayout({
           className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-md bg-white/95 backdrop-blur border border-border-base/60 text-content-secondary shadow-md hover:bg-surface-hover hover:text-content-primary transition-colors"
         >
           {isLeftOpen ? (
-            <PanelLeftClose className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
           ) : (
-            <PanelLeftOpen className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" />
           )}
         </button>
 
@@ -110,9 +108,9 @@ export function DashboardLayout({
           className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-md bg-white/95 backdrop-blur border border-border-base/60 text-content-secondary shadow-md hover:bg-surface-hover hover:text-content-primary transition-colors"
         >
           {isRightOpen ? (
-            <SidebarClose className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" />
           ) : (
-            <SidebarOpen className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
           )}
         </button>
       </main>

@@ -1,10 +1,10 @@
-// FcmDedupStore — 최근 N개 notificationId 를 SharedPreferences 에 LRU 로 저장해 중복 진입을 막는다.
+// FcmDeduplicationStore — 최근 N개 notificationId 를 SharedPreferences 에 LRU 로 저장해 중복 진입을 막는다.
 // FCM 재발송 / Wearable Data Layer 잔존 경로와 동시 도착 시 한 번만 처리되도록 한다.
-package com.happynurse.wear.data.fcm
+package com.happynurse.wear.data.remote.fcm
 
 import android.content.Context
 
-object FcmDedupStore {
+object FcmDeduplicationStore {
     private const val PREFS = "wear_fcm_dedup"
     private const val KEY_RECENT = "recent"
     private const val MAX = 32

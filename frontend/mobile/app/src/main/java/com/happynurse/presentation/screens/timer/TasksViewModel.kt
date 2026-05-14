@@ -14,6 +14,7 @@ import com.happynurse.data.repository.SttReminderRepository
 import com.happynurse.domain.model.IvTimer
 import com.happynurse.domain.model.Notification
 import com.happynurse.domain.model.NotificationCategory
+import com.happynurse.domain.model.NotificationPriority
 import com.happynurse.domain.model.WatchAlarm
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -193,6 +194,13 @@ private fun NotificationListItemResponse.toNotification(
     }
     val (room, bed) = patientId?.let { locationMap[it] } ?: ("" to "")
     val roomLabel = listOf(room, bed).filter { it.isNotBlank() }.joinToString("-")
+    val pri = when (priority?.lowercase()) {
+        "critical" -> NotificationPriority.CRITICAL
+        "high"     -> NotificationPriority.HIGH
+        "medium"   -> NotificationPriority.MEDIUM
+        "low"      -> NotificationPriority.LOW
+        else       -> null
+    }
     return Notification(
         id = notificationId.toString(),
         category = cat,
@@ -203,6 +211,7 @@ private fun NotificationListItemResponse.toNotification(
         minutesAgo = minutesAgo,
         unread = false,
         upcoming = false,
+        priority = pri,
     )
 }
 
