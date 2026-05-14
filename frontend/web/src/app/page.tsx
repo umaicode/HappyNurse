@@ -1,15 +1,10 @@
-"use client";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-
-// server-side redirect() 는 basePath 를 자동 적용하지 않아 dev 배포(/dev)에서
-// /dev/login 이 아닌 /login 으로 가버린다. client router 는 basePath 자동 처리되므로
-// useRouter 로 우회한다.
-export default function RootPage() {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace("/login");
-  }, [router]);
-  return null;
+// 루트 진입 시 쿠키 유무로 분기 — 서버 컴포넌트에서 1회 결정.
+// Next.js 13.4+ 의 redirect() 는 basePath 를 자동 적용한다 (옛 주석의 "basePath 가 사라진다" 는 13 이전 이슈).
+export default async function RootPage() {
+  const cookieStore = await cookies();
+  const hasAccessToken = cookieStore.has("ACCESS_TOKEN");
+  redirect(hasAccessToken ? "/dashboard" : "/login");
 }
