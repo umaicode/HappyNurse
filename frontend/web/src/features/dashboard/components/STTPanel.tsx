@@ -168,15 +168,17 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                 key={order.medicationOrderId}
                 variantClass={isCompleted ? "opacity-70" : undefined}
               >
-                {/* 1행: 타입 라벨 + (변경 칩) | 시간 */}
+                {/* 1행: 환자명 + 호실-침대 (좌) | 시간 (우) — IV타이머 카드와 통일 */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-body-base font-semibold tracking-tight text-brand-primary shrink-0 leading-none">
-                      {ORDER_TYPE_LABEL[order.orderType] ?? order.orderType}
-                    </span>
-                    {isChanged && (
-                      <span className="px-1.5 py-0.5 rounded bg-brand-surface text-brand-primary text-[10px] font-bold leading-none shrink-0">
-                        변경
+                  <div className="flex items-center gap-2 min-w-0">
+                    {patientName && (
+                      <span className="text-body-sm font-bold text-content-primary leading-none truncate">
+                        {patientName}
+                      </span>
+                    )}
+                    {roomBed && (
+                      <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
+                        {roomBed}
                       </span>
                     )}
                   </div>
@@ -185,28 +187,27 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                   </span>
                 </div>
 
-                {/* 2행: 처방코드 */}
+                {/* 2행: 타입 라벨 + (변경 칩) */}
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-body-base font-semibold tracking-tight text-brand-primary shrink-0 leading-none">
+                    {ORDER_TYPE_LABEL[order.orderType] ?? order.orderType}
+                  </span>
+                  {isChanged && (
+                    <span className="px-1.5 py-0.5 rounded bg-brand-surface text-brand-primary text-[11px] font-bold leading-none shrink-0">
+                      변경
+                    </span>
+                  )}
+                </div>
+
+                {/* 3행: 처방코드 */}
                 <span className="font-mono font-bold text-body-xs text-content-tertiary leading-none">
                   {order.orderCode}
                 </span>
 
-                {/* 3행: 처방명 */}
+                {/* 4행: 처방명 */}
                 <p className="text-body-sm font-bold text-content-primary leading-tight break-words">
                   {order.orderName}
                 </p>
-
-                {patientName && (
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-body-sm font-bold text-content-primary leading-none truncate">
-                      {patientName}
-                    </span>
-                    {roomBed && (
-                      <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
-                        {roomBed}
-                      </span>
-                    )}
-                  </div>
-                )}
 
                 {/* Info Grid */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 py-1">

@@ -106,8 +106,8 @@ data class IvTimer(
     val rateGttPerMin: Int? = null, // 서버 slim 응답의 실제 gtt/min — patientType 기반 역환산값
 )
 
-// 알림 카테고리 — 수액/오더/워치/요청
-enum class NotificationCategory { FLUID, ORDER, WATCH, REQUEST }
+// 알림 카테고리 — 수액/오더/워치/요청/웹세션
+enum class NotificationCategory { FLUID, ORDER, WATCH, REQUEST, SESSION }
 
 // 알림함 한 건 — 상단 벨 시트/알림 목록에서 사용
 data class Notification(

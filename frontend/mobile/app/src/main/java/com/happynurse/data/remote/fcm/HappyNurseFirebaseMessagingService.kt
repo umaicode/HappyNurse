@@ -30,12 +30,24 @@ class HappyNurseFirebaseMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(message)
         val title = message.notification?.title ?: message.data["title"] ?: "알림"
         val body = message.notification?.body ?: message.data["body"] ?: ""
-        Log.d(TAG, "메시지 수신: title=$title body=$body data=${message.data}")
-        showNotification(title, body)
+        val sourceType = message.data["sourceType"]
+        Log.d(TAG, "메시지 수신: title=$title body=$body sourceType=$sourceType data=${message.data}")
+        showNotification(title, body, sourceType)
     }
 
-    private fun showNotification(title: String, body: String) {
+    private fun showNotification(title: String, body: String, sourceType: String?) {
         NotificationChannels.ensureCreated(this)
+        val isWebSession = sourceType == "web_login" || sourceType == "web_logout"
+        val channelId = if (isWebSession) {
+            NotificationChannels.WEB_SESSION_ID
+        } else {
+            NotificationChannels.PATIENT_ALERTS_ID
+        }
+        val priority = if (isWebSession) {
+            NotificationCompat.PRIORITY_DEFAULT
+        } else {
+            NotificationCompat.PRIORITY_HIGH
+        }
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
@@ -43,12 +55,12 @@ class HappyNurseFirebaseMessagingService : FirebaseMessagingService() {
             this, 0, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val notification = NotificationCompat.Builder(this, NotificationChannels.PATIENT_ALERTS_ID)
+        val notification = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(priority)
             .setAutoCancel(true)
             .setContentIntent(pending)
             .build()

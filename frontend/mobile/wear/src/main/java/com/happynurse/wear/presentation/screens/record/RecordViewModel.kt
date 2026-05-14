@@ -65,19 +65,31 @@ class RecordViewModel @Inject constructor(
                 }
             }
         }
-        // 현재 phase → bus 의 isRecording / isBusy 상태 동기화
+        // 결과 화면에서 싱글 스냅 → confirm. RESULT phase 에서만 유효.
+        viewModelScope.launch {
+            recordingBus.confirmRequests.collect {
+                if (_state.value.phase == RecordPhase.RESULT) {
+                    confirm()
+                }
+            }
+        }
+        // 현재 phase → bus 의 isRecording / isBusy / awaitingConfirm 상태 동기화
         viewModelScope.launch {
             _state
                 .map { it.phase }
                 .distinctUntilChanged()
                 .collect { phase ->
                     recordingBus.setRecording(phase == RecordPhase.RECORDING)
+                    // DONE 도 busy 로 유지 — 등록 직후 토스트 보는 동안 사용자의 우연한 손목 동작이
+                    // DOUBLE_SNAP 으로 인식되어 새 녹음이 자동 시작되는 것을 방지.
                     recordingBus.setBusy(
                         phase == RecordPhase.RECORDING ||
                             phase == RecordPhase.PROCESSING ||
                             phase == RecordPhase.RESULT ||
-                            phase == RecordPhase.SUBMITTING,
+                            phase == RecordPhase.SUBMITTING ||
+                            phase == RecordPhase.DONE,
                     )
+                    recordingBus.setAwaitingConfirm(phase == RecordPhase.RESULT)
                 }
         }
     }
@@ -143,8 +155,7 @@ class RecordViewModel @Inject constructor(
                 fireAtEpochMillis = fireAt,
             )
         }
-        // 사용자 확인 단계 없이 자동으로 등록 — 결과 화면은 진행 표시만 하고 곧 등록 완료/취소로 전환.
-        confirm()
+        // 자동 등록 안 함 — 사용자가 결과 화면에서 [등록] 버튼 또는 손목 싱글 스냅으로 confirm 트리거.
     }
 
     fun confirm() {
@@ -153,31 +164,45 @@ class RecordViewModel @Inject constructor(
         if (current.phase == RecordPhase.SUBMITTING) return
         viewModelScope.launch {
             _state.update { it.copy(phase = RecordPhase.SUBMITTING, errorMessage = null) }
-            val result = sttReminderRepository.create(
-                sttText = current.recognizedText,
-                fireAtEpochMillis = fireAt,
-            )
-            result.fold(
-                onSuccess = { resp ->
-                    val content = resp.contentSummary
-                        ?.takeIf { it.isNotBlank() }
-                        ?: current.recognizedText
-                    alarmScheduler.scheduleSttAlarm(
-                        triggerAtMillis = resp.fireAtEpochMillis ?: fireAt,
-                        sttId = resp.sttReminderId.toString(),
-                        patient = "",
-                        content = content,
-                        roomBedTime = "",
-                    )
-                    _state.update { it.copy(phase = RecordPhase.DONE) }
-                },
-                onFailure = { fail(it.message ?: "알람 등록에 실패했어요") },
-            )
+            // 백엔드 등록 + 로컬 알람 스케줄링 어디서든 예외가 터져도 ViewModel scope 가 죽지 않도록
+            // 전체를 try-catch 로 감싼다. 알람 스케줄링 실패는 등록 자체 성공으로 간주(베스트에포트).
+            try {
+                val result = sttReminderRepository.create(
+                    sttText = current.recognizedText,
+                    fireAtEpochMillis = fireAt,
+                )
+                result.fold(
+                    onSuccess = { resp ->
+                        val content = resp.contentSummary
+                            ?.takeIf { it.isNotBlank() }
+                            ?: current.recognizedText
+                        runCatching {
+                            alarmScheduler.scheduleSttAlarm(
+                                triggerAtMillis = resp.fireAtEpochMillis ?: fireAt,
+                                sttId = resp.sttReminderId.toString(),
+                                patient = "",
+                                content = content,
+                                roomBedTime = "",
+                            )
+                        }
+                        _state.update { it.copy(phase = RecordPhase.DONE) }
+                    },
+                    onFailure = { fail(it.message ?: "알람 등록에 실패했어요") },
+                )
+            } catch (t: Throwable) {
+                fail(t.message ?: "알람 등록 중 오류가 발생했어요")
+            }
         }
     }
 
     fun reset() {
         cancelRecording()
+    }
+
+    /** 결과 화면 [재녹음] — 현재 결과 폐기 후 즉시 새 녹음 시작. */
+    fun restartRecording() {
+        cancelRecording()
+        startRecording()
     }
 
     fun consumeDone() {
@@ -194,6 +219,7 @@ class RecordViewModel @Inject constructor(
         runCatching { audioRecorder.cancel() }
         recordingBus.setRecording(false)
         recordingBus.setBusy(false)
+        recordingBus.setAwaitingConfirm(false)
     }
 
     private companion object {
