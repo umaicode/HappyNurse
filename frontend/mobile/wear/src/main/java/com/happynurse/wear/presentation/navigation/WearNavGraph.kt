@@ -64,9 +64,13 @@ fun WearNavGraph(
             SttResultScreen(
                 viewModel = recordViewModel,
                 onSubmitted = {
+                    // 백스택을 HomePager 로 정리한 뒤 액티비티를 백그라운드로 보낸다.
+                    // 워치 OS 의 inactivity timer 가 곧 화면을 끄고, GestureService(ForegroundService)는
+                    // 그대로 살아있어 다음 더블 스냅에 fullScreenIntent 로 즉시 복귀할 수 있다.
                     navController.navigate(WearRoute.HomePager.path) {
                         popUpTo(WearRoute.HomePager.path) { inclusive = true }
                     }
+                    activity.moveTaskToBack(true)
                 },
                 onCancel = {
                     navController.popBackStack(WearRoute.HomePager.path, inclusive = false)

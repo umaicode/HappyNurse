@@ -20,7 +20,7 @@ import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
-import com.happynurse.wear.data.model.SttTimer
+import com.happynurse.wear.domain.model.SttTimer
 import com.happynurse.wear.presentation.theme.remainingTimeColor
 
 @Composable

@@ -1,7 +1,7 @@
 // 음성 메모 알람 저장소 — 본인 알람 목록 조회 + STT 텍스트 시간 파싱(preview) + 알람 등록.
 package com.happynurse.wear.data.repository
 
-import com.happynurse.wear.data.model.SttTimer
+import com.happynurse.wear.domain.model.SttTimer
 import com.happynurse.wear.data.remote.api.SttReminderApi
 import com.happynurse.wear.data.remote.mapper.toDomain
 import com.happynurse.wear.data.remote.model.CreateSttReminderRequest
