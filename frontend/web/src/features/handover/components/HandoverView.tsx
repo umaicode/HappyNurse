@@ -46,6 +46,7 @@ import type {
   WardAdmissionItem,
   WardDischargeItem,
 } from "@/features/handover/types/handover";
+import { formatHHmm } from "@/lib/time";
 import type { WardPatient } from "@/features/patient/types/ward-patient";
 
 const SLOT_LABEL: Record<keyof Slots, string> = {
@@ -223,33 +224,20 @@ export function HandoverView() {
     [myPatients, rosterByEncounterId],
   );
 
-  // 통합 요약 상단의 4분할 통계 — RosterSummary 응답 합산만 사용 (추가 API 호출 없음).
-  // - 검증 통과율: 환자별 verification_summary 의 ok / (ok+partial+failed). 모수 0 이면 null 로 "—" 표시.
+  // 통합 요약 상단의 3분할 통계 — RosterSummary 응답 합산만 사용 (추가 API 호출 없음).
   const rosterStats = useMemo(() => {
     const patients = rosterQuery.data?.patients ?? [];
     if (patients.length === 0) return null;
     let newRecordTotal = 0;
     let rulesFiredTotal = 0;
-    let verificationOk = 0;
-    let verificationTotal = 0;
     patients.forEach((patient) => {
       newRecordTotal += patient.freshness?.new_records_since_report ?? 0;
       rulesFiredTotal += patient.rules_fired_brief.length;
-      const summary = patient.verification_summary;
-      const ok = summary.ok ?? 0;
-      const partial = summary.partial ?? 0;
-      const failed = summary.failed ?? 0;
-      verificationOk += ok;
-      verificationTotal += ok + partial + failed;
     });
     return {
       patientCount: patients.length,
       newRecordTotal,
       rulesFiredTotal,
-      verificationPercent:
-        verificationTotal > 0
-          ? Math.round((verificationOk / verificationTotal) * 100)
-          : null,
     };
   }, [rosterQuery.data]);
 
@@ -523,7 +511,6 @@ function WardEventsBox({
         <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x md:divide-y-0 divide-y divide-border-subtle">
           <WardEventSection
             title="입원"
-            toneClass="text-status-success"
             items={admissions.map((item) => ({
               key: item.encounterId,
               patientName: item.patientName,
@@ -532,13 +519,11 @@ function WardEventsBox({
               diseaseOrCc:
                 item.diseaseName || item.chiefComplaint || item.surgeryName || "-",
               ts: item.periodStart,
-              classCode: item.classCode,
             }))}
             emptyMessage="오늘 입원한 환자가 없습니다"
           />
           <WardEventSection
             title="퇴원"
-            toneClass="text-content-tertiary"
             items={discharges.map((item) => ({
               key: item.encounterId,
               patientName: item.patientName,
@@ -547,7 +532,6 @@ function WardEventsBox({
               diseaseOrCc:
                 item.diseaseName || item.chiefComplaint || item.surgeryName || "-",
               ts: item.periodEnd,
-              classCode: item.classCode,
             }))}
             emptyMessage="오늘 퇴원한 환자가 없습니다"
           />
@@ -559,12 +543,10 @@ function WardEventsBox({
 
 function WardEventSection({
   title,
-  toneClass,
   items,
   emptyMessage,
 }: {
   title: string;
-  toneClass: string;
   items: Array<{
     key: number;
     patientName: string;
@@ -572,49 +554,46 @@ function WardEventSection({
     bedName: string;
     diseaseOrCc: string;
     ts: string;
-    classCode: string;
   }>;
   emptyMessage: string;
 }) {
   return (
-    <section className="px-6 py-5">
-      <div className="flex items-baseline gap-2 mb-3">
-        <h3 className={cn("text-body-base font-bold leading-none", toneClass)}>
+    <section className="px-6 py-4">
+      <div className="flex items-baseline gap-2 mb-4">
+        <h3 className="text-title-md font-bold leading-none text-content-secondary">
           {title}
         </h3>
-        <span className="text-body-micro font-bold text-content-tertiary leading-none">
+        <span className="text-body-sm font-bold text-content-tertiary leading-none">
           {items.length}건
         </span>
       </div>
       {items.length === 0 ? (
-        <p className="text-body-sm text-content-tertiary">{emptyMessage}</p>
+        <p className="text-body-sm text-content-muted">{emptyMessage}</p>
       ) : (
         <ul className="flex flex-col gap-2.5">
           {items.map((item) => {
             const roomBed = [item.roomName.replace(/호$/, ""), item.bedName]
               .filter(Boolean)
               .join("-");
+            const showTime = hasMeaningfulTime(item.ts);
             return (
               <li key={item.key} className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-body-sm font-bold text-content-primary truncate">
+                  <span className="text-body-base font-bold text-content-primary truncate">
                     {item.patientName}
                   </span>
                   {roomBed && (
-                    <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
+                    <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-body-micro font-bold leading-none shrink-0">
                       {roomBed}
                     </span>
                   )}
-                  {item.classCode && (
-                    <span className="text-body-micro font-bold text-content-tertiary leading-none shrink-0">
-                      {item.classCode}
+                  {showTime && (
+                    <span className="ml-auto text-body-micro font-bold text-content-tertiary leading-none shrink-0">
+                      {formatHHmm(item.ts)}
                     </span>
                   )}
-                  <span className="ml-auto text-body-micro font-bold text-content-tertiary leading-none shrink-0">
-                    {item.ts.slice(11, 16)}
-                  </span>
                 </div>
-                <span className="text-body-xs text-content-tertiary leading-snug truncate">
+                <span className="text-body-sm font-medium text-content-secondary leading-snug truncate">
                   {item.diseaseOrCc}
                 </span>
               </li>
@@ -636,11 +615,10 @@ function ShiftStatRow({
     patientCount: number;
     newRecordTotal: number;
     rulesFiredTotal: number;
-    verificationPercent: number | null;
   };
 }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       <StatCard
         label="담당 환자"
         value={`${stats.patientCount}명`}
@@ -655,15 +633,6 @@ function ShiftStatRow({
         label="위험 신호"
         value={`${stats.rulesFiredTotal}회`}
         description="낙상·고위험 약물·DNR·격리·알러지 등 안전 점검 룰이 환자 상태와 일치한 횟수"
-      />
-      <StatCard
-        label="리포트 신뢰도"
-        value={
-          stats.verificationPercent !== null
-            ? `${stats.verificationPercent}%`
-            : "—"
-        }
-        description="AI 가 작성한 리포트 슬롯이 원본 기록과 일치하는 비율 — 낮으면 리포트 내용 재확인 권장"
       />
     </div>
   );

@@ -124,6 +124,13 @@ export function NursingTab({
   // focusRecordId 가 null 되어 effect 가 재실행될 때 closest 로 되돌아가지 않게 한다.
   const datasetKey = `${encounterId}-${date}`;
   const lastAutoScrolledDatasetRef = useRef<string | null>(null);
+  // 인라인 추가 — `+` 버튼 클릭 시 폼이 그 위치에 펼쳐진다.
+  // 백엔드는 confirmedAt 옵셔널 — 미지정 시 서버 현재 시각으로 저장. 끼워넣기 위치에 맞는 시각을
+  // 클라이언트가 prev/next 로부터 계산하고, 사용자가 폼의 TimeInput 으로 수정 가능.
+  // 주의: BE 의 NursingRecordFactory.createManual 은 status=confirmed 로 즉시 저장 (STT 처럼 draft 아님).
+  const [inlineAddIndex, setInlineAddIndex] = useState<number | null>(null);
+  // 추가 직후 새 행 강조 — 서버 응답의 nursingRecordId 를 받아 filteredNotes 에 반영되면 scroll + ring.
+  const [pendingFocusId, setPendingFocusId] = useState<number | null>(null);
 
   useEffect(() => {
     if (filteredNotes.length === 0) return;
@@ -166,16 +173,32 @@ export function NursingTab({
     }
   }, [filteredNotes, focusRecordId, onFocusHandled, datasetKey]);
 
+  // 추가 직후 새 행 강조 — pendingFocusId 가 filteredNotes 에 나타나면 scroll + ring.
+  useEffect(() => {
+    if (pendingFocusId === null || filteredNotes.length === 0) return;
+    const found = filteredNotes.find(
+      (note) =>
+        note.type === "STT_NOTE" && note.nursingRecordId === pendingFocusId,
+    );
+    if (!found) return;
+    const key = rowKey(found);
+    const target = itemRefs.current.get(key);
+    if (target) {
+      target.scrollIntoView({ block: "center", behavior: "smooth" });
+      /* eslint-disable-next-line react-hooks/set-state-in-effect */
+      setHighlightedKey(key);
+      setPendingFocusId(null);
+      // 새 행으로 명시 점프 — closest 자동 스크롤이 다시 작동하지 않게 dataset 기록.
+      lastAutoScrolledDatasetRef.current = datasetKey;
+    }
+  }, [pendingFocusId, filteredNotes, datasetKey]);
+
   // 하이라이트 자동 해제 — 어느 행이 focus 인지 잠시만 보여주고 사라짐.
   useEffect(() => {
     if (highlightedKey === null) return;
     const timeoutId = window.setTimeout(() => setHighlightedKey(null), 2500);
     return () => window.clearTimeout(timeoutId);
   }, [highlightedKey]);
-
-  // 인라인 추가 — `+` 버튼 호버/클릭 시 폼이 그 위치에 펼쳐진다.
-  // 백엔드 NursingRecordManualCreateRequest 는 { encounterId, content } 만 받으므로 시각은 서버 자동.
-  const [inlineAddIndex, setInlineAddIndex] = useState<number | null>(null);
 
   return (
     <div
@@ -220,6 +243,7 @@ export function NursingTab({
                         }
                         nextOccurredAt={note.occurredAt}
                         onClose={() => setInlineAddIndex(null)}
+                        onCreated={setPendingFocusId}
                       />
                     )}
 
@@ -262,18 +286,25 @@ export function NursingTab({
                     }
                     nextOccurredAt={null}
                     onClose={() => setInlineAddIndex(null)}
+                    onCreated={setPendingFocusId}
                   />
                 )}
 
-              {filteredNotes.length === 0 && (
-                <EmptyState
-                  message={
-                    (data?.length ?? 0) === 0
-                      ? "등록된 간호 기록이 없습니다."
-                      : "필터 조건에 맞는 기록이 없습니다."
-                  }
-                />
-              )}
+              {filteredNotes.length === 0 &&
+                inlineAddIndex !== filteredNotes.length && (
+                  <EmptyState
+                    message={
+                      (data?.length ?? 0) === 0
+                        ? "등록된 간호 기록이 없습니다."
+                        : "필터 조건에 맞는 기록이 없습니다."
+                    }
+                    onAdd={
+                      encounterId !== null
+                        ? () => setInlineAddIndex(filteredNotes.length)
+                        : undefined
+                    }
+                  />
+                )}
             </>
           )}
         </div>
@@ -294,39 +325,57 @@ function formatLocalIsoDateTime(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
-// 인라인 추가 시 confirmedAt 결정:
-// - 두 기록 사이: prev/next 사이 랜덤
-// - 맨 위 (next 만 있음): selectedDate 00:00 ~ next 사이 랜덤
-// - 맨 아래 + 오늘: undefined (서버 현재 시각으로 저장 → 정렬 보존)
-// - 맨 아래 + 다른 날짜 (목록 비어있을 때 포함): prev(있으면) ~ selectedDate 23:59:59 사이 랜덤
+// 인라인 추가 시 기본 confirmedAt 결정 — 사용자가 클릭한 위치에 가까운 결정적 시각.
+// 사용자가 InlineAddForm 의 TimeInput 으로 변경 가능. (옛 구현은 prev/next 사이 uniform random 이라
+// 맨 위/맨 아래 클릭 시 엉뚱한 시각이 나오던 문제를 해결.)
+// - 두 기록 사이: prev/next 의 midpoint
+// - 맨 위 (next 만 있음): next - 1분 (cap selectedDate 00:00)
+// - 맨 아래 + 오늘: 서버 현재 시각
+// - 맨 아래 + 다른 날짜: prev + 1분 (cap selectedDate 23:59:59)
+// - 빈 목록 + 오늘: 서버 현재 시각
+// - 빈 목록 + 다른 날짜: 12:00 정오
 function computeNewConfirmedAt(
   selectedDate: string,
   prevOccurredAt: string | null,
   nextOccurredAt: string | null,
-): string | undefined {
-  // 맨 아래 (= next 없음).
-  if (nextOccurredAt === null) {
-    if (selectedDate === toIsoDate(new Date())) {
-      // 오늘 + 맨 아래 → 서버 현재 시각.
-      return undefined;
-    }
-    const startMs = prevOccurredAt
-      ? new Date(prevOccurredAt).getTime()
-      : new Date(`${selectedDate}T00:00:00`).getTime();
-    const endMs = new Date(`${selectedDate}T23:59:59`).getTime();
-    return formatLocalIsoDateTime(new Date(randomBetween(startMs, endMs)));
-  }
-  // 사이 또는 맨 위.
-  const startMs = prevOccurredAt
-    ? new Date(prevOccurredAt).getTime()
-    : new Date(`${selectedDate}T00:00:00`).getTime();
-  const endMs = new Date(nextOccurredAt).getTime();
-  return formatLocalIsoDateTime(new Date(randomBetween(startMs, endMs)));
-}
+): string {
+  const todayIso = toIsoDate(new Date());
+  const dayStartMs = new Date(`${selectedDate}T00:00:00`).getTime();
+  const dayEndMs = new Date(`${selectedDate}T23:59:59`).getTime();
 
-function randomBetween(startMs: number, endMs: number): number {
-  if (endMs <= startMs) return startMs;
-  return startMs + Math.random() * (endMs - startMs);
+  if (prevOccurredAt && nextOccurredAt) {
+    const midMs = Math.floor(
+      (new Date(prevOccurredAt).getTime() +
+        new Date(nextOccurredAt).getTime()) /
+        2,
+    );
+    return formatLocalIsoDateTime(new Date(midMs));
+  }
+
+  if (prevOccurredAt) {
+    if (selectedDate === todayIso) {
+      return formatLocalIsoDateTime(new Date());
+    }
+    const targetMs = Math.min(
+      new Date(prevOccurredAt).getTime() + 60_000,
+      dayEndMs,
+    );
+    return formatLocalIsoDateTime(new Date(targetMs));
+  }
+
+  if (nextOccurredAt) {
+    const targetMs = Math.max(
+      new Date(nextOccurredAt).getTime() - 60_000,
+      dayStartMs,
+    );
+    return formatLocalIsoDateTime(new Date(targetMs));
+  }
+
+  // 빈 목록
+  if (selectedDate === todayIso) {
+    return formatLocalIsoDateTime(new Date());
+  }
+  return `${selectedDate}T12:00:00`;
 }
 
 // ISO datetime 의 HH:mm 만 새 값으로 교체 (날짜/초/타임존 보존).
@@ -427,6 +476,7 @@ function InlineAddForm({
   prevOccurredAt,
   nextOccurredAt,
   onClose,
+  onCreated,
 }: {
   encounterId: number;
   currentUser: string;
@@ -436,30 +486,35 @@ function InlineAddForm({
   prevOccurredAt: string | null;
   nextOccurredAt: string | null;
   onClose: () => void;
+  // 생성 성공 시 새 기록의 nursingRecordId 보고 — 부모가 scroll + 강조 처리.
+  onCreated?: (nursingRecordId: number) => void;
 }) {
   const [content, setContent] = useState("");
   const createMutation = useCreateNursingRecord(encounterId);
 
-  // 폼 마운트 시점에 시각 한 번만 결정 — 좌측 셀 표시값과 submit 송신값을 같은 값으로 맞춘다.
-  // undefined 면 "오늘 + 맨 아래" 케이스 — 서버 현재 시각으로 저장되며, 표시는 마운트 시점 now 로 미리 보여준다.
-  const [plannedConfirmedAt] = useState<string | undefined>(() =>
+  // 폼 마운트 시점에 기본 시각 결정 — selectedDate + 사용자가 수정한 HH:mm 으로 submit.
+  // plannedConfirmedAt 은 ISO base (selectedDate + 결정된 시각), draftHHmm 은 사용자 입력 HH:mm.
+  const [plannedConfirmedAt] = useState<string>(() =>
     computeNewConfirmedAt(date, prevOccurredAt, nextOccurredAt),
   );
-  const [displayHHmm] = useState<string>(() =>
-    plannedConfirmedAt ? formatHHmm(plannedConfirmedAt) : formatHHmm(new Date()),
+  const [draftHHmm, setDraftHHmm] = useState<string>(() =>
+    formatHHmm(plannedConfirmedAt),
   );
 
   const handleSubmit = () => {
     const trimmed = content.trim();
     if (!trimmed) return;
+    const normalizedTime = normalizeHHmm(draftHHmm);
+    const finalConfirmedAt = replaceTimeInIso(plannedConfirmedAt, normalizedTime);
     createMutation.mutate(
       {
         encounterId,
         content: trimmed,
-        ...(plannedConfirmedAt ? { confirmedAt: plannedConfirmedAt } : {}),
+        confirmedAt: finalConfirmedAt,
       },
       {
-        onSuccess: () => {
+        onSuccess: (response) => {
+          onCreated?.(response.nursingRecordId);
           setContent("");
           onClose();
         },
@@ -469,8 +524,8 @@ function InlineAddForm({
 
   return (
     <div className="grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-2 border-y border-brand-primary/10 bg-brand-surface/30 items-center shadow-inner">
-      <div className="w-full text-center font-mono font-extrabold text-[15px] text-content-primary leading-[1.6]">
-        {displayHHmm}
+      <div className="py-1">
+        <TimeInput value={draftHHmm} onChange={setDraftHHmm} />
       </div>
       <div className="pr-4">
         <textarea
@@ -490,18 +545,18 @@ function InlineAddForm({
       </div>
       <div className="flex gap-1 justify-center">
         <Button
-          variant="neutral"
+          variant="ghost"
           size="sm"
-          className="h-9 px-4 text-body-sm font-bold"
+          className="h-7 px-2.5 text-body-micro font-bold"
           onClick={handleSubmit}
           disabled={createMutation.isPending || !content.trim()}
         >
           {createMutation.isPending ? "추가 중..." : "추가"}
         </Button>
         <Button
-          variant="neutral"
+          variant="ghost"
           size="sm"
-          className="h-9 px-4 text-body-sm font-bold"
+          className="h-7 px-2.5 text-body-micro font-bold"
           onClick={() => {
             setContent("");
             onClose();
@@ -744,9 +799,9 @@ function NoteRow({
           isEditing ? (
             <div className="flex gap-1">
               <Button
-                variant="neutral"
+                variant="ghost"
                 size="sm"
-                className="h-9 px-4 text-body-sm font-bold"
+                className="h-7 px-2.5 text-body-micro font-bold"
                 disabled={
                   isUpdating || (!isMedication && !draftContent.trim())
                 }
@@ -755,9 +810,9 @@ function NoteRow({
                 {isUpdating ? "저장 중..." : "완료"}
               </Button>
               <Button
-                variant="neutral"
+                variant="ghost"
                 size="sm"
-                className="h-9 px-4 text-body-sm font-bold"
+                className="h-7 px-2.5 text-body-micro font-bold"
                 onClick={cancelEdit}
               >
                 취소
@@ -828,17 +883,17 @@ function SttNoteActions({
       {isEditMode && (
         <div className="flex gap-1">
           <Button
-            variant="neutral"
+            variant="ghost"
             size="sm"
-            className="h-9 px-4 text-body-sm font-bold"
+            className="h-7 px-2.5 text-body-micro font-bold"
             onClick={onStartEdit}
           >
             수정
           </Button>
           <Button
-            variant="neutral"
+            variant="ghost"
             size="sm"
-            className="h-9 px-4 text-body-sm font-bold"
+            className="h-7 px-2.5 text-body-micro font-bold"
             disabled={isDeleting}
             onClick={() => {
               if (window.confirm("이 기록을 삭제하시겠습니까?")) {
@@ -882,17 +937,17 @@ function MedicationActions({
       {isEditMode && (
         <div className="flex gap-1">
           <Button
-            variant="neutral"
+            variant="ghost"
             size="sm"
-            className="h-9 px-4 text-body-sm font-bold"
+            className="h-7 px-2.5 text-body-micro font-bold"
             onClick={onStartEdit}
           >
             수정
           </Button>
           <Button
-            variant="neutral"
+            variant="ghost"
             size="sm"
-            className="h-9 px-4 text-body-sm font-bold"
+            className="h-7 px-2.5 text-body-micro font-bold"
             disabled={isDeleting}
             onClick={() => {
               if (window.confirm("이 투약 기록을 삭제하시겠습니까?")) {
@@ -917,9 +972,9 @@ function ConfirmButton({
 }) {
   return (
     <Button
-      variant="neutral"
+      variant="ghost"
       size="sm"
-      className="h-9 px-4 text-body-sm font-bold"
+      className="h-7 px-2.5 text-body-micro font-bold"
       onClick={onClick}
       disabled={disabled}
     >
@@ -976,9 +1031,9 @@ function MedicationRow({
   onChangeDraft: (value: number) => void;
 }) {
   return (
-    <li className="flex flex-col gap-0.5 px-2 py-1 rounded">
+    <li className="flex flex-col gap-0.5">
       <div className="flex items-baseline gap-2 min-w-0">
-        <span className="font-bold text-content-primary text-body-sm truncate">
+        <span className="font-medium text-content-primary text-body-sm truncate">
           {medication.productName}
         </span>
         <span className="font-mono text-body-micro text-content-muted shrink-0">
@@ -1005,10 +1060,10 @@ function MedicationRow({
             {medication.dosageQuantity}
           </span>
         )}
-        <span className="text-content-muted font-medium">{medication.dosageUnit}</span>
+        <span className="text-content-tertiary font-medium">{medication.dosageUnit}</span>
         <span className="text-border-base">·</span>
         <span className="font-mono font-bold text-content-primary">{medication.frequency}</span>
-        <span className="text-content-muted">회</span>
+        <span className="text-content-tertiary">회</span>
         <span className="text-border-base">·</span>
         <span className="font-bold text-content-secondary">{medication.route}</span>
       </div>
@@ -1016,10 +1071,23 @@ function MedicationRow({
   );
 }
 
-function EmptyState({ message }: { message: string }) {
+function EmptyState({
+  message,
+  onAdd,
+}: {
+  message: string;
+  // 제공 시 메시지 아래 "새 기록 추가" 버튼 노출 — 빈 목록에서 BetweenRowAdd hover 영역 발견 어려움 보완.
+  onAdd?: () => void;
+}) {
   return (
-    <div className="flex flex-col items-center justify-center flex-1 gap-2 py-16 text-content-muted">
-      <p className="text-body-sm font-bold">{message}</p>
+    <div className="flex flex-col items-center justify-center flex-1 gap-4 py-16 text-content-muted">
+      <p className="text-body-base font-bold">{message}</p>
+      {onAdd && (
+        // 흰 배경 + content-primary 텍스트 — NursingTab 행 액션 버튼(ghost) 의 글자색과 통일.
+        <Button type="button" variant="neutral" size="default" onClick={onAdd}>
+          새 기록 추가
+        </Button>
+      )}
     </div>
   );
 }

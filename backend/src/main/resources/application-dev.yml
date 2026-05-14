@@ -52,6 +52,7 @@ jwt:
   refresh-cookie-name: REFRESH_TOKEN
   cookie-secure: false
   cookie-same-site: Lax
+  app-access-token-expiration-ms: 43200000
 
 server:
   port: 8080

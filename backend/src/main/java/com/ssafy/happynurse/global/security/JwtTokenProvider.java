@@ -21,6 +21,9 @@ public class JwtTokenProvider {
     @Value("${jwt.access-token-expiration-ms}")
     private long expirationMs;
 
+    @Value("${jwt.app-access-token-expiration-ms}")
+    private long appExpirationMs;
+
     @Value("${jwt.refresh-token-expiration-ms}")
     private long refreshTokenExpirationMs;
 
@@ -35,6 +38,14 @@ public class JwtTokenProvider {
     public String createAccessToken(Long practitionerId, String employeeNumber,
                                      String name, String roleCode, String sessionId,
                                      Long organizationId, Long wardId) {
+        return createAccessToken(practitionerId, employeeNumber, name, roleCode,
+                sessionId, organizationId, wardId, expirationMs);
+    }
+
+    public String createAccessToken(Long practitionerId, String employeeNumber,
+                                     String name, String roleCode, String sessionId,
+                                     Long organizationId, Long wardId,
+                                     long customExpirationMs) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(String.valueOf(practitionerId))
@@ -45,7 +56,7 @@ public class JwtTokenProvider {
                 .claim("organizationId", organizationId)
                 .claim("wardId", wardId)
                 .issuedAt(now)
-                .expiration(new Date(now.getTime() + expirationMs))
+                .expiration(new Date(now.getTime() + customExpirationMs))
                 .signWith(key)
                 .compact();
     }
@@ -91,6 +102,10 @@ public class JwtTokenProvider {
 
     public long getExpirationMs() {
         return expirationMs;
+    }
+
+    public long getAppExpirationMs() {
+        return appExpirationMs;
     }
 
     public long getRefreshTokenExpirationMs() {
