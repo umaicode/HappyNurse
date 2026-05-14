@@ -75,8 +75,6 @@ fun MainScaffold(
             visible = notificationOpen,
             notifications = notifications,
             onClose = { notificationOpen = false },
-            onDelete = tasksViewModel::dismissNotification,
-            onDeleteAll = tasksViewModel::dismissAllNotifications,
         )
     }
 }

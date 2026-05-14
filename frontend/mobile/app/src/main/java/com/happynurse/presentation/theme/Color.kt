@@ -17,7 +17,7 @@ object HnColors {
 
     // Surface / background
     val Bg            = Color(0xFFF7F8FA)
-    val Surface       = Color(0xFFFFFFFF)
+    val Surface       = Color(0xFFFCFCFC)
     val SurfaceAlt    = Color(0xFFF8FAFC)
     val Border        = Color(0xFFE5E7EB)
     val BorderStrong  = Color(0xFFD1D5DB)
@@ -48,6 +48,7 @@ object HnColors {
     val TagOrderStrongBg   = Color(0xFFF8F5FE); val TagOrderStrongFg   = Color(0xFF5B21B6) // 의사오더 — 진한 퍼플
     val TagRequestStrongBg = Color(0xFFFFF5F5); val TagRequestStrongFg = Color(0xFFB91C1C) // 환자요청 — 진한 레드
     val TagWatchStrongBg   = Color(0xFFFEFAED); val TagWatchStrongFg   = Color(0xFFB45309) // 워치 — 진한 옐로/앰버
+    val TagSessionStrongBg = Color(0xFFECFDF5); val TagSessionStrongFg = Color(0xFF065F46) // 웹세션 — 진한 그린
 
     // OrderKind → 옅은 톤 태그 색상 (환자 상세/오더 리스트용)
     val orderTagColors: Map<OrderKind, TagColors> = mapOf(
@@ -65,5 +66,6 @@ object HnColors {
         NotificationCategory.ORDER   to TagColors(TagOrderStrongBg,   TagOrderStrongFg),
         NotificationCategory.REQUEST to TagColors(TagRequestStrongBg, TagRequestStrongFg),
         NotificationCategory.WATCH   to TagColors(TagWatchStrongBg,   TagWatchStrongFg),
+        NotificationCategory.SESSION to TagColors(TagSessionStrongBg, TagSessionStrongFg),
     )
 }

@@ -148,6 +148,16 @@
   --color-status-warning-surface: #fffbeb;                /* amber-50 */
   --color-status-danger-surface: #fff1f2;                 /* rose-50 */
 
+  /* PASS-BAR 슬롯 팔레트 — 모바일 디자인과 통일. 채도 낮은 8색, 한 화면 동시 노출 시 시각 충돌 회피. */
+  --color-slot-situation: #3f4e96;
+  --color-slot-patient-problem: #8e4e62;
+  --color-slot-background: #347d78;
+  --color-slot-assessment: #8c6b30;
+  --color-slot-safety: #9a4444;
+  --color-slot-action: #9a5e30;
+  --color-slot-recommendation: #6b5a98;
+  --color-slot-synthesis: #457a5c;
+
   /* Emr Typography */
   --text-title-lg: 1.5rem;
   --text-title-md: 1.25rem;

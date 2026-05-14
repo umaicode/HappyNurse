@@ -42,9 +42,11 @@ fun HnFullScreenAlarmScaffold(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 14.dp, vertical = 24.dp),
+                // top: 시계 영역(약 28dp) 바로 아래부터 콘텐츠 시작
+                // bottom: 하단 EdgeButton(약 56dp) 와 겹치지 않게 여유
+                .padding(start = 14.dp, end = 14.dp, top = 28.dp, bottom = 72.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
+            verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.Top),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(

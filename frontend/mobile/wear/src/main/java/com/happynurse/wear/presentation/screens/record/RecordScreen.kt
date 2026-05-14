@@ -111,7 +111,6 @@ fun RecordScreen(
                         RecordPhase.RECORDING -> RecordingContent(
                             elapsed = state.elapsedSec,
                             onStop = viewModel::stopRecording,
-                            onCancel = viewModel::cancelRecording,
                         )
                         RecordPhase.PROCESSING -> ProcessingContent("음성 인식 중…")
                         RecordPhase.SUBMITTING -> ProcessingContent("등록 중…")
@@ -171,18 +170,18 @@ private fun IdleContent(onMicTap: () -> Unit) {
 }
 
 @Composable
-private fun RecordingContent(elapsed: Int, onStop: () -> Unit, onCancel: () -> Unit) {
+private fun RecordingContent(elapsed: Int, onStop: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 18.dp, bottom = 22.dp),
+            .padding(top = 14.dp, bottom = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         TimeChip(text = formatMmSs(elapsed))
         Spacer(Modifier.weight(1f))
         Box(contentAlignment = Alignment.Center) {
-            HnPulseRing(diameterDp = 110, color = MaterialTheme.colorScheme.error)
+            HnPulseRing(diameterDp = 100, color = MaterialTheme.colorScheme.error)
             Box(
                 modifier = Modifier
                     .size(ButtonSize)
@@ -198,22 +197,6 @@ private fun RecordingContent(elapsed: Int, onStop: () -> Unit, onCancel: () -> U
                         .background(Color.White),
                 )
             }
-        }
-        Spacer(Modifier.size(6.dp))
-        // 중지 버튼 아래 취소 — 녹음 폐기하고 IDLE 로 복귀 (등록 X)
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(percent = 50))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .clickable { onCancel() }
-                .padding(horizontal = 14.dp, vertical = 6.dp),
-        ) {
-            Text(
-                text = "취소",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.SemiBold,
-            )
         }
         Spacer(Modifier.weight(1f))
     }

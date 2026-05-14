@@ -8,7 +8,6 @@ import com.happynurse.data.remote.model.IvInfusionListItemResponse
 import com.happynurse.data.remote.model.NotificationListItemResponse
 import com.happynurse.data.repository.AuthRepository
 import com.happynurse.data.repository.IvRepository
-import com.happynurse.data.repository.NotificationDismissRepository
 import com.happynurse.data.repository.NotificationRepository
 import com.happynurse.data.repository.PatientRepository
 import com.happynurse.data.repository.SttReminderRepository
@@ -39,7 +38,6 @@ class TasksViewModel @Inject constructor(
     private val notificationRepository: NotificationRepository,
     private val patientRepository: PatientRepository,
     private val sttReminderRepository: SttReminderRepository,
-    private val notificationDismissRepository: NotificationDismissRepository,
 ) : ViewModel() {
 
     private val _ivTimers = MutableStateFlow<List<IvTimer>>(emptyList())
@@ -51,18 +49,6 @@ class TasksViewModel @Inject constructor(
     // 상단 알림 벨 시트(MainScaffold) 데이터 — 병동 알림함 + 본인 워치 알람을 합친 목록
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
     val notifications: StateFlow<List<Notification>> = _notifications.asStateFlow()
-
-    fun dismissNotification(id: String) {
-        _notifications.value = _notifications.value.filterNot { it.id == id }
-        viewModelScope.launch { notificationDismissRepository.dismiss(id) }
-    }
-
-    fun dismissAllNotifications() {
-        val ids = _notifications.value.map { it.id }
-        if (ids.isEmpty()) return
-        _notifications.value = emptyList()
-        viewModelScope.launch { notificationDismissRepository.dismissAll(ids) }
-    }
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading.asStateFlow()
@@ -130,7 +116,6 @@ class TasksViewModel @Inject constructor(
             val wardPatients = patientRepository.getMyWardPatients().getOrNull() ?: emptyList()
             val myPatientIds = wardPatients.filter { it.isMyPatient }.map { it.patientId }.toSet()
             val locationMap = wardPatients.associate { it.patientId to (it.room to it.bed) }
-            val dismissed = notificationDismissRepository.snapshot()
 
             val serverNotifications = notificationRepository.getWard(wardId, limit = 50).fold(
                 onSuccess = { res ->
@@ -155,7 +140,6 @@ class TasksViewModel @Inject constructor(
             )
 
             _notifications.value = (serverNotifications + watchNotifications)
-                .filterNot { it.id in dismissed }
                 .sortedWith(
                     // 과거 알림(minutesAgo >= 0) 먼저, 그 안에서 최신순. 그 뒤 미래 알림은 가까운 순.
                     compareBy<Notification>(
@@ -204,6 +188,7 @@ private fun NotificationListItemResponse.toNotification(
         "order_change" -> NotificationCategory.ORDER
         "self_report" -> NotificationCategory.REQUEST
         "vital_alert", "timer" -> NotificationCategory.WATCH
+        "web_login", "web_logout" -> NotificationCategory.SESSION
         else -> NotificationCategory.REQUEST
     }
     val (room, bed) = patientId?.let { locationMap[it] } ?: ("" to "")

@@ -52,7 +52,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.happynurse.presentation.components.PageHeader
 import com.happynurse.presentation.screens.handoff.components.HandoverPatientCard
-import com.happynurse.presentation.screens.handoff.components.HandoverSummaryCard
+import com.happynurse.presentation.screens.handoff.components.WardEventsStrip
 import com.happynurse.presentation.screens.patients.currentShiftLabel
 import com.happynurse.presentation.theme.HnColors
 
@@ -92,7 +92,12 @@ fun HandoffScreen(
             state.patients.isEmpty() -> {
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                     Spacer(Modifier.height(8.dp))
-                    HandoverSummaryCard(state.rosterSummary!!)
+                    WardEventsStrip(
+                        events = state.wardEvents,
+                        loading = state.wardEventsLoading,
+                        error = state.wardEventsError,
+                        onRetry = vm::refresh,
+                    )
                     Spacer(Modifier.height(24.dp))
                     EmptyContent()
                 }
@@ -108,7 +113,7 @@ private fun Content(
     vm: HandoffViewModel,
     onOpenPatient: (String) -> Unit,
 ) {
-    val summary = state.rosterSummary ?: return
+    state.rosterSummary ?: return
     val patients = state.patients
     val pagerState = rememberPagerState(pageCount = { patients.size })
     val scope = rememberCoroutineScope()
@@ -120,13 +125,21 @@ private fun Content(
             .collect { page ->
                 patients.getOrNull(page)?.handoverId
                     ?.takeIf { it.isNotBlank() }
-                    ?.let { vm.ensureDetailLoaded(it) }
+                    ?.let {
+                        vm.ensureDetailLoaded(it)
+                        vm.ensureChecksLoaded(it)
+                    }
             }
     }
 
     Column(Modifier.fillMaxSize()) {
         Spacer(Modifier.height(8.dp))
-        HandoverSummaryCard(summary)
+        WardEventsStrip(
+            events = state.wardEvents,
+            loading = state.wardEventsLoading,
+            error = state.wardEventsError,
+            onRetry = vm::refresh,
+        )
         Spacer(Modifier.height(14.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -138,11 +151,11 @@ private fun Content(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .clickable { dropdownOpen = true }
-                        .padding(vertical = 4.dp, horizontal = 4.dp),
+                        .padding(vertical = 4.dp, horizontal = 8.dp),
                 ) {
                     Text(
                         "담당 환자",
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = HnColors.Text,
                     )
@@ -179,14 +192,14 @@ private fun Content(
                                 Column {
                                     Text(
                                         label,
-                                        fontSize = 14.sp,
+                                        fontSize = 18.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = HnColors.Text,
                                     )
                                     if (sub.isNotBlank()) {
                                         Text(
                                             sub,
-                                            fontSize = 11.sp,
+                                            fontSize = 16.sp,
                                             color = HnColors.TextSecondary,
                                         )
                                     }
@@ -228,6 +241,9 @@ private fun Content(
                     patient = patient,
                     detail = state.detailByHandoverId[item.handoverId],
                     loadingDetail = state.loadingDetailIds.contains(item.handoverId),
+                    checkedMap = state.checksByHandoverId[item.handoverId],
+                    inFlight = state.checksInFlight[item.handoverId].orEmpty(),
+                    onToggleCheck = { idx, v -> vm.toggleSynthesisCheck(item.handoverId, idx, v) },
                     onOpenPatient = {
                         patient?.patientId?.toString()?.takeIf { it.isNotBlank() && it != "0" }
                             ?.let(onOpenPatient)

@@ -134,21 +134,21 @@ export function IVTimerPanel() {
           const elapsedMs = Math.max(0, now - startedAtMs);
           const progressPercent = Math.min(100, (elapsedMs / totalMs) * 100);
 
-          // 게이지 색 — 모바일 IVTimerCard.kt 와 동일한 경과율 기준 50%/80% 3단계.
+          // 게이지 색 — 잔여율 기준 3단계. 50% 이상 active, 20% 이상 warning, 그 외 danger.
           // 단 잔여 5분 미만이면 무조건 danger override (iv_alert SSE 발행 시점과 align).
           // 텍스트는 의사오더/알림 카드와 통일된 차분 톤으로 — 사용자 안전 강조는 게이지가 담당.
+          const remainingPercent = 100 - progressPercent;
           const isCritical = remainingMs < CRITICAL_REMAINING_MS;
           const barColorClass = isCritical
             ? "bg-status-danger"
-            : progressPercent < 50
+            : remainingPercent >= 50
               ? "bg-status-active"
-              : progressPercent < 80
+              : remainingPercent >= 20
                 ? "bg-status-warning"
                 : "bg-status-danger";
 
           const info = infoByPatientId.get(item.patientId);
           const roomBed = info?.roomBed ?? "";
-          const fluidLabel = item.medicationNames.join(" + ");
 
           // 종료 시각 — 같은 날이면 시간만, 다음 날 넘어가면 "M/D HH:mm".
           const endIsSameDay = isSameDay(new Date(item.expectedEndAt), now);
@@ -177,10 +177,17 @@ export function IVTimerPanel() {
                 </span>
               </div>
 
-              {/* 2행: 수액 이름 — 길면 다음 줄로 (truncate 금지) */}
-              <span className="text-body-sm font-bold text-content-primary leading-snug break-words">
-                {fluidLabel}
-              </span>
+              {/* 2행: 수액 이름 — 약물 1개당 한 줄. 길면 다음 줄로 (truncate 금지) */}
+              <ul className="flex flex-col gap-0.5">
+                {item.medicationNames.map((medicationName, medicationIndex) => (
+                  <li
+                    key={medicationIndex}
+                    className="text-body-sm font-bold text-content-primary leading-snug break-words"
+                  >
+                    {medicationName}
+                  </li>
+                ))}
+              </ul>
 
               {/* 2.5행: 주입 속도 + 세트 — BE 5/11 IvInfusionListItemResponse 확장분 (rateGttPerMin · dropSet).
                   마이그레이션 누락 row 는 둘 다 null 가능 → mL/hr 만 노출. */}

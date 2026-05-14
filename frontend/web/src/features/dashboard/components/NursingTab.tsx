@@ -118,38 +118,60 @@ export function NursingTab({
 
   const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // focus 진입 시 어느 행을 잠시 강조할지 — 2.5초 자동 해제.
+  const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
+  // 환자/일자 변경 시에만 closest 자동 스크롤 — focus 점프 후 onFocusHandled 로
+  // focusRecordId 가 null 되어 effect 가 재실행될 때 closest 로 되돌아가지 않게 한다.
+  const datasetKey = `${encounterId}-${date}`;
+  const lastAutoScrolledDatasetRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (filteredNotes.length === 0) return;
-    // focusRecordId 가 있으면 그 행 우선, 없으면 현재 시각 근처 카드를 가운데로.
-    let target: HTMLDivElement | null | undefined = null;
+
+    // 1) focus 점프: 해당 row 로 스크롤 + 강조. closest 로 fallback 안 함.
     if (focusRecordId != null) {
       const focused = filteredNotes.find(
         (note) =>
           note.type === "STT_NOTE" && note.nursingRecordId === focusRecordId,
       );
-      if (focused) {
-        target = itemRefs.current.get(rowKey(focused));
+      const focusedKey = focused ? rowKey(focused) : null;
+      const target = focusedKey ? itemRefs.current.get(focusedKey) : null;
+      if (target && focusedKey) {
+        target.scrollIntoView({ block: "center", behavior: "smooth" });
+        /* eslint-disable-next-line react-hooks/set-state-in-effect */
+        setHighlightedKey(focusedKey);
+        // focus 처리 후 closest 자동 스크롤이 다시 동작하지 않도록 datasetKey 기록.
+        lastAutoScrolledDatasetRef.current = datasetKey;
       }
+      onFocusHandled?.();
+      return;
     }
-    if (!target) {
-      const now = Date.now();
-      const closest = filteredNotes.reduce((best, note) => {
-        const distance = Math.abs(new Date(note.occurredAt).getTime() - now);
-        const bestDistance = Math.abs(
-          new Date(best.occurredAt).getTime() - now,
-        );
-        return distance < bestDistance ? note : best;
-      }, filteredNotes[0]);
-      target = itemRefs.current.get(rowKey(closest));
-    }
+
+    // 2) closest 자동 스크롤은 환자/일자 변경 시에만 1회.
+    //    myRecordsOnly 토글 / 새 기록 추가 등으로 filteredNotes 만 바뀐 경우엔 안 함.
+    if (lastAutoScrolledDatasetRef.current === datasetKey) return;
+    lastAutoScrolledDatasetRef.current = datasetKey;
+
+    const now = Date.now();
+    const closest = filteredNotes.reduce((best, note) => {
+      const distance = Math.abs(new Date(note.occurredAt).getTime() - now);
+      const bestDistance = Math.abs(
+        new Date(best.occurredAt).getTime() - now,
+      );
+      return distance < bestDistance ? note : best;
+    }, filteredNotes[0]);
+    const target = itemRefs.current.get(rowKey(closest));
     if (target) {
       target.scrollIntoView({ block: "center" });
     }
-    if (focusRecordId != null) {
-      onFocusHandled?.();
-    }
-  }, [filteredNotes, focusRecordId, onFocusHandled]);
+  }, [filteredNotes, focusRecordId, onFocusHandled, datasetKey]);
+
+  // 하이라이트 자동 해제 — 어느 행이 focus 인지 잠시만 보여주고 사라짐.
+  useEffect(() => {
+    if (highlightedKey === null) return;
+    const timeoutId = window.setTimeout(() => setHighlightedKey(null), 2500);
+    return () => window.clearTimeout(timeoutId);
+  }, [highlightedKey]);
 
   // 인라인 추가 — `+` 버튼 호버/클릭 시 폼이 그 위치에 펼쳐진다.
   // 백엔드 NursingRecordManualCreateRequest 는 { encounterId, content } 만 받으므로 시각은 서버 자동.
@@ -167,7 +189,7 @@ export function NursingTab({
           <div className="border-r border-border-base pr-4">기록 내용</div>
           <div className="border-r border-border-base pr-4 text-center">구분</div>
           <div className="border-r border-border-base pr-4 h-full flex items-center justify-center">기록자</div>
-          <div className="text-center">동작</div>
+          <div className="text-center">관리</div>
         </div>
 
         {/* Body */}
@@ -206,6 +228,7 @@ export function NursingTab({
                       key={`${key}-${isEditMode ? "edit" : "view"}`}
                       note={note}
                       isEditMode={isEditMode}
+                      isHighlighted={highlightedKey === key}
                       onUpdateStt={handleUpdateStt}
                       onUpdateMedication={handleUpdateMedication}
                       onConfirm={handleConfirm}
@@ -446,7 +469,7 @@ function InlineAddForm({
 
   return (
     <div className="grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-2 border-y border-brand-primary/10 bg-brand-surface/30 items-center shadow-inner">
-      <div className="text-center text-body-sm font-mono font-bold text-content-secondary">
+      <div className="w-full text-center font-mono font-extrabold text-[15px] text-content-primary leading-[1.6]">
         {displayHHmm}
       </div>
       <div className="pr-4">
@@ -494,6 +517,7 @@ function InlineAddForm({
 function NoteRow({
   note,
   isEditMode,
+  isHighlighted,
   onUpdateStt,
   onUpdateMedication,
   onConfirm,
@@ -506,6 +530,8 @@ function NoteRow({
   note: NursingNoteItem;
   // 편집 모드 (수정/삭제 노출 여부). false 면 draft 행의 "확정"만.
   isEditMode: boolean;
+  // 사이드바 / 인수인계 citation 에서 점프해 온 row 잠시 강조 (NursingTab 에서 2.5초 후 해제).
+  isHighlighted: boolean;
   rowRef?: (element: HTMLDivElement | null) => void;
 } & NoteRowCallbacks) {
   const isMedication = note.type === "MEDICATION";
@@ -615,12 +641,16 @@ function NoteRow({
     <div
       ref={rowRef}
       className={cn(
-        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-1 border-b border-border-base/50 items-start hover:bg-surface-hover/40 transition-all relative",
+        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-1 min-h-[60px] border-b border-border-base/50 items-center hover:bg-surface-hover/40 transition-[background-color,box-shadow] duration-500 relative",
         // 우선순위: medication > draft > isEditing (마지막 매치가 이김)
-        // draft 는 hover 도 같은 회색으로 고정 — 임시 기록이라 hover 강조 의미 없음.
-        note.status === "draft" && "bg-[#ecedf0] hover:bg-[#ecedf0]",
+        // draft 는 hover 도 같은 톤으로 고정 — 임시 기록이라 hover 강조 의미 없음. 좌측 3px accent 로 임시상태 시각화.
+        note.status === "draft" &&
+          "bg-sub-alpha-10 hover:bg-sub-alpha-10 border-l-[3px] border-l-status-warning",
         note.type === "MEDICATION" && "bg-brand-surface/20",
         isEditing && "bg-brand-surface/15",
+        // highlighted — 사이드바/인수인계에서 점프해 온 행 잠시 강조. inset shadow 로 외곽 ring 효과.
+        isHighlighted &&
+          "bg-status-warning-surface hover:bg-status-warning-surface shadow-[inset_0_0_0_2px_var(--color-status-warning)]",
       )}
     >
       {/* 시간 — 편집 모드에선 HH : mm 분리 입력. STT_NOTE / MEDICATION 모두 body 의 confirmedAt 키로 송신. */}
@@ -763,7 +793,7 @@ function NoteRow({
             />
           )
         ) : (
-          <span className="text-[11px] text-content-muted">-</span>
+          <span className="text-body-micro text-content-muted">-</span>
         )}
       </div>
     </div>

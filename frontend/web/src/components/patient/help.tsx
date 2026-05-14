@@ -10,49 +10,49 @@ import {
 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import {
-  FaHeadSideMask,
+  FaMaskFace,
   FaFaceTired,
-  FaSyringe,
   FaRestroom,
   FaBedPulse,
 } from "react-icons/fa6";
-import { BsBandaidFill } from "react-icons/bs";
+import { GiMedicalDrip, GiBandageRoll } from "react-icons/gi";
 import { getButtons, getFaq, submitSymptom } from "@/features/patient/api";
 import { usePatientStore } from "@/features/patient/stores/patient";
 import type { FaqItem, SymptomButton } from "@/features/patient/types/patient";
 
-type TabKey = "form" | "faq"
+type TabKey = "form" | "faq";
 
 const INTENT_LABEL_COLORS: Record<string, string> = {
-  "정의":      "bg-[#F2F7FA] text-[#3D5466]",
-  "증상":      "bg-[#F9EEED] text-[#6A3F3C]",
-  "원인":      "bg-[#FAF1E6] text-[#6A4A30]",
-  "진단":      "bg-[#FAF5E4] text-[#65572A]",
-  "치료":      "bg-[#EEF5EB] text-[#3F5A3B]",
-  "약물":      "bg-[#EBF4F2] text-[#35544F]",
-  "예방":      "bg-[#EEF6F7] text-[#39555B]",
+  정의: "bg-[#F2F7FA] text-[#3D5466]",
+  증상: "bg-[#F9EEED] text-[#6A3F3C]",
+  원인: "bg-[#FAF1E6] text-[#6A4A30]",
+  진단: "bg-[#FAF5E4] text-[#65572A]",
+  치료: "bg-[#EEF5EB] text-[#3F5A3B]",
+  약물: "bg-[#EBF4F2] text-[#35544F]",
+  예방: "bg-[#EEF6F7] text-[#39555B]",
   "식이, 생활": "bg-[#F4F7E7] text-[#545930]",
-  "운동":      "bg-[#F1EEF6] text-[#4C4666]",
-  "재활":      "bg-[#F4ECF5] text-[#5B4361]",
-  "검진":      "bg-[#F8EEF2] text-[#6B4554]",
+  운동: "bg-[#F1EEF6] text-[#4C4666]",
+  재활: "bg-[#F4ECF5] text-[#5B4361]",
+  검진: "bg-[#F8EEF2] text-[#6B4554]",
 } as const;
 
 type SymptomIcon = LucideIcon | ComponentType<SVGProps<SVGSVGElement>>;
 
 const SYMPTOM_ICONS: Array<{ keyword: string; Icon: SymptomIcon }> = [
-  { keyword: "통증",     Icon: FaFaceTired },
-  { keyword: "화장실",   Icon: FaRestroom },
-  { keyword: "드레싱",   Icon: BsBandaidFill },
-  { keyword: "수액",     Icon: FaSyringe },
-  { keyword: "체위",     Icon: FaBedPulse },
-  { keyword: "호흡",     Icon: FaHeadSideMask },
+  { keyword: "통증", Icon: FaFaceTired },
+  { keyword: "화장실", Icon: FaRestroom },
+  { keyword: "드레싱", Icon: GiBandageRoll },
+  { keyword: "수액", Icon: GiMedicalDrip },
+  { keyword: "체위", Icon: FaBedPulse },
+  { keyword: "호흡", Icon: FaMaskFace },
 ];
 
 const resolveSymptomIcon = (label: string): SymptomIcon =>
-  SYMPTOM_ICONS.find(({ keyword }) => label.includes(keyword))?.Icon ?? HelpCircle;
+  SYMPTOM_ICONS.find(({ keyword }) => label.includes(keyword))?.Icon ??
+  HelpCircle;
 
 const GENDER = {
-  male:   { label: "남", chip: "bg-blue-100 text-blue-700" },
+  male: { label: "남", chip: "bg-blue-100 text-blue-700" },
   female: { label: "여", chip: "bg-pink-100 text-pink-700" },
 } as const;
 
@@ -119,7 +119,8 @@ export default function Help() {
 
       const sentAt = new Date().toTimeString().slice(0, 5);
       const selectedLabel =
-        buttons.find((button) => button.buttonId === selectedButtonId)?.label ?? "";
+        buttons.find((button) => button.buttonId === selectedButtonId)?.label ??
+        "";
 
       const params = new URLSearchParams({ sentAt, symptoms: selectedLabel });
       if (trimmedInput) params.set("direct", trimmedInput);
@@ -249,64 +250,66 @@ export default function Help() {
       {activeTab === "form" ? (
         <div className="flex flex-1 min-h-0 flex-col gap-[15px]">
           <div className="flex flex-1 min-h-0 flex-col gap-[15px] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="grid grid-cols-2 gap-5 mx-2 mt-2">
-            {buttons.map((button) => {
-              const isSelected = selectedButtonId === button.buttonId;
-              const Icon = resolveSymptomIcon(button.label);
-              return (
-                <button
-                  key={button.buttonId}
-                  type="button"
-                  onClick={() => toggleSymptom(button.buttonId)}
-                  className={`flex h-[70px] items-center gap-3 rounded-xl px-3.5 py-4 text-left transition-all ${
-                    isSelected
-                      ? "border border-transparent bg-[#d4e0f7] shadow-[0_4px_6px_rgba(0,0,0,0.13)]"
-                      : "border border-transparent bg-white shadow-[0_2px_8px_rgba(0,0,0,0.13)]"
-                  }`}
-                >
-                  <Icon
-                    className={`size-7 shrink-0 ${
-                      isSelected ? "text-patient-slate" : "text-patient-primary"
+            <div className="grid grid-cols-2 gap-5 mx-2 mt-2">
+              {buttons.map((button) => {
+                const isSelected = selectedButtonId === button.buttonId;
+                const Icon = resolveSymptomIcon(button.label);
+                return (
+                  <button
+                    key={button.buttonId}
+                    type="button"
+                    onClick={() => toggleSymptom(button.buttonId)}
+                    className={`flex h-[70px] items-center gap-3 rounded-xl px-3.5 py-4 text-left transition-all ${
+                      isSelected
+                        ? "border border-transparent bg-[#d4e0f7] shadow-[0_4px_6px_rgba(0,0,0,0.13)]"
+                        : "border border-transparent bg-white shadow-[0_2px_8px_rgba(0,0,0,0.13)]"
                     }`}
-                    strokeWidth={2}
-                  />
-                  <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-                    <span
-                      className={`truncate text-lg font-bold tracking-tight ${
-                        isSelected ? "text-patient-slate" : "text-patient-ink"
-                      }`}
-                    >
-                      {button.label}
-                    </span>
-                    <span
-                      className={`truncate text-[16px] font-SemiBold tracking-tight ${
+                  >
+                    <Icon
+                      className={`size-7 shrink-0 ${
                         isSelected
-                          ? "text-patient-slate opacity-85"
-                          : "text-patient-muted"
+                          ? "text-patient-slate"
+                          : "text-patient-primary"
                       }`}
-                    >
-                      {button.description}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                      strokeWidth={2}
+                    />
+                    <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+                      <span
+                        className={`truncate text-lg font-bold tracking-tight ${
+                          isSelected ? "text-patient-slate" : "text-patient-ink"
+                        }`}
+                      >
+                        {button.label}
+                      </span>
+                      <span
+                        className={`truncate text-[16px] font-SemiBold tracking-tight ${
+                          isSelected
+                            ? "text-patient-slate opacity-85"
+                            : "text-patient-muted"
+                        }`}
+                      >
+                        {button.description}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
 
-          <div className="mt-4 flex flex-col gap-3">
-            <label className="text-lg font-bold text-patient-sub">
-              그 외 증상
-            </label>
-            <textarea
-              value={directInput}
-              onChange={(event) => setDirectInput(event.target.value)}
-              placeholder="증상이나 필요한 도움을 입력해주세요"
-              className="min-h-[72px] w-full resize-none rounded-xl border border-[#cdcfd7] bg-white px-3 py-2.5 text-lg font-medium leading-relaxed text-patient-ink placeholder:text-patient-fade outline-none transition-colors focus:border-patient-primary"
-            />
-            {errorMessage ? (
-              <p className="text-sm font-bold text-red-500">{errorMessage}</p>
-            ) : null}
-          </div>
+            <div className="mt-4 flex flex-col gap-3">
+              <label className="text-lg font-bold text-patient-sub">
+                그 외 증상
+              </label>
+              <textarea
+                value={directInput}
+                onChange={(event) => setDirectInput(event.target.value)}
+                placeholder="증상이나 필요한 도움을 입력해주세요"
+                className="min-h-[72px] w-full resize-none rounded-xl border border-[#cdcfd7] bg-white px-3 py-2.5 text-lg font-medium leading-relaxed text-patient-ink placeholder:text-patient-fade outline-none transition-colors focus:border-patient-primary"
+              />
+              {errorMessage ? (
+                <p className="text-sm font-bold text-red-500">{errorMessage}</p>
+              ) : null}
+            </div>
           </div>
 
           <button

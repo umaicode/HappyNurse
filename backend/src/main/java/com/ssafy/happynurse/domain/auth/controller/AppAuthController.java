@@ -45,7 +45,7 @@ public class AppAuthController {
             @Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest) {
 
-        AuthResult result = authService.login(
+        AuthResult result = authService.loginApp(
                 request.employeeNumber(),
                 request.password(),
                 httpRequest.getRemoteAddr(),
@@ -68,7 +68,7 @@ public class AppAuthController {
     public ResponseEntity<ApiResponse<AppLoginResponse>> refresh(
             @Valid @RequestBody AppRefreshRequest request) {
 
-        AuthResult result = authService.refresh(request.refreshToken());
+        AuthResult result = authService.refreshApp(request.refreshToken());
 
         return ResponseEntity.ok(
                 ApiResponse.ok("토큰이 갱신되었습니다.", AppLoginResponse.from(result)));
