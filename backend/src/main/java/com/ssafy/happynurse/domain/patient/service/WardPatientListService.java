@@ -57,6 +57,7 @@ public class WardPatientListService {
     }
 
     private WardPatientListResponse toResponse(Encounter e, long unconfirmedNursingCount, boolean isMyPatient) {
+        var assignedNurse = e.getAssignedPractitioner();
         return new WardPatientListResponse(
                 e.getPatient().getPatientId(),
                 e.getEncounterId(),
@@ -66,7 +67,11 @@ public class WardPatientListService {
                 e.getRoom().getRoomName(),
                 e.getBedName(),
                 unconfirmedNursingCount,
-                isMyPatient
+                isMyPatient,
+                assignedNurse != null ? assignedNurse.getPractitionerId() : null,
+                assignedNurse != null ? assignedNurse.getName() : null,
+                e.getChiefComplaint(),
+                e.getSurgeryName()
         );
     }
 }

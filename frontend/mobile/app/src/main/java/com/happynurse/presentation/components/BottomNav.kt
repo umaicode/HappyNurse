@@ -1,4 +1,5 @@
-// 하단 4탭 네비게이션 바 — 환자/알람/인수인계/마이페이지
+
+// 하단 4탭 네비게이션 바 — 환자/타이머/인수인계/마이페이지
 package com.happynurse.presentation.components
 
 import androidx.compose.foundation.background
@@ -12,9 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Assignment
-import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.PersonOutline
+import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,9 +30,9 @@ import com.happynurse.presentation.theme.HnColors
 
 enum class HnTab(val id: String, val label: String, val icon: ImageVector) {
     PATIENTS("patients", "환자", Icons.Outlined.Person),
-    ALARMS("alarms", "알람", Icons.Outlined.Notifications),
+    TASKS("tasks", "타이머", Icons.Outlined.Timer),
     HANDOFF("handoff", "인수인계", Icons.Outlined.Assignment),
-    ME("me", "마이페이지", Icons.Outlined.PersonOutline),
+    ME("me", "마이페이지", Icons.Outlined.Badge),
 }
 
 @Composable

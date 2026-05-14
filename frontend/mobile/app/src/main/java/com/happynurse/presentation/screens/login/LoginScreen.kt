@@ -1,6 +1,7 @@
-// 로그인 — 병원/병동 드롭다운(API), 사원번호/비밀번호 입력, 지문/Face ID 버튼
+// 로그인 — 병원/병동 드롭다운(API), 사원번호/비밀번호 입력
 package com.happynurse.presentation.screens.login
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,9 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material.icons.outlined.Face
-import androidx.compose.material.icons.outlined.Favorite
-import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Icon
@@ -39,6 +37,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -46,10 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.happynurse.R
 import com.happynurse.data.remote.model.OrganizationDto
 import com.happynurse.data.remote.model.WardDto
 import com.happynurse.presentation.components.HnButton
-import com.happynurse.presentation.components.HnButtonVariant
 import com.happynurse.presentation.theme.HnColors
 
 @Composable
@@ -85,7 +85,12 @@ fun LoginScreen(
                     .clip(RoundedCornerShape(18.dp))
                     .background(HnColors.Primary),
             ) {
-                Icon(Icons.Outlined.Favorite, contentDescription = null, tint = Color.White, modifier = Modifier.size(34.dp))
+                Image(
+                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(96.dp),
+                )
             }
             Spacer(Modifier.height(14.dp))
             Text("HappyNurse", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = HnColors.Primary, letterSpacing = (-0.03).sp)
@@ -161,29 +166,6 @@ fun LoginScreen(
             loading = state.loading,
             onClick = viewModel::login,
         )
-
-        Spacer(Modifier.height(24.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f).height(1.dp).background(HnColors.Border))
-            Text("  또는 생체 인증으로 로그인  ", fontSize = 12.sp, color = HnColors.TextTertiary)
-            Box(Modifier.weight(1f).height(1.dp).background(HnColors.Border))
-        }
-        Spacer(Modifier.height(16.dp))
-        Row {
-            HnButton(
-                text = "지문 인증", icon = Icons.Outlined.Fingerprint,
-                variant = HnButtonVariant.SECONDARY, full = true,
-                onClick = viewModel::loginWithBiometric,
-                modifier = Modifier.weight(1f),
-            )
-            Spacer(Modifier.size(10.dp))
-            HnButton(
-                text = "Face ID", icon = Icons.Outlined.Face,
-                variant = HnButtonVariant.SECONDARY, full = true,
-                onClick = viewModel::loginWithBiometric,
-                modifier = Modifier.weight(1f),
-            )
-        }
 
         Spacer(Modifier.weight(1f))
     }

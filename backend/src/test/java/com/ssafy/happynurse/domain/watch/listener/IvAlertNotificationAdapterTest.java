@@ -61,7 +61,7 @@ class IvAlertNotificationAdapterTest {
         assertThat(env.patientId()).isEqualTo(3L);
         assertThat(env.sourceEntityId()).isEqualTo(100L);
         assertThat(env.title()).isEqualTo("수액 종료 5분 전");
-        assertThat(env.body()).contains("이승연");
+        assertThat(env.body()).isEqualTo("5% Dextrose 수액 종료 5분 전");
         assertThat(env.pushPolicy()).isEqualTo(PushPolicy.ASSIGN_DELIVERY);
     }
 
@@ -78,7 +78,7 @@ class IvAlertNotificationAdapterTest {
         NotificationEnvelope env = captor.getValue();
 
         assertThat(env.title()).isEqualTo("수액 종료");
-        assertThat(env.body()).contains("종료되었습니다");
+        assertThat(env.body()).isEqualTo("5% Dextrose 수액 종료");
     }
 
     @Test
@@ -102,7 +102,7 @@ class IvAlertNotificationAdapterTest {
 
         ArgumentCaptor<NotificationEnvelope> captor = ArgumentCaptor.forClass(NotificationEnvelope.class);
         verify(dispatcher).dispatch(captor.capture());
-        assertThat(captor.getValue().body()).contains("5% Dextrose 외 2건 혼합");
+        assertThat(captor.getValue().body()).isEqualTo("5% Dextrose 외 2건 혼합 수액 종료");
     }
 
     @Test

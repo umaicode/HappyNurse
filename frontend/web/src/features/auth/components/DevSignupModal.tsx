@@ -93,7 +93,7 @@ export function DevSignupModal({ isOpen, onClose }: Props) {
         className="flex w-[360px] flex-col gap-4"
       >
         <div>
-          <h2 className="text-xl font-bold text-[var(--color-sub-primary)]">
+          <h2 className="text-xl font-bold text-sub-primary">
             테스트 회원가입
           </h2>
           <p className="mt-1 text-sm text-content-tertiary">
@@ -165,7 +165,7 @@ export function DevSignupModal({ isOpen, onClose }: Props) {
           </Button>
           <Button
             type="submit"
-            className="flex-1 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white"
+            className="flex-1 bg-brand-primary hover:bg-brand-hover !text-white"
             disabled={!isFormValid || isSubmitting}
           >
             {isSubmitting ? '처리 중...' : '가입 후 로그인'}

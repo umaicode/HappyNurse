@@ -5,6 +5,7 @@
 CLAUDE.md
 DESIGN.md
 mobile/CONVENTIONS.md
+mobile/docs/
 
 # ───────────── 공통: IDE ─────────────
 .idea/
@@ -91,4 +92,8 @@ src.zip
 # 현지
 web/swagger.json
 mobile/swagger.json
+mobile/swagger-ai.json
 mobile/app/google-services.json
+
+# 로컬 작업용 문서 (커밋 대상 아님)
+web/docs/

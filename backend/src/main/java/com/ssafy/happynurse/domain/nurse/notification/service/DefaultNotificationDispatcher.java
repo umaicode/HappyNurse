@@ -12,6 +12,8 @@ import com.ssafy.happynurse.domain.nurse.notification.service.registry.PersonalE
 import com.ssafy.happynurse.domain.nurse.notification.service.registry.WardEmitterRegistry;
 import com.ssafy.happynurse.domain.patient.entity.Patient;
 import com.ssafy.happynurse.domain.patient.repository.PatientRepository;
+import com.ssafy.happynurse.domain.reminder.entity.SttReminder;
+import com.ssafy.happynurse.domain.reminder.repository.SttReminderRepository;
 import com.ssafy.happynurse.domain.watch.entity.IvInfusion;
 import com.ssafy.happynurse.domain.watch.repository.IvInfusionRepository;
 import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
@@ -36,6 +38,7 @@ public class DefaultNotificationDispatcher implements NotificationDispatcher {
     private final PatientRepository patientRepository;
     private final PatientSelfReportRepository patientSelfReportRepository;
     private final IvInfusionRepository ivInfusionRepository;
+    private final SttReminderRepository sttReminderRepository;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -110,12 +113,30 @@ public class DefaultNotificationDispatcher implements NotificationDispatcher {
             return Notification.createForIvAlert(recipient, ivInfusion, patient, env.title(), env.body());
         }
 
+        if (env.sourceType() == SourceType.timer && env.sourceEntityId() != null) {
+            SttReminder reminder = sttReminderRepository.findById(env.sourceEntityId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "SttReminder not found: " + env.sourceEntityId()));
+            return Notification.createForSttReminder(recipient, reminder, patient, env.title(), env.body());
+        }
+
         PatientSelfReport selfReport = (env.sourceType() == SourceType.self_report && env.sourceEntityId() != null)
                 ? patientSelfReportRepository.findById(env.sourceEntityId())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "PatientSelfReport not found: " + env.sourceEntityId()))
                 : null;
 
+        if (env.priority() != null) {
+            return Notification.create(
+                    recipient,
+                    env.sourceType(),
+                    selfReport,
+                    patient,
+                    env.title(),
+                    env.body(),
+                    env.priority()
+            );
+        }
         return Notification.create(
                 recipient,
                 env.sourceType(),

@@ -70,14 +70,23 @@ type RetryConfig = AxiosRequestConfig & { _retry?: boolean }
 // 인증을 "얻으려는" 엔드포인트 목록.
 // 이 요청들이 401 을 받으면 자격증명 자체의 실패라 refresh 로 살릴 수 없다.
 // 인터셉터에서 글로벌 처리하지 말고 호출 컴포넌트의 onError 가 안내하도록 그대로 reject.
-const AUTH_ENTRY_PATHS = ['/auth/login', '/auth/dev-login', '/auth/refresh']
+// /practitioners/me 도 세션 entry 성격 — 401 = 비로그인 상태. 자동 로그아웃 직후 race 로
+// me 가 401 떨어졌을 때 refresh 도미노로 번지는 것을 막는다 ((web)/layout 이 onError 에서 /login 처리).
+const AUTH_ENTRY_PATHS = [
+  '/auth/login',
+  '/auth/dev-login',
+  '/auth/refresh',
+  '/practitioners/me',
+]
 
 const isAuthEntryRequest = (url: string | undefined) =>
   !!url && AUTH_ENTRY_PATHS.some((path) => url.includes(path))
 
 let refreshPromise: Promise<void> | null = null
 
-const performRefresh = () => {
+// AI client 등 다른 axios 인스턴스에서 재사용. 동시 401 발생 시 동일 promise 공유로 중복 refresh 방지.
+// refresh 실패 시 redirect/clear 는 호출 측 인터셉터가 결정 (현재 정책: redirect 안 함, 호출 측 onError 가 처리).
+export const performRefresh = () => {
   if (refreshPromise) return refreshPromise
   refreshPromise = client
     .post('/auth/refresh', null, { _retry: true } as RetryConfig)
@@ -86,13 +95,6 @@ const performRefresh = () => {
       refreshPromise = null
     })
   return refreshPromise
-}
-
-const redirectToLogin = () => {
-  if (typeof window !== 'undefined') {
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? ''
-    window.location.href = `${basePath}/login`
-  }
 }
 
 client.interceptors.response.use(
@@ -132,8 +134,8 @@ client.interceptors.response.use(
       await performRefresh()
       return client(originalRequest)
     } catch (refreshError) {
-      devTokenStorage.clear()
-      redirectToLogin()
+      // refresh 실패 시 redirect 끔 (사용자 요청). token 도 clear 안 함 — 다른 기능이 access token 으로 잘 동작 중일 수 있음.
+      // 호출 측이 onError 로 알림 처리.
       return Promise.reject(refreshError)
     }
   },

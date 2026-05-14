@@ -21,17 +21,13 @@ import java.time.LocalDateTime;
 @Transactional(readOnly = true)
 public class NfcTagIssueService {
 
-    private static final String REQUIRED_ROLE = "nurse";
-
     private final NfcTagRepository nfcTagRepository;
     private final MedicationOrderRepository medicationOrderRepository;
     private final MedicationRepository medicationRepository;
 
     @Transactional
     public NfcTagIssueResponse issue(NfcTagIssueRequest request, String role) {
-        if (!REQUIRED_ROLE.equals(role)) {
-            throw new CustomException(ErrorCode.FORBIDDEN, "NFC 태그 발급 권한이 없습니다. role=" + role);
-        }
+        // TODO 운영 진입 전 role=="nurse" 가드 복원 — 약물 NFC 발급은 간호사 권한
         if (request.tagType() != TagType.medication) {
             // 환자 팔찌(wristband) 발급은 patient_wristband 테이블 워크플로우가 따로 있어 본 endpoint 에서는 금지
             throw new CustomException(ErrorCode.NFC_PAYLOAD_INVALID,

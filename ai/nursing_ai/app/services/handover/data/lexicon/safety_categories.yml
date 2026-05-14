@@ -1,0 +1,154 @@
+version: "2026.05.01"
+categories:
+  - id: allergy
+    label: 알레르기
+    enum: [있음, 없음, 미확인]
+    positive_terms: [알레르기, 알러지, allergy, "약물 알레르기", "음식 알레르기",
+                     "조영제 알레르기", penicillin, sulfa, latex, 아나필락시스,
+                     anaphylaxis, 두드러기, urticaria, 발진, rash,
+                     "항생제 알레르기", "약물과민반응", "알레르기 반응"]
+    negative_terms: [알레르기 없음, NKDA, NKA, "약물 알레르기 없음", "알레르기 반응 없음",
+                     "이상반응 없음", "알레르기 없음 확인", "과민반응 없음"]
+
+  - id: isolation
+    label: 격리
+    enum: [접촉격리, 비말격리, 공기격리, 역격리, 없음, 미확인]
+    positive_terms: [격리, isolation, "contact precaution", "droplet precaution",
+                     airborne, 접촉주의, 비말주의, 공기주의, 역격리,
+                     MRSA, VRE, CRE, MDR, 다제내성, 음압격리,
+                     "접촉격리", "격리 중", "격리실", "1인실"]
+    negative_terms: [격리 해제, "no precaution", "격리 없음", "격리해제", "격리 불필요"]
+
+  - id: fall_risk
+    label: 낙상위험
+    enum: [고위험, 중위험, 저위험, 없음, 미확인]
+    positive_terms: [낙상위험, "fall risk", "낙상 고위험", Morse, Hendrich,
+                     낙상예방, 침상난간, 미끄럼방지, 보행보조,
+                     낙상력, "낙상 과거력", "낙상 발생", 낙상했음,
+                     어지럼증, dizziness, 기립성저혈압,
+                     "MFS ≥45", "낙상위험 고위험", "낙상예방 교육",
+                     진정제, 수면제, 항경련제, 이뇨제, "낙상 고위험 약물"]
+    negative_terms: [낙상위험 없음, "fall risk 없음", "저낙상위험", "MFS <25"]
+
+  - id: dnr
+    label: DNR
+    enum: [있음, 없음, 미확인]
+    positive_terms: [DNR, 심폐소생거부, "do not resuscitate", AND, 연명치료거부,
+                     호스피스, 완화의료, 연명의료계획, "DNR 동의서"]
+    negative_terms: [DNR 해제, "DNR 없음", "full code", "FULL CODE", "소생 동의"]
+
+  - id: high_alert_med
+    label: 고위험약물
+    enum: [있음, 없음, 미확인]
+    positive_terms: [insulin, heparin, warfarin, opioid, anticoagulant, 고위험약물,
+                     morphine, fentanyl, "concentrated electrolytes", 고농도전해질,
+                     KCl, MgSO4, NaHCO3, chemotherapy, 항암제,
+                     항응고제, 혈당강하제, 마약성진통제, 근이완제,
+                     혈전용해제, thrombolytics, digoxin, 디곡신,
+                     vasopressor, epinephrine, norepinephrine, dopamine,
+                     LMWH, 저분자량헤파린, 인슐린, 항암화학요법,
+                     Rivaroxaban, Dabigatran, Apixaban, Warfarin,
+                     "고위험약물 투여 중", "이중확인 필요"]
+    negative_terms: [고위험약물 없음]
+
+  - id: pressure_ulcer
+    label: 욕창위험
+    enum: [고위험, 중위험, 저위험, 없음, 발생, 미확인]
+    positive_terms: [욕창, "pressure ulcer", "pressure injury", Braden,
+                     피부손상, 피부통합성, 발적, redness, 피부발적,
+                     체위변경, "2시간마다", "에어매트리스", 체압분산,
+                     뼈돌출부, 천골부, sacrum, heel, 발뒤꿈치,
+                     "Braden ≤12", "Braden ≤18", "욕창 고위험",
+                     "욕창 1단계", "욕창 2단계", "욕창 3단계", "욕창 4단계",
+                     "ischium", "trochanter", "malleolus", "occiput",
+                     "발꿈치", "엉치뼈", "욕창 예방", "실리콘 폼드레싱"]
+    negative_terms: [욕창 없음, "피부 양호", "피부통합성 유지", "Braden ≥19"]
+
+  - id: dvt_risk
+    label: DVT/VTE 위험
+    enum: [고위험, 중위험, 저위험, 없음, 미확인]
+    positive_terms: [DVT, VTE, PE, 심부정맥혈전증, 폐색전증, 혈전,
+                     thrombus, thrombosis, 탄력스타킹, 압박스타킹,
+                     IPC, 간헐적공기압박, heparin, 항응고,
+                     혈전예방, 부종, 다리부종, 종아리 통증,
+                     Homan, "Homan sign", Caprini, Wells,
+                     LMWH, UFH, "혈전예방 스타킹", "Caprini ≥5",
+                     "부동", "장기침상", "수술 후", TKA, THA,
+                     "종아리 발적", "종아리 열감", "종아리 부종"]
+    negative_terms: [DVT 없음, "혈전 없음", "VTE 위험 낮음"]
+
+  - id: aspiration_risk
+    label: 흡인위험
+    enum: [고위험, 중위험, 없음, 미확인]
+    positive_terms: [흡인, aspiration, 연하곤란, dysphagia, 삼킴장애,
+                     구역반사, "gag reflex", 의식저하, 좌위, 반좌위,
+                     "HOB 30도", 경관영양, "tube feeding", NGT,
+                     기도흡인, 흡인성폐렴, 흡인위험, tracheostomy,
+                     "연하평가", "연하장애", "삼킴평가",
+                     "의식 저하", "진정 상태", "기관절개", "구역반사 감소",
+                     GERD, 역류, "위내용물 역류"]
+    negative_terms: [흡인위험 없음, "연하양호", "경구섭취 가능", "흡인 없음"]
+
+  - id: restraint
+    label: 억제대
+    enum: [적용, 미적용, 미확인]
+    positive_terms: [억제대, restraint, 억제, 손목억제, 신체억제,
+                     "억제 적용", "동의서 있음", "Pt irritable",
+                     보호대, 안전띠, "억제대 동의서",
+                     "자가발관 위험", "라인 제거 위험",
+                     agitation, irritable, "불안정", "협조 불량"]
+    negative_terms: [억제대 없음, "억제 미적용", "restraint 없음", "억제 불필요"]
+
+  - id: skin_integrity
+    label: 피부통합성
+    enum: [손상, 위험, 유지, 미확인]
+    positive_terms: [피부손상, 창상, wound, 상처, 욕창, 발적,
+                     redness, oozing, 삼출, drainage, 궤양, ulcer,
+                     피부통합성 손상, 피부 발적, 찰과상, abrasion,
+                     열상, laceration, 봉합, suture, 드레싱,
+                     "피부 건조", "피부 취약", "발적", "수포",
+                     blister, "삼출물", "화농성"]
+    negative_terms: [피부통합성 유지, "피부 양호", "발적 없음", "이상 없음",
+                     "드레싱 청결", "삼출 없음"]
+
+  - id: blood_transfusion
+    label: 수혈
+    enum: [시행중, 예정, 완료, 없음, 미확인]
+    positive_terms: [수혈, transfusion, "P/C", FFP, PLT, 혈소판,
+                     농축적혈구, 혈장, 혈액형, 교차반응검사,
+                     "Hb 저하", 빈혈, anemia, 수혈반응, 발열반응,
+                     "수혈 중", "수혈 예정", "수혈 완료",
+                     "혈액제제", "혈액 투여", "수혈 동의서",
+                     "Hb 8", "Hb 10", "수혈 후 Hb 확인"]
+    negative_terms: [수혈 없음, "수혈 불필요", "수혈 해당없음"]
+
+  - id: medication_safety
+    label: 투약안전
+    enum: [주의필요, 확인완료, 미확인]
+    positive_terms: [투약오류, "medication error", 용량 확인, 알레르기 확인,
+                     이중확인, "double check", 고위험약물, 인슐린,
+                     항응고제, 전해질, 투약 지연, "PRN 미시행",
+                     "오더 확인 필요", "처방 변경", "용량 변경",
+                     "5 right", "5대 원칙", "약물 투여 전 확인",
+                     "환자 확인", "약명 확인", "용량 확인",
+                     "경로 확인", "시간 확인"]
+    negative_terms: [투약 완료, "이상반응 없음", "정상 투여", "투약 이상 없음"]
+
+  - id: infection_bundle
+    label: 감염예방번들
+    enum: [이행중, 완료, 미이행, 해당없음]
+    positive_terms: ["VAP bundle", "CLABSI bundle", "CAUTI bundle",
+                     손위생, "hand hygiene", 클로르헥시딘, CHG,
+                     "구강간호", "oral care", "구강위생",
+                     "HOB 30-45도", "침상머리상승",
+                     "카테터 필요성 평가", "Foley 제거 고려",
+                     "CVC 드레싱", "라인 교체", "무균술"]
+    negative_terms: ["bundle 완료", "감염예방 이행", "감염징후 없음"]
+
+  - id: consent
+    label: 동의서
+    enum: [완료, 미완료, 해당없음]
+    positive_terms: [동의서, consent, "억제대 동의서", "수혈 동의서",
+                     "수술 동의서", "시술 동의서", "연명의료계획",
+                     "동의서 작성", "보호자 동의", "환자 동의"]
+    negative_terms: ["동의서 완료", "동의서 있음", "서명 완료"]

@@ -16,7 +16,6 @@ import com.ssafy.happynurse.domain.watch.dto.IvInfusionResponse;
 import com.ssafy.happynurse.domain.watch.dto.StartIvRequest;
 import com.ssafy.happynurse.domain.watch.entity.InfusionStatus;
 import com.ssafy.happynurse.domain.watch.entity.IvInfusion;
-import com.ssafy.happynurse.domain.watch.entity.Medication;
 import com.ssafy.happynurse.domain.watch.repository.IvInfusionRepository;
 import com.ssafy.happynurse.domain.watch.scheduler.AlertType;
 import com.ssafy.happynurse.domain.watch.scheduler.IvAlertScheduler;
@@ -92,6 +91,7 @@ public class IvInfusionService {
                 nurse,
                 req.totalVolumeMl(),
                 rate,
+                req.dropSet(),
                 now,
                 req.note());
         IvInfusion saved = repository.save(iv);
@@ -109,6 +109,7 @@ public class IvInfusionService {
         IvInfusion iv = resolveActiveByTagUid(tagUid);
         BigDecimal newRate = req.resolveRateMlPerHr();
         LocalDateTime now = LocalDateTime.now();
+        iv.updateDropSet(req.dropSet());
         iv.changeRate(newRate, now);
 
         afterCommit(() -> {

@@ -1,38 +1,40 @@
 'use client'
 
-import { useMemo } from "react";
-import {
-  Activity,
-  AlertCircle,
-  Bell,
-  ClipboardList,
-  Clock,
-  Droplet,
-  Info,
-  Loader2,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Info, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PanelCard } from "./PanelCard";
 import { useMyNotifications } from "../hooks/useNotifications";
+import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
 import {
+  PRIORITY_CHIP,
+  PRIORITY_LABEL,
   SOURCE_TYPE_LABEL,
   SOURCE_TYPE_TONE,
   type NotificationListItem,
   type SourceType,
+  type SymptomPriority,
 } from "../types/notification";
 import { formatRelativeTime } from "@/lib/time";
 
-const SOURCE_TYPE_ICON: Record<SourceType, LucideIcon> = {
-  self_report: Bell,
-  iv_alert: Droplet,
-  timer: Clock,
-  order_change: ClipboardList,
-  vital_alert: Activity,
-};
-
 export function PatientAlerts() {
   const { data, isPending, isError } = useMyNotifications();
+  const { data: wardPatients } = useWardPatients();
+
+  // patientId → 호실-침대 join — slim 알림 응답엔 호실 정보 없음.
+  const roomBedByPatientId = useMemo(() => {
+    const map = new Map<number, string>();
+    wardPatients?.forEach((patient) => {
+      const roomBed = [
+        patient.roomName.replace(/호$/, ""),
+        patient.bedName,
+      ]
+        .filter(Boolean)
+        .join("-");
+      if (roomBed) map.set(patient.patientId, roomBed);
+    });
+    return map;
+  }, [wardPatients]);
 
   // createdAt desc — 최신이 위. 정렬은 시간순 고정 (요구사항).
   const sorted = useMemo<NotificationListItem[]>(() => {
@@ -54,7 +56,15 @@ export function PatientAlerts() {
           <EmptyState>표시할 알림 없음</EmptyState>
         ) : (
           sorted.map((alert) => (
-            <NotificationCard key={alert.notificationId} alert={alert} />
+            <NotificationCard
+              key={alert.notificationId}
+              alert={alert}
+              roomBed={
+                alert.patientId !== null
+                  ? roomBedByPatientId.get(alert.patientId) ?? ""
+                  : ""
+              }
+            />
           ))
         )}
       </div>
@@ -62,21 +72,46 @@ export function PatientAlerts() {
   );
 }
 
-function NotificationCard({ alert }: { alert: NotificationListItem }) {
+function NotificationCard({
+  alert,
+  roomBed,
+}: {
+  alert: NotificationListItem;
+  roomBed: string;
+}) {
   const sourceType = alert.sourceType as SourceType;
-  const Icon =
-    sourceType in SOURCE_TYPE_ICON
-      ? SOURCE_TYPE_ICON[sourceType]
-      : AlertCircle;
   const label = SOURCE_TYPE_LABEL[sourceType] ?? alert.sourceType;
   const tone = SOURCE_TYPE_TONE[sourceType] ?? "text-content-tertiary";
+  // self_report 알림 priority — 카드 보더 강조는 제거됨 (사이드바 카드 보더 전체 제거 정책), 라벨 옆 칩으로만 표시.
+  const priority: SymptomPriority | null =
+    sourceType === "self_report" ? alert.priority : null;
+
+  // body 3줄 초과 시 카드 자체 클릭으로 펼치기/접기. hasOverflow 는 NotificationBody 가 측정 후 보고.
+  const [expanded, setExpanded] = useState(false);
+  const [hasOverflow, setHasOverflow] = useState(false);
+  const isInteractive = !!alert.body && hasOverflow;
+  const toggle = () => setExpanded((prev) => !prev);
 
   return (
-    <PanelCard>
-      {/* 1행: 아이콘 + 라벨 (좌) / 상대시간 (우) — 색은 라벨/아이콘 글자색에만 */}
+    <PanelCard
+      onClick={isInteractive ? toggle : undefined}
+      role={isInteractive ? "button" : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      onKeyDown={
+        isInteractive
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                toggle();
+              }
+            }
+          : undefined
+      }
+      className={isInteractive ? "cursor-pointer" : undefined}
+    >
+      {/* 1행: 라벨 + (선택) priority 칩 (좌) / 상대시간 (우) — 색은 라벨 글자색에만 */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <Icon className={cn("w-4 h-4 shrink-0", tone)} />
           <span
             className={cn(
               "text-body-sm font-semibold tracking-tight shrink-0 leading-none",
@@ -85,23 +120,75 @@ function NotificationCard({ alert }: { alert: NotificationListItem }) {
           >
             {label}
           </span>
+          {priority && (
+            <span
+              className={cn(
+                "px-1.5 py-0.5 rounded text-[11px] font-bold leading-none shrink-0",
+                PRIORITY_CHIP[priority],
+              )}
+            >
+              {PRIORITY_LABEL[priority]}
+            </span>
+          )}
         </div>
-        <span className="text-body-xs font-mono font-medium text-content-tertiary shrink-0 leading-none">
+        <span className="text-body-xs font-medium text-content-tertiary shrink-0 leading-none">
           {formatRelativeTime(alert.createdAt)}
         </span>
       </div>
 
       {alert.patientName && (
-        <span className="text-body-sm font-bold text-content-primary truncate leading-tight">
-          {alert.patientName}
-        </span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-body-sm font-bold text-content-primary truncate leading-tight">
+            {alert.patientName}
+          </span>
+          {roomBed && (
+            <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
+              {roomBed}
+            </span>
+          )}
+        </div>
       )}
       {alert.body && (
-        <p className="text-body-sm text-content-secondary leading-snug break-words">
-          {alert.body}
-        </p>
+        <NotificationBody
+          body={alert.body}
+          expanded={expanded}
+          onOverflowChange={setHasOverflow}
+        />
       )}
     </PanelCard>
+  );
+}
+
+// 3줄 초과 여부만 부모에 보고 — 토글 UI/상태는 부모(NotificationCard) 가 가짐.
+// 펼친 상태에선 clientHeight === scrollHeight 가 되어 측정값이 false 로 잘못 갱신되므로 측정 skip.
+function NotificationBody({
+  body,
+  expanded,
+  onOverflowChange,
+}: {
+  body: string;
+  expanded: boolean;
+  onOverflowChange: (hasOverflow: boolean) => void;
+}) {
+  const bodyRef = useRef<HTMLParagraphElement>(null);
+
+  useLayoutEffect(() => {
+    const element = bodyRef.current;
+    if (!element) return;
+    if (expanded) return;
+    onOverflowChange(element.scrollHeight > element.clientHeight + 1);
+  }, [body, expanded, onOverflowChange]);
+
+  return (
+    <p
+      ref={bodyRef}
+      className={cn(
+        "text-body-sm text-content-secondary leading-snug break-words",
+        !expanded && "line-clamp-3",
+      )}
+    >
+      {body}
+    </p>
   );
 }
 

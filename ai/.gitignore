@@ -35,3 +35,10 @@ uploads/
 
 # Test files
 test.html
+
+# ai 인수인계
+phi_mappings.tmp
+*.pem
+
+
+nursing_ai/tools/reports/

@@ -15,7 +15,8 @@ public record NotificationListItemResponse(
         String patientName,
         Long sourceEntityId,
         LocalDateTime createdAt,
-        Long recipientPractitionerId
+        Long recipientPractitionerId,
+        String priority
 ) {
     public static NotificationListItemResponse from(Notification entity) {
         Patient patient = entity.getPatient();
@@ -29,7 +30,8 @@ public record NotificationListItemResponse(
                 patient == null ? null : patient.getName(),
                 selfReport == null ? null : selfReport.getSelfReportId(),
                 entity.getCreatedAt(),
-                entity.getRecipientPractitioner().getPractitionerId()
+                entity.getRecipientPractitioner().getPractitionerId(),
+                entity.getPriority() == null ? null : entity.getPriority().name()
         );
     }
 }

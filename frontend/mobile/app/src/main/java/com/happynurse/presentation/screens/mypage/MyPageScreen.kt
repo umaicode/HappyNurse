@@ -1,4 +1,4 @@
-// 마이페이지 탭 — 프로필 카드 + 담당 환자 리스트 + 로그아웃 버튼
+// 마이페이지 탭 — 프로필 카드 + 담당 환자 리스트 + 로그아웃 버튼 (실 API 연동)
 package com.happynurse.presentation.screens.mypage
 
 import androidx.compose.foundation.background
@@ -16,11 +16,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,21 +28,33 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.happynurse.core.sample.SampleData
-import com.happynurse.domain.model.Patient
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.happynurse.presentation.components.HnCard
+import com.happynurse.presentation.components.NotificationBell
 import com.happynurse.presentation.components.PageHeader
-import com.happynurse.presentation.components.TagChip
+import com.happynurse.presentation.components.PatientCard
+import com.happynurse.presentation.components.PatientLayout
+import com.happynurse.presentation.screens.patients.currentShiftLabel
 import com.happynurse.presentation.theme.HnColors
 
 @Composable
 fun MyPageScreen(
     onLogout: () -> Unit,
     onOpenPatient: (String) -> Unit,
+    onOpenNotifications: () -> Unit,
+    upcomingCount: Int,
+    vm: MyPageViewModel = hiltViewModel(),
 ) {
-    val mine = SampleData.patients.filter { it.nurse == "김소연" }
+    val profile by vm.profile.collectAsStateWithLifecycle()
+    val mine by vm.myPatients.collectAsStateWithLifecycle()
+    val myName = profile?.name ?: ""
+
     Column(Modifier.fillMaxWidth()) {
-        PageHeader(title = "마이페이지")
+        PageHeader(
+            title = "마이페이지",
+            right = { NotificationBell(unreadCount = upcomingCount, onClick = onOpenNotifications) },
+        )
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(14.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 4.dp),
@@ -51,9 +63,34 @@ fun MyPageScreen(
                 HnCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("김소연", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                            Text("삼성서울병원", fontSize = 12.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(top = 2.dp))
-                            Text("7W 병동 · 일반간호사", fontSize = 15.sp, color = HnColors.TextSecondary)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    profile?.name ?: "-",
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = HnColors.Text,
+                                )
+                                Spacer(Modifier.size(6.dp))
+                                Text(
+                                    "간호사",
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = HnColors.Text,
+                                )
+                            }
+                            Text(
+                                profile?.organizationName ?: "-",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = HnColors.TextTertiary,
+                                modifier = Modifier.padding(top = 5.dp),
+                            )
+                            Text(
+                                "${profile?.wardName ?: "-"} · ${currentShiftLabel()} 근무",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = HnColors.TextTertiary,
+                            )
                         }
                         Box(
                             contentAlignment = Alignment.Center,
@@ -61,7 +98,7 @@ fun MyPageScreen(
                                 .size(36.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color(0xFFFDF4F4))
-                                .clickable(onClick = onLogout),
+                                .clickable { vm.logout(onLogout) },
                         ) {
                             Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = "로그아웃", tint = HnColors.Danger, modifier = Modifier.size(18.dp))
                         }
@@ -74,27 +111,15 @@ fun MyPageScreen(
                     Text("${mine.size}명", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = HnColors.Primary)
                 }
             }
-            items(mine, key = { it.id }) { p -> MyPatientRow(p, onClick = { onOpenPatient(p.id) }) }
-            item { Spacer(Modifier.height(20.dp)) }
-        }
-    }
-}
-
-@Composable
-private fun MyPatientRow(p: Patient, onClick: () -> Unit) {
-    HnCard(onClick = onClick, padding = 14.dp) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(p.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                    Spacer(Modifier.size(6.dp))
-                    TagChip("${p.room}-${p.bed}", fg = HnColors.Primary, bg = HnColors.PrimarySoft)
-                    Spacer(Modifier.size(4.dp))
-                    TagChip("${p.sex} · ${p.age}세")
-                }
-                Text("${p.chief} · D+${p.daysSince}", fontSize = 12.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(top = 3.dp))
+            items(mine, key = { it.id }) { p ->
+                PatientCard(
+                    patient = p,
+                    onClick = { onOpenPatient(p.id) },
+                    layout = PatientLayout.CARD,
+                    myNurseName = myName,
+                )
             }
-            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = HnColors.TextTertiary, modifier = Modifier.size(18.dp))
+            item { Spacer(Modifier.height(20.dp)) }
         }
     }
 }

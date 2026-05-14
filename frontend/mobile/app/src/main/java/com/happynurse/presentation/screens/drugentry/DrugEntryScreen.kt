@@ -1,4 +1,4 @@
-// 약물 등록 — NFC 태깅으로 약물 추가, 종류별(수액/주사/알약) 그룹 + 수액은 타이머 설정 진입
+// 약물 등록 — NFC 태깅으로 처방 검증(/drug/verify) 누적 → 일괄 저장(/drug/record)
 package com.happynurse.presentation.screens.drugentry
 
 import androidx.compose.foundation.background
@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,46 +20,57 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.outlined.Send
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Nfc
-import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.happynurse.presentation.components.HnButton
+import com.happynurse.presentation.components.HnButtonVariant
 import com.happynurse.presentation.components.HnCard
 import com.happynurse.presentation.components.TagChip
+import com.happynurse.presentation.components.findActivity
 import com.happynurse.presentation.theme.HnColors
-
-enum class DrugKind { FLUID, INJ, PILL }
-data class DrugItem(val id: Int, val kind: DrugKind, val name: String, val presc: String)
 
 @Composable
 fun DrugEntryScreen(
+    patientId: Long,
+    encounterId: Long,
     onClose: () -> Unit,
-    onTimer: () -> Unit,
+    onTimer: (encounterId: Long, medicationOrderIds: List<Long>) -> Unit,
+    viewModel: DrugEntryViewModel = hiltViewModel(),
 ) {
-    val drugs = remember {
-        mutableStateListOf(
-            DrugItem(1, DrugKind.FLUID, "0.9% 생리식염수 500mL", "24시간 IV, 80 mL/hr"),
-            DrugItem(2, DrugKind.FLUID, "5% 포도당 500mL", "혼합 가능"),
-            DrugItem(3, DrugKind.INJ,   "세프트리악손 1g", "1g q12h IV"),
-            DrugItem(4, DrugKind.PILL,  "아스피린 100mg", "1정 PO qd"),
-        )
+    val activity = LocalContext.current.findActivity()
+    // setContext 가 startNfc 전에 실행되도록 한 DisposableEffect 안에서 순서 보장.
+    DisposableEffect(activity, patientId, encounterId) {
+        viewModel.setContext(patientId, encounterId)
+        android.util.Log.d("DrugEntryScreen", "DisposableEffect fired, activity=${activity?.javaClass?.simpleName ?: "NULL"} patientId=$patientId encounterId=$encounterId")
+        if (activity != null) viewModel.startNfc(activity)
+        onDispose {
+            android.util.Log.d("DrugEntryScreen", "DisposableEffect disposed")
+            if (activity != null) viewModel.stopNfc(activity)
+        }
     }
-    var tagging by remember { mutableStateOf(false) }
+
+    val drugs by viewModel.verifiedDrugs.collectAsStateWithLifecycle()
+    val verifyError by viewModel.verifyError.collectAsStateWithLifecycle()
+    val submit by viewModel.submitState.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxSize().background(HnColors.Bg)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(12.dp)) {
@@ -69,89 +82,214 @@ fun DrugEntryScreen(
             Spacer(Modifier.size(8.dp))
             Text("약물 등록", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
         }
-        Column(Modifier.padding(horizontal = 20.dp)) {
-            HnCard(padding = 14.dp) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.size(56.dp).clip(RoundedCornerShape(14.dp)).background(HnColors.PrimarySoft),
-                    ) { Icon(Icons.Outlined.Nfc, contentDescription = null, tint = HnColors.Primary, modifier = Modifier.size(28.dp)) }
-                    Spacer(Modifier.size(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("약물 NFC 태그", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                        Text(
-                            if (tagging) "태그 인식 중..." else "디바이스를 약물에 가까이 대주세요",
-                            fontSize = 12.sp, color = HnColors.TextSecondary,
-                        )
-                    }
-                }
-            }
-        }
 
-        val fluids = drugs.filter { it.kind == DrugKind.FLUID }
-        val injections = drugs.filter { it.kind == DrugKind.INJ }
-        val pills = drugs.filter { it.kind == DrugKind.PILL }
-
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 14.dp),
-        ) {
-            item {
-                Text("태깅된 약물 (${drugs.size})", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary)
-            }
-            if (fluids.isNotEmpty()) {
-                item { SectionTitle("수액 (혼합 가능) · ${fluids.size}", HnColors.Primary) }
-                items(fluids, key = { it.id }) { d -> DrugRow(d, "수액", HnColors.Purple, HnColors.TagFluidBg) { drugs.removeAll { it.id == d.id } } }
-                item {
-                    HnButton(
-                        text = "모든 수액 타이머 설정",
-                        variant = com.happynurse.presentation.components.HnButtonVariant.SECONDARY,
-                        full = true, icon = Icons.Outlined.Timer, onClick = onTimer,
-                    )
-                }
-            }
-            if (injections.isNotEmpty()) {
-                item { SectionTitle("주사 · ${injections.size}", HnColors.Warning) }
-                items(injections, key = { it.id }) { d -> DrugRow(d, "주사", HnColors.Info, HnColors.TagInjBg) { drugs.removeAll { it.id == d.id } } }
-            }
-            if (pills.isNotEmpty()) {
-                item { SectionTitle("알약 · ${pills.size}", HnColors.Success) }
-                items(pills, key = { it.id }) { d -> DrugRow(d, "알약", HnColors.Success, HnColors.TagPillBg) { drugs.removeAll { it.id == d.id } } }
-            }
-        }
-        Box(Modifier.fillMaxWidth().padding(20.dp)) {
-            HnButton(
-                text = "웹 전송 (${drugs.size})",
-                icon = Icons.Outlined.Send,
-                full = true,
-                enabled = drugs.isNotEmpty(),
-                onClick = onClose,
+        when (val s = submit) {
+            DrugEntryViewModel.SubmitState.Idle,
+            DrugEntryViewModel.SubmitState.Submitting -> EntryBody(
+                drugs = drugs,
+                verifyError = verifyError,
+                submitting = s is DrugEntryViewModel.SubmitState.Submitting,
+                onConsumeError = viewModel::consumeVerifyError,
+                onRemove = viewModel::removeDrug,
+                onSubmit = viewModel::submit,
+                onTimer = { onTimer(encounterId, drugs.map { it.medicationOrderId }) },
+            )
+            is DrugEntryViewModel.SubmitState.Success -> SuccessBody(
+                drugs = s.drugs,
+                patientName = s.patientName,
+                savedCount = s.savedCount,
+                savedAt = s.savedAt,
+                onClose = onClose,
+            )
+            is DrugEntryViewModel.SubmitState.Error -> ErrorBody(
+                message = s.message,
+                onDismiss = viewModel::consumeSubmitState,
             )
         }
     }
 }
 
 @Composable
-private fun SectionTitle(text: String, color: androidx.compose.ui.graphics.Color) {
-    Text(text, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color, modifier = Modifier.padding(start = 4.dp))
+private fun ColumnScope.EntryBody(
+    drugs: List<DrugEntryViewModel.VerifiedDrug>,
+    verifyError: String?,
+    submitting: Boolean,
+    onConsumeError: () -> Unit,
+    onRemove: (String) -> Unit,
+    onSubmit: () -> Unit,
+    onTimer: () -> Unit,
+) {
+    Column(Modifier.padding(horizontal = 20.dp)) {
+        HnCard(padding = 14.dp) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(56.dp).clip(RoundedCornerShape(14.dp)).background(HnColors.PrimarySoft),
+                ) { Icon(Icons.Outlined.Nfc, contentDescription = null, tint = HnColors.Primary, modifier = Modifier.size(28.dp)) }
+                Spacer(Modifier.size(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("약물 NFC 태그", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                    Text(
+                        "디바이스를 약물에 가까이 대주세요",
+                        fontSize = 12.sp, color = HnColors.TextSecondary,
+                    )
+                }
+            }
+        }
+    }
+
+    if (verifyError != null) {
+        Spacer(Modifier.height(10.dp))
+        Box(Modifier.padding(horizontal = 20.dp)) {
+            HnCard(padding = 12.dp, onClick = onConsumeError) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.ErrorOutline, contentDescription = null, tint = HnColors.Danger, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text(verifyError, fontSize = 13.sp, color = HnColors.Text, modifier = Modifier.weight(1f))
+                    Text("닫기", fontSize = 12.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+
+    LazyColumn(
+        modifier = Modifier.weight(1f),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
+    ) {
+        item {
+            Text(
+                "검증된 처방 (${drugs.size})",
+                fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary,
+            )
+        }
+        if (drugs.isEmpty()) {
+            item {
+                HnCard(padding = 20.dp) {
+                    Text(
+                        "약물 NFC 칩을 태깅하면 여기에 표시됩니다",
+                        fontSize = 13.sp, color = HnColors.TextSecondary,
+                    )
+                }
+            }
+        } else {
+            items(drugs, key = { it.tagUid }) { d -> VerifiedDrugRow(d, onRemove) }
+        }
+    }
+
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
+        HnButton(
+            text = "수액으로 시작",
+            variant = HnButtonVariant.SECONDARY,
+            full = true,
+            icon = Icons.Outlined.Timer,
+            enabled = drugs.isNotEmpty() && !submitting,
+            onClick = onTimer,
+        )
+        Spacer(Modifier.height(8.dp))
+        HnButton(
+            text = "투약 완료 (${drugs.size})",
+            icon = Icons.AutoMirrored.Outlined.Send,
+            full = true,
+            enabled = drugs.isNotEmpty() && !submitting,
+            loading = submitting,
+            onClick = onSubmit,
+        )
+    }
 }
 
 @Composable
-private fun DrugRow(d: DrugItem, label: String, fg: androidx.compose.ui.graphics.Color, bg: androidx.compose.ui.graphics.Color, onRemove: () -> Unit) {
+private fun VerifiedDrugRow(
+    d: DrugEntryViewModel.VerifiedDrug,
+    onRemove: (String) -> Unit,
+) {
     HnCard(padding = 14.dp) {
         Row(verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
-                TagChip(label, fg = fg, bg = bg)
+                TagChip("약물", fg = HnColors.Primary, bg = HnColors.PrimarySoft)
                 Spacer(Modifier.height(6.dp))
-                Text(d.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                Text(d.presc, fontSize = 12.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(top = 4.dp))
+                Text(d.medicationName, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                Text("처방 #${d.medicationOrderId}", fontSize = 12.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(top = 4.dp))
             }
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp))
-                    .background(HnColors.Surface).clickable(onClick = onRemove),
+                    .background(HnColors.Surface).clickable { onRemove(d.tagUid) },
             ) { Icon(Icons.Outlined.Close, "삭제", tint = HnColors.TextSecondary, modifier = Modifier.size(14.dp)) }
         }
+    }
+}
+
+@Composable
+private fun SuccessBody(
+    drugs: List<DrugEntryViewModel.VerifiedDrug>,
+    patientName: String?,
+    savedCount: Int,
+    savedAt: java.time.LocalDateTime,
+    onClose: () -> Unit,
+) {
+    val timeStr = savedAt.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
+        HnCard(padding = 20.dp) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = HnColors.Success, modifier = Modifier.size(36.dp))
+                    Spacer(Modifier.size(10.dp))
+                    Column {
+                        Text("투약 기록 저장 완료", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                        Text(timeStr, fontSize = 12.sp, color = HnColors.TextSecondary)
+                    }
+                }
+                Spacer(Modifier.height(14.dp))
+                androidx.compose.material3.HorizontalDivider(color = HnColors.Border)
+                Spacer(Modifier.height(12.dp))
+                Text("환자", fontSize = 11.sp, color = HnColors.TextTertiary)
+                Spacer(Modifier.height(2.dp))
+                Text(patientName ?: "환자", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text)
+                Spacer(Modifier.height(14.dp))
+                Text("투약된 약물 ($savedCount)", fontSize = 11.sp, color = HnColors.TextTertiary)
+                Spacer(Modifier.height(6.dp))
+                drugs.forEachIndexed { idx, d ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 4.dp),
+                    ) {
+                        Text(
+                            "${idx + 1}.",
+                            fontSize = 13.sp,
+                            color = HnColors.TextSecondary,
+                            modifier = Modifier.padding(end = 6.dp),
+                        )
+                        Text(
+                            d.medicationName,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = HnColors.Text,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text("#${d.medicationOrderId}", fontSize = 11.sp, color = HnColors.TextTertiary)
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.weight(1f))
+        HnButton(text = "확인", full = true, onClick = onClose)
+    }
+}
+
+@Composable
+private fun ErrorBody(message: String, onDismiss: () -> Unit) {
+    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
+        HnCard(padding = 20.dp) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Outlined.ErrorOutline, contentDescription = null, tint = HnColors.Danger, modifier = Modifier.size(48.dp))
+                Spacer(Modifier.height(12.dp))
+                Text("저장 실패", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                Spacer(Modifier.height(6.dp))
+                Text(message, fontSize = 13.sp, color = HnColors.TextSecondary)
+            }
+        }
+        Spacer(Modifier.weight(1f))
+        HnButton(text = "다시 시도", full = true, variant = HnButtonVariant.SECONDARY, onClick = onDismiss)
     }
 }

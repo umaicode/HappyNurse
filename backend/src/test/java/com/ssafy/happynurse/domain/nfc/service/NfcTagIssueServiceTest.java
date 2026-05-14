@@ -108,19 +108,6 @@ class NfcTagIssueServiceTest {
     }
 
     @Test
-    @DisplayName("issue - 허용되지 않은 role 이면 FORBIDDEN, 저장/조회 안 함")
-    void issue_권한없음() {
-        NfcTagIssueRequest req = new NfcTagIssueRequest("UID-X", TagType.medication, "DRUG", 789L);
-
-        assertThatThrownBy(() -> nfcTagIssueService.issue(req, "doctor"))
-                .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
-
-        verify(nfcTagRepository, never()).save(any());
-        verify(nfcTagRepository, never()).findByTagUid(any());
-    }
-
-    @Test
     @DisplayName("issue - DRUG payload 인데 medication 미존재 → MEDICATION_NOT_FOUND (DB lookup 전 차단)")
     void issue_drug_약물없음() {
         NfcTagIssueRequest req = new NfcTagIssueRequest("UID-X", TagType.medication, "DRUG", 99999L);

@@ -16,12 +16,11 @@ import {
 } from "@/components/ui/command";
 import { PanelCard } from "./PanelCard";
 import {
-  ORDER_STATUS_LABEL,
-  ORDER_STATUS_TONE,
   ORDER_TYPE_LABEL,
   type OrderType,
 } from "@/features/dashboard/types/order";
 import { useOrders } from "../hooks/useOrders";
+import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
 import { formatMonthDayHHmm } from "@/lib/time";
 
 type STTPanelProps = {
@@ -39,12 +38,22 @@ const ORDER_TYPE_OPTIONS: OrderType[] = [
 
 export function STTPanel({ encounterId }: STTPanelProps) {
   const { data, isPending, isError } = useOrders(encounterId);
+  const { data: wardPatients } = useWardPatients();
 
   // null = 전체. 단일 선택 — 사이드바 폭 한정으로 multi 보다 단일이 깔끔.
   const [filterType, setFilterType] = useState<OrderType | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
 
   const patientName = data?.patientName ?? "";
+  // encounterId → 호실-침대 ("{roomName-호}-{bedName}") — EMR 헤더와 동일 패턴.
+  const roomBed = useMemo(() => {
+    if (encounterId === null) return "";
+    const match = wardPatients?.find((patient) => patient.encounterId === encounterId);
+    if (!match) return "";
+    return [match.roomName.replace(/호$/, ""), match.bedName]
+      .filter(Boolean)
+      .join("-");
+  }, [encounterId, wardPatients]);
 
   const filteredOrders = useMemo(() => {
     const orders = data?.orders ?? [];
@@ -146,47 +155,61 @@ export function STTPanel({ encounterId }: STTPanelProps) {
           </EmptyMessage>
         ) : (
           filteredOrders.map((order) => {
-            const isChanged = order.updatedAt !== order.createdAt;
+            // 종료 상태(completed/stopped) 에선 "변경" 의미가 없어 숨김.
+            // 그 외엔 updatedAt !== createdAt 이면 (이력이 있으면) 시간 제한 없이 노출.
+            // 어떤 컬럼이 바뀌었는지 BE 가 노출 안 함 — BE 가 "변경 종류" 필드 추가하면 칩 폐지 또는 라벨화 재검토.
+            const isTerminal =
+              order.status === "completed" || order.status === "stopped";
+            const isChanged =
+              !isTerminal && order.updatedAt !== order.createdAt;
             const isCompleted = order.status === "completed";
             return (
               <PanelCard
                 key={order.medicationOrderId}
                 variantClass={isCompleted ? "opacity-70" : undefined}
               >
-                {/* 1행: 타입 라벨 + (변경 칩) | 시간 */}
+                {/* 1행: 환자명 + 호실-침대 (좌) | 시간 (우) — IV타이머 카드와 통일 */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-body-base font-semibold tracking-tight text-brand-primary shrink-0 leading-none">
-                      {ORDER_TYPE_LABEL[order.orderType] ?? order.orderType}
-                    </span>
-                    {isChanged && (
-                      <span className="px-1.5 py-0.5 rounded bg-brand-primary text-white text-[10px] font-bold leading-none shrink-0">
-                        변경
+                  <div className="flex items-center gap-2 min-w-0">
+                    {patientName && (
+                      <span className="text-body-sm font-bold text-content-primary leading-none truncate">
+                        {patientName}
+                      </span>
+                    )}
+                    {roomBed && (
+                      <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
+                        {roomBed}
                       </span>
                     )}
                   </div>
-                  <span className="text-body-xs font-mono font-medium text-content-tertiary shrink-0 leading-none">
+                  <span className="text-body-xs font-medium text-content-tertiary shrink-0 leading-none">
                     {formatMonthDayHHmm(order.createdAt)}
                   </span>
                 </div>
 
-                {/* 2행: 처방코드 */}
+                {/* 2행: 타입 라벨 + (변경 칩) */}
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-body-base font-semibold tracking-tight text-brand-primary shrink-0 leading-none">
+                    {ORDER_TYPE_LABEL[order.orderType] ?? order.orderType}
+                  </span>
+                  {isChanged && (
+                    <span className="px-1.5 py-0.5 rounded bg-brand-surface text-brand-primary text-[11px] font-bold leading-none shrink-0">
+                      변경
+                    </span>
+                  )}
+                </div>
+
+                {/* 3행: 처방코드 */}
                 <span className="font-mono font-bold text-body-xs text-content-tertiary leading-none">
                   {order.orderCode}
                 </span>
 
-                {/* 3행: 처방명 */}
+                {/* 4행: 처방명 */}
                 <p className="text-body-sm font-bold text-content-primary leading-tight break-words">
                   {order.orderName}
                 </p>
 
-                {patientName && (
-                  <span className="text-body-sm font-bold text-content-primary leading-none truncate">
-                    {patientName}
-                  </span>
-                )}
-
-                {/* 2x2 Info Grid */}
+                {/* Info Grid */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 py-1">
                   <InfoCell label="1회량">
                     <span className="font-mono">
@@ -199,15 +222,6 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                   </InfoCell>
                   <InfoCell label="용법">
                     <span className="text-brand-primary">{order.route}</span>
-                  </InfoCell>
-                  <InfoCell label="상태">
-                    <span
-                      className={cn(
-                        ORDER_STATUS_TONE[order.status] ?? "text-status-neutral",
-                      )}
-                    >
-                      {ORDER_STATUS_LABEL[order.status] ?? order.status}
-                    </span>
                   </InfoCell>
                 </div>
 

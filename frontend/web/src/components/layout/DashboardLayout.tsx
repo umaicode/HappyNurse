@@ -49,7 +49,7 @@ const QUICK_ACTIONS: QuickAction[] = [
     id: "assign-patient",
     icon: UserPlus,
     label: "담당 환자 설정",
-    color: "text-[var(--color-brand-primary)]",
+    color: "text-brand-primary",
   },
 ];
 
@@ -76,10 +76,10 @@ export function DashboardLayout({
   };
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-[var(--color-accent)] text-content-primary p-[6px] gap-[6px] flex">
+    <div className="fixed inset-0 overflow-hidden bg-accent text-content-primary p-[6px] gap-[6px] flex">
       {/* 1. Left (탐색창 - Patient List) */}
       <aside
-        className={`${isLeftOpen ? "w-[240px] border" : "w-0 border-0"} flex-shrink-0 bg-[var(--color-surface-base)] rounded-[6px] flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden border-border-base/60 transition-[width] duration-300 ease-in-out`}
+        className={`${isLeftOpen ? "w-[240px] border" : "w-0 border-0"} flex-shrink-0 bg-surface-base rounded-[6px] flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden border-border-base/60 transition-[width] duration-300 ease-in-out`}
       >
         <div className="w-[240px] h-full flex flex-col">{sidebar}</div>
       </aside>
@@ -93,7 +93,7 @@ export function DashboardLayout({
           type="button"
           onClick={onToggleLeft}
           aria-label={isLeftOpen ? "좌측 사이드바 접기" : "좌측 사이드바 펼치기"}
-          className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-md bg-white/95 backdrop-blur border border-border-base/60 text-content-secondary shadow-md hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition-colors"
+          className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-md bg-white/95 backdrop-blur border border-border-base/60 text-content-secondary shadow-md hover:bg-surface-hover hover:text-content-primary transition-colors"
         >
           {isLeftOpen ? (
             <PanelLeftClose className="h-4 w-4" />
@@ -107,7 +107,7 @@ export function DashboardLayout({
           type="button"
           onClick={onToggleRight}
           aria-label={isRightOpen ? "우측 패널 접기" : "우측 패널 펼치기"}
-          className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-md bg-white/95 backdrop-blur border border-border-base/60 text-content-secondary shadow-md hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition-colors"
+          className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-md bg-white/95 backdrop-blur border border-border-base/60 text-content-secondary shadow-md hover:bg-surface-hover hover:text-content-primary transition-colors"
         >
           {isRightOpen ? (
             <SidebarClose className="h-4 w-4" />
@@ -119,7 +119,7 @@ export function DashboardLayout({
 
       {/* 3. Right (보조창 - Doctor's Order) */}
       <aside
-        className={`${isRightOpen ? "w-[280px] border" : "w-0 border-0"} flex-shrink-0 bg-[var(--color-surface-base)] rounded-[6px] flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden border-border-base/60 transition-[width] duration-300 ease-in-out`}
+        className={`${isRightOpen ? "w-[280px] border" : "w-0 border-0"} flex-shrink-0 bg-surface-base rounded-[6px] flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden border-border-base/60 transition-[width] duration-300 ease-in-out`}
       >
         <div className="w-[280px] h-full flex flex-col">{actionPanel}</div>
       </aside>
@@ -129,7 +129,7 @@ export function DashboardLayout({
         <Popover open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
             <button
-              className="group flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-white transition-shadow hover:shadow-[0_8px_30px_rgb(21,40,159,0.3)] outline-none shadow-2xl"
+              className="group flex h-14 w-14 items-center justify-center rounded-full bg-brand-primary text-white transition-shadow hover:shadow-[0_8px_30px_rgb(21,40,159,0.3)] outline-none shadow-2xl"
               aria-label="Quick Actions"
             >
               <Plus
@@ -141,7 +141,7 @@ export function DashboardLayout({
             side="top"
             align="end"
             sideOffset={16}
-            className="w-56 p-1.5 bg-white border border-[var(--color-border-base)] shadow-2xl rounded-xl overflow-hidden animate-in fade-in zoom-in slide-in-from-bottom-4 duration-200"
+            className="w-56 p-1.5 bg-white border border-border-base shadow-2xl rounded-xl overflow-hidden animate-in fade-in zoom-in slide-in-from-bottom-4 duration-200"
           >
             <div className="flex flex-col gap-0.5">
               <div className="px-3 py-2 text-[11px] font-bold text-content-muted uppercase tracking-wider border-b border-border-subtle mb-1">
@@ -151,7 +151,7 @@ export function DashboardLayout({
                 <button
                   key={action.id}
                   onClick={() => handleActionClick(action.id)}
-                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-[var(--color-surface-hover)] transition-colors text-left group/action"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-surface-hover transition-colors text-left group/action"
                 >
                   <div
                     className={`flex h-8 w-8 items-center justify-center rounded-full bg-surface-base border border-border-subtle ${action.color}`}

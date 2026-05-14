@@ -151,7 +151,9 @@ public class NursingNoteService {
                                               Long currentPractitionerId,
                                               Map<Long, Practitioner> authorById) {
         boolean confirmedOrAmended = nr.getStatus() != RecordStatus.draft;
-        LocalDateTime occurredAt = nr.getConfirmedAt();
+        // AI 서버 INSERT draft 는 confirmedAt 이 NULL 이므로 createdAt 으로 폴백.
+        // 응답의 occurredAt 은 frontend type 상 non-null 계약 → 정렬·시간 표시 모두 의미 있는 값으로 채워야 함.
+        LocalDateTime occurredAt = nr.getConfirmedAt() != null ? nr.getConfirmedAt() : nr.getCreatedAt();
         String content = confirmedOrAmended ? nr.getFinalContent() : nr.getEditContent();
         Long authorId = nr.getAuthorPractitionerId();
         boolean editable = currentPractitionerId != null && authorId.equals(currentPractitionerId);

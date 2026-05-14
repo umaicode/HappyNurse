@@ -1,6 +1,10 @@
-// 간호일지 등록 — 녹음 → STT 결과 표시 → 웹 전송 (실제 STT 연결 전, 시뮬레이션 단계)
+// 간호일지 등록 — 마이크 녹음 → STT 서버 (POST /api/stt/recognize) → 교정 결과 표시
 package com.happynurse.presentation.screens.logentry
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,49 +17,58 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Mic
-import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.Stop
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.happynurse.presentation.components.HnButton
 import com.happynurse.presentation.components.HnButtonVariant
 import com.happynurse.presentation.components.HnCard
-import com.happynurse.presentation.components.TagChip
 import com.happynurse.presentation.theme.HnColors
-import kotlinx.coroutines.delay
 
 @Composable
-fun LogEntryScreen(onClose: () -> Unit) {
-    var stage by remember { mutableIntStateOf(0) } // 0 idle, 1 recording, 2 result, 3 sending, 4 done
-    var seconds by remember { mutableIntStateOf(0) }
-    val text = "환자 김가민, 14시 30분. 보행 시도 중 어지러움 호소하여 즉시 침상 안정 시킴. 혈압 118 76, 맥박 82, 통증 NRS 2점으로 감소 확인."
+fun LogEntryScreen(
+    patientId: Long,
+    encounterId: Long,
+    onClose: () -> Unit,
+    viewModel: LogEntryViewModel = hiltViewModel(),
+) {
+    LaunchedEffect(patientId, encounterId) { viewModel.setContext(patientId, encounterId) }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
-    LaunchedEffect(stage) {
-        if (stage == 1) {
-            seconds = 0
-            while (stage == 1) { delay(1000); seconds++ }
-        }
-        if (stage == 3) {
-            delay(1500); stage = 4; delay(1800); onClose()
-        }
+    // RECORD_AUDIO 권한 — manifest 에는 이미 선언됨. 런타임 권한 요청 launcher.
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted -> if (granted) viewModel.startRecording() }
+
+    val onStartClick: () -> Unit = {
+        val granted = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.RECORD_AUDIO,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (granted) viewModel.startRecording()
+        else permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
     }
 
     Column(Modifier.fillMaxSize().background(HnColors.Bg)) {
@@ -68,82 +81,159 @@ fun LogEntryScreen(onClose: () -> Unit) {
             Text("간호일지 등록", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
         }
 
-        Column(Modifier.padding(horizontal = 20.dp)) {
-            HnCard(padding = 12.dp) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("김가민", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                        Text("7W 701호 1번 침대", fontSize = 12.sp, color = HnColors.TextSecondary)
-                    }
-                    TagChip("NFC 인식됨", fg = HnColors.Success, bg = HnColors.TagPillBg)
-                }
-            }
+        when (val s = state) {
+            LogEntryViewModel.LogState.Idle -> IdleBody(onStart = onStartClick)
+            is LogEntryViewModel.LogState.Recording -> RecordingBody(
+                seconds = s.seconds,
+                onStop = viewModel::stopAndUpload,
+            )
+            LogEntryViewModel.LogState.Uploading -> UploadingBody()
+            is LogEntryViewModel.LogState.Result -> ResultBody(
+                state = s,
+                onRetry = viewModel::reset,
+                onClose = onClose,
+            )
+            is LogEntryViewModel.LogState.Error -> ErrorBody(
+                message = s.message,
+                onRetry = viewModel::reset,
+            )
         }
+    }
+}
 
-        if (stage <= 1) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxSize().padding(20.dp),
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(140.dp).clip(CircleShape)
-                        .background(if (stage == 1) HnColors.Danger else HnColors.Primary)
-                        .clickable { stage = if (stage == 0) 1 else 2 },
-                ) {
-                    Icon(
-                        if (stage == 1) Icons.Outlined.Stop else Icons.Outlined.Mic,
-                        contentDescription = null, tint = Color.White, modifier = Modifier.size(56.dp),
-                    )
+@Composable
+private fun IdleBody(onStart: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxSize().padding(20.dp),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(140.dp).clip(CircleShape)
+                .background(HnColors.Primary)
+                .clickable(onClick = onStart),
+        ) {
+            Icon(Icons.Outlined.Mic, contentDescription = null, tint = Color.White, modifier = Modifier.size(56.dp))
+        }
+        Spacer(Modifier.height(20.dp))
+        Text("버튼을 눌러 녹음을 시작하세요", fontSize = 15.sp, color = HnColors.TextSecondary)
+    }
+}
+
+@Composable
+private fun RecordingBody(seconds: Int, onStop: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxSize().padding(20.dp),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(140.dp).clip(CircleShape)
+                .background(HnColors.Danger)
+                .clickable(onClick = onStop),
+        ) {
+            Icon(Icons.Outlined.Stop, contentDescription = null, tint = Color.White, modifier = Modifier.size(56.dp))
+        }
+        Spacer(Modifier.height(20.dp))
+        Text(
+            formatSec(seconds),
+            fontSize = 32.sp, fontWeight = FontWeight.Bold, color = HnColors.Danger,
+        )
+        Text("녹음 중 · 정지 버튼을 누르세요", fontSize = 13.sp, color = HnColors.TextSecondary)
+    }
+}
+
+@Composable
+private fun UploadingBody() {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxSize().padding(20.dp),
+    ) {
+        CircularProgressIndicator(color = HnColors.Primary, modifier = Modifier.size(40.dp))
+        Spacer(Modifier.height(14.dp))
+        Text("STT 변환 중...", fontSize = 13.sp, color = HnColors.TextSecondary)
+    }
+}
+
+@Composable
+private fun ResultBody(
+    state: LogEntryViewModel.LogState.Result,
+    onRetry: () -> Unit,
+    onClose: () -> Unit,
+) {
+    val resp = state.response
+    Column(
+        modifier = Modifier.fillMaxSize().padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Text(
+            // status='draft' 로 백엔드 저장됨. 확정/수정은 데스크톱 차트에서.
+            if (resp.nursingRecordId != null) "간호일지 임시 등록 완료" else "STT 변환 결과",
+            fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary,
+        )
+        HnCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                resp.correctedText?.let {
+                    Text("교정된 본문", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
+                    Spacer(Modifier.height(2.dp))
+                    Text(it, fontSize = 14.sp, color = HnColors.Text)
+                    Spacer(Modifier.height(10.dp))
                 }
-                Spacer(Modifier.height(20.dp))
-                if (stage == 1) {
-                    Text(
-                        formatSec(seconds),
-                        fontSize = 32.sp, fontWeight = FontWeight.Bold, color = HnColors.Danger,
-                    )
-                    Text("녹음 중 · 정지 버튼을 누르세요", fontSize = 13.sp, color = HnColors.TextSecondary)
-                } else {
-                    Text("버튼을 눌러 녹음을 시작하세요", fontSize = 15.sp, color = HnColors.TextSecondary)
+                resp.originalText?.takeIf { it != resp.correctedText }?.let {
+                    Text("원본", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
+                    Spacer(Modifier.height(2.dp))
+                    Text(it, fontSize = 12.sp, color = HnColors.TextSecondary)
+                    Spacer(Modifier.height(10.dp))
                 }
-            }
-        } else {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                Text("STT 변환 결과", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary)
-                HnCard(modifier = Modifier.weight(1f)) {
-                    Column {
-                        Row {
-                            Text("김가민 · 14:30", fontSize = 12.sp, color = HnColors.TextTertiary, modifier = Modifier.weight(1f))
-                            Text("녹음 ${formatSec(if (seconds > 0) seconds else 47)}", fontSize = 12.sp, color = HnColors.TextTertiary)
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Text(text, fontSize = 14.sp, color = HnColors.Text)
+                // exact 는 원본=교정본 동일 의미라 표시 가치 낮음 — fuzzy/manual 만 노출
+                val visibleCorrections = resp.corrections.filter { it.type != "exact" }
+                if (visibleCorrections.isNotEmpty()) {
+                    Text("교정 내역", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
+                    Spacer(Modifier.height(2.dp))
+                    visibleCorrections.forEach { c ->
+                        Text(
+                            "${c.original} → ${c.corrected}" + (c.type?.let { " (${it})" } ?: ""),
+                            fontSize = 12.sp, color = HnColors.Text,
+                        )
                     }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    HnButton(
-                        text = "다시 녹음",
-                        variant = HnButtonVariant.SECONDARY,
-                        full = true,
-                        onClick = { stage = 0; seconds = 0 },
-                        modifier = Modifier.weight(1f),
-                    )
-                    HnButton(
-                        text = if (stage == 4) "전송 완료" else "웹 전송",
-                        icon = Icons.Outlined.Send,
-                        full = true,
-                        loading = stage == 3,
-                        enabled = stage == 2,
-                        onClick = { stage = 3 },
-                        modifier = Modifier.weight(1f),
-                    )
                 }
             }
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            HnButton(
+                text = "다시 녹음",
+                variant = HnButtonVariant.SECONDARY,
+                full = true,
+                onClick = onRetry,
+                modifier = Modifier.weight(1f),
+            )
+            HnButton(
+                text = "확인",
+                full = true,
+                onClick = onClose,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ErrorBody(message: String, onRetry: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxSize().padding(20.dp),
+    ) {
+        Icon(Icons.Outlined.ErrorOutline, contentDescription = null, tint = HnColors.Danger, modifier = Modifier.size(48.dp))
+        Spacer(Modifier.height(12.dp))
+        Text("STT 변환 실패", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+        Spacer(Modifier.height(6.dp))
+        Text(message, fontSize = 13.sp, color = HnColors.TextSecondary)
+        Spacer(Modifier.height(20.dp))
+        HnButton(text = "다시 시도", variant = HnButtonVariant.SECONDARY, onClick = onRetry)
     }
 }
 

@@ -1,177 +1,232 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from "react";
-import { Droplet } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
+import { formatHHmm, formatMonthDayHHmm } from "@/lib/time";
+import { useAuthStore } from "@/features/auth/stores/auth";
+import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
+import { useWardIvInfusions } from "../hooks/useIvInfusions";
+import { DROP_SET_LABEL, type IvInfusionListItem } from "../types/iv-infusion";
 import { PanelCard } from "./PanelCard";
 
-type IVTimerItem = {
-  id: number;
-  patientName: string;
-  room: string;
-  fluidName: string;
-  startedAt: string;
-  endsAt: string;
-};
+const TICK_INTERVAL_MS = 60_000;
+// 잔여 5분 미만이면 게이지 색을 danger 로 override — iv_alert SSE 5분 전 발행 시점과 align.
+const CRITICAL_REMAINING_MS = 5 * 60 * 1000;
 
-const MOCK_IV_TIMERS: IVTimerItem[] = [
-  {
-    id: 1,
-    patientName: "🛠️ 김가민",
-    room: "7101호",
-    fluidName: "🛠️ N/S 1L",
-    startedAt: "01:30",
-    endsAt: "04:50",
-  },
-  {
-    id: 2,
-    patientName: "🛠️ 박영희",
-    room: "7101호",
-    fluidName: "🛠️ 5DW 500mL",
-    startedAt: "00:30",
-    endsAt: "04:50",
-  },
-  {
-    id: 3,
-    patientName: "🛠️ 최민호",
-    room: "7101호",
-    fluidName: "🛠️ Hartmann 1L",
-    startedAt: "00:50",
-    endsAt: "02:50",
-  },
-  {
-    id: 4,
-    patientName: "🛠️ 한지민",
-    room: "7102호",
-    fluidName: "🛠️ N/S 500mL + KCl 20mEq",
-    startedAt: "00:50",
-    endsAt: "02:05",
-  },
-  {
-    id: 5,
-    patientName: "🛠️ 이도현",
-    room: "7102호",
-    fluidName: "🛠️ 10DW 500mL",
-    startedAt: "00:30",
-    endsAt: "01:55",
-  },
-];
-
-function parseTimeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(":").map(Number);
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return 0;
-  return hours * 60 + minutes;
+function formatDuration(milliseconds: number): string {
+  const totalMinutes = Math.max(0, Math.floor(milliseconds / 60_000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes}분`;
+  if (minutes === 0) return `${hours}시간`;
+  return `${hours}시간 ${minutes}분`;
 }
 
-function getCurrentMinutes(): number {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
+function useNowTick(intervalMs: number): number {
+  const [now, setNow] = useState<number>(() => Date.now());
+  useEffect(() => {
+    const handle = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(handle);
+  }, [intervalMs]);
+  return now;
 }
 
-function formatDuration(minutes: number): string {
-  const safeMinutes = Math.max(0, minutes);
-  const hours = Math.floor(safeMinutes / 60);
-  const remainder = safeMinutes % 60;
-  if (hours === 0) return `${remainder}분`;
-  if (remainder === 0) return `${hours}시간`;
-  return `${hours}시간 ${remainder}분`;
+interface RoomBedInfo {
+  roomBed: string;
+  isMyPatient: boolean;
 }
 
 export function IVTimerPanel() {
-  const [nowMinutes, setNowMinutes] = useState<number>(() => getCurrentMinutes());
+  const wardId = useAuthStore((state) => state.user?.wardId ?? null);
+  const {
+    data: ivInfusions,
+    isPending,
+    isError,
+    error,
+    fetchStatus,
+  } = useWardIvInfusions(wardId, "IN_PROGRESS");
+  const { data: wardPatients } = useWardPatients();
+  const now = useNowTick(TICK_INTERVAL_MS);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setNowMinutes(getCurrentMinutes());
-    }, 60_000);
-    return () => clearInterval(interval);
-  }, []);
+  // patientId → 호실-침대 + 담당여부 join. slim 응답엔 호실/담당 정보 없어 wardPatients 기준.
+  // 호실 표시는 EMRGrid 헤더의 buildHeaderFromApi 와 동일한 "{roomName-호}-{bedName}" 패턴으로 통일.
+  const infoByPatientId = useMemo(() => {
+    const map = new Map<number, RoomBedInfo>();
+    wardPatients?.forEach((patient) => {
+      const roomBed = [
+        patient.roomName.replace(/호$/, ""),
+        patient.bedName,
+      ]
+        .filter(Boolean)
+        .join("-");
+      map.set(patient.patientId, {
+        roomBed,
+        isMyPatient: patient.isMyPatient,
+      });
+    });
+    return map;
+  }, [wardPatients]);
 
-  // startedAt desc — 최근에 시작된 수액이 위.
-  const sortedTimers = [...MOCK_IV_TIMERS].sort(
-    (a, b) => parseTimeToMinutes(b.startedAt) - parseTimeToMinutes(a.startedAt),
+  // 내 담당 환자만 표시 — wardPatients 의 isMyPatient flag 로 필터.
+  // wardPatients 가 아직 안 들어왔으면 IV 도 보이지 않게 (정합성 우선) — 짧은 깜빡임 정도라 사용성에 문제 없음.
+  const sortedItems = useMemo<IvInfusionListItem[]>(
+    () =>
+      [...(ivInfusions ?? [])]
+        .filter((iv) => infoByPatientId.get(iv.patientId)?.isMyPatient)
+        .sort((a, b) => {
+          const aEnd = new Date(a.expectedEndAt).getTime();
+          const bEnd = new Date(b.expectedEndAt).getTime();
+          return aEnd - bEnd;
+        }),
+    [ivInfusions, infoByPatientId],
   );
+
+  // 빈/로딩/오류 상태 분기 — 어디서 막혔는지 즉시 화면으로 식별 가능하도록.
+  // 우선순위: wardId 없음 > 에러 > 로딩 > 빈 응답.
+  const emptyState = (() => {
+    if (wardId === null) {
+      return { label: "병동 정보 없음", subtle: true };
+    }
+    if (isError) {
+      return {
+        label: `조회 실패${error instanceof Error ? ` — ${error.message}` : ""}`,
+        subtle: false,
+      };
+    }
+    // fetchStatus === 'idle' 인데 isPending 이면 enabled 가 false 인 경우. wardId !== null 가드 후엔 발생 X.
+    if (isPending && fetchStatus === "fetching") {
+      return { label: "수액 목록 조회 중...", subtle: true };
+    }
+    if (sortedItems.length === 0) {
+      return { label: "진행 중인 수액 없음", subtle: true };
+    }
+    return null;
+  })();
+
+  if (emptyState) {
+    return (
+      <div className="flex flex-col h-full bg-surface-base">
+        <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2.5">
+          <div
+            className={cn(
+              "flex flex-col items-center justify-center py-10",
+              emptyState.subtle
+                ? "text-content-muted opacity-30"
+                : "text-status-danger",
+            )}
+          >
+            <p className="text-[11px]">{emptyState.label}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-surface-base">
       <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2.5">
-        {sortedTimers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-content-muted gap-2 opacity-30">
-            <Droplet className="w-6 h-6" />
-            <p className="text-[11px]">진행 중인 수액 없음</p>
-          </div>
-        ) : (
-          sortedTimers.map((item) => {
-            const startMinutes = parseTimeToMinutes(item.startedAt);
-            const endMinutes = parseTimeToMinutes(item.endsAt);
-            const totalMinutes = Math.max(1, endMinutes - startMinutes);
-            const elapsedMinutes = Math.max(0, nowMinutes - startMinutes);
-            const remainingMinutes = endMinutes - nowMinutes;
-            const progressPercent = Math.max(
-              0,
-              Math.min(100, (elapsedMinutes / totalMinutes) * 100),
-            );
-            const isWarning = remainingMinutes <= 60;
+        {sortedItems.map((item) => {
+          const startedAtMs = new Date(item.startedAt).getTime();
+          const endMs = new Date(item.expectedEndAt).getTime();
+          const remainingMs = Math.max(0, endMs - now);
+          const totalMs = Math.max(1, endMs - startedAtMs);
+          const elapsedMs = Math.max(0, now - startedAtMs);
+          const progressPercent = Math.min(100, (elapsedMs / totalMs) * 100);
 
-            return (
-              <PanelCard key={item.id}>
-                {/* 1행: 환자명 + 호실 (좌) | 교체 임박 칩 (우) */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-baseline gap-2 min-w-0">
-                    <span className="text-body-sm font-bold text-content-primary truncate leading-none">
-                      {item.patientName}
-                    </span>
-                    <span className="text-body-micro font-mono font-medium text-content-tertiary shrink-0 leading-none">
-                      {item.room}
-                    </span>
-                  </div>
-                  {isWarning && (
-                    <span className="px-1.5 py-0.5 rounded bg-status-warning text-white text-body-micro font-bold leading-none shrink-0">
-                      교체 임박
+          // 게이지 색 — 잔여율 기준 3단계. 50% 이상 active, 20% 이상 warning, 그 외 danger.
+          // 단 잔여 5분 미만이면 무조건 danger override (iv_alert SSE 발행 시점과 align).
+          // 텍스트는 의사오더/알림 카드와 통일된 차분 톤으로 — 사용자 안전 강조는 게이지가 담당.
+          const remainingPercent = 100 - progressPercent;
+          const isCritical = remainingMs < CRITICAL_REMAINING_MS;
+          const barColorClass = isCritical
+            ? "bg-status-danger"
+            : remainingPercent >= 50
+              ? "bg-status-active"
+              : remainingPercent >= 20
+                ? "bg-status-warning"
+                : "bg-status-danger";
+
+          const info = infoByPatientId.get(item.patientId);
+          const roomBed = info?.roomBed ?? "";
+
+          // 종료 시각 — 같은 날이면 시간만, 다음 날 넘어가면 "M/D HH:mm".
+          const endIsSameDay = isSameDay(new Date(item.expectedEndAt), now);
+          const endLabel = endIsSameDay
+            ? formatHHmm(item.expectedEndAt)
+            : formatMonthDayHHmm(item.expectedEndAt);
+
+          return (
+            <PanelCard key={item.ivInfusionId}>
+              {/* 1행: 환자명 + 호실-침대 칩 (좌) | 종료 시각 (우) — 모바일 BarCard 정렬 */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-body-sm font-bold text-content-primary leading-none break-words">
+                    {item.patientName}
+                  </span>
+                  {roomBed && (
+                    <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
+                      {roomBed}
                     </span>
                   )}
                 </div>
-
-                {/* 수액 이름 */}
-                <span className="text-body-sm font-bold text-content-primary truncate">
-                  {item.fluidName}
+                {/* STTPanel/PatientAlerts 카드의 시간 표시와 동일 — text-body-xs font-medium text-content-tertiary.
+                    잔여시간/진행률 강조는 4행 잔여시간 텍스트 + 게이지 색이 담당. */}
+                <span className="text-body-xs font-medium text-content-tertiary shrink-0 leading-none">
+                  종료 {endLabel}
                 </span>
+              </div>
 
-                {/* 진행 막대바 */}
-                <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                  <div
-                    className={cn(
-                      "h-full rounded-full transition-all",
-                      isWarning ? "bg-amber-500" : "bg-sky-500",
-                    )}
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
+              {/* 2행: 수액 이름 — 약물 1개당 한 줄. 길면 다음 줄로 (truncate 금지) */}
+              <ul className="flex flex-col gap-0.5">
+                {item.medicationNames.map((medicationName, medicationIndex) => (
+                  <li
+                    key={medicationIndex}
+                    className="text-body-sm font-bold text-content-primary leading-snug break-words"
+                  >
+                    {medicationName}
+                  </li>
+                ))}
+              </ul>
 
-                {/* 시간 정보 */}
-                <div className="flex flex-col gap-0.5 text-body-sm">
-                  <div
-                    className={cn(
-                      isWarning ? "text-status-warning" : "text-content-secondary",
-                    )}
-                  >
-                    <span className="font-mono font-medium">{item.startedAt}</span>
-                    {" ~ 현재 "}
-                    <span className="font-medium">{formatDuration(elapsedMinutes)}</span>
-                    {" 경과"}
-                  </div>
-                  <div
-                    className={cn(
-                      isWarning ? "text-status-warning" : "text-content-tertiary",
-                    )}
-                  >
-                    종료 예정 <span className="font-mono font-medium">{item.endsAt}</span>
-                  </div>
-                </div>
-              </PanelCard>
-            );
-          })
-        )}
+              {/* 2.5행: 주입 속도 + 세트 — BE 5/11 IvInfusionListItemResponse 확장분 (rateGttPerMin · dropSet).
+                  마이그레이션 누락 row 는 둘 다 null 가능 → mL/hr 만 노출. */}
+              <span className="text-body-micro font-medium text-content-tertiary leading-none">
+                <span className="font-mono">
+                  {item.currentRateMlPerHr}
+                </span>{" "}
+                mL/hr
+                {item.rateGttPerMin !== null && (
+                  <>
+                    {" · "}
+                    <span className="font-mono">{item.rateGttPerMin}</span>
+                    {" gtt/min"}
+                  </>
+                )}
+                {item.dropSet && (
+                  <>
+                    {" · "}
+                    {DROP_SET_LABEL[item.dropSet]}
+                  </>
+                )}
+              </span>
+
+              {/* 3행: 진행 막대바 — startedAt → expectedEndAt 구간 기준 elapsed/total */}
+              <div className="h-1.5 w-full rounded-full bg-surface-hover overflow-hidden">
+                <div
+                  className={cn("h-full rounded-full transition-all", barColorClass)}
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+
+              {/* 4행: 잔여 시간 — 종료시각과 동일하게 차분한 톤. 사용자 안전 강조는 게이지 색 + 1행 종료시각이 담당. */}
+              <span className="text-body-xs font-medium text-content-tertiary leading-none">
+                남은 시간{" "}
+                <span className="font-mono">{formatDuration(remainingMs)}</span>
+              </span>
+            </PanelCard>
+          );
+        })}
       </div>
     </div>
   );

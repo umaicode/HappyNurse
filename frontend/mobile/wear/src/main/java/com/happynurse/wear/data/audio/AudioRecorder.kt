@@ -1,46 +1,73 @@
-// MediaRecorder 래퍼 — MP3 음성 녹음 startRecording/stopRecording 제공
+// MediaRecorder 기반 음성 녹음 — AAC 인코딩 m4a 파일을 cacheDir 에 생성하고 절대 경로 File 을 반환한다.
+// 음성STT_022/023 연관 (시작/종료, 노이즈 캔슬링은 서버 측에서 처리).
 package com.happynurse.wear.data.audio
 
 import android.content.Context
 import android.media.MediaRecorder
+import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// 음성STT_022: 녹음 시작/종료
-// 음성STT_023: 노이즈 캔슬링 적용 후 음성 파일 반환
 @Singleton
 class AudioRecorder @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) {
-
     private var mediaRecorder: MediaRecorder? = null
-    private var outputFilePath: String = ""
+    private var outputFile: File? = null
 
-    fun startRecording() {
-        outputFilePath = "${context.cacheDir}/recording_${System.currentTimeMillis()}.mp3"
-        mediaRecorder = MediaRecorder(context).apply {
+    fun start() {
+        stopQuietly()
+        val file = File(context.cacheDir, "stt_${System.currentTimeMillis()}.m4a")
+        outputFile = file
+        mediaRecorder = createMediaRecorder().apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-            setOutputFile(outputFilePath)
+            setAudioSamplingRate(SAMPLE_RATE_HZ)
+            setAudioEncodingBitRate(BITRATE_BPS)
+            setOutputFile(file.absolutePath)
             prepare()
             start()
         }
     }
 
-    fun stopRecording(): String {
-        mediaRecorder?.apply {
+    fun stop(): File? {
+        val recorder = mediaRecorder ?: return null
+        return runCatching {
+            recorder.stop()
+            recorder.release()
+            outputFile
+        }.also {
+            mediaRecorder = null
+        }.getOrNull()
+    }
+
+    fun cancel() {
+        stopQuietly()
+        outputFile?.delete()
+        outputFile = null
+    }
+
+    private fun stopQuietly() {
+        mediaRecorder?.runCatching {
             stop()
             release()
         }
         mediaRecorder = null
-        return outputFilePath
     }
 
-    // 음성STT_023: 병동 노이즈 캔슬링
-    // TODO: 온디바이스 노이즈 필터 DSP 적용
-    fun applyNoiseCancellation(filePath: String): String {
-        return filePath
+    @Suppress("DEPRECATION")
+    private fun createMediaRecorder(): MediaRecorder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            MediaRecorder(context)
+        } else {
+            MediaRecorder()
+        }
+
+    private companion object {
+        const val SAMPLE_RATE_HZ = 16_000
+        const val BITRATE_BPS = 64_000
     }
 }

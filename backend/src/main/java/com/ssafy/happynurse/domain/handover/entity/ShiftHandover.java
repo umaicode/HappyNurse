@@ -7,8 +7,11 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Entity
 @Table(name = "shift_handover")
@@ -31,6 +34,16 @@ public class ShiftHandover {
 
     @Column(name = "auto_summary", columnDefinition = "TEXT")
     private String autoSummary; // 특이사항 자동 요약
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "auto_summary_json", columnDefinition = "jsonb")
+    private Map<String, Object> autoSummaryJson; // AI 인수인계 JSON (PASS-BAR)
+
+    // 인수자 확인 체크리스트 상태
+    // 키 포맷: "{slot_key}.{item_index}" (현재는 synthesis 만 사용), 값: { "by": <practitionerId>, "at": <isoDateTime> }
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "checked_items_json", columnDefinition = "jsonb")
+    private Map<String, Object> checkedItemsJson;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

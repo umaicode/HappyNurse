@@ -1,0 +1,204 @@
+version: "2026.05.01"
+groups:
+  # ── 통증 ─────────────────────────────────────────────────────────
+  - id: PAIN
+    label: 통증
+    members: [Pain, 통증, 아프다, 아파요, 아픔, NRS, VAS, 통증호소, "통증 호소",
+              "chest pain", 복통, 두통, 요통, 관절통, 근육통, "수술부위 통증",
+              "wound pain", 창상통, burning, "찌르는", 욱신욱신, 쑤심,
+              aching, cramping, "sharp pain", "dull pain", "통증 조절",
+              "pain control", "통증 악화", "통증 감소", "통증 호전"]
+
+  # ── 발열·오한·체온 ─────────────────────────────────────────────────
+  - id: F/C
+    label: 발열/오한/체온이상
+    members: [Fever, Chilling, 발열, 오한, 발한, 땀, 고열, 열감, "BT 상승",
+              "체온 상승", 체온상승, febrile, "fever spike", chill,
+              hypothermia, 저체온, "BT 37", "BT 38", "BT 39",
+              "수혈반응", "혈액제제반응", "발열반응", "BT 정상"]
+
+  # ── 기침·가래·호흡기 ────────────────────────────────────────────
+  - id: RESP
+    label: 기침/가래/호흡기/산소
+    members: [Cough, Sputum, Rhinorrhea, 기침, 가래, 콧물, 비루,
+              호흡곤란, "숨이 차다", dyspnea, SOB, "shortness of breath",
+              wheezing, 천명, stridor, "호흡음 감소", "호흡음 증가",
+              객혈, hemoptysis, 폐렴, 무기폐, atelectasis,
+              "O2 요구량", "산소포화도 감소", "SpO2 저하",
+              "호흡수 증가", tachypnea, bradypnea, "흉통",
+              pneumothorax, "기흉", pleural, "흉막삼출",
+              "흡인성폐렴", aspiration, rales, rhonchi, crepitation,
+              "수포음", "흡입산소", "O2 공급", "비강캐뉼라"]
+
+  # ── 오심·구토·소화기 ────────────────────────────────────────────
+  - id: GI
+    label: 오심/구토/소화기/복부
+    members: [Anorexia, Nausea, Vomiting, Diarrhea, Constipation,
+              식욕부진, 오심, 구토, 설사, 변비, 복부팽만, 복부불편감,
+              복통, "abdominal distension", bloating, flatus, 방귀,
+              장음, "장음 감소", 장운동, 배변, 대변, 흑색변, 혈변,
+              melena, hematochezia, 트림, belching, 속쓰림, heartburn,
+              "복부 경직", rigidity, guarding, rebound, "반발통",
+              "장폐색", ileus, "복막자극증상", peritonitis,
+              "식사량", "섭취량", "식이", intake, "금식", NPO,
+              ascites, 복수, "복부팽창"]
+
+  # ── 두통·어지럼증·신경계 ────────────────────────────────────────
+  - id: NEURO
+    label: 두통/어지럼증/의식/신경계
+    members: [Headache, Dizziness, 두통, 어지럼증, 현기증, vertigo,
+              syncope, 실신, 의식변화, 혼돈, confusion,
+              "altered mental status", "지남력 장애", agitation, 불안정,
+              drowsy, stupor, coma, irritable, weakness,
+              편마비, hemiplegia, numbness, 감각이상, 저림,
+              seizure, 경련, pupil, 동공반사, "동공 이상",
+              "GCS 저하", "의식 저하", "의식 명료", alert,
+              "motor weakness", "근력 저하", "반신마비", "안면마비",
+              dysarthria, "구음장애", aphasia, "실어증",
+              "두개내압 상승", ICP, herniation, "뇌탈출",
+              delirium, 섬망, "섬망 발생", "섬망 징후",
+              tremor, "진전", "손떨림"]
+
+  # ── 부종·심혈관 ──────────────────────────────────────────────────
+  - id: CV
+    label: 부종/심혈관/혈압이상
+    members: [edema, 부종, "pitting edema", 함요부종, palpitation,
+              심계항진, "chest pain", 흉통, 흉부압박감,
+              tachycardia, 빈맥, bradycardia, 서맥,
+              arrhythmia, 부정맥, hypotension, 저혈압,
+              hypertension, 고혈압, "BP 상승", "BP 저하",
+              shock, 쇼크, cyanosis, 청색증,
+              "심부전", CHF, "폐부종", "pulmonary edema",
+              "흉수", "pleural effusion", DVT, "다리부종",
+              "Homan sign", "종아리 통증", "정맥혈전",
+              "혈압 불안정", "혈역학 불안정", "BP 불안정",
+              "맥박 불규칙", "cardiac arrest", "심정지", CPR]
+
+  # ── 피부·창상 ────────────────────────────────────────────────────
+  - id: SKIN
+    label: 피부/창상/드레싱
+    members: [redness, 발적, swelling, erythema, 피부발적,
+              wound, 창상, 상처, oozing, 삼출물, drainage, 배액,
+              "blood color", 혈성, serous, 장액성, purulent,
+              화농성, 욕창, "pressure ulcer", "pressure injury",
+              피부통합성, 피부손상, blister, 물집, bruise, 멍,
+              봉합부위, suture, staple, 봉합사,
+              "드레싱 청결", "드레싱 오염", "삼출 없음", "삼출 있음",
+              "봉합 안정", "봉합 불량", "창상 감염",
+              "발적 없음", "부종 없음", "이상 없음",
+              hematoma, 혈종, seroma, 장액종,
+              "stage 1", "stage 2", "stage 3", "stage 4",
+              "욕창 1단계", "욕창 2단계", "욕창 3단계", "욕창 4단계",
+              "피부 온전", "피부 양호", rash, 발진, urticaria, 두드러기]
+
+  # ── 배설·비뇨기 ──────────────────────────────────────────────────
+  - id: URINARY
+    label: 소변/배설/신기능
+    members: [oliguria, 소변감소, anuria, 무뇨, hematuria, 혈뇨,
+              소변색, 소변량, "U/O 감소", dysuria, 배뇨통,
+              frequency, 빈뇨, retention, 요폐, 요정체,
+              소변혼탁, 혼탁뇨, 거품뇨, "foamy urine",
+              "소변 60cc/hr 이상", "U/O 양호", "소변 정상",
+              polyuria, 다뇨, nocturia, 야뇨, incontinence, 실금,
+              "신기능 저하", "Cr 상승", "BUN 상승", oligoanuria,
+              "소변 색깔", "소변 성상", "catheter 유지"]
+
+  # ── 수면·정서·심리 ───────────────────────────────────────────────
+  - id: PSYCH
+    label: 수면/정서/심리
+    members: [insomnia, 불면, 수면장애, "수면 어려움", 수면불량,
+              anxiety, 불안, depression, 우울, agitation, 초조,
+              정서불안, 거부, "협조 불량", "수면 양호",
+              "수면 준비", "정서 안정", "수면 중",
+              irritability, 짜증, crying, 울음, 통곡,
+              fear, 두려움, confusion, 혼돈, restlessness, 안절부절,
+              "수면제 요청", "수면 환경", "조명 조절",
+              "정서적 지지", "환자 교육", "보호자 동반"]
+
+  # ── 구강·연하·영양 ───────────────────────────────────────────────
+  - id: NUTRITION
+    label: 구강/연하/영양/식이
+    members: [구강건조, 입마름, xerostomia, dysphagia, 연하곤란,
+              흡인위험, "aspiration risk", 구강위생, 구강간호,
+              식이, 식사, 섭취량, 경구섭취, "tube feeding",
+              nutrition, 영양, 식욕, appetite, 체중, weight,
+              체중감소, 식사량, 일반식, 연식, 유동식,
+              경관영양, TPN, 단백질, 알부민, "Alb 저하",
+              "섭취량 7할", "섭취량 9할", 식욕 호전, 식욕 저하,
+              오심, nausea, 구토, vomiting, "식전", "식후",
+              "금식 해제", "식이 변경", "경구 시작"]
+
+  # ── 활동·이동·재활 ───────────────────────────────────────────────
+  - id: MOBILITY
+    label: 활동/이동/재활/낙상
+    members: [보행, ambulation, 이동, mobility, 활동제한,
+              낙상위험, "fall risk", falls, 낙상,
+              보조기, walker, crutch, wheelchair, 휠체어,
+              재활, rehabilitation, ROM, 관절운동, AROM, PROM, CPM,
+              근력, weakness, 근위약, 허약,
+              "첫 보행", "보행 성공", "계단 오르기",
+              "보조기 착용", "보행 보조", "물리치료",
+              "작업치료", OT, PT, "독립 보행", "보행 가능",
+              ADL, 일상생활, "자가 관리", self-care,
+              "침상 안정", bedrest, ABR, "활동 제한"]
+
+  # ── 배액·수액·IV ─────────────────────────────────────────────────
+  - id: IV_DRAIN
+    label: 배액/수액/IV/라인
+    members: [배액량, 배액색, drainage, 혈성배액, 장액성배액,
+              화농성배액, 삼출액, exudate, "IV 부위", "IV site",
+              발적없음, 삽입부위, phlebitis, 정맥염,
+              수액, 수액잔량, "IV line", 라인, "IV 유지",
+              "IV 연결", "IV 시작", "IV 종료", "IV 만료",
+              "수액 속도", "cc/hr", "mL/hr",
+              "드레인 청결", "배액관 상태", "drain 양",
+              "Hemovac", "JP drain", "H-vac", "L-tube",
+              "Levin tube", "suction 양", "suction 성상",
+              "foley 유지", "소변 배액", "foley 제거"]
+
+  # ── 감염·면역 ─────────────────────────────────────────────────────
+  - id: INFECTION
+    label: 감염/면역/염증
+    members: [infection, 감염, 감염징후, "WBC 상승", "CRP 상승",
+              sepsis, 패혈증, "패혈성 쇼크", 항생제,
+              발열, 고열, 균배양, 배양검사,
+              격리, isolation, 접촉주의, 비말주의, 공기주의,
+              MRSA, VRE, CRE, MDR, 다제내성,
+              PCT, 프로칼시토닌, "염증 수치",
+              "감염 징후 없음", "감염 없음",
+              "수술부위 감염", SSI, "창상 감염",
+              "소변 감염", UTI, "폐렴", PNA, VAP,
+              "항생제 반응", "항생제 투여"]
+
+  # ── VTE·순환기 특이 ───────────────────────────────────────────────
+  - id: VTE
+    label: DVT/VTE/혈전
+    members: [DVT, VTE, PE, 심부정맥혈전증, 폐색전증, 혈전,
+              thrombus, thrombosis, 탄력스타킹, 압박스타킹,
+              IPC, 간헐적공기압박, heparin, 항응고,
+              혈전예방, 부종, 다리부종, 종아리 통증,
+              "Homan sign", 혈전위험, Caprini, Wells,
+              "종아리 통증", "발적", "부종", "열감",
+              "LMWH", "UFH", "압박스타킹 착용"]
+
+  # ── 수술 후 특이 ─────────────────────────────────────────────────
+  - id: POST_OP
+    label: 수술 후 상태
+    members: [POD, "수술 후", "회복실", PACU, "의식 명료",
+              "마취 회복", "활력징후 안정", "수술창상",
+              "드레싱 청결", "출혈 없음", "배액 없음",
+              "통증 조절", "오심 조절", "보행 가능",
+              "식이 시작", "IV 제거", "퇴원 가능",
+              "수술부위 확인", "봉합 상태", "창상 치유",
+              "재활 시작", "CPM 적용", "ROM 운동"]
+
+  # ── 혈당·대사 ────────────────────────────────────────────────────
+  - id: GLUCOSE
+    label: 혈당/대사이상
+    members: [BST, 혈당, 혈당검사, "혈당 상승", "혈당 저하",
+              hyperglycemia, 고혈당, hypoglycemia, 저혈당,
+              "insulin 투여", "혈당 조절", "혈당 모니터링",
+              "BST q6h", "BST 80", "BST 120", "BST 200",
+              DM, 당뇨, "혈당 정상", "공복혈당", FBS,
+              "HbA1c", 당화혈색소, "전해질 불균형",
+              "Na 이상", "K 이상", "Ca 이상", "Mg 이상"]

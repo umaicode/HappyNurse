@@ -2,7 +2,6 @@
 package com.happynurse.presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,10 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Close
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -30,15 +27,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.happynurse.domain.model.Notif
-import com.happynurse.domain.model.NotifCategory
+import com.happynurse.domain.model.Notification
+import com.happynurse.domain.model.NotificationCategory
 import com.happynurse.presentation.theme.HnColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsSheet(
     visible: Boolean,
-    notifications: List<Notif>,
+    notifications: List<Notification>,
     onClose: () -> Unit,
 ) {
     if (!visible) return
@@ -48,49 +45,80 @@ fun NotificationsSheet(
         sheetState = sheetState,
         containerColor = HnColors.Surface,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        // 과거 24h ~ 미래 24h 알림만 표시 (워치알람은 minutesAgo 가 음수)
+        val recent = notifications.filter { it.minutesAgo in -1440..1440 }
+        Text(
+            "알림",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = HnColors.Text,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 20.dp, end = 12.dp, top = 6.dp, bottom = 12.dp),
-        ) {
-            Text("알림", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text, modifier = Modifier.weight(1f))
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(36.dp).clip(CircleShape).clickable(onClick = onClose),
-            ) {
-                Icon(Icons.Outlined.Close, contentDescription = "닫기", tint = HnColors.TextSecondary)
-            }
-        }
-        val sorted = notifications.sortedWith(
-            compareByDescending<Notif> { it.upcoming }.thenByDescending { it.minutesAgo },
+                .padding(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 12.dp),
         )
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 4.dp),
-        ) {
-            items(sorted, key = { it.id }) { NotifRow(it) }
-            item { Spacer(Modifier.height(20.dp)) }
+        if (recent.isEmpty()) {
+            // 담당 환자가 없거나 그 환자에 대한 알림이 없을 때
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 32.dp),
+            ) {
+                Text(
+                    "담당 환자의 알림이 없습니다",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = HnColors.Text,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "환자 탭에서 담당환자를 선택하면\n해당 환자의 알림이 여기 표시됩니다",
+                    fontSize = 12.sp,
+                    color = HnColors.TextSecondary,
+                )
+                Spacer(Modifier.height(20.dp))
+            }
+        } else {
+            val sorted = recent.sortedWith(
+                compareBy<Notification> { it.minutesAgo },
+            )
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 6.dp),
+            ) {
+                items(sorted, key = { it.id }) { notification ->
+                    NotificationRow(notification)
+                }
+                item { Spacer(Modifier.height(20.dp)) }
+            }
         }
     }
 }
 
 @Composable
-private fun NotifRow(n: Notif) {
-    val (catLabel, catFg, catBg) = when (n.category) {
-        NotifCategory.FLUID   -> Triple("수액",     HnColors.Purple, HnColors.TagFluidBg)
-        NotifCategory.WATCH   -> Triple("워치",     HnColors.Danger, Color(0xFFFEE2E2))
-        NotifCategory.REQUEST -> Triple("환자요청", HnColors.Info,   HnColors.TagInjBg)
+private fun NotificationRow(n: Notification) {
+    val catLabel = when (n.category) {
+        NotificationCategory.FLUID   -> "수액"
+        NotificationCategory.ORDER   -> "의사오더"
+        NotificationCategory.REQUEST -> "환자요청"
+        NotificationCategory.WATCH   -> "워치"
+        NotificationCategory.SESSION -> "웹"
     }
+    val tagColors = HnColors.notificationTagColors.getValue(n.category)
     val timeLabel = when {
         n.minutesAgo == 0 -> "지금"
-        n.minutesAgo < 0  -> "${-n.minutesAgo}분 후"
-        n.minutesAgo < 60 -> "${n.minutesAgo}분 전"
-        else              -> n.time
+        n.minutesAgo in 1..59 -> "${n.minutesAgo}분 전"
+        else -> n.time
     }
-    HnCard(padding = 12.dp) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(HnColors.SurfaceAlt)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+    ) {
         Row(verticalAlignment = Alignment.Top) {
             Box(
                 modifier = Modifier
@@ -102,21 +130,26 @@ private fun NotifRow(n: Notif) {
             Spacer(Modifier.size(10.dp))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    TagChip(catLabel, fg = catFg, bg = catBg)
-                    Spacer(Modifier.size(6.dp))
-                    Text(n.patient, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                    Spacer(Modifier.size(4.dp))
-                    Text(n.room, fontSize = 12.sp, color = HnColors.TextSecondary)
+                    TagChip(catLabel, fg = tagColors.fg, bg = tagColors.bg)
+                    if (n.patient.isNotBlank()) {
+                        Spacer(Modifier.size(8.dp))
+                        Text(n.patient, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                    }
+                    if (n.room.isNotBlank()) {
+                        Spacer(Modifier.size(6.dp))
+                        Text(n.room, fontSize = 14.sp, color = HnColors.TextSecondary)
+                    }
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        timeLabel,
+                        fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+                        color = HnColors.Text,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
                 }
-                Spacer(Modifier.height(4.dp))
-                Text(n.text, fontSize = 13.sp, color = HnColors.Text)
+                Spacer(Modifier.height(8.dp))
+                Text(n.text, fontSize = 17.sp, color = HnColors.Text)
             }
-            Text(
-                timeLabel,
-                fontSize = 14.sp, fontWeight = FontWeight.Bold,
-                color = if (n.upcoming) HnColors.Danger else HnColors.TextSecondary,
-                modifier = Modifier.padding(start = 8.dp),
-            )
         }
     }
 }
