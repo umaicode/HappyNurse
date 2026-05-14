@@ -263,7 +263,7 @@ export function PatientSidebar({
             <span className="text-[14px] font-black text-content-primary truncate leading-tight">
               {user?.name ?? ""}
               {user?.name && (
-                <span className="ml-1 text-body-xs font-medium text-content-tertiary">
+                <span className="ml-1 text-body-sm font-medium text-content-tertiary">
                   간호사
                 </span>
               )}
@@ -279,7 +279,7 @@ export function PatientSidebar({
             onClick={() => {
               logout();
             }}
-            className="p-2 text-status-danger hover:bg-status-danger-surface rounded-xl transition-all shadow-xs border border-status-danger/20"
+            className="p-2 text-status-danger/60 hover:bg-status-danger-surface rounded-xl transition-all shadow-xs border border-status-danger/40"
             title="로그아웃"
           >
             <LogOut className="size-5" />
