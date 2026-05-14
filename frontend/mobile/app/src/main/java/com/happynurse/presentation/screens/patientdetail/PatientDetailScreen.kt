@@ -9,6 +9,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -36,6 +38,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.automirrored.outlined.Undo
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
@@ -146,119 +149,20 @@ fun PatientDetailScreen(
                         fadeOut(tween(220)),
                 )
         },
-        modifier = Modifier.fillMaxWidth().background(HnColors.Bg).then(swipeModifier),
+        modifier = Modifier.fillMaxSize().background(HnColors.Bg).then(swipeModifier),
         label = "patient-swipe",
     ) { animatedId ->
         val p: Patient = resolvePatient(animatedId) ?: return@AnimatedContent
-        Column(Modifier.fillMaxWidth()) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
-        ) {
-            Icon(
-                Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
-                contentDescription = "뒤로",
-                modifier = Modifier.size(28.dp).clickable(onClick = onBack),
-            )
-            Spacer(Modifier.size(6.dp))
-            Box {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { patientMenuOpen = true }.padding(vertical = 6.dp),
-                ) {
-                    Text(p.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                    Spacer(Modifier.size(8.dp))
-                    Text(
-                        "${p.sex}/${p.age}",
-                        fontSize = 18.sp,
-                        color = HnColors.TextSecondary,
-                        fontWeight = FontWeight.Medium,
-                    )
-                    Spacer(Modifier.size(2.dp))
-                    Icon(
-                        Icons.Outlined.ExpandMore,
-                        contentDescription = "환자 선택",
-                        tint = HnColors.TextSecondary,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-                DropdownMenu(
-                    expanded = patientMenuOpen,
-                    onDismissRequest = { patientMenuOpen = false },
-                ) {
-                    if (myPatients.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                "담당 환자가 없습니다",
-                                fontSize = 13.sp,
-                                color = HnColors.TextTertiary,
-                            )
-                        }
-                    } else {
-                        myPatients.forEachIndexed { idx, other ->
-                            if (idx > 0) {
-                                HorizontalDivider(
-                                    color = HnColors.Border,
-                                    thickness = 1.dp,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                                )
-                            }
-                            val current = other.id == p.id
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.width(180.dp),
-                                    ) {
-                                        Column(Modifier.weight(1f)) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(
-                                                    other.name,
-                                                    fontSize = 20.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = if (current) HnColors.Primary else HnColors.Text,
-                                                )
-                                                Spacer(Modifier.size(8.dp))
-                                                Text(
-                                                    "${other.sex}/${other.age}",
-                                                    fontSize = 20.sp,
-                                                    color = HnColors.TextSecondary,
-                                                )
-                                            }
-                                            Text(
-                                                "${other.room}호 ${other.bed}번 침대",
-                                                fontSize = 16.sp,
-                                                color = HnColors.TextTertiary,
-                                                fontWeight = FontWeight.SemiBold ,
-                                                modifier = Modifier.padding(top = 5.dp),
-                                            )
-                                        }
-                                        if (current) {
-                                            Icon(
-                                                Icons.Outlined.Check,
-                                                contentDescription = null,
-                                                tint = HnColors.Primary,
-                                                modifier = Modifier.size(26.dp),
-                                            )
-                                        }
-                                    }
-                                },
-                                onClick = {
-                                    patientMenuOpen = false
-                                    if (!current) onSelectPatient(other.id)
-                                },
-                            )
-                        }
-                    }
-                }
-            }
+        val curIdx = myPatients.indexOfFirst { it.id == p.id }
+        val sizeP = myPatients.size
+        val prevPatient = if (sizeP > 1 && curIdx >= 0) myPatients[(curIdx - 1 + sizeP) % sizeP] else null
+        val nextPatient = if (sizeP > 1 && curIdx >= 0) myPatients[(curIdx + 1) % sizeP] else null
+        val goTo: (String, Boolean) -> Unit = { id, forward ->
+            direction = if (forward) 1 else -1
+            displayId = id
         }
-
+        Column(Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp),
@@ -384,6 +288,195 @@ fun PatientDetailScreen(
                 }
             }
             item { Spacer(Modifier.height(20.dp)) }
+        }
+        // 하단 바 위에 floating 원형 뒤로가기 버튼
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 12.dp)
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(HnColors.SurfaceAlt)
+                .border(1.dp, HnColors.Border, CircleShape)
+                .clickable(onClick = onBack),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
+                contentDescription = "뒤로",
+                tint = HnColors.TextSecondary,
+                modifier = Modifier.size(28.dp),
+            )
+        }
+        }
+        HorizontalDivider(color = HnColors.Border, thickness = 1.dp)
+        // 하단 바: [이전환자 | 현재환자 | 다음환자]
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(HnColors.Surface)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    if (prevPatient != null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clickable { goTo(prevPatient.id, false) }
+                                .padding(vertical = 6.dp),
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
+                                contentDescription = null,
+                                tint = HnColors.TextTertiary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Text(
+                                prevPatient.name,
+                                fontSize = 14.sp,
+                                color = HnColors.TextTertiary,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+                Box(contentAlignment = Alignment.Center) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clickable { patientMenuOpen = true }
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                    ) {
+                        Text(p.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                        Spacer(Modifier.size(6.dp))
+                        Text(
+                            "${p.sex}/${p.age}",
+                            fontSize = 16.sp,
+                            color = HnColors.TextSecondary,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        Spacer(Modifier.size(2.dp))
+                        Icon(
+                            Icons.Outlined.ExpandLess,
+                            contentDescription = "환자 선택",
+                            tint = HnColors.TextSecondary,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = patientMenuOpen,
+                        onDismissRequest = { patientMenuOpen = false },
+                        offset = androidx.compose.ui.unit.DpOffset(0.dp, (-8).dp),
+                    ) {
+                        if (myPatients.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .width(120.dp)
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    "담당 환자가 없습니다",
+                                    fontSize = 13.sp,
+                                    color = HnColors.TextTertiary,
+                                )
+                            }
+                        } else {
+                            myPatients.forEachIndexed { idx, other ->
+                                if (idx > 0) {
+                                    HorizontalDivider(
+                                        color = HnColors.Border,
+                                        thickness = 1.dp,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                                    )
+                                }
+                                val current = other.id == p.id
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.width(180.dp),
+                                        ) {
+                                            Column(Modifier.weight(1f)) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(
+                                                        other.name,
+                                                        fontSize = 20.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (current) HnColors.Primary else HnColors.Text,
+                                                    )
+                                                    Spacer(Modifier.size(8.dp))
+                                                    Text(
+                                                        "${other.sex}/${other.age}",
+                                                        fontSize = 20.sp,
+                                                        color = HnColors.TextSecondary,
+                                                    )
+                                                }
+                                                Text(
+                                                    "${other.room}호 ${other.bed}번 침대",
+                                                    fontSize = 16.sp,
+                                                    color = HnColors.TextTertiary,
+                                                    fontWeight = FontWeight.SemiBold ,
+                                                    modifier = Modifier.padding(top = 5.dp),
+                                                )
+                                            }
+                                            if (current) {
+                                                Icon(
+                                                    Icons.Outlined.Check,
+                                                    contentDescription = null,
+                                                    tint = HnColors.Primary,
+                                                    modifier = Modifier.size(26.dp),
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        patientMenuOpen = false
+                                        if (!current) onSelectPatient(other.id)
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    if (nextPatient != null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clickable { goTo(nextPatient.id, true) }
+                                .padding(vertical = 6.dp),
+                        ) {
+                            Text(
+                                nextPatient.name,
+                                fontSize = 14.sp,
+                                color = HnColors.TextTertiary,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Icon(
+                                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = HnColors.TextTertiary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                }
+            }
         }
         }
     }

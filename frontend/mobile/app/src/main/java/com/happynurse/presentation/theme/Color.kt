@@ -18,7 +18,7 @@ object HnColors {
     // Surface / background
     val Bg            = Color(0xFFF7F8FA)
     val Surface       = Color(0xFFFCFCFC)
-    val SurfaceAlt    = Color(0xFFF8FAFC)
+    val SurfaceAlt    = Color(0xFFF4F4F5)
     val Border        = Color(0xFFE5E7EB)
     val BorderStrong  = Color(0xFFD1D5DB)
 
@@ -28,7 +28,7 @@ object HnColors {
     val TextTertiary  = Color(0xFF686970)
 
     // Status
-    val Success       = Color(0xFF519470)
+    val Success       = Color(0xFF31AD6B)
     val Warning       = Color(0xFFF59E0B)
     val Danger        = Color(0xFFE76565)
     val Info          = Color(0xFF3B82F6)

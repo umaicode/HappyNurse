@@ -102,6 +102,7 @@ data class IvTimer(
     val elapsedMin: Int,
     val endsAt: String,
     val startedAt: String,
+    val startedAtEpochMs: Long = 0L, // 라이브 카운트다운용 — UI에서 매초 elapsed 재계산
     val currentRateMlPerHr: Double? = null,
     val rateGttPerMin: Int? = null, // 서버 slim 응답의 실제 gtt/min — patientType 기반 역환산값
 )
