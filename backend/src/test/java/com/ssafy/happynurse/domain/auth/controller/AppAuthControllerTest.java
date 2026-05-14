@@ -57,7 +57,7 @@ class AppAuthControllerTest {
     void login_성공_accessToken이_body에_포함() throws Exception {
         LoginResponse loginResponse = new LoginResponse(1L, "홍길동", "EMP001", "nurse", 1L, 3L);
         AuthResult authResult = new AuthResult("mock-jwt-token", "mock-refresh-token", loginResponse);
-        given(authService.login(anyString(), anyString(), anyString(), anyLong(), anyLong(), anyLong()))
+        given(authService.loginApp(anyString(), anyString(), anyString(), anyLong(), anyLong(), anyLong()))
                 .willReturn(authResult);
 
         LoginRequest request = new LoginRequest(1L, 3L, "EMP001", "password");
@@ -83,7 +83,7 @@ class AppAuthControllerTest {
     void login_성공_SetCookie헤더_없음() throws Exception {
         LoginResponse loginResponse = new LoginResponse(1L, "홍길동", "EMP001", "nurse", 1L, 3L);
         AuthResult authResult = new AuthResult("mock-jwt-token", "mock-refresh-token", loginResponse);
-        given(authService.login(anyString(), anyString(), anyString(), anyLong(), anyLong(), anyLong()))
+        given(authService.loginApp(anyString(), anyString(), anyString(), anyLong(), anyLong(), anyLong()))
                 .willReturn(authResult);
 
         LoginRequest request = new LoginRequest(1L, 3L, "EMP001", "password");
