@@ -30,7 +30,7 @@ object HnColors {
     // Status
     val Success       = Color(0xFF519470)
     val Warning       = Color(0xFFF59E0B)
-    val Danger        = Color(0xFFE76565)
+    val Danger        = Color(0xFFD95959)
     val Info          = Color(0xFF3B82F6)
     val Purple        = Color(0xFF8B5CF6)
     val Cyan          = Color(0xFF06B6D4)
@@ -39,14 +39,14 @@ object HnColors {
     val TagInjBg     = Color(0xFFEEF6F3); val TagInjFg     = Color(0xFF12543C) // 투약 — Primary 계열
     val TagFluidBg   = Color(0xFFEFEFFA); val TagFluidFg   = Color(0xFF152665) // 수액 — 블루 계열
     val TagOrderBg   = Color(0xFFF3F4F6); val TagOrderFg   = TextSecondary     // 지시 — 뉴트럴
-    val TagLisBg     = Color(0xFFFFFAEB); val TagLisFg     = Color(0xFF85410C) // LIS  — 앰버
+    val TagLisBg     = Color(0xFFF8F2E1); val TagLisFg     = Color(0xFF85410C) // LIS  — 앰버
     val TagImgBg     = Color(0xFFE0F7FA); val TagImgFg     = Color(0xFF00838F) // 영상 — 틸
     val TagPillBg    = Color(0xFFF5FAF7); val TagPillFg    = Color(0xFF2E7D32) // 알약 — 그린
 
     // 알림 시트 전용 — 진한 톤 카테고리 태그
     val TagFluidStrongBg   = Color(0xFFF0F2FE); val TagFluidStrongFg   = Color(0xFF1428A0) // 수액 — Primary 블루
     val TagOrderStrongBg   = Color(0xFFF8F5FE); val TagOrderStrongFg   = Color(0xFF5B21B6) // 의사오더 — 진한 퍼플
-    val TagRequestStrongBg = Color(0xFFFFF5F5); val TagRequestStrongFg = Color(0xFFB91C1C) // 환자요청 — 진한 레드
+    val TagRequestStrongBg = Color(0xFFECF6F5); val TagRequestStrongFg = Color(0xFF166C65) // 환자요청 — 진한 레드
     val TagWatchStrongBg   = Color(0xFFFEFAED); val TagWatchStrongFg   = Color(0xFFB45309) // 워치 — 진한 옐로/앰버
     val TagSessionStrongBg = Color(0xFFECFDF5); val TagSessionStrongFg = Color(0xFF065F46) // 웹세션 — 진한 그린
 

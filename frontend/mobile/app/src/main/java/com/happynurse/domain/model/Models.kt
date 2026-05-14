@@ -109,6 +109,9 @@ data class IvTimer(
 // 알림 카테고리 — 수액/오더/워치/요청/웹세션
 enum class NotificationCategory { FLUID, ORDER, WATCH, REQUEST, SESSION }
 
+// 환자요청 긴급도 — critical/high/medium/low (서버 priority 필드 매핑)
+enum class NotificationPriority { CRITICAL, HIGH, MEDIUM, LOW }
+
 // 알림함 한 건 — 상단 벨 시트/알림 목록에서 사용
 data class Notification(
     val id: String,
@@ -120,6 +123,7 @@ data class Notification(
     val minutesAgo: Int,
     val unread: Boolean,
     val upcoming: Boolean,
+    val priority: NotificationPriority? = null,
 )
 
 // 워치 알람(STT 리마인더) — 업무 페이지 워치알람 탭, GET /reminders/stt 응답
