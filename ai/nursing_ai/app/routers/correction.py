@@ -8,6 +8,17 @@ from app.middleware.jwt_auth import get_current_user
 
 router = APIRouter()
 
+
+def _reload_pipeline_dictionary(db: Session) -> None:
+    """사전 INSERT 후 STT 싱글톤의 매핑 사전을 재로드 (Kiwi 는 유지, 사전만 교체)."""
+    from app.services.nursing_stt.stt_pipeline import get_stt_pipeline
+    try:
+        get_stt_pipeline().load_dictionary(db)
+    except Exception as e:
+        # reload 실패가 사용자 응답을 깨면 안 됨 — 다음 startup/요청에서 자연 복구
+        print(f"[correction] pipeline dictionary reload 실패(무시): {e}")
+
+
 # === 요청/응답 모델 ===
 
 class CorrectionRequest(BaseModel):
@@ -66,6 +77,7 @@ async def apply_correction(
     practitioner_id = current_user["practitioner_id"]
 
     """간호사가 단어를 수정했을 때 수정 이력 저장"""
+    dictionary_inserted = False
     try:
         # suggestion_id가 없으면 임시로 생성
         if not req.suggestion_id:
@@ -81,10 +93,10 @@ async def apply_correction(
             else:
                 # dictionary에 없으면 새로 추가
                 result = db.execute(text("""
-                    INSERT INTO quick_correction_dictionary 
-                    (stt_word, correct_word, stt_word_normalized, category, 
+                    INSERT INTO quick_correction_dictionary
+                    (stt_word, correct_word, stt_word_normalized, category,
                      usage_count, source, is_active, created_at, updated_at)
-                    VALUES (:stt, :correct, :normalized, 'other', 
+                    VALUES (:stt, :correct, :normalized, 'other',
                             0, 'feedback', true, NOW(), NOW())
                     RETURNING correction_id
                 """), {
@@ -93,6 +105,7 @@ async def apply_correction(
                     "normalized": req.original_word.replace(" ", "").lower()
                 })
                 correction_id = result.fetchone()[0]
+                dictionary_inserted = True
 
             # suggestion 생성
             result = db.execute(text("""
@@ -136,6 +149,10 @@ async def apply_correction(
 
         db.commit()
 
+        # 새 매핑이 dictionary 에 추가됐다면 STT 싱글톤 사전 reload
+        if dictionary_inserted:
+            _reload_pipeline_dictionary(db)
+
         # 같은 수정 반복 횟수 확인
         count_row = db.execute(text("""
             SELECT COUNT(*) FROM nursing_record_correction_applied
@@ -174,11 +191,14 @@ async def analyze_quick_corrections(
     db: Session = Depends(get_db)
 ):
     try:
-        from app.services.nursing_stt.morpheme import MorphemeAnalyzer
-        from app.services.nursing_stt.term_mapper import TermMapper
+        # STT 파이프라인 싱글톤 재사용 — Kiwi/DB 사전 init 비용을 매 호출마다 치르지 않음.
+        # 사전이 갱신되는 시점(apply_correction 의 새 dict INSERT, approve_to_dictionary)에서
+        # _reload_pipeline_dictionary() 로 mapper 만 교체된다.
+        from app.services.nursing_stt.stt_pipeline import get_stt_pipeline
 
-        morpheme = MorphemeAnalyzer()
-        mapper = TermMapper(db=db)
+        pipeline = get_stt_pipeline()
+        morpheme = pipeline.morpheme
+        mapper = pipeline.mapper
 
         # 방법 1: 형태소 분석으로 미등록어 추출
         morpheme_candidates = morpheme.extract_medical_candidates(req.content)
@@ -201,6 +221,34 @@ async def analyze_quick_corrections(
             if key not in seen_positions:
                 seen_positions.add(key)
                 all_candidates.append(candidate)
+
+        # (B) 어절 fallback — morpheme/dict 가 놓친 어절을 후보로 추가.
+        # Kiwi 가 짧은 단독 입력("세포트리")을 미등록어로 추출 못 하는 케이스 보강.
+        # 추가된 후보는 아래 exact/fuzzy 흐름에서 동일하게 처리됨.
+        covered_ranges = [(c["start"], c["end"]) for c in all_candidates]
+        cursor = 0
+        for token in req.content.split(" "):
+            if not token:
+                cursor += 1
+                continue
+            t_start = req.content.find(token, cursor)
+            if t_start == -1:
+                cursor += len(token) + 1
+                continue
+            t_end = t_start + len(token)
+            cursor = t_end + 1
+            if any(s <= t_start and t_end <= e for s, e in covered_ranges):
+                continue
+            key = (t_start, t_end)
+            if key in seen_positions:
+                continue
+            seen_positions.add(key)
+            all_candidates.append({
+                "word": token,
+                "start": t_start,
+                "end": t_end,
+                "normalized": token.replace(" ", "").lower(),
+            })
 
         # 교정 후보 생성
         corrections = []
@@ -250,6 +298,47 @@ async def analyze_quick_corrections(
                     "end": end,
                     "candidates": candidate_list
                 })
+
+        # (A) prefix 흡수 — 단축형→전체형 매핑(예: "노보래피드" → "인슐린 아스파트")에서
+        # 사용자가 이미 prefix 어절("인슐린")을 발음한 경우, 후보 범위를 그 어절 앞으로 당겨
+        # 슬라이스 치환 시 "인슐린 인슐린 아스파트" 같은 중복을 방지한다.
+        # 안전을 위해 모든 추천 후보(exact/fuzzy)의 첫 토큰이 동일할 때만 적용.
+        for c in corrections:
+            suggest_words = [
+                cand["word"] for cand in c["candidates"]
+                if cand.get("type") in ("exact", "fuzzy") and " " in cand["word"]
+            ]
+            if not suggest_words:
+                continue
+            first_tokens = {w.split(" ", 1)[0] for w in suggest_words}
+            if len(first_tokens) != 1:
+                continue
+            head = next(iter(first_tokens))
+            prev_segment = req.content[:c["start"]]
+            prev_trimmed = prev_segment.rstrip()
+            if not prev_trimmed.endswith(head):
+                continue
+            boundary = len(prev_trimmed) - len(head)
+            # word boundary 확인 — head 앞이 시작 또는 공백이어야 함
+            if boundary > 0 and prev_trimmed[boundary - 1] != " ":
+                continue
+            c["start"] = boundary
+            c["original"] = req.content[boundary:c["end"]]
+
+        # 겹치는 후보 정리: 더 긴 범위가 짧은 범위를 흡수 (longest-match 우선)
+        # 예) (0,7) "세포트리 악손" 이 있으면 (0,4) "세포트리", (5,7) "악손" 은 제거
+        corrections.sort(key=lambda c: (c["start"], -(c["end"] - c["start"])))
+        filtered = []
+        for c in corrections:
+            contained = any(
+                kept["start"] <= c["start"] and c["end"] <= kept["end"]
+                and (kept["start"], kept["end"]) != (c["start"], c["end"])
+                for kept in filtered
+            )
+            if contained:
+                continue
+            filtered.append(c)
+        corrections = filtered
 
         return {
             "success": True,
@@ -382,6 +471,9 @@ async def approve_to_dictionary(
         """), {"orig": req.stt_word, "repl": req.correct_word})
 
         db.commit()
+
+        # 사전에 새 매핑이 등록됐으니 STT 싱글톤 사전 reload
+        _reload_pipeline_dictionary(db)
 
         return {
             "success": True,
