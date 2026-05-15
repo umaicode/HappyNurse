@@ -240,6 +240,7 @@ private fun IvInfusionListItemResponse.toIvTimerOrNull(
         elapsedMin = elapsedMin,
         endsAt = endsAt,
         startedAt = startedAtStr,
+        startedAtEpochMs = started.toEpochMilli(),
         currentRateMlPerHr = currentRateMlPerHr,
         rateGttPerMin = rateGttPerMin,
     )

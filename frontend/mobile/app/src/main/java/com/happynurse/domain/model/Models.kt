@@ -102,6 +102,7 @@ data class IvTimer(
     val elapsedMin: Int,
     val endsAt: String,
     val startedAt: String,
+    val startedAtEpochMs: Long = 0L, // 라이브 카운트다운용 — UI에서 매초 elapsed 재계산
     val currentRateMlPerHr: Double? = null,
     val rateGttPerMin: Int? = null, // 서버 slim 응답의 실제 gtt/min — patientType 기반 역환산값
 )
@@ -231,3 +232,30 @@ data class RosterSummary(
     val unstableCount: Int,
     val patients: List<RosterPatientItem>,
 )
+
+// 인수인계 체크리스트(서버 영속) — synthesis 슬롯 한정
+data class CheckMeta(
+    val by: String,
+    val at: String,
+)
+
+data class HandoverChecks(
+    val handoverId: String,
+    val checkedSynthesisIndex: Map<Int, CheckMeta>,
+)
+
+// 인수인계 화면 상단 입원/퇴원 환자
+data class WardEventEntry(
+    val encounterId: String,
+    val patientName: String,
+    val location: String,       // "roomName · bedName"
+    val primaryLabel: String,   // chiefComplaint > diseaseName > surgeryName 우선
+    val timestamp: String?,     // 입원 = periodStart, 퇴원 = periodEnd
+)
+
+data class WardEvents(
+    val admissions: List<WardEventEntry> = emptyList(),
+    val discharges: List<WardEventEntry> = emptyList(),
+) {
+    val isEmpty: Boolean get() = admissions.isEmpty() && discharges.isEmpty()
+}

@@ -46,21 +46,36 @@ class SttAlarmActivity : ComponentActivity() {
         val patient = intent.getStringExtra(EXTRA_PATIENT).orEmpty()
         val roomBedTime = intent.getStringExtra(EXTRA_ROOM_BED_TIME).orEmpty()
 
-        boostAlarmVolume()
-        startAlarmFeedback()
+        // 워치의 사운드 모드를 존중한다.
+        //   NORMAL  → ringtone + TTS (진동 없음)
+        //   VIBRATE → 진동만
+        //   SILENT  → 화면만
+        val ringerMode = am().ringerMode
+        val playSound = ringerMode == AudioManager.RINGER_MODE_NORMAL
+        val playVibration = ringerMode == AudioManager.RINGER_MODE_VIBRATE
+
+        if (playSound) {
+            boostAlarmVolume()
+            startAlarmRingtone()
+        }
+        if (playVibration) {
+            startAlarmVibration()
+        }
         // 풀스크린 인텐트가 도착했으면 trigger 한 notification 도 같이 정리 (헤드업 잔상 방지)
         runCatching { nm().cancelAll() }
 
         // ringtone 짧게 (RINGTONE_DURATION_MS) 울린 뒤 멈추고 TTS 발화. 동시 출력 방지.
-        val spoken = listOf(content, patient, roomBedTime).firstOrNull { it.isNotBlank() }
-            ?: "알람 시각이 되었습니다"
-        lifecycleScope.launch {
-            delay(RINGTONE_DURATION_MS)
-            runCatching { ringtone?.stop() }
-            ringtone = null
-            // ringtone audio 가 완전히 비워질 짧은 여유 후 TTS.
-            delay(150L)
-            ttsSpeaker.speak(spoken)
+        if (playSound) {
+            val spoken = listOf(content, patient, roomBedTime).firstOrNull { it.isNotBlank() }
+                ?: "알람 시각이 되었습니다"
+            lifecycleScope.launch {
+                delay(RINGTONE_DURATION_MS)
+                runCatching { ringtone?.stop() }
+                ringtone = null
+                // ringtone audio 가 완전히 비워질 짧은 여유 후 TTS.
+                delay(150L)
+                ttsSpeaker.speak(spoken)
+            }
         }
 
         setContent {
@@ -77,7 +92,7 @@ class SttAlarmActivity : ComponentActivity() {
         }
     }
 
-    private fun startAlarmFeedback() {
+    private fun startAlarmRingtone() {
         runCatching {
             val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
                 ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
@@ -92,6 +107,9 @@ class SttAlarmActivity : ComponentActivity() {
                 play()
             }
         }
+    }
+
+    private fun startAlarmVibration() {
         runCatching {
             vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
@@ -145,7 +163,7 @@ class SttAlarmActivity : ComponentActivity() {
         const val EXTRA_PATIENT = "extra.patient"
         const val EXTRA_CONTENT = "extra.content"
         const val EXTRA_ROOM_BED_TIME = "extra.room_bed_time"
-        // ringtone 을 짧게 (~1.2초) 울린 뒤 TTS 로 넘긴다.
-        private const val RINGTONE_DURATION_MS = 1200L
+        // ringtone 을 짧게 (~0.5초) 울린 뒤 TTS 로 넘긴다.
+        private const val RINGTONE_DURATION_MS = 500L
     }
 }

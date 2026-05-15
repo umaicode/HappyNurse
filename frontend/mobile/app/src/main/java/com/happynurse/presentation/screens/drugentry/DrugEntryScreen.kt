@@ -128,10 +128,10 @@ private fun ColumnScope.EntryBody(
                 ) { Icon(Icons.Outlined.Nfc, contentDescription = null, tint = HnColors.Primary, modifier = Modifier.size(28.dp)) }
                 Spacer(Modifier.size(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("약물 NFC 태그", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                    Text("약물 NFC 태그", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
                     Text(
                         "디바이스를 약물에 가까이 대주세요",
-                        fontSize = 12.sp, color = HnColors.TextSecondary,
+                        fontSize = 14.sp, color = HnColors.TextSecondary,
                     )
                 }
             }
@@ -145,8 +145,8 @@ private fun ColumnScope.EntryBody(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.ErrorOutline, contentDescription = null, tint = HnColors.Danger, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(8.dp))
-                    Text(verifyError, fontSize = 13.sp, color = HnColors.Text, modifier = Modifier.weight(1f))
-                    Text("닫기", fontSize = 12.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.SemiBold)
+                    Text(verifyError, fontSize = 16.sp, color = HnColors.Text, modifier = Modifier.weight(1f))
+                    Text("닫기", fontSize = 14.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -160,7 +160,7 @@ private fun ColumnScope.EntryBody(
         item {
             Text(
                 "검증된 처방 (${drugs.size})",
-                fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary,
+                fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary,
             )
         }
         if (drugs.isEmpty()) {
@@ -168,7 +168,7 @@ private fun ColumnScope.EntryBody(
                 HnCard(padding = 20.dp) {
                     Text(
                         "약물 NFC 칩을 태깅하면 여기에 표시됩니다",
-                        fontSize = 13.sp, color = HnColors.TextSecondary,
+                        fontSize = 16.sp, color = HnColors.TextSecondary,fontWeight = FontWeight.SemiBold
                     )
                 }
             }
