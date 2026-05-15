@@ -186,14 +186,14 @@ export function IVTimerPanel() {
               {/* 2.5행: 주입 속도 + 세트 — BE 5/11 IvInfusionListItemResponse 확장분 (rateGttPerMin · dropSet).
                   마이그레이션 누락 row 는 둘 다 null 가능 → mL/hr 만 노출. */}
               <span className="text-body-micro font-medium text-content-tertiary leading-none">
-                <span className="font-mono">
+                <span className="tabular-nums">
                   {item.currentRateMlPerHr}
                 </span>{" "}
                 mL/hr
                 {item.rateGttPerMin !== null && (
                   <>
                     {" · "}
-                    <span className="font-mono">{item.rateGttPerMin}</span>
+                    <span className="tabular-nums">{item.rateGttPerMin}</span>
                     {" gtt/min"}
                   </>
                 )}

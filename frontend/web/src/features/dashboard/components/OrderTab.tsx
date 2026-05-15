@@ -69,21 +69,21 @@ export function OrderTab({ encounterId, date }: OrderTabProps) {
               >
                 {/* 시간 — NursingTab 과 동일 패턴 (border-r + pr-4 + 내부 w-full text-center) */}
                 <div className="border-r border-border-base/50 pr-4">
-                  <div className="w-full text-center font-mono font-extrabold text-[15px] text-content-primary leading-[1.6]">
+                  <div className="w-full text-center tabular-nums font-extrabold text-[15px] text-content-primary leading-[1.6]">
                     {formatHHmm(order.createdAt)}
                   </div>
                 </div>
                 <div className="font-bold text-content-tertiary truncate">
                   {ORDER_TYPE_LABEL[order.orderType] ?? order.orderType}
                 </div>
-                <div className="font-mono font-bold text-content-primary truncate">
+                <div className="tabular-nums font-bold text-content-primary truncate">
                   {order.orderCode}
                 </div>
                 <div className="font-medium text-content-secondary truncate">
                   {order.orderName}
                 </div>
-                <div className="text-center font-mono font-bold">{order.dose}</div>
-                <div className="text-center font-mono font-bold">{order.frequency}</div>
+                <div className="text-center tabular-nums font-bold">{order.dose}</div>
+                <div className="text-center tabular-nums font-bold">{order.frequency}</div>
                 <div className="text-center text-content-tertiary">
                   {order.doseUnit}
                 </div>
