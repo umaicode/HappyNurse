@@ -52,6 +52,7 @@ jwt:
   cookie-secure: false
   cookie-same-site: Lax
   app-refresh-token-expiration-ms: 2592000000
+  app-access-token-expiration-ms: 43200000
 
 server:
   port: 8080
