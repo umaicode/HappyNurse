@@ -47,6 +47,21 @@ public class AuthService {
     @Transactional
     public AuthResult login(String employeeNumber, String password, String ipAddress,
                             Long organizationId, Long wardId, long refreshExpirationMs) {
+        return loginInternal(employeeNumber, password, ipAddress, organizationId, wardId,
+                refreshExpirationMs, jwtTokenProvider.getExpirationMs());
+    }
+
+    /** 앱 전용 로그인 — accessToken app용으로 받음 */
+    @Transactional
+    public AuthResult loginApp(String employeeNumber, String password, String ipAddress,
+                               Long organizationId, Long wardId, long refreshExpirationMs) {
+        return loginInternal(employeeNumber, password, ipAddress, organizationId, wardId,
+                refreshExpirationMs, jwtTokenProvider.getAppExpirationMs());
+    }
+
+    private AuthResult loginInternal(String employeeNumber, String password, String ipAddress,
+                                     Long organizationId, Long wardId,
+                                     long refreshExpirationMs, long accessExpirationMs) {
         // 1. 기관 존재 확인
         if (!organizationRepository.existsById(organizationId)) {
             throw new CustomException(ErrorCode.ORGANIZATION_NOT_FOUND);
@@ -84,7 +99,8 @@ public class AuthService {
 
         String roleCode = wardRole.getRoleCode().name();
 
-        return issueAuthResult(practitioner, roleCode, organizationId, wardId, ipAddress, refreshExpirationMs);
+        return issueAuthResult(practitioner, roleCode, organizationId, wardId, ipAddress,
+                refreshExpirationMs, accessExpirationMs);
     }
 
     /**
@@ -111,12 +127,14 @@ public class AuthService {
         log.warn("[DEV] dev-login issued (password skipped) — employeeNumber={}, practitionerId={}, wardId={}, organizationId={}, role={}, ip={}",
                 employeeNumber, practitioner.getPractitionerId(), wardId, organizationId, roleCode, ipAddress);
 
-        return issueAuthResult(practitioner, roleCode, organizationId, wardId, ipAddress, refreshExpirationMs);
+        return issueAuthResult(practitioner, roleCode, organizationId, wardId, ipAddress,
+                refreshExpirationMs, jwtTokenProvider.getExpirationMs());
     }
 
     private AuthResult issueAuthResult(Practitioner practitioner, String roleCode,
                                        Long organizationId, Long wardId,
-                                       String ipAddress, long refreshExpirationMs) {
+                                       String ipAddress, long refreshExpirationMs,
+                                       long accessExpirationMs) {
         SessionLog sessionLog = SessionLog.create(practitioner, ipAddress);
         sessionLogRepository.save(sessionLog);
 
@@ -127,7 +145,8 @@ public class AuthService {
                 roleCode,
                 sessionLog.getSessionId(),
                 organizationId,
-                wardId
+                wardId,
+                accessExpirationMs
         );
 
         LoginResponse loginResponse = new LoginResponse(
@@ -169,6 +188,15 @@ public class AuthService {
     }
 
     public AuthResult refresh(String refreshTokenValue) {
+        return refreshInternal(refreshTokenValue, jwtTokenProvider.getExpirationMs());
+    }
+
+    /** 앱 전용 토큰 갱신 — accessToken 만료를 jwt.app-access-token-expiration-ms 로 재발급. */
+    public AuthResult refreshApp(String refreshTokenValue) {
+        return refreshInternal(refreshTokenValue, jwtTokenProvider.getAppExpirationMs());
+    }
+
+    private AuthResult refreshInternal(String refreshTokenValue, long accessExpirationMs) {
         // 1. 재사용 탐지
         String reusedSessionId = reuseDetector.getReusedSessionId(refreshTokenValue);
         if (reusedSessionId != null) {
@@ -194,7 +222,8 @@ public class AuthService {
                 refreshToken.getRoleCode(),
                 refreshToken.getSessionId(),
                 refreshToken.getOrganizationId(),
-                refreshToken.getWardId()
+                refreshToken.getWardId(),
+                accessExpirationMs
         );
 
         RefreshToken newRefreshToken = RefreshToken.create(

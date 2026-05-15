@@ -1,10 +1,10 @@
 // 워치에서 폰에 토큰 동기화를 요청하는 MessageClient 래퍼.
 // 응답은 WearDataListenerService 가 WEAR_AUTH_TOKEN_RESPONSE path 로 수신한다.
-package com.happynurse.wear.data.auth
+package com.happynurse.wear.data.remote.wearable
 
 import android.content.Context
 import com.google.android.gms.wearable.Wearable
-import com.happynurse.wear.data.remote.WearableMessagePaths
+import com.happynurse.wear.data.remote.wearable.WearableMessagePaths
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject

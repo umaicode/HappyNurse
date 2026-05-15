@@ -4,7 +4,7 @@ package com.happynurse.wear.di
 
 import android.content.Context
 import com.happynurse.wear.alarm.AlarmScheduler
-import com.happynurse.wear.data.remote.WearDataClient
+import com.happynurse.wear.data.remote.wearable.WearDataClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

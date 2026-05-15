@@ -1,7 +1,7 @@
 // 수액 목록 저장소 — /iv 응답과 /wards/me/patients 응답을 결합하여 호실/침상이 포함된 도메인 리스트를 제공한다.
 package com.happynurse.wear.data.repository
 
-import com.happynurse.wear.data.model.IvInfusionTimer
+import com.happynurse.wear.domain.model.IvInfusionTimer
 import com.happynurse.wear.data.remote.api.IvInfusionApi
 import com.happynurse.wear.data.remote.api.WardPatientApi
 import com.happynurse.wear.data.remote.mapper.toDomain

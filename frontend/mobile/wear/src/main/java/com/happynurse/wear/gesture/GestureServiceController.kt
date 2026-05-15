@@ -3,7 +3,7 @@
 package com.happynurse.wear.gesture
 
 import android.content.Context
-import com.happynurse.wear.data.auth.WearTokenStore
+import com.happynurse.wear.data.remote.WearTokenStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

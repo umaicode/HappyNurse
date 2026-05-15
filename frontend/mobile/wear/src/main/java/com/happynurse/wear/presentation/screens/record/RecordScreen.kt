@@ -16,6 +16,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -53,6 +55,8 @@ import com.happynurse.wear.presentation.components.HnPulsingDot
 import com.happynurse.wear.presentation.theme.TabularNumStyle
 
 private val ButtonSize = 80.dp
+// 녹음 중 좌→우 스와이프로 취소되는 누적 픽셀 임계값. 워치 화면(약 240~450px) 기준 약 1/3 폭.
+private const val SWIPE_CANCEL_THRESHOLD_PX = 80f
 
 @Composable
 fun RecordScreen(
@@ -74,9 +78,15 @@ fun RecordScreen(
         if (state.phase == RecordPhase.RESULT) onShowResult()
     }
 
-    // 손목 제스처로 진입한 경우 — 이전 phase 잔여를 reset 한 뒤 즉시 녹음 시작.
+    // 손목 제스처로 진입한 경우 — 현재 phase 가 IDLE/ERROR 일 때만 자동 녹음.
+    // RECORDING/PROCESSING/RESULT/SUBMITTING/DONE 이면 진행 중인 흐름을 끊지 않도록 신호만 소비.
     LaunchedEffect(autoStart) {
         if (!autoStart) return@LaunchedEffect
+        val current = viewModel.state.value.phase
+        if (current != RecordPhase.IDLE && current != RecordPhase.ERROR) {
+            onAutoStartConsumed()
+            return@LaunchedEffect
+        }
         if (hasRecordPermission(context)) {
             viewModel.reset()
             viewModel.startRecording()
@@ -111,6 +121,7 @@ fun RecordScreen(
                         RecordPhase.RECORDING -> RecordingContent(
                             elapsed = state.elapsedSec,
                             onStop = viewModel::stopRecording,
+                            onSwipeCancel = viewModel::cancelRecording,
                         )
                         RecordPhase.PROCESSING -> ProcessingContent("음성 인식 중…")
                         RecordPhase.SUBMITTING -> ProcessingContent("등록 중…")
@@ -170,10 +181,25 @@ private fun IdleContent(onMicTap: () -> Unit) {
 }
 
 @Composable
-private fun RecordingContent(elapsed: Int, onStop: () -> Unit) {
+private fun RecordingContent(elapsed: Int, onStop: () -> Unit, onSwipeCancel: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .pointerInput(Unit) {
+                // 좌→우 스와이프 누적이 임계값을 넘으면 녹음 취소(=IDLE 복귀). 우→좌 스와이프는 무시.
+                var totalDx = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { totalDx = 0f },
+                    onDragEnd = { totalDx = 0f },
+                    onDragCancel = { totalDx = 0f },
+                ) { _, dragAmount ->
+                    totalDx += dragAmount
+                    if (totalDx > SWIPE_CANCEL_THRESHOLD_PX) {
+                        totalDx = 0f
+                        onSwipeCancel()
+                    }
+                }
+            }
             .padding(top = 14.dp, bottom = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),

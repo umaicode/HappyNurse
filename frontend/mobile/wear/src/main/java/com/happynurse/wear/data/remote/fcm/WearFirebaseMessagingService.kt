@@ -1,7 +1,7 @@
 // WearFirebaseMessagingService — 워치 FCM 수신 진입점.
 // onNewToken: 갱신 토큰을 폰에 forward.
 // onMessageReceived: sourceType 별로 풀스크린 알람(IV/STT) / 시스템 트레이(self_report/사전알림) 라우팅.
-package com.happynurse.wear.data.fcm
+package com.happynurse.wear.data.remote.fcm
 
 import android.content.Intent
 import android.util.Log
@@ -9,9 +9,9 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.happynurse.wear.alarm.IvAlarmActivity
 import com.happynurse.wear.alarm.SttAlarmActivity
-import com.happynurse.wear.data.notification.NotificationType
-import com.happynurse.wear.data.notification.WearEventBus
-import com.happynurse.wear.data.notification.WearNotification
+import com.happynurse.wear.domain.model.NotificationType
+import com.happynurse.wear.data.eventbus.WearEventBus
+import com.happynurse.wear.domain.model.WearNotification
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.random.Random
@@ -40,7 +40,7 @@ class WearFirebaseMessagingService : FirebaseMessagingService() {
         val body = message.notification?.body ?: data["body"].orEmpty()
         val previewMinutes = data["previewMinutes"]?.toIntOrNull()
 
-        if (FcmDedupStore.alreadyHandled(this, notificationId)) {
+        if (FcmDeduplicationStore.alreadyHandled(this, notificationId)) {
             Log.d(TAG, "중복 알림 스킵: $notificationId")
             return
         }
@@ -49,7 +49,7 @@ class WearFirebaseMessagingService : FirebaseMessagingService() {
         val notifId = notificationId?.toIntOrNull() ?: Random.nextInt()
         when {
             // 5분 전 사전 알림 — 풀스크린이 아니라 시스템 트레이만 (s21 형식)
-            previewMinutes != null -> SystemNotifBuilder.showTray(
+            previewMinutes != null -> SystemNotificationBuilder.showTray(
                 context = this,
                 notificationId = notifId,
                 title = title.ifBlank { "${previewMinutes}분 후 알림" },
@@ -62,7 +62,7 @@ class WearFirebaseMessagingService : FirebaseMessagingService() {
             sourceType == "timer" -> startSttAlarm(title, body, data)
 
             sourceType == "self_report" -> {
-                SystemNotifBuilder.showTray(
+                SystemNotificationBuilder.showTray(
                     context = this,
                     notificationId = notifId,
                     title = title.ifBlank { "환자 알림" },

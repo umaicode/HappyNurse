@@ -114,7 +114,7 @@ function NotificationCard({
         <div className="flex items-center gap-1.5 min-w-0">
           <span
             className={cn(
-              "text-body-sm font-semibold tracking-tight shrink-0 leading-none",
+              "text-body-sm font-bold tracking-tight shrink-0 leading-none",
               tone,
             )}
           >
@@ -123,7 +123,7 @@ function NotificationCard({
           {priority && (
             <span
               className={cn(
-                "px-1.5 py-0.5 rounded text-[11px] font-bold leading-none shrink-0",
+                "px-1.5 py-1 rounded text-[14px] font-bold leading-none shrink-0",
                 PRIORITY_CHIP[priority],
               )}
             >
@@ -138,11 +138,11 @@ function NotificationCard({
 
       {alert.patientName && (
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-body-sm font-bold text-content-primary truncate leading-tight">
+          <span className="text-body-sm font-semibold text-content-primary truncate leading-tight">
             {alert.patientName}
           </span>
           {roomBed && (
-            <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
+            <span className=" text-content-secondary text-[12px] font-medium">
               {roomBed}
             </span>
           )}
