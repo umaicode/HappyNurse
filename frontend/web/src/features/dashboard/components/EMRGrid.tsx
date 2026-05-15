@@ -258,8 +258,6 @@ export function EMRGrid({
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
-
-            {/* TODO Phase 1-5: 행별 편집/확정/삭제 UI 가 NursingTab 안으로 들어오면 여기에 전역 편집 토글 다시 배치 */}
           </div>
         </div>
 
@@ -425,7 +423,7 @@ export function EMRGrid({
                 variant={isEditMode ? "brand" : "neutral"}
                 size="sm"
                 className={cn(
-                  "h-7 px-2.5 rounded text-body-micro font-bold",
+                  "h-7 px-2.5 rounded text-body-xs font-bold",
                   isEditMode && "text-white hover:text-white",
                 )}
                 onClick={() => setIsEditMode((prev) => !prev)}

@@ -1,6 +1,6 @@
 // 폰 ↔ 워치 DataLayer 메시지 path 단일 출처 (양쪽 모듈 공통, 변경 시 app 의 동일 파일도 같이 수정)
 // 음성 메모 알람 등록과 STT 음성 인식은 워치가 백엔드에 직접 호출하므로 관련 path 는 보유하지 않는다.
-package com.happynurse.wear.data.remote
+package com.happynurse.wear.data.remote.wearable
 
 object WearableMessagePaths {
     // 워치 → 폰

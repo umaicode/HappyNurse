@@ -1,6 +1,6 @@
-// SystemNotifBuilder — 워치 시스템 트레이 알림 발송(s21 사전 알림 / self_report 환자요청 / 풀스크린 fallback).
+// SystemNotificationBuilder — 워치 시스템 트레이 알림 발송(s21 사전 알림 / self_report 환자요청 / 풀스크린 fallback).
 // 단일 NotificationChannel 'happynurse_alerts' 사용. WearMainActivity 로 PendingIntent 연결.
-package com.happynurse.wear.data.fcm
+package com.happynurse.wear.data.remote.fcm
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -11,7 +11,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
 import com.happynurse.wear.WearMainActivity
 
-object SystemNotifBuilder {
+object SystemNotificationBuilder {
 
     const val CHANNEL_ID = "happynurse_alerts"
     private const val CHANNEL_NAME = "HappyNurse 알림"

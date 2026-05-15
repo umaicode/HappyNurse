@@ -35,18 +35,3 @@ export const formatRelativeTime = (value: Date | string): string => {
   if (diffMin < 60) return `${diffMin}분 전`;
   return formatMonthDayHHmm(date);
 };
-
-// 두 줄 표시용 — { month: "MM", day: "DD", time: "HH:mm" }
-export const splitDateLabel = (
-  value: Date | string,
-): { month: string; day: string; time: string } => {
-  const date = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(date.getTime())) {
-    return { month: "--", day: "--", time: "--:--" };
-  }
-  return {
-    month: String(date.getMonth() + 1).padStart(2, "0"),
-    day: String(date.getDate()).padStart(2, "0"),
-    time: formatHHmm(date),
-  };
-};

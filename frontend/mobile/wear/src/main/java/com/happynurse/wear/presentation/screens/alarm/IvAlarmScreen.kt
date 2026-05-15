@@ -28,7 +28,12 @@ fun IvAlarmScreen(
                 onClick = onDismiss,
                 modifier = Modifier,
             ) {
-                Text("완료", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                Text(
+                    text = "확인",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
             }
         },
     )

@@ -1,7 +1,8 @@
 // OkHttp 인터셉터 — 모든 요청에 Authorization: Bearer {accessToken} 헤더를 부착한다.
 // 401 응답을 받으면 폰에 토큰 재동기화를 요청한 뒤 한 번만 재시도한다.
-package com.happynurse.wear.data.auth
+package com.happynurse.wear.data.remote
 
+import com.happynurse.wear.data.remote.wearable.PhoneTokenSyncClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking

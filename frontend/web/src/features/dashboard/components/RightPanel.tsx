@@ -32,7 +32,7 @@ export function RightPanel({ encounterId }: RightPanelProps) {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex-1 py-2 text-[13px] font-bold rounded-md transition-all flex items-center justify-center",
+                  "flex-1 py-2 text-[15px] font-bold rounded-md transition-all flex items-center justify-center",
                   isActive
                     ? "bg-white text-brand-primary shadow-sm"
                     : "text-content-muted hover:text-content-secondary",

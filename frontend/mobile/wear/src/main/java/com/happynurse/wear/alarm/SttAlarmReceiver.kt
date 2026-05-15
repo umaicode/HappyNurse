@@ -10,13 +10,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
-@AndroidEntryPoint
 class SttAlarmReceiver : BroadcastReceiver() {
-
-    @Inject lateinit var ttsSpeaker: AlarmTtsSpeaker
 
     override fun onReceive(context: Context, intent: Intent) {
         val sttId = intent.getStringExtra(EXTRA_STT_ID).orEmpty()
@@ -58,11 +53,8 @@ class SttAlarmReceiver : BroadcastReceiver() {
 
         context.getSystemService<NotificationManager>()
             ?.notify(notificationIdFor(sttId), notif)
-
-        // 알람 내용을 음성으로 읽어줌 — content 가 비어있으면 환자/위치 라벨로 폴백
-        val spoken = listOf(content, patient, roomBedTime).firstOrNull { it.isNotBlank() }
-            ?: "알람 시각이 되었습니다"
-        ttsSpeaker.speak(spoken)
+        // TTS 발화는 SttAlarmActivity 에서 ringtone 종료 뒤에 직렬화하여 호출. 여기서 같이 호출하면
+        // ringtone(USAGE_ALARM, looping) 과 동시에 출력돼 음성이 묻힌다.
     }
 
     companion object {

@@ -22,7 +22,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import com.happynurse.wear.WearMainActivity
-import com.happynurse.wear.data.sensor.GestureDetector
+import com.happynurse.wear.gesture.GestureDetector
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

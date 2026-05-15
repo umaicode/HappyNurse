@@ -6,6 +6,7 @@ package com.happynurse.wear.alarm
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -45,6 +46,9 @@ class AlarmTtsSpeaker @Inject constructor(
                 Log.w(TAG, "한국어 TTS 음성 데이터 없음 — 워치 설정에서 다운로드 필요")
                 return@TextToSpeech
             }
+            // 명료도 향상 — 살짝 천천히, 기본 음높이.
+            engine.setSpeechRate(0.95f)
+            engine.setPitch(1.0f)
             ready = true
             // 초기화 전에 들어온 발화 요청 처리
             drainPending()
@@ -79,7 +83,12 @@ class AlarmTtsSpeaker @Inject constructor(
     }
 
     private fun speakNow(engine: TextToSpeech, text: String) {
-        engine.speak(text, TextToSpeech.QUEUE_ADD, null, "alarm-${System.currentTimeMillis()}")
+        // KEY_PARAM_VOLUME 을 최대(1.0) 로 명시. 일부 TTS 엔진은 기본값이 0.5 라 작게 들린다.
+        val params = Bundle().apply {
+            putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
+            putString(TextToSpeech.Engine.KEY_PARAM_STREAM, android.media.AudioManager.STREAM_ALARM.toString())
+        }
+        engine.speak(text, TextToSpeech.QUEUE_ADD, params, "alarm-${System.currentTimeMillis()}")
     }
 
     private companion object {
