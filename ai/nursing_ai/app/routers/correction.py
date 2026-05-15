@@ -222,6 +222,34 @@ async def analyze_quick_corrections(
                 seen_positions.add(key)
                 all_candidates.append(candidate)
 
+        # (B) 어절 fallback — morpheme/dict 가 놓친 어절을 후보로 추가.
+        # Kiwi 가 짧은 단독 입력("세포트리")을 미등록어로 추출 못 하는 케이스 보강.
+        # 추가된 후보는 아래 exact/fuzzy 흐름에서 동일하게 처리됨.
+        covered_ranges = [(c["start"], c["end"]) for c in all_candidates]
+        cursor = 0
+        for token in req.content.split(" "):
+            if not token:
+                cursor += 1
+                continue
+            t_start = req.content.find(token, cursor)
+            if t_start == -1:
+                cursor += len(token) + 1
+                continue
+            t_end = t_start + len(token)
+            cursor = t_end + 1
+            if any(s <= t_start and t_end <= e for s, e in covered_ranges):
+                continue
+            key = (t_start, t_end)
+            if key in seen_positions:
+                continue
+            seen_positions.add(key)
+            all_candidates.append({
+                "word": token,
+                "start": t_start,
+                "end": t_end,
+                "normalized": token.replace(" ", "").lower(),
+            })
+
         # 교정 후보 생성
         corrections = []
         for candidate in all_candidates:
@@ -270,6 +298,32 @@ async def analyze_quick_corrections(
                     "end": end,
                     "candidates": candidate_list
                 })
+
+        # (A) prefix 흡수 — 단축형→전체형 매핑(예: "노보래피드" → "인슐린 아스파트")에서
+        # 사용자가 이미 prefix 어절("인슐린")을 발음한 경우, 후보 범위를 그 어절 앞으로 당겨
+        # 슬라이스 치환 시 "인슐린 인슐린 아스파트" 같은 중복을 방지한다.
+        # 안전을 위해 모든 추천 후보(exact/fuzzy)의 첫 토큰이 동일할 때만 적용.
+        for c in corrections:
+            suggest_words = [
+                cand["word"] for cand in c["candidates"]
+                if cand.get("type") in ("exact", "fuzzy") and " " in cand["word"]
+            ]
+            if not suggest_words:
+                continue
+            first_tokens = {w.split(" ", 1)[0] for w in suggest_words}
+            if len(first_tokens) != 1:
+                continue
+            head = next(iter(first_tokens))
+            prev_segment = req.content[:c["start"]]
+            prev_trimmed = prev_segment.rstrip()
+            if not prev_trimmed.endswith(head):
+                continue
+            boundary = len(prev_trimmed) - len(head)
+            # word boundary 확인 — head 앞이 시작 또는 공백이어야 함
+            if boundary > 0 and prev_trimmed[boundary - 1] != " ":
+                continue
+            c["start"] = boundary
+            c["original"] = req.content[boundary:c["end"]]
 
         # 겹치는 후보 정리: 더 긴 범위가 짧은 범위를 흡수 (longest-match 우선)
         # 예) (0,7) "세포트리 악손" 이 있으면 (0,4) "세포트리", (5,7) "악손" 은 제거

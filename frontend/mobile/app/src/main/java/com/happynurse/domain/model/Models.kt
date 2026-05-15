@@ -102,12 +102,16 @@ data class IvTimer(
     val elapsedMin: Int,
     val endsAt: String,
     val startedAt: String,
+    val startedAtEpochMs: Long = 0L, // 라이브 카운트다운용 — UI에서 매초 elapsed 재계산
     val currentRateMlPerHr: Double? = null,
     val rateGttPerMin: Int? = null, // 서버 slim 응답의 실제 gtt/min — patientType 기반 역환산값
 )
 
 // 알림 카테고리 — 수액/오더/워치/요청/웹세션
 enum class NotificationCategory { FLUID, ORDER, WATCH, REQUEST, SESSION }
+
+// 환자요청 긴급도 — critical/high/medium/low (서버 priority 필드 매핑)
+enum class NotificationPriority { CRITICAL, HIGH, MEDIUM, LOW }
 
 // 알림함 한 건 — 상단 벨 시트/알림 목록에서 사용
 data class Notification(
@@ -120,6 +124,7 @@ data class Notification(
     val minutesAgo: Int,
     val unread: Boolean,
     val upcoming: Boolean,
+    val priority: NotificationPriority? = null,
 )
 
 // 워치 알람(STT 리마인더) — 업무 페이지 워치알람 탭, GET /reminders/stt 응답
@@ -227,3 +232,30 @@ data class RosterSummary(
     val unstableCount: Int,
     val patients: List<RosterPatientItem>,
 )
+
+// 인수인계 체크리스트(서버 영속) — synthesis 슬롯 한정
+data class CheckMeta(
+    val by: String,
+    val at: String,
+)
+
+data class HandoverChecks(
+    val handoverId: String,
+    val checkedSynthesisIndex: Map<Int, CheckMeta>,
+)
+
+// 인수인계 화면 상단 입원/퇴원 환자
+data class WardEventEntry(
+    val encounterId: String,
+    val patientName: String,
+    val location: String,       // "roomName · bedName"
+    val primaryLabel: String,   // chiefComplaint > diseaseName > surgeryName 우선
+    val timestamp: String?,     // 입원 = periodStart, 퇴원 = periodEnd
+)
+
+data class WardEvents(
+    val admissions: List<WardEventEntry> = emptyList(),
+    val discharges: List<WardEventEntry> = emptyList(),
+) {
+    val isEmpty: Boolean get() = admissions.isEmpty() && discharges.isEmpty()
+}

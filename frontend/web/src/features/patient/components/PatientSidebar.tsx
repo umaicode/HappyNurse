@@ -54,20 +54,16 @@ export function PatientSidebar({
   const refreshExpiresAt = useAuthStore((state) => state.refreshExpiresAt);
   const logout = useLogout();
   const [searchQuery, setSearchQuery] = useState("");
-  const [isExtending, setIsExtending] = useState(false);
 
   // 연장 버튼 — /auth/refresh 호출 + 성공 시 expiresAt 을 now+15분 으로 재계산.
   // 실패 시 인터셉터가 401 처리 우회하므로 그냥 무시 (15 분 idle 타이머가 자동 로그아웃 담당).
+  // 로딩 표시 없이 즉시 클릭 가능 (요청 자체가 빠름, 중복 클릭은 멱등이라 무해).
   const handleExtend = async () => {
-    if (isExtending) return;
-    setIsExtending(true);
     try {
       await extendSession();
       refreshExpiresAt();
     } catch {
       // 무시 — useAuth 의 idle 타이머가 만료 처리.
-    } finally {
-      setIsExtending(false);
     }
   };
   // 1초 tick — 카운트다운 mm:ss 갱신. expiresAt 이 null 이면 동작 안 함.
@@ -138,9 +134,8 @@ export function PatientSidebar({
                 size="sm"
                 className="h-6 px-2 text-body-micro font-bold"
                 onClick={handleExtend}
-                disabled={isExtending}
               >
-                {isExtending ? "..." : "연장"}
+                연장
               </Button>
             </div>
           )}
@@ -268,7 +263,7 @@ export function PatientSidebar({
             <span className="text-[14px] font-black text-content-primary truncate leading-tight">
               {user?.name ?? ""}
               {user?.name && (
-                <span className="ml-1 text-body-xs font-medium text-content-tertiary">
+                <span className="ml-1 text-body-sm font-medium text-content-tertiary">
                   간호사
                 </span>
               )}
@@ -284,7 +279,7 @@ export function PatientSidebar({
             onClick={() => {
               logout();
             }}
-            className="p-2 text-status-danger hover:bg-status-danger-surface rounded-xl transition-all shadow-xs border border-status-danger/20"
+            className="p-2 text-status-danger/60 hover:bg-status-danger-surface rounded-xl transition-all shadow-xs border border-status-danger/40"
             title="로그아웃"
           >
             <LogOut className="size-5" />

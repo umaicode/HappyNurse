@@ -18,7 +18,7 @@ import androidx.wear.compose.material3.CircularProgressIndicator
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ProgressIndicatorDefaults
 import androidx.wear.compose.material3.Text
-import com.happynurse.wear.data.model.IvInfusionTimer
+import com.happynurse.wear.domain.model.IvInfusionTimer
 import com.happynurse.wear.presentation.theme.remainingTimeColor
 
 @Composable
@@ -66,12 +66,12 @@ fun IvProgressScreen(
                 style = MaterialTheme.typography.titleMedium,
                 color = accentColor,
                 fontWeight = FontWeight.Bold,
-                maxLines = 1,
+                maxLines = 2,
             )
             Text(
                 text = "종료 ${iv.endAtDisplay}",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
     }

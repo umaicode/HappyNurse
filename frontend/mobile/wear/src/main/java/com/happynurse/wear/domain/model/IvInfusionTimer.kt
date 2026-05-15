@@ -1,6 +1,6 @@
 // 수액 타이머 도메인 모델 — 홈 수액 탭 카드 / 수액 진행 상세 / 수액 종료 알람용.
 // 백엔드 /iv 응답을 매핑한 후 환자 호실/침상 정보까지 결합한 워치 표시 단위.
-package com.happynurse.wear.data.model
+package com.happynurse.wear.domain.model
 
 import java.time.Instant
 import java.time.ZoneId

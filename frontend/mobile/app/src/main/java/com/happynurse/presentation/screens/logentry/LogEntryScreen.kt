@@ -110,14 +110,12 @@ private fun IdleBody(onStart: () -> Unit) {
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(140.dp).clip(CircleShape)
+            modifier = Modifier.size(180.dp).clip(CircleShape)
                 .background(HnColors.Primary)
                 .clickable(onClick = onStart),
         ) {
-            Icon(Icons.Outlined.Mic, contentDescription = null, tint = Color.White, modifier = Modifier.size(56.dp))
+            Icon(Icons.Outlined.Mic, contentDescription = null, tint = Color.White, modifier = Modifier.size(80.dp))
         }
-        Spacer(Modifier.height(20.dp))
-        Text("버튼을 눌러 녹음을 시작하세요", fontSize = 15.sp, color = HnColors.TextSecondary)
     }
 }
 
@@ -130,18 +128,19 @@ private fun RecordingBody(seconds: Int, onStop: () -> Unit) {
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(140.dp).clip(CircleShape)
-                .background(HnColors.Danger)
+            modifier = Modifier.size(180.dp).clip(CircleShape)
+                .background(Color(0xFFF5584F))
                 .clickable(onClick = onStop),
         ) {
-            Icon(Icons.Outlined.Stop, contentDescription = null, tint = Color.White, modifier = Modifier.size(56.dp))
+            Icon(Icons.Outlined.Stop, contentDescription = null, tint = Color.White, modifier = Modifier.size(120.dp))
         }
         Spacer(Modifier.height(20.dp))
         Text(
             formatSec(seconds),
-            fontSize = 32.sp, fontWeight = FontWeight.Bold, color = HnColors.Danger,
+            fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF5584F),
         )
-        Text("녹음 중 · 정지 버튼을 누르세요", fontSize = 13.sp, color = HnColors.TextSecondary)
+        Spacer(Modifier.height(20.dp))
+        Text("녹음 중", fontSize = 26.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -152,9 +151,9 @@ private fun UploadingBody() {
         verticalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxSize().padding(20.dp),
     ) {
-        CircularProgressIndicator(color = HnColors.Primary, modifier = Modifier.size(40.dp))
-        Spacer(Modifier.height(14.dp))
-        Text("STT 변환 중...", fontSize = 13.sp, color = HnColors.TextSecondary)
+        CircularProgressIndicator(color = HnColors.Primary, modifier = Modifier.size(80.dp))
+        Spacer(Modifier.height(40.dp))
+        Text("STT 변환 중...", fontSize = 26.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -172,33 +171,19 @@ private fun ResultBody(
         Text(
             // status='draft' 로 백엔드 저장됨. 확정/수정은 데스크톱 차트에서.
             if (resp.nursingRecordId != null) "간호일지 임시 등록 완료" else "STT 변환 결과",
-            fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary,
+            fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text,
         )
-        HnCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
+        HnCard(modifier = Modifier.fillMaxWidth().weight(2f)) {
             Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                resp.correctedText?.let {
-                    Text("교정된 본문", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
-                    Spacer(Modifier.height(2.dp))
-                    Text(it, fontSize = 14.sp, color = HnColors.Text)
-                    Spacer(Modifier.height(10.dp))
-                }
-                resp.originalText?.takeIf { it != resp.correctedText }?.let {
-                    Text("원본", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
-                    Spacer(Modifier.height(2.dp))
-                    Text(it, fontSize = 12.sp, color = HnColors.TextSecondary)
-                    Spacer(Modifier.height(10.dp))
-                }
-                // exact 는 원본=교정본 동일 의미라 표시 가치 낮음 — fuzzy/manual 만 노출
-                val visibleCorrections = resp.corrections.filter { it.type != "exact" }
-                if (visibleCorrections.isNotEmpty()) {
-                    Text("교정 내역", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
-                    Spacer(Modifier.height(2.dp))
-                    visibleCorrections.forEach { c ->
-                        Text(
-                            "${c.original} → ${c.corrected}" + (c.type?.let { " (${it})" } ?: ""),
-                            fontSize = 12.sp, color = HnColors.Text,
-                        )
-                    }
+                val corrected = resp.correctedText?.takeIf { it.isNotBlank() }
+                if (corrected != null) {
+                    Text(corrected, fontSize = 20.sp, color = HnColors.Text)
+                } else {
+                    Text(
+                        "교정된 본문이 없습니다",
+                        fontSize = 18.sp,
+                        color = HnColors.TextTertiary,
+                    )
                 }
             }
         }
@@ -217,6 +202,7 @@ private fun ResultBody(
                 modifier = Modifier.weight(1f),
             )
         }
+        Spacer(Modifier.weight(1f))
     }
 }
 

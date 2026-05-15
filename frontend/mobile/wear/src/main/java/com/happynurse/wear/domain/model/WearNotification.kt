@@ -1,4 +1,4 @@
-package com.happynurse.wear.data.notification
+package com.happynurse.wear.domain.model
 
 import kotlinx.serialization.Serializable
 

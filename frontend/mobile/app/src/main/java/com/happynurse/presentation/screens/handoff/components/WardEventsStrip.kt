@@ -14,7 +14,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,8 +21,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
@@ -122,20 +119,22 @@ fun WardEventsStrip(
                     events == null -> LoadingRow()
                     events.isEmpty -> EmptyRow()
                     else -> {
-                        val combined = remember(events) {
-                            buildList {
-                                events.admissions.forEach { add(WardEventCardData(it, isAdmission = true)) }
-                                events.discharges.forEach { add(WardEventCardData(it, isAdmission = false)) }
-                            }
-                        }
-                        LazyRow(
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            contentPadding = PaddingValues(vertical = 2.dp),
                         ) {
-                            itemsIndexed(
-                                combined,
-                                key = { _, c -> "${c.isAdmission}-${c.entry.encounterId}-${c.entry.timestamp}" },
-                            ) { _, data -> WardEventCard(data) }
+                            WardEventColumn(
+                                title = "입원",
+                                color = AdmissionColor,
+                                entries = events.admissions,
+                                modifier = Modifier.weight(1f),
+                            )
+                            WardEventColumn(
+                                title = "퇴원",
+                                color = DischargeColor,
+                                entries = events.discharges,
+                                modifier = Modifier.weight(1f),
+                            )
                         }
                     }
                 }
@@ -144,71 +143,66 @@ fun WardEventsStrip(
     }
 }
 
-private data class WardEventCardData(
-    val entry: WardEventEntry,
-    val isAdmission: Boolean,
-)
-
 @Composable
-private fun WardEventCard(data: WardEventCardData) {
-    val accent = if (data.isAdmission) AdmissionColor else DischargeColor
-    Row(
-        Modifier
-            .width(230.dp)
+private fun WardEventColumn(
+    title: String,
+    color: Color,
+    entries: List<WardEventEntry>,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(HnColors.Surface)
-            .border(BorderStroke(1.dp, HnColors.Border), RoundedCornerShape(12.dp)),
+            .border(BorderStroke(1.dp, HnColors.Border), RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
-        // 좌측 컬러 스트라이프로 입원/퇴원 구분
-        Box(
-            Modifier
-                .width(4.dp)
-                .background(accent),
-        ) { Spacer(Modifier.height(72.dp)) }
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    if (data.isAdmission) "입원" else "퇴원",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = accent,
-                )
-                Spacer(Modifier.weight(1f))
-                data.entry.timestamp?.let { ts ->
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                title,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = color,
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        if (entries.isEmpty()) {
+            Text("-", fontSize = 13.sp, color = HnColors.TextTertiary)
+        } else {
+            entries.forEach { entry ->
+                val timeLabel = entry.timestamp?.let { formatEventTime(it) }.orEmpty()
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                ) {
                     Text(
-                        formatShortDateTime(ts),
-                        fontSize = 12.sp,
-                        color = HnColors.TextTertiary,
+                        entry.patientName,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = HnColors.Text,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
+                    if (entry.location.isNotBlank()) {
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            compactLocation(entry.location),
+                            fontSize = 14.sp,
+                            color = HnColors.TextSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (timeLabel.isNotBlank()) {
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            timeLabel,
+                            fontSize = 14.sp,
+                            color = HnColors.TextTertiary,
+                            maxLines = 1,
+                        )
+                    }
                 }
-            }
-            Spacer(Modifier.height(6.dp))
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    data.entry.patientName,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = HnColors.Text,
-                )
-                if (data.entry.location.isNotBlank()) {
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        data.entry.location,
-                        fontSize = 12.sp,
-                        color = HnColors.TextSecondary,
-                    )
-                }
-            }
-            if (data.entry.primaryLabel.isNotBlank()) {
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    data.entry.primaryLabel,
-                    fontSize = 12.sp,
-                    color = HnColors.TextSecondary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 16.sp,
-                )
             }
         }
     }
@@ -301,16 +295,26 @@ private fun ErrorRow(onRetry: () -> Unit) {
     }
 }
 
-// "2026-05-13T09:15:00" / "2026-05-13T09:15:00+09:00" → "05/13 09:15"
-private fun formatShortDateTime(iso: String): String {
+// "501호 · 1번" → "501-1" (숫자만 추출해 하이픈으로 연결)
+private fun compactLocation(location: String): String {
+    val parts = location.split(" · ")
+    val room = parts.getOrNull(0)?.filter { it.isDigit() }.orEmpty()
+    val bed = parts.getOrNull(1)?.filter { it.isDigit() }.orEmpty()
+    return when {
+        room.isNotBlank() && bed.isNotBlank() -> "$room-$bed"
+        room.isNotBlank() -> room
+        else -> location
+    }
+}
+
+// ISO datetime → "HH:mm" (오늘 입퇴원이므로 시간만)
+// "2026-05-13T14:20:00" / "2026-05-13T14:20:00+09:00" → "14:20"
+private fun formatEventTime(iso: String): String {
     return try {
         val t = iso.substringBefore('+').substringBefore('Z')
-        val datePart = t.substringBefore('T')
         val timePart = t.substringAfter('T', missingDelimiterValue = "")
-        val md = datePart.substringAfter('-', missingDelimiterValue = datePart).replace('-', '/')
-        val hm = timePart.take(5)
-        if (hm.isBlank()) md else "$md $hm"
+        timePart.take(5)
     } catch (_: Throwable) {
-        iso
+        ""
     }
 }
