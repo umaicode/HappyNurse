@@ -53,7 +53,7 @@ fun HnButton(
         horizontalArrangement = Arrangement.Center,
         modifier = modifier
             .then(widthMod)
-            .height(52.dp)
+            .height(58.dp)
             .clip(shape)
             .let { if (borderColor != null) it.border(1.dp, borderColor, shape) else it }
             .background(bg)
@@ -67,7 +67,7 @@ fun HnButton(
                 Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(20.dp))
                 Text(" ", color = fg)
             }
-            Text(text, color = fg, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(text, color = fg, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

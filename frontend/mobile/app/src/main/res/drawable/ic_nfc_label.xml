@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  viewport 100×100 — 원본 이미지 1080×1080 기준 비율 환산
+  wave 영역: y 0~42, NFC 글자: y 43~98
+  strokeWidth 9 = 원본 선 두께 ~90px / 1080
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- 큰 wave: x 8~92, center y=5, ends y=16 -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="9"
+        android:strokeLineCap="round"
+        android:pathData="M8,16 Q50,5 92,16" />
+
+    <!-- 작은 wave: x 24~76, center y=19, ends y=26 -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="9"
+        android:strokeLineCap="round"
+        android:pathData="M24,26 Q50,19 76,26" />
+
+    <!-- 점: cx=50, cy=36, r=4 -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M50,36 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" />
+
+    <!-- N: x 2~19, y 44~97 -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="9.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M2,97 L2,44 L19,97 L19,44" />
+
+    <!-- F: x 31~54, y 44~97 — 위 가로 full, 중간 가로 shorter -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="9.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M31,97 L31,44 L54,44 M31,69 L50,69" />
+
+    <!-- C: x 65~97, y 44~97 — 반원, 위아래 끝이 안으로 말림 -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="9.5"
+        android:strokeLineCap="round"
+        android:pathData="M97,52 Q65,42 65,70 Q65,98 97,88" />
+</vector>

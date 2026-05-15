@@ -24,8 +24,9 @@ import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.Nfc
 import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.ui.res.painterResource
+import com.happynurse.R
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -77,10 +78,8 @@ fun DrugEntryScreen(
             Icon(
                 Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
                 "뒤로",
-                modifier = Modifier.size(28.dp).clickable(onClick = onClose),
+                modifier = Modifier.size(46.dp).clickable(onClick = onClose),
             )
-            Spacer(Modifier.size(8.dp))
-            Text("약물 등록", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
         }
 
         when (val s = submit) {
@@ -122,16 +121,18 @@ private fun ColumnScope.EntryBody(
     Column(Modifier.padding(horizontal = 20.dp)) {
         HnCard(padding = 14.dp) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(56.dp).clip(RoundedCornerShape(14.dp)).background(HnColors.PrimarySoft),
-                ) { Icon(Icons.Outlined.Nfc, contentDescription = null, tint = HnColors.Primary, modifier = Modifier.size(28.dp)) }
+                Icon(
+                    painter = painterResource(R.drawable.ic_nfc_label),
+                    contentDescription = null,
+                    tint = HnColors.Primary,
+                    modifier = Modifier.size(48.dp),
+                )
                 Spacer(Modifier.size(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("약물 NFC 태그", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                    Text("약물 NFC 태그", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text)
                     Text(
                         "디바이스를 약물에 가까이 대주세요",
-                        fontSize = 14.sp, color = HnColors.TextSecondary,
+                        fontSize = 16.sp, color = HnColors.TextSecondary,
                     )
                 }
             }
@@ -158,17 +159,17 @@ private fun ColumnScope.EntryBody(
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
     ) {
         item {
-            Text(
-                "검증된 처방 (${drugs.size})",
-                fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("검증된 처방", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary)
+                Text("${drugs.size}개", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Primary)
+            }
         }
         if (drugs.isEmpty()) {
             item {
-                HnCard(padding = 20.dp) {
+                HnCard(modifier = Modifier.fillMaxWidth(), padding = 20.dp) {
                     Text(
                         "약물 NFC 칩을 태깅하면 여기에 표시됩니다",
-                        fontSize = 16.sp, color = HnColors.TextSecondary,fontWeight = FontWeight.SemiBold
+                        fontSize = 18.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.SemiBold,
                     )
                 }
             }
@@ -179,7 +180,7 @@ private fun ColumnScope.EntryBody(
 
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
         HnButton(
-            text = "수액으로 시작",
+            text = "수액타이머 설정",
             variant = HnButtonVariant.SECONDARY,
             full = true,
             icon = Icons.Outlined.Timer,
@@ -188,8 +189,7 @@ private fun ColumnScope.EntryBody(
         )
         Spacer(Modifier.height(8.dp))
         HnButton(
-            text = "투약 완료 (${drugs.size})",
-            icon = Icons.AutoMirrored.Outlined.Send,
+            text = "투약 완료",
             full = true,
             enabled = drugs.isNotEmpty() && !submitting,
             loading = submitting,
@@ -208,14 +208,14 @@ private fun VerifiedDrugRow(
             Column(Modifier.weight(1f)) {
                 TagChip("약물", fg = HnColors.Primary, bg = HnColors.PrimarySoft)
                 Spacer(Modifier.height(6.dp))
-                Text(d.medicationName, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                Text("처방 #${d.medicationOrderId}", fontSize = 12.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(top = 4.dp))
+                Text(d.medicationName, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                Text("처방코드 ${d.orderCode ?: "—"}", fontSize = 16.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(top = 4.dp))
             }
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp))
+                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
                     .background(HnColors.Surface).clickable { onRemove(d.tagUid) },
-            ) { Icon(Icons.Outlined.Close, "삭제", tint = HnColors.TextSecondary, modifier = Modifier.size(14.dp)) }
+            ) { Icon(Icons.Outlined.Close, "삭제", tint = HnColors.TextSecondary, modifier = Modifier.size(20.dp)) }
         }
     }
 }
@@ -267,7 +267,7 @@ private fun SuccessBody(
                             color = HnColors.Text,
                             modifier = Modifier.weight(1f),
                         )
-                        Text("#${d.medicationOrderId}", fontSize = 11.sp, color = HnColors.TextTertiary)
+                        Text(d.orderCode ?: "—", fontSize = 11.sp, color = HnColors.TextTertiary)
                     }
                 }
             }

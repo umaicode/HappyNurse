@@ -14,22 +14,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ChildCare
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Remove
-import androidx.compose.runtime.remember
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.text.TextStyle
@@ -47,9 +49,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.happynurse.presentation.components.HnButton
 import com.happynurse.presentation.components.HnCard
@@ -80,13 +85,6 @@ fun IvTimerSetupScreen(
             .takeIf { it.isNotEmpty() }
             ?.sum()
     }
-    // orders 로드 완료 후 비-mL 처방이 섞였는지 — mL 만 합산했음을 사용자에게 알리는 용도.
-    val hasNonMlOrders: Boolean = remember(medicationOrderIds, orders) {
-        medicationOrderIds.any { id ->
-            val info = orders[id]
-            info != null && info.doseMl == null
-        }
-    }
     val volumeExceeded = maxVolumeMl != null && volume > maxVolumeMl
 
     val gttPerMl = patientType.gttPerMl
@@ -94,6 +92,11 @@ fun IvTimerSetupScreen(
     val totalMin = if (mlPerHr > 0) (volume * 60.0 / mlPerHr).toInt() else 0
     val h = totalMin / 60
     val m = totalMin % 60
+    // 예상 종료시각 — 현재 시각 + totalMin. 백엔드 expectedEndAt 은 start 호출 후에야 오므로 setup 미리보기는 클라이언트 계산.
+    val expectedEndStr: String = remember(totalMin) {
+        if (totalMin > 0) LocalTime.now().plusMinutes(totalMin.toLong()).format(DateTimeFormatter.ofPattern("HH:mm"))
+        else "—"
+    }
 
     val submitting = state is IvTimerSetupViewModel.SetupState.Submitting
     val success = state as? IvTimerSetupViewModel.SetupState.Success
@@ -110,10 +113,8 @@ fun IvTimerSetupScreen(
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(12.dp)) {
             Icon(
                 Icons.AutoMirrored.Outlined.KeyboardArrowLeft, "뒤로",
-                modifier = Modifier.size(28.dp).clickable(enabled = !submitting && success == null, onClick = onClose),
+                modifier = Modifier.size(46.dp).clickable(enabled = !submitting && success == null, onClick = onClose),
             )
-            Spacer(Modifier.size(8.dp))
-            Text("수액 타이머 설정", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
         }
 
         Column(
@@ -122,8 +123,6 @@ fun IvTimerSetupScreen(
         ) {
             HnCard {
                 Column {
-                    Text("환자", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
-                    Spacer(Modifier.height(4.dp))
                     Text(
                         patientName ?: "—",
                         fontSize = 20.sp,
@@ -131,39 +130,28 @@ fun IvTimerSetupScreen(
                         color = HnColors.Text,
                     )
                     Spacer(Modifier.height(12.dp))
-                    Text("선택된 처방 (${medicationOrderIds.size})", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
-                    Spacer(Modifier.height(4.dp))
                     if (medicationOrderIds.isEmpty()) {
                         Text("—", fontSize = 13.sp, color = HnColors.TextSecondary)
                     } else {
                         medicationOrderIds.forEachIndexed { idx, id ->
                             val info = orders[id]
-                            val name = info?.orderName ?: "처방 #$id"
+                            val name = info?.orderName ?: "처방코드 $id"
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-                                Text("${idx + 1}.", fontSize = 12.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(end = 6.dp))
-                                Text(name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text, modifier = Modifier.weight(1f))
+                                Text(name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text, modifier = Modifier.weight(1f))
                                 if (info?.doseMl != null) {
-                                    Text("${info.doseMl}mL", fontSize = 11.sp, color = HnColors.TextTertiary)
+                                    Text("${info.doseMl}mL", fontSize = 12.sp, color = HnColors.TextTertiary)
                                 } else {
-                                    Text("#$id", fontSize = 11.sp, color = HnColors.TextTertiary)
+                                    Text(info?.orderCode ?: "—", fontSize = 14.sp, color = HnColors.TextSecondary)
                                 }
                             }
                         }
                         if (maxVolumeMl != null) {
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                if (hasNonMlOrders) "처방 총량: ${maxVolumeMl} mL · mL 단위 처방만 합산"
-                                else "처방 총량: ${maxVolumeMl} mL",
-                                fontSize = 11.sp,
-                                color = HnColors.TextSecondary,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        } else if (hasNonMlOrders) {
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                "선택된 처방의 단위가 mL 가 아니어서 총량 자동 검증이 불가합니다",
-                                fontSize = 11.sp,
-                                color = HnColors.TextTertiary,
+                                "처방 총량: ${maxVolumeMl} mL",
+                                fontSize = 12.sp,
+                                color = HnColors.Primary,
+                                fontWeight = FontWeight.Bold,
                             )
                         }
                     }
@@ -172,7 +160,7 @@ fun IvTimerSetupScreen(
 
             HnCard {
                 Column {
-                    LabelRow("수액 세트", "(점적 계수)")
+                    LabelRow("수액 세트", "(gtt/mL)")
                     Spacer(Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -182,6 +170,7 @@ fun IvTimerSetupScreen(
                             PresetChip(
                                 label = p.gttPerMl.toString(),
                                 active = patientType == p,
+                                icon = if (p == PatientType.SET_60) Icons.Outlined.ChildCare else null,
                                 modifier = Modifier.weight(1f),
                                 onClick = { patientType = p },
                             )
@@ -193,7 +182,7 @@ fun IvTimerSetupScreen(
             HnCard {
                 Column {
                     LabelRow("용량", "(mL)")
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(6.dp))
                     OutlinedTextField(
                         value = if (volume == 0) "" else volume.toString(),
                         onValueChange = { input ->
@@ -202,11 +191,11 @@ fun IvTimerSetupScreen(
                         },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
-                        placeholder = { Text("직접 입력", color = HnColors.TextTertiary, fontSize = 14.sp) },
-                        suffix = { Text("mL", fontSize = 14.sp, color = HnColors.TextSecondary) },
+                        placeholder = { Text("직접 입력", color = HnColors.TextTertiary, fontSize = 16.sp) },
+                        suffix = { Text("mL", fontSize = 18.sp, color = HnColors.TextSecondary) },
                         textStyle = TextStyle(
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.ExtraBold,
                             color = HnColors.Primary,
                         ),
                         colors = TextFieldDefaults.colors(
@@ -255,60 +244,70 @@ fun IvTimerSetupScreen(
             HnCard {
                 Column {
                     LabelRow("주입 속도", "(gtt/min)")
-                    Spacer(Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
                         StepBtn(Icons.Outlined.Remove) { rate = (rate - 1).coerceAtLeast(1) }
-                        Spacer(Modifier.weight(1f))
-                        Text(rate.toString(), fontSize = 28.sp, fontWeight = FontWeight.Bold, color = HnColors.Primary)
-                        Spacer(Modifier.weight(1f))
+                        Spacer(Modifier.size(28.dp))
+                        Box(
+                            modifier = Modifier.widthIn(min = 80.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                rate.toString(),
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = HnColors.Primary,
+                            )
+                        }
+                        Spacer(Modifier.size(28.dp))
                         StepBtn(Icons.Outlined.Add) { rate += 1 }
                     }
-                    Spacer(Modifier.height(10.dp))
-                    Slider(
-                        value = rate.toFloat(),
-                        onValueChange = { rate = it.toInt() },
-                        valueRange = 1f..100f,
-                        steps = 98,
-                        colors = SliderDefaults.colors(
-                            thumbColor = HnColors.Primary,
-                            activeTrackColor = HnColors.Primary,
-                            inactiveTrackColor = HnColors.Border,
-                        ),
+                    Spacer(Modifier.height(14.dp))
+                    SlimSlider(
+                        value = rate,
+                        onValueChange = { rate = it },
+                        valueRange = 1..100,
                     )
+                    Spacer(Modifier.height(4.dp))
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Text("1", fontSize = 16.sp, color = HnColors.TextSecondary)
+                        Spacer(Modifier.weight(1f))
+                        Text("100", fontSize = 16.sp, color = HnColors.TextSecondary)
+                    }
                 }
             }
 
-            // 로컬 예상 시간 미리보기 (백엔드 응답으로 대체될 예정)
             Box(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                Color(0xFF5C6BC0), // Primary 의 라이트 인디고 변형
-                                Color(0xFF3F51B5), // PrimaryDark 의 라이트 인디고 변형
-                            ),
-                        ),
-                    )
+                    .background(HnColors.PrimaryLight)
                     .padding(16.dp),
             ) {
                 Column {
-                    Text("예상 소요 시간", fontSize = 12.sp, color = Color.White.copy(alpha = 0.85f))
-                    Spacer(Modifier.height(4.dp))
-                    Text("${h}시간 ${m}분", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("예상 소요 시간", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+                    Spacer(Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text("${h}시간 ${m}분", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = HnColors.Primary)
+                        Spacer(Modifier.size(10.dp))
+                        Text("· 종료 $expectedEndStr", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary, modifier = Modifier.padding(bottom = 2.dp))
+                    }
                     Spacer(Modifier.height(10.dp))
                     Box(
                         Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White.copy(alpha = 0.15f))
+                            .background(HnColors.Surface)
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                     ) {
                         Row {
-                            Stat("총 용량", "${volume} mL", Modifier.weight(1f))
-                            Stat("속도", "%.1f mL/hr".format(mlPerHr), Modifier.weight(1f))
-                            Stat("세트", "${patientType.gttPerMl}gtt/mL", Modifier.weight(1f))
+                            StatLight("총 용량", "${volume} mL", Modifier.weight(1f))
+                            StatLight("속도", "%.1f mL/hr".format(mlPerHr), Modifier.weight(1f))
+                            StatLight("세트", "${patientType.gttPerMl}gtt/mL", Modifier.weight(1f))
                         }
                     }
                 }
@@ -333,12 +332,13 @@ fun IvTimerSetupScreen(
                 }
             }
 
-            GradientPrimaryButton(
-                text = if (success != null) "설정 완료" else "수액 타이머 설정",
+            HnButton(
+                text = "설정 완료",
                 icon = if (success != null) Icons.Outlined.CheckCircle else Icons.Outlined.Timer,
                 enabled = !submitting && success == null && medicationOrderIds.isNotEmpty()
                     && volume > 0 && !volumeExceeded,
                 loading = submitting,
+                full = true,
                 onClick = {
                     viewModel.start(
                         encounterId = encounterId,
@@ -357,13 +357,20 @@ fun IvTimerSetupScreen(
 @Composable
 private fun LabelRow(title: String, suffix: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text)
-        Text(" $suffix", fontSize = 13.sp, color = HnColors.TextTertiary)
+        Text(title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text)
+        Text(" $suffix", fontSize = 14.sp, color = HnColors.TextTertiary)
     }
 }
 
 @Composable
-private fun PresetChip(label: String, active: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun PresetChip(
+    label: String,
+    active: Boolean,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    onClick: () -> Unit,
+) {
+    val fg = if (active) HnColors.Primary else HnColors.TextSecondary
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -371,11 +378,59 @@ private fun PresetChip(label: String, active: Boolean, modifier: Modifier = Modi
             .background(if (active) HnColors.PrimarySoft else HnColors.Surface)
             .border(1.dp, if (active) HnColors.Primary else HnColors.Border, RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
-        Text(label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
-            color = if (active) HnColors.Primary else HnColors.TextSecondary)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+            Text(label, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = fg)
+            if (icon != null) {
+                Spacer(Modifier.size(4.dp))
+                Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(20.dp))
+            }
+        }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SlimSlider(
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    valueRange: IntRange,
+) {
+    Slider(
+        value = value.toFloat(),
+        onValueChange = { onValueChange(it.toInt()) },
+        valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
+        modifier = Modifier.fillMaxWidth().height(20.dp),
+        thumb = {
+            Box(
+                Modifier
+                    .size(16.dp)
+                    .clip(CircleShape)
+                    .background(HnColors.Primary),
+            )
+        },
+        track = { sliderState ->
+            val start = sliderState.valueRange.start
+            val end = sliderState.valueRange.endInclusive
+            val fraction = if (end > start) ((sliderState.value - start) / (end - start)).coerceIn(0f, 1f) else 0f
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(HnColors.Border),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(HnColors.Primary),
+                )
+            }
+        },
+    )
 }
 
 @Composable
@@ -402,7 +457,7 @@ private fun Stat(label: String, value: String, mod: Modifier) {
 @Composable
 private fun StatLight(label: String, value: String, mod: Modifier) {
     Column(mod) {
-        Text(label, fontSize = 11.sp, color = HnColors.TextTertiary)
+        Text(label, fontSize = 14.sp, color = HnColors.TextSecondary)
         Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
     }
 }
