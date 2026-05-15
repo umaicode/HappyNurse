@@ -56,6 +56,7 @@ public class SecurityConfig {
                 .requestMatchers("/patients/dev-verify").permitAll()    // 환자 dev 버전 본인 확인
                 .requestMatchers("/nfc/redirect").permitAll()       // NFC 진입 redirect
                     .requestMatchers("/his/**").permitAll()         // HIS 시뮬레이터 (API key로 별도 인증)
+                    .requestMatchers("/internal/ai/**").permitAll() // AI 서버 -> 간호기록 SSE notify (nginx를 신뢰한다는 가정. 추후, API key 검증 보강 필요)
                     .requestMatchers(HttpMethod.GET, "/organizations").permitAll()           // 로그인 화면 병원 목록
                 .requestMatchers(HttpMethod.GET, "/organizations/*/wards").permitAll()   // 로그인 화면 병동 목록
                 .anyRequest().authenticated())
