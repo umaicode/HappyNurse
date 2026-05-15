@@ -88,7 +88,7 @@
 
         <!-- 폰-워치 DataLayer 메시지 수신 서비스 -->
         <service
-            android:name=".data.remote.WearDataListenerService"
+            android:name=".data.remote.wearable.WearDataListenerService"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
@@ -99,7 +99,7 @@
 
         <!-- Firebase Cloud Messaging 수신 서비스 (워치 직접 푸시) -->
         <service
-            android:name=".data.fcm.WearFirebaseMessagingService"
+            android:name=".data.remote.fcm.WearFirebaseMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />

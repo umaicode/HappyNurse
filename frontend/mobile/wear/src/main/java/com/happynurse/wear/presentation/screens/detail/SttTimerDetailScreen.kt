@@ -25,7 +25,7 @@ import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
-import com.happynurse.wear.data.model.SttTimer
+import com.happynurse.wear.domain.model.SttTimer
 import com.happynurse.wear.presentation.theme.TabularNumStyle
 
 @Composable

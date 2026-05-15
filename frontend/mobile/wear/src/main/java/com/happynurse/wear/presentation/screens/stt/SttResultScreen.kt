@@ -68,16 +68,14 @@ fun SttResultScreen(
 
     LaunchedEffect(state.phase) {
         when (state.phase) {
+            // DONE 진입 즉시 화면을 닫고 홈으로 복귀. IDLE 로의 자동 복귀는 ViewModel 이 책임진다.
             RecordPhase.DONE -> {
                 delay(DONE_AUTO_DISMISS_MS)
-                // 화면 이동 명령을 먼저 내보내고 그 후 ViewModel reset — 순서가 반대면
-                // consumeDone 의 IDLE 전환이 LaunchedEffect 재실행을 유발해 이 코루틴이
-                // cancel 되고 onSubmitted 가 호출 안 될 위험이 있음.
                 onSubmitted()
-                viewModel.consumeDone()
             }
-            // 재녹음 트리거 후 phase 가 RECORDING 으로 바뀌면 RecordScreen 으로 복귀.
-            RecordPhase.IDLE, RecordPhase.RECORDING -> onCancel()
+            // 재녹음 트리거로 phase 가 RECORDING 으로 바뀌면 RecordScreen 으로 복귀.
+            // IDLE 은 등록 완료 후의 자동 reset 신호이므로 onCancel 트리거에서 제외한다.
+            RecordPhase.RECORDING -> onCancel()
             else -> Unit
         }
     }
@@ -143,7 +141,7 @@ private fun TimeBadge(text: String) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.primaryContainer)
-            .padding(vertical = 8.dp, horizontal = 12.dp),
+            .padding(vertical = 8.dp, horizontal = 6.dp),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -245,7 +243,7 @@ private fun ActionPill(
 
 /**
  * Material 3 Expressive 스타일 체크 아이콘 — 부드러운 spring scale-in 으로 등장.
- * 외곽 ring(primary alpha 22%) + 안쪽 원(primary) + 둥근 체크 아이콘 3중 레이어로 깊이감.
+ * primary 원 + 둥근 체크 아이콘 단일 레이어.
  */
 @Composable
 private fun DoneToast(modifier: Modifier = Modifier) {
@@ -263,25 +261,17 @@ private fun DoneToast(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .scale(scale)
-            .size(56.dp)
+            .size(44.dp)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)),
+            .background(MaterialTheme.colorScheme.primary),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Check,
-                contentDescription = "등록 완료",
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(26.dp),
-            )
-        }
+        Icon(
+            imageVector = Icons.Rounded.Check,
+            contentDescription = "등록 완료",
+            tint = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.size(26.dp),
+        )
     }
 }
 

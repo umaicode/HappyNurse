@@ -3,7 +3,7 @@
 //   - DOUBLE_SNAP: 빠른 좌→우→좌→우 회전 2회 (반대 방향 두 peak) — 앱 외부에서 녹음 시작 트리거
 //   - SINGLE_SNAP: 한 번 회전 (X축 peak 1회) + 다축 정지 가드 — 녹음 중지/등록 확정 트리거
 // GestureService 가 start()/stop() 으로 라이프사이클을 제어하고, setMode() 로 patten 을 전환한다.
-package com.happynurse.wear.data.sensor
+package com.happynurse.wear.gesture
 
 import android.content.Context
 import android.hardware.Sensor

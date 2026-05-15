@@ -186,6 +186,13 @@ class RecordViewModel @Inject constructor(
                             )
                         }
                         _state.update { it.copy(phase = RecordPhase.DONE) }
+                        // DONE 상태를 UI 가 잠시 보여줄 시간을 준 뒤 ViewModel 라이프사이클 내에서
+                        // 명시적으로 IDLE 로 복귀시킨다. UI LaunchedEffect 에 의존하면 화면 dispose
+                        // 타이밍에 따라 reset 이 누락되어 isBusy 가 영구 true 로 stuck 되는 버그가 있다.
+                        // 단, SttResultScreen 이 phase=DONE 동안 onSubmitted() 를 호출해야 하므로
+                        // 그 토스트 delay(1.5s) 보다 충분히 길게 둬서 LaunchedEffect 가 cancel 되지 않도록 한다.
+                        delay(DONE_TO_IDLE_DELAY_MS)
+                        _state.value = RecordUiState()
                     },
                     onFailure = { fail(it.message ?: "알람 등록에 실패했어요") },
                 )
@@ -224,5 +231,8 @@ class RecordViewModel @Inject constructor(
 
     private companion object {
         const val MAX_RECORD_SEC = 60
+        // SttResultScreen 의 토스트 delay(1500ms) + onSubmitted() 호출 + moveTaskToBack 까지 끝난 뒤
+        // 안전하게 IDLE 로 복귀하도록 충분한 여유(약 1초) 를 둔다.
+        const val DONE_TO_IDLE_DELAY_MS = 2500L
     }
 }
