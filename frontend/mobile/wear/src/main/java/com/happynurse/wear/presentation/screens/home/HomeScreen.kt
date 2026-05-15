@@ -16,8 +16,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.ScreenScaffold
-import com.happynurse.wear.data.model.IvInfusionTimer
-import com.happynurse.wear.data.model.SttTimer
+import com.happynurse.wear.domain.model.IvInfusionTimer
+import com.happynurse.wear.domain.model.SttTimer
 import com.happynurse.wear.presentation.components.HnPagerIndicator
 import com.happynurse.wear.presentation.components.HnSegmentedTabs
 import com.happynurse.wear.presentation.components.HnTab

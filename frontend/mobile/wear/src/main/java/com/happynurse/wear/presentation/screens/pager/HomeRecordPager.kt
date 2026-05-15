@@ -7,10 +7,13 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import com.happynurse.wear.data.model.IvInfusionTimer
-import com.happynurse.wear.data.model.SttTimer
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.happynurse.wear.domain.model.IvInfusionTimer
+import com.happynurse.wear.domain.model.SttTimer
 import com.happynurse.wear.presentation.screens.home.HomeScreen
+import com.happynurse.wear.presentation.screens.record.RecordPhase
 import com.happynurse.wear.presentation.screens.record.RecordScreen
 import com.happynurse.wear.presentation.screens.record.RecordViewModel
 
@@ -32,9 +35,13 @@ fun HomeRecordPager(
             pagerState.scrollToPage(1)
         }
     }
+    // 녹음 중에는 페이지 스와이프를 막아 좌→우 제스처를 RecordScreen 의 "녹음 취소"로만 쓰이게 한다.
+    val recordState by recordViewModel.state.collectAsStateWithLifecycle()
+    val pagerScrollEnabled = recordState.phase != RecordPhase.RECORDING
     HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize(),
+        userScrollEnabled = pagerScrollEnabled,
     ) { page ->
         when (page) {
             0 -> HomeScreen(

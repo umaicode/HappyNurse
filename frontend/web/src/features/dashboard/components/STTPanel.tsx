@@ -189,11 +189,11 @@ export function STTPanel({ encounterId }: STTPanelProps) {
 
                 {/* 2행: 타입 라벨 + (변경 칩) */}
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-body-base font-semibold tracking-tight text-brand-primary shrink-0 leading-none">
+                  <span className="text-body-base font-bold tracking-tight text-brand-primary shrink-0 leading-none">
                     {ORDER_TYPE_LABEL[order.orderType] ?? order.orderType}
                   </span>
                   {isChanged && (
-                    <span className="px-1.5 py-0.5 rounded bg-brand-surface text-brand-primary text-[11px] font-bold leading-none shrink-0">
+                    <span className="px-1.5 py-0.5 rounded bg-brand-surface text-brand-primary text-[12px] font-semibold shrink-0">
                       변경
                     </span>
                   )}
@@ -205,7 +205,7 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                 </span>
 
                 {/* 4행: 처방명 */}
-                <p className="text-body-sm font-bold text-content-primary leading-tight break-words">
+                <p className="text-body-sm mt-1 font-bold text-content-primary leading-tight break-words">
                   {order.orderName}
                 </p>
 
@@ -225,8 +225,10 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                   </InfoCell>
                 </div>
 
+                {order.remarks && <hr className="border-t border-border-base" />}
+
                 {order.remarks && (
-                  <p className="text-[15px] leading-relaxed text-content-primary break-words">
+                  <p className="text-[14px] leading-relaxed text-content-primary break-words">
                     {order.remarks}
                   </p>
                 )}
@@ -243,7 +245,7 @@ function InfoCell({ label, children }: { label: string; children: React.ReactNod
   return (
     <div className="flex items-baseline gap-2">
       <span className="text-body-micro text-content-muted shrink-0">{label}</span>
-      <span className="text-[15px] text-content-primary leading-none">
+      <span className="text-[14px] text-content-primary leading-none">
         {children}
       </span>
     </div>

@@ -1,6 +1,6 @@
 // 워치 자체 토큰 캐시 — 폰에서 동기화 받은 accessToken/wardId 를 DataStore Preferences 로 영속 저장한다.
 // AuthInterceptor 가 헤더 부착 시 읽고, 로그아웃 메시지 수신 시 clear 한다.
-package com.happynurse.wear.data.auth
+package com.happynurse.wear.data.remote
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
