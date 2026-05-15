@@ -28,7 +28,7 @@ object HnColors {
     val TextTertiary  = Color(0xFF686970)
 
     // Status
-    val Success       = Color(0xFF31AD6B)
+    val Success       = Color(0xFF2A8A66)
     val Warning       = Color(0xFFF59E0B)
     val Danger        = Color(0xFFD95959)
     val Info          = Color(0xFF3B82F6)
