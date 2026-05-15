@@ -291,7 +291,7 @@ export function HandoverView() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-surface-base font-sans">
+    <div className="flex flex-col h-screen bg-surface-base">
       {/* Top Header */}
       <header className="h-16 flex items-center justify-between px-6 bg-surface-card border-b border-border-base shrink-0 z-50 shadow-sm">
         <div className="flex items-center gap-4">
@@ -1184,7 +1184,7 @@ function SlotCard({
           tokens.header,
         )}
       >
-        <h4 className="text-body-sm font-bold leading-none">{label}</h4>
+        <h4 className="text-body-base font-bold leading-none">{label}</h4>
         {itemCount > 0 && (
           <span className="ml-auto text-body-xs font-semibold leading-none">
             {itemCount}건
@@ -1305,11 +1305,11 @@ function CitationPreview({
         </Badge>
         {/* 날짜/시간 — 카드 리스트와 동일 폰트. 시간부 00:00:00 이면 숨김. */}
         <span className="ml-auto flex items-baseline gap-2 leading-none">
-          <span className="text-body-sm font-mono font-bold text-content-primary">
+          <span className="text-body-sm tabular-nums font-bold text-content-primary">
             {citation.ts.slice(0, 10).replace(/-/g, ".")}
           </span>
           {showTime && (
-            <span className="text-body-sm font-mono font-bold text-content-primary">
+            <span className="text-body-sm tabular-nums font-bold text-content-primary">
               {citation.ts.slice(11, 16)}
             </span>
           )}
@@ -1378,13 +1378,13 @@ function CitationList({
                               {referencedSlotLabels.join(", ")}
                             </span>
                           )}
-                          {/* 날짜 · 시간 — 우측 정렬, mono. 폰트 무게/색 통일. 시간부 00:00:00 이면 숨김. */}
+                          {/* 날짜 · 시간 — 우측 정렬, 자릿수 고정. 폰트 무게/색 통일. 시간부 00:00:00 이면 숨김. */}
                           <span className="ml-auto flex items-baseline gap-2 leading-none">
-                            <span className="text-body-sm font-mono font-bold text-content-primary">
+                            <span className="text-body-sm tabular-nums font-bold text-content-primary">
                               {citation.ts.slice(0, 10).replace(/-/g, ".")}
                             </span>
                             {hasMeaningfulTime(citation.ts) && (
-                              <span className="text-body-sm font-mono font-bold text-content-primary">
+                              <span className="text-body-sm tabular-nums font-bold text-content-primary">
                                 {citation.ts.slice(11, 16)}
                               </span>
                             )}

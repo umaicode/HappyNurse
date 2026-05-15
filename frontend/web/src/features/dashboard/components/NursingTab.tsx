@@ -414,7 +414,7 @@ function TimeInput({
   // display 모드 시간 셀 (`text-[15px] font-extrabold leading-[1.6]`) 과 글자 크기/높이 동일하게.
   // 너비는 글자 2자 폭에 맞춰 좁게 — w-9 처럼 넓으면 가운데 정렬에서 양 끝으로 벌어져 보임.
   const cellClass =
-    "w-6 text-center bg-transparent focus:outline-none font-mono font-bold text-[15px] leading-[1.6] text-content-primary";
+    "w-6 text-center bg-transparent focus:outline-none tabular-nums font-bold text-[15px] leading-[1.6] text-content-primary";
 
   return (
     <div className="flex items-center justify-center gap-0.5 w-full border border-border-base rounded bg-white focus-within:ring-1 focus-within:ring-content-primary/20">
@@ -433,7 +433,7 @@ function TimeInput({
         onBlur={() => update(hour ? hour.padStart(2, "0") : "00", minute)}
         className={cellClass}
       />
-      <span className="font-mono font-bold text-[15px] leading-[1.6] text-content-muted">:</span>
+      <span className="tabular-nums font-bold text-[15px] leading-[1.6] text-content-muted">:</span>
       <input
         type="text"
         inputMode="numeric"
@@ -696,7 +696,7 @@ function NoteRow({
     <div
       ref={rowRef}
       className={cn(
-        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-1 min-h-[60px] border-b border-border-base/50 items-center hover:bg-surface-hover/60 transition-[background-color,box-shadow] duration-500 relative",
+        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-1 min-h-[40px] border-b border-border-base/50 items-center hover:bg-surface-hover/60 transition-[background-color,box-shadow] duration-500 relative",
         // 우선순위: medication > draft > isEditing (마지막 매치가 이김)
         // draft 는 hover 도 같은 톤으로 고정 — 임시 기록이라 hover 강조 의미 없음. 좌측 3px accent 로 임시상태 시각화.
         note.status === "draft" &&
@@ -713,7 +713,7 @@ function NoteRow({
         {isEditing ? (
           <TimeInput value={draftTime} onChange={setDraftTime} />
         ) : (
-          <div className="w-full text-center font-mono font-bold text-[15px] text-content-primary leading-[1.6]">
+          <div className="w-full text-center tabular-nums font-bold text-[15px] text-content-primary leading-[1.6]">
             {formatHHmm(note.occurredAt)}
           </div>
         )}
@@ -1036,7 +1036,7 @@ function MedicationRow({
         <span className="font-medium text-content-primary text-body-sm truncate">
           {medication.productName}
         </span>
-        <span className="font-mono text-body-micro text-content-muted shrink-0">
+        <span className="tabular-nums text-body-micro text-content-muted shrink-0">
           {medication.productCode}
         </span>
       </div>
@@ -1053,16 +1053,16 @@ function MedicationRow({
               if (!Number.isFinite(next) || next < 0) return;
               onChangeDraft(next);
             }}
-            className="w-16 px-1.5 py-0.5 rounded bg-white border border-brand-primary/40 font-mono font-bold text-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/30"
+            className="w-16 px-1.5 py-0.5 rounded bg-white border border-brand-primary/40 tabular-nums font-bold text-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/30"
           />
         ) : (
-          <span className="font-mono font-bold text-brand-primary">
+          <span className="tabular-nums font-bold text-brand-primary">
             {medication.dosageQuantity}
           </span>
         )}
         <span className="text-content-tertiary font-medium">{medication.dosageUnit}</span>
         <span className="text-border-base">·</span>
-        <span className="font-mono font-bold text-content-primary">{medication.frequency}</span>
+        <span className="tabular-nums font-bold text-content-primary">{medication.frequency}</span>
         <span className="text-content-tertiary">회</span>
         <span className="text-border-base">·</span>
         <span className="font-bold text-content-secondary">{medication.route}</span>

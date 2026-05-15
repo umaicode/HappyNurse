@@ -200,7 +200,7 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                 </div>
 
                 {/* 3행: 처방코드 */}
-                <span className="font-mono font-bold text-body-xs text-content-tertiary leading-none">
+                <span className="tabular-nums font-bold text-body-xs text-content-tertiary leading-none">
                   {order.orderCode}
                 </span>
 
@@ -212,7 +212,7 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                 {/* Info Grid */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 py-1">
                   <InfoCell label="1회량">
-                    <span className="font-mono">
+                    <span className="tabular-nums">
                       {order.dose}
                       {order.doseUnit}
                     </span>
