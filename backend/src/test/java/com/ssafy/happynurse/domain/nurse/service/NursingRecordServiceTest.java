@@ -21,6 +21,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -45,6 +46,8 @@ class NursingRecordServiceTest {
     PractitionerRepository practitionerRepository;
     @Spy
     NursingRecordFactory nursingRecordFactory = new NursingRecordFactory();
+    @Mock
+    ApplicationEventPublisher eventPublisher;
     @InjectMocks
     NursingRecordService nursingRecordService;
 

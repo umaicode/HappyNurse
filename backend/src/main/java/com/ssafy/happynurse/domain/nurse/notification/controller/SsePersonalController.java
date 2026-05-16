@@ -11,6 +11,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 @Tag(name = "SSE", description = "간호사 ward/개인 채널 실시간 알림 구독 API")
 @RestController
@@ -29,7 +31,14 @@ public class SsePersonalController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "간호사 JWT 없음")
     })
     @GetMapping(value = "/sse/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribe(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        return personalEmitterRegistry.register(userDetails.getPractitionerId());
+    public SseEmitter subscribe(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                HttpServletResponse response) throws IOException {
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Cache-Control", "no-cache");
+
+        SseEmitter emitter = personalEmitterRegistry.register(userDetails.getPractitionerId());
+        emitter.send(SseEmitter.event().name("ready").data("ok"));
+
+        return emitter;
     }
 }
