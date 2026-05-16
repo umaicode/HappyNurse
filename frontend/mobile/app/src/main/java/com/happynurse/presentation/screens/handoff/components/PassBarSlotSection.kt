@@ -42,14 +42,14 @@ private data class SbarGroup(
 )
 
 // 8개 섹션 고유 팔레트 — 차분한 톤. accent(헤더 텍스트)는 충분히 진하게, 배경은 옅게.
-private val Indigo    = Color(0xFF252F62) // 상황
-private val Rose      = Color(0xFF5C2D3C) // 환자 문제
-private val Teal      = Color(0xFF1B4E4B) // 배경
-private val Amber     = Color(0xFF59421A) // 평가
-private val Coral     = Color(0xFF632626) // 안전
-private val Tangerine = Color(0xFF63391A) // 조치
-private val Lavender  = Color(0xFF423665) // 권고
-private val Sage      = Color(0xFF264D36) // 종합
+private val Indigo    = Color(0xFF243286) // 상황
+private val Rose      = Color(0xFF832E4A) // 환자 문제
+private val Teal      = Color(0xFF1D6E68) // 배경
+private val Amber     = Color(0xFF835E1B) // 평가
+private val Coral     = Color(0xFF7C2323) // 안전
+private val Tangerine = Color(0xFF8A4A1B) // 조치
+private val Lavender  = Color(0xFF4A338D) // 권고
+private val Sage      = Color(0xFF237A46) // 종합
 
 private fun groupsOf(p: HandoverPayload): List<SbarGroup> {
     val s = p.slots

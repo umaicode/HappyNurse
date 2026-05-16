@@ -1,6 +1,7 @@
 // 수액 타이머 설정 — verify 통과 처방 + 용량 + 속도 + 환자 타입 → POST /iv/start → active 화면 전환
 package com.happynurse.presentation.screens.ivtimer
 
+import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -118,18 +119,11 @@ fun IvTimerSetupScreen(
         }
 
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp).verticalScroll(rememberScrollState()),
+            modifier = Modifier.weight(1f).padding(horizontal = 20.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             HnCard {
                 Column {
-                    Text(
-                        patientName ?: "—",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = HnColors.Text,
-                    )
-                    Spacer(Modifier.height(12.dp))
                     if (medicationOrderIds.isEmpty()) {
                         Text("—", fontSize = 13.sp, color = HnColors.TextSecondary)
                     } else {
@@ -137,7 +131,7 @@ fun IvTimerSetupScreen(
                             val info = orders[id]
                             val name = info?.orderName ?: "처방코드 $id"
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-                                Text(name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text, modifier = Modifier.weight(1f))
+                                Text(name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text, modifier = Modifier.weight(1f))
                                 if (info?.doseMl != null) {
                                     Text("${info.doseMl}mL", fontSize = 12.sp, color = HnColors.TextTertiary)
                                 } else {
@@ -194,7 +188,7 @@ fun IvTimerSetupScreen(
                         placeholder = { Text("직접 입력", color = HnColors.TextTertiary, fontSize = 16.sp) },
                         suffix = { Text("mL", fontSize = 18.sp, color = HnColors.TextSecondary) },
                         textStyle = TextStyle(
-                            fontSize = 22.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = HnColors.Primary,
                         ),
@@ -204,7 +198,7 @@ fun IvTimerSetupScreen(
                             focusedIndicatorColor = HnColors.Primary,
                             unfocusedIndicatorColor = HnColors.Border,
                         ),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
                     )
                     Spacer(Modifier.height(10.dp))
                     Row(
@@ -272,43 +266,24 @@ fun IvTimerSetupScreen(
                         onValueChange = { rate = it },
                         valueRange = 1..100,
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Text("1", fontSize = 16.sp, color = HnColors.TextSecondary)
-                        Spacer(Modifier.weight(1f))
-                        Text("100", fontSize = 16.sp, color = HnColors.TextSecondary)
-                    }
                 }
             }
-
+            Spacer(Modifier.height(5.dp))
             Box(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
+                    .border(1.dp, color = Color(0xFFAEC0DC), RoundedCornerShape(12.dp))
                     .background(HnColors.PrimaryLight)
                     .padding(16.dp),
             ) {
                 Column {
                     Text("예상 소요 시간", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(10.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text("${h}시간 ${m}분", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = HnColors.Primary)
-                        Spacer(Modifier.size(10.dp))
-                        Text("· 종료 $expectedEndStr", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary, modifier = Modifier.padding(bottom = 2.dp))
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(HnColors.Surface)
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                    ) {
-                        Row {
-                            StatLight("총 용량", "${volume} mL", Modifier.weight(1f))
-                            StatLight("속도", "%.1f mL/hr".format(mlPerHr), Modifier.weight(1f))
-                            StatLight("세트", "${patientType.gttPerMl}gtt/mL", Modifier.weight(1f))
-                        }
+                        Spacer(Modifier.size(15.dp))
+                        Text("· 종료 $expectedEndStr", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text)
                     }
                 }
             }
@@ -332,25 +307,27 @@ fun IvTimerSetupScreen(
                 }
             }
 
-            HnButton(
-                text = "설정 완료",
-                icon = if (success != null) Icons.Outlined.CheckCircle else Icons.Outlined.Timer,
-                enabled = !submitting && success == null && medicationOrderIds.isNotEmpty()
-                    && volume > 0 && !volumeExceeded,
-                loading = submitting,
-                full = true,
-                onClick = {
-                    viewModel.start(
-                        encounterId = encounterId,
-                        medicationOrderIds = medicationOrderIds,
-                        totalVolumeMl = volume.toDouble(),
-                        rateGttPerMin = rate,
-                        patientType = patientType,
-                    )
-                },
-            )
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(4.dp))
         }
+
+        HnButton(
+            text = "설정 완료",
+            icon = if (success != null) Icons.Outlined.CheckCircle else Icons.Outlined.Timer,
+            enabled = !submitting && success == null && medicationOrderIds.isNotEmpty()
+                && volume > 0 && !volumeExceeded,
+            loading = submitting,
+            full = true,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            onClick = {
+                viewModel.start(
+                    encounterId = encounterId,
+                    medicationOrderIds = medicationOrderIds,
+                    totalVolumeMl = volume.toDouble(),
+                    rateGttPerMin = rate,
+                    patientType = patientType,
+                )
+            },
+        )
     }
 }
 
@@ -438,12 +415,11 @@ private fun StepBtn(icon: androidx.compose.ui.graphics.vector.ImageVector, onCli
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(44.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(HnColors.Surface)
-            .border(1.dp, HnColors.Primary, RoundedCornerShape(10.dp))
+            .size(38.dp)
+            .clip(CircleShape)
+            .background(Color(0xFFF2F2F3))
             .clickable(onClick = onClick),
-    ) { Icon(icon, contentDescription = null, tint = HnColors.Primary, modifier = Modifier.size(18.dp)) }
+    ) { Icon(icon, contentDescription = null, tint = HnColors.Primary, modifier = Modifier.size(26.dp)) }
 }
 
 @Composable

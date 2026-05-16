@@ -122,7 +122,7 @@ private fun IdleBody(onStart: () -> Unit) {
             "간호일지 녹음",
             fontSize = 30.sp,
             fontWeight = FontWeight.ExtraBold,
-            color = HnColors.TextSecondary,
+            color = HnColors.Text,
             letterSpacing = 1.2.sp,
         )
         Spacer(Modifier.height(40.dp))
@@ -157,7 +157,7 @@ private fun RecordingBody(seconds: Int, levels: List<Float>, onStop: () -> Unit)
             "녹음 중",
             fontSize = 30.sp,
             fontWeight = FontWeight.ExtraBold,
-            color = HnColors.TextSecondary,
+            color = RecordingRed,
             letterSpacing = 1.2.sp,
         )
         Spacer(Modifier.height(40.dp))
@@ -220,7 +220,7 @@ private fun UploadingBody() {
     ) {
         CircularProgressIndicator(color = HnColors.Primary, modifier = Modifier.size(100.dp))
         Spacer(Modifier.height(40.dp))
-        Text("STT 변환 및 정제중...", fontSize = 24.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.SemiBold)
+        Text("STT 변환 및 정제중...", fontSize = 24.sp, color = HnColors.Text, fontWeight = FontWeight.SemiBold)
     }
 }
 

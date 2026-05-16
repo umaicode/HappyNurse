@@ -25,6 +25,8 @@ data class IvInfusionResponse(
     @SerializedName("practitionerId") val practitionerId: Long?,
     @SerializedName("totalVolumeMl") val totalVolumeMl: Double,
     @SerializedName("currentRateMlPerHr") val currentRateMlPerHr: Double,
+    @SerializedName("rateGttPerMin") val rateGttPerMin: Int? = null,
+    @SerializedName("dropSet") val dropSet: String? = null,
     @SerializedName("startedAt") val startedAt: String?,
     @SerializedName("expectedEndAt") val expectedEndAt: String?,
     @SerializedName("actualEndAt") val actualEndAt: String?,

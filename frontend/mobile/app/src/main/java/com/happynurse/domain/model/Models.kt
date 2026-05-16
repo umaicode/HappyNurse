@@ -10,7 +10,7 @@ data class NfcPatientInfo(
     val bedName: String?,
     val birthDate: String?,
     val diseaseName: String?,
-    val chiefComplaint: String?,
+    val periodStart: String?,
     val surgeryName: String?,
     val attendingPhysicianName: String?,
 )

@@ -28,12 +28,17 @@ import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.ui.res.painterResource
 import com.happynurse.R
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import com.happynurse.BuildConfig
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -92,6 +97,7 @@ fun DrugEntryScreen(
                 onRemove = viewModel::removeDrug,
                 onSubmit = viewModel::submit,
                 onTimer = { onTimer(encounterId, drugs.map { it.medicationOrderId }) },
+                onDebugInject = viewModel::onTagScanned,
             )
             is DrugEntryViewModel.SubmitState.Success -> SuccessBody(
                 drugs = s.drugs,
@@ -117,23 +123,61 @@ private fun ColumnScope.EntryBody(
     onRemove: (String) -> Unit,
     onSubmit: () -> Unit,
     onTimer: () -> Unit,
+    onDebugInject: (String) -> Unit = {},
 ) {
     Column(Modifier.padding(horizontal = 20.dp)) {
         HnCard(padding = 14.dp) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_nfc_label),
-                    contentDescription = null,
-                    tint = HnColors.Primary,
-                    modifier = Modifier.size(48.dp),
-                )
-                Spacer(Modifier.size(12.dp))
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(HnColors.PrimarySoft),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_nfc_label),
+                        contentDescription = null,
+                        tint = HnColors.Primary,
+                        modifier = Modifier.size(36.dp),
+                    )
+                }
+                Spacer(Modifier.size(16.dp))
                 Column(Modifier.weight(1f)) {
                     Text("약물 NFC 태그", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text)
                     Text(
                         "디바이스를 약물에 가까이 대주세요",
                         fontSize = 16.sp, color = HnColors.TextSecondary,
                     )
+                }
+            }
+        }
+    }
+
+    if (BuildConfig.DEBUG) {
+        var debugUid by remember { mutableStateOf("04:57:C1:48:C6:2A:81") }
+        Spacer(Modifier.height(8.dp))
+        Box(Modifier.padding(horizontal = 20.dp)) {
+            HnCard(padding = 12.dp) {
+                Column {
+                    Text("디버그 — NFC UID 직접 입력", fontSize = 11.sp, color = HnColors.TextTertiary, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            value = debugUid,
+                            onValueChange = { debugUid = it },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+                            placeholder = { Text("04:57:C1:48:C6:2A:81", fontSize = 13.sp) },
+                        )
+                        Spacer(Modifier.size(8.dp))
+                        HnButton(
+                            text = "주입",
+                            onClick = { onDebugInject(debugUid.trim()) },
+                            enabled = debugUid.isNotBlank(),
+                        )
+                    }
                 }
             }
         }
@@ -207,7 +251,7 @@ private fun VerifiedDrugRow(
         Row(verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
                 TagChip("약물", fg = HnColors.Primary, bg = HnColors.PrimarySoft)
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(10.dp))
                 Text(d.medicationName, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
                 Text("처방코드 ${d.orderCode ?: "—"}", fontSize = 16.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(top = 4.dp))
             }
