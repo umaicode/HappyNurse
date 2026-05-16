@@ -54,7 +54,7 @@ export const SOURCE_TYPE_LABEL: Record<SourceType, string> = {
 };
 
 export const SOURCE_TYPE_TONE: Record<SourceType, string> = {
-  self_report: "text-status-danger",
+  self_report: "text-[#3A0CA3]",
   iv_alert: "text-status-active",
   timer: "text-status-warning",
   order_change: "text-status-success",
@@ -65,7 +65,7 @@ export const SOURCE_TYPE_TONE: Record<SourceType, string> = {
 // PanelCard 의 accentBorderClass 로 전달. STTPanel 의 변경 카드(`bg-brand-surface/20`) 와 통일된 패턴.
 export const SOURCE_TYPE_BORDER: Record<SourceType, string> = {
   self_report:
-    "border-l-4 border-l-status-warning border-status-warning/20 bg-status-warning-surface/30",
+    "border-l-4 border-l-purple-400 border-purple-400/20 bg-purple-50/60",
   iv_alert:
     "border-l-4 border-l-status-danger border-status-danger/20 bg-status-danger-surface/30",
   timer:
@@ -78,7 +78,7 @@ export const SOURCE_TYPE_BORDER: Record<SourceType, string> = {
 
 // 아이콘 박스 배경 — 카테고리 surface 톤.
 export const SOURCE_TYPE_ICON_BG: Record<SourceType, string> = {
-  self_report: "bg-status-warning-surface text-status-warning",
+  self_report: "bg-purple-100 text-purple-600",
   iv_alert: "bg-status-danger-surface text-status-danger",
   timer: "bg-surface-hover text-status-neutral",
   order_change: "bg-brand-surface text-brand-primary",

@@ -176,11 +176,6 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                         {patientName}
                       </span>
                     )}
-                    {roomBed && (
-                      <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
-                        {roomBed}
-                      </span>
-                    )}
                   </div>
                   <span className="text-body-xs font-medium text-content-tertiary shrink-0 leading-none">
                     {formatMonthDayHHmm(order.createdAt)}

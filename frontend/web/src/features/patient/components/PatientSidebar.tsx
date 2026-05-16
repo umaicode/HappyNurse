@@ -162,7 +162,7 @@ export function PatientSidebar({
         >
           <div className="w-full px-4 py-2.5 flex items-center justify-between bg-white border-b border-border-subtle hover:bg-slate-50 transition-colors">
             <CollapsibleTrigger className="flex-1 flex items-center justify-between gap-2 group">
-              <span className="text-[14px] font-black text-brand-primary">
+              <span className="text-[16px] font-bold text-brand-primary">
                 내 담당 환자
               </span>
               <ChevronRight
@@ -196,7 +196,7 @@ export function PatientSidebar({
               ) : (
                 myPatientsByRoom.map(({ roomName, items }) => (
                   <div key={roomName} className="flex flex-col">
-                    <div className="px-4 py-1.5 bg-slate-100/70 border-b border-border-subtle text-[11px] font-bold text-content-tertiary tracking-wider uppercase">
+                    <div className="px-4 py-1.5 bg-slate-100/70 border-b border-border-subtle text-[12px] font-bold text-content-tertiary tracking-wider uppercase">
                       {roomName}
                     </div>
                     {items.map((patient) => (
@@ -223,7 +223,7 @@ export function PatientSidebar({
           className="w-full"
         >
           <CollapsibleTrigger className="w-full px-4 py-2.5 flex items-center justify-between bg-slate-50/50 border-b border-border-subtle group hover:bg-slate-50 transition-colors">
-            <span className="text-[14px] font-black text-content-secondary">
+            <span className="text-[16px] font-bold text-content-secondary">
               전체 환자
             </span>
             <ChevronRight

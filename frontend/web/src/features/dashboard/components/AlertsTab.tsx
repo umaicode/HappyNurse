@@ -54,12 +54,7 @@ export function AlertsTab({ patientId, date }: AlertsTabProps) {
                     {formatHHmm(symptom.submittedAt)}
                   </div>
                 </div>
-                <div className="pt-1">
-                  {symptom.buttonLabel && (
-                    <span className="inline-block px-1.5 py-0.5 mr-1.5 text-body-sm font-bold rounded bg-brand-surface text-brand-primary leading-snug align-middle">
-                      {symptom.buttonLabel}
-                    </span>
-                  )}
+                <div>
                   <span className="font-medium text-content-primary whitespace-pre-wrap break-words">
                     {symptom.symptomText}
                   </span>
