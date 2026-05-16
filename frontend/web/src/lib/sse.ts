@@ -53,9 +53,8 @@ export function openSse(
 ): () => void {
   const variant = options.variant ?? "backend";
   const url = variant === "ai" ? resolveAiSseUrl(path) : resolveSseUrl(path);
-  const source = new EventSource(url, {
-    withCredentials: true,
-  });
+  // same-origin (localhost: /api-proxy rewrite, 배포: 프론트와 동일 host) 이라 withCredentials 불필요.
+  const source = new EventSource(url);
 
   // heartbeat 는 항상 무시 (좀비 정리/keepalive 용).
   const heartbeatListener: SseEventHandler = () => {};

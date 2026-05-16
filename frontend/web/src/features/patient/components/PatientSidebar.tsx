@@ -125,7 +125,7 @@ export function PatientSidebar({
           />
           {remainingLabel !== null && (
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="font-mono text-body-xs font-bold text-content-secondary tabular-nums leading-none">
+              <span className="text-body-xs font-bold text-content-secondary tabular-nums leading-none">
                 {remainingLabel}
               </span>
               <Button
@@ -450,7 +450,7 @@ function UnconfirmedNotesContent({
           {patient.name} · 확정 전 기록
         </span>
         {draftNotes.length > 0 && (
-          <span className="text-body-micro font-mono text-content-tertiary shrink-0 ml-2">
+          <span className="text-body-micro tabular-nums text-content-tertiary shrink-0 ml-2">
             {draftNotes.length}건
           </span>
         )}
@@ -478,7 +478,7 @@ function UnconfirmedNotesContent({
               className="flex flex-col w-full px-3 py-2 hover:bg-surface-hover transition-colors text-left border-b border-border-subtle/50 last:border-b-0 gap-0.5"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-body-xs font-bold text-content-primary shrink-0">
+                <span className="tabular-nums text-body-xs font-bold text-content-primary shrink-0">
                   {formatMonthDayHHmm(note.occurredAt)}
                 </span>
                 <span className="text-body-micro text-content-muted truncate">
