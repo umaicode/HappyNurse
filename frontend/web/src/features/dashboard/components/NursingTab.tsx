@@ -700,9 +700,9 @@ function NoteRow({
         // 우선순위: medication > draft > isEditing (마지막 매치가 이김)
         // draft 는 hover 도 같은 톤으로 고정 — 임시 기록이라 hover 강조 의미 없음. 좌측 3px accent 로 임시상태 시각화.
         note.status === "draft" &&
-          "bg-sub-alpha-10 hover:bg-sub-alpha-10 border-l-[3px] border-l-status-warning",
-        note.type === "MEDICATION" && "bg-brand-surface/20",
-        isEditing && "bg-brand-surface/15",
+          "bg-[#f8f3ef] hover:bg-[#f8edd7] border-l-[3px] border-l-status-warning",
+        note.type === "MEDICATION" && "bg-brand-surface/30",
+        isEditing && "bg-brand-surface/30",
         // highlighted — 사이드바/인수인계에서 점프해 온 행 잠시 강조. inset shadow 로 외곽 ring 효과.
         isHighlighted &&
           "bg-status-warning-surface hover:bg-status-warning-surface shadow-[inset_0_0_0_2px_var(--color-status-warning)]",
@@ -794,7 +794,7 @@ function NoteRow({
       </div>
 
       {/* 동작 — 확정은 위, 수정/삭제는 아래 줄 */}
-      <div className="pt-1 h-full flex flex-col items-center justify-center gap-1">
+      <div className="h-full flex flex-col items-center justify-center gap-1">
         {note.editable ? (
           isEditing ? (
             <div className="flex gap-1">
