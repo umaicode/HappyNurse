@@ -23,6 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -45,39 +47,47 @@ public class DefaultNotificationDispatcher implements NotificationDispatcher {
     public void dispatch(NotificationEnvelope envelope) {
         validate(envelope);
 
-        // 1) 영속화 — 모든 알림 저장
+        // 1) 영속화 — save() 시점엔 영속성 컨텍스트만 갱신. DB commit은 메서드 종료 시.
         Notification saved = notificationRepository.save(toEntity(envelope));
         NotificationEnvelope filled = envelope.withNotificationId(saved.getNotificationId());
 
-        // 2) ward 채널
-        if (filled.pushPolicy().isWardSse()) {
-            try {
-                wardRegistry.send(filled.wardId(), filled);
-            } catch (Exception e) {
-                log.warn("ward SSE 전송 실패: wardId={}, sourceType={}",
-                        filled.wardId(), filled.sourceType(), e);
-            }
-        }
+        // 2~4) SSE/FCM 발사를 commit 이후로 미룸
+        // - DB commit 후 클라이언트의 GET /notifications/me 가 새 알림을 볼 수 있도록 보장
+        // - 부모 트랜잭션이 rollback 되면 SSE/FCM 도 자동 skip (안전)
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                // ward 채널
+                if (filled.pushPolicy().isWardSse()) {
+                    try {
+                        wardRegistry.send(filled.wardId(), filled);
+                    } catch (Exception e) {
+                        log.warn("ward SSE 전송 실패: wardId={}, sourceType={}",
+                                filled.wardId(), filled.sourceType(), e);
+                    }
+                }
 
-        // 3) personal 채널
-        if (filled.pushPolicy().isPersonalSse()) {
-            try {
-                personalRegistry.send(filled.assignedPractitionerId(), filled);
-            } catch (Exception e) {
-                log.warn("personal SSE 전송 실패: practitionerId={}, sourceType={}",
-                        filled.assignedPractitionerId(), filled.sourceType(), e);
-            }
-        }
+                // personal 채널
+                if (filled.pushPolicy().isPersonalSse()) {
+                    try {
+                        personalRegistry.send(filled.assignedPractitionerId(), filled);
+                    } catch (Exception e) {
+                        log.warn("personal SSE 전송 실패: practitionerId={}, sourceType={}",
+                                filled.assignedPractitionerId(), filled.sourceType(), e);
+                    }
+                }
 
-        // 4) FCM
-        if (filled.pushPolicy().isFcm()) {
-            try {
-                fcmSender.sendToActiveDevicesOf(filled.assignedPractitionerId(), filled);
-            } catch (Exception e) {
-                log.warn("FCM 전송 실패: practitionerId={}, sourceType={}",
-                        filled.assignedPractitionerId(), filled.sourceType(), e);
+                // FCM
+                if (filled.pushPolicy().isFcm()) {
+                    try {
+                        fcmSender.sendToActiveDevicesOf(filled.assignedPractitionerId(), filled);
+                    } catch (Exception e) {
+                        log.warn("FCM 전송 실패: practitionerId={}, sourceType={}",
+                                filled.assignedPractitionerId(), filled.sourceType(), e);
+                    }
+                }
             }
-        }
+        });
     }
 
     private void validate(NotificationEnvelope envelope) {
@@ -94,7 +104,8 @@ public class DefaultNotificationDispatcher implements NotificationDispatcher {
 
     /**
      * envelope → Notification 엔티티 변환.
-     * SourceType 별로 source FK 컬럼이 다르므로 분기 처리. (수액 추가 완료)
+     * SourceType 별로 source FK 컬럼이 다르므로 분기 처리.
+     * (변경 없음 — 기존 그대로)
      */
     private Notification toEntity(NotificationEnvelope env) {
         Practitioner recipient = practitionerRepository.findById(env.assignedPractitionerId())
@@ -128,22 +139,11 @@ public class DefaultNotificationDispatcher implements NotificationDispatcher {
 
         if (env.priority() != null) {
             return Notification.create(
-                    recipient,
-                    env.sourceType(),
-                    selfReport,
-                    patient,
-                    env.title(),
-                    env.body(),
-                    env.priority()
-            );
+                    recipient, env.sourceType(), selfReport, patient,
+                    env.title(), env.body(), env.priority());
         }
         return Notification.create(
-                recipient,
-                env.sourceType(),
-                selfReport,
-                patient,
-                env.title(),
-                env.body()
-        );
+                recipient, env.sourceType(), selfReport, patient,
+                env.title(), env.body());
     }
 }

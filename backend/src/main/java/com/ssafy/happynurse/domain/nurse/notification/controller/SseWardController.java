@@ -14,6 +14,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * 데스크 PC 가 ward 단위 알림을 구독하기 위한 SSE 엔드포인트.
@@ -40,11 +42,19 @@ public class SseWardController {
             @ApiResponse(responseCode = "403", description = "JWT 에 wardId 클레임 없음")
     })
     @GetMapping(value = "/sse/ward-subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribe(@AuthenticationPrincipal CustomUserDetails userDetails) {
+    public SseEmitter subscribe(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                HttpServletResponse response) throws IOException {
         Long wardId = userDetails.getWardId();
         if (wardId == null) {
             throw new CustomException(ErrorCode.ROLE_NOT_FOUND, "JWT 클레임에 wardId 없음 — ward 채널 구독 불가");
         }
-        return wardEmitterRegistry.register(wardId);
+
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Cache-Control", "no-cache");
+
+        SseEmitter emitter = wardEmitterRegistry.register(wardId);
+        emitter.send(SseEmitter.event().name("ready").data("ok"));
+
+        return emitter;
     }
 }
