@@ -50,7 +50,7 @@ export function AlertsTab({ patientId, date }: AlertsTabProps) {
               >
                 {/* 시간 — NursingTab 과 동일 패턴 (border-r + pr-4 + 내부 w-full text-center) */}
                 <div className="py-1 border-r border-border-base/50 pr-4">
-                  <div className="w-full text-center font-mono font-extrabold text-[15px] text-content-primary leading-[1.6]">
+                  <div className="w-full text-center tabular-nums font-extrabold text-[15px] text-content-primary leading-[1.6]">
                     {formatHHmm(symptom.submittedAt)}
                   </div>
                 </div>

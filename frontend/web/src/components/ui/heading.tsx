@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "./utils"
 
 const headingVariants = cva(
-  "font-sans font-bold tracking-tight text-foreground", // Use font-sans which is mapped to Pretendard
+  "font-bold tracking-tight text-foreground",
   {
     variants: {
       level: {

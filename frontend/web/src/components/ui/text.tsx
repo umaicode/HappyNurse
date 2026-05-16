@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "./utils"
 
 const textVariants = cva(
-  "font-sans text-foreground", // Use font-sans which will map to Pretendard if configured, or just default to body. Actually in fonts.css body sets it. We can just use standard text colors.
+  "text-foreground",
   {
     variants: {
       variant: {
@@ -31,7 +31,7 @@ const textVariants = cva(
         extrabold: "font-extrabold",
       },
       mono: {
-        true: "font-mono tracking-tight",
+        true: "tabular-nums tracking-tight",
         false: "",
       },
     },

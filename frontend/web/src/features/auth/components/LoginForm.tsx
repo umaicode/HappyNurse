@@ -168,7 +168,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="fixed inset-0 flex w-full bg-white overflow-hidden font-sans">
+    <div className="fixed inset-0 flex w-full bg-white overflow-hidden">
       {/* Layer 1: Base */}
       <div className="absolute inset-0 z-0 bg-[linear-gradient(135deg,var(--color-brand-surface)_0%,var(--color-brand-surface)_12%,#FFFFFF_35%,#FFFFFF_65%,var(--color-brand-surface)_88%,var(--color-brand-surface)_100%)]" />
 

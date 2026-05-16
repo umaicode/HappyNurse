@@ -90,10 +90,8 @@
 }
 
 @theme inline {
-  /* Fonts — Pretendard 단일 패밀리로 통일 */
+  /* Fonts — Pretendard 단일 패밀리 */
   --font-sans: "Pretendard", sans-serif;
-  --font-mono: "Pretendard", sans-serif;
-  --font-heading: var(--font-sans);
 
   /* Emr Brand Colors */
   --color-brand-primary: #15289f;
@@ -130,19 +128,19 @@
 
   /* Emr Status / Severity */
   /* 의사오더 status, 알림 sourceType, IV 타이머 경고 등에서 공통으로 쓰는 톤. */
-  --color-status-active: var(--color-brand-primary);     /* 진행 중 — 브랜드 색 */
-  --color-status-success: #059669;                        /* 확정 / 정상 (emerald-600) */
-  --color-status-warning: #d97706;                        /* 보류 / 임박 / 수정됨 (amber-600) */
-  --color-status-warning-strong: #b45309;                 /* 강조 경고 (amber-700) */
-  --color-status-danger: #e11d48;                         /* 중단 / 긴급 (rose-600) */
-  --color-status-danger-strong: #be123c;                  /* 강조 경고 (rose-700) */
-  --color-status-neutral: #64748b;                        /* 완료 / 종료 (slate-500) */
-  --color-status-muted: #94a3b8;                          /* 임시 / 비활성 (slate-400) */
+  --color-status-active: var(--color-brand-primary); /* 진행 중 — 브랜드 색 */
+  --color-status-success: #059669; /* 확정 / 정상 (emerald-600) */
+  --color-status-warning: #d97706; /* 보류 / 임박 / 수정됨 (amber-600) */
+  --color-status-warning-strong: #b45309; /* 강조 경고 (amber-700) */
+  --color-status-danger: #e11d48; /* 중단 / 긴급 (rose-600) */
+  --color-status-danger-strong: #be123c; /* 강조 경고 (rose-700) */
+  --color-status-neutral: #64748b; /* 완료 / 종료 (slate-500) */
+  --color-status-muted: #94a3b8; /* 임시 / 비활성 (slate-400) */
 
   /* Status surface (배경 — 뱃지 등) */
-  --color-status-success-surface: #ecfdf5;                /* emerald-50 */
-  --color-status-warning-surface: #fffbeb;                /* amber-50 */
-  --color-status-danger-surface: #fff1f2;                 /* rose-50 */
+  --color-status-success-surface: #ecfdf5; /* emerald-50 */
+  --color-status-warning-surface: #fffbeb; /* amber-50 */
+  --color-status-danger-surface: #fff1f2; /* rose-50 */
 
   /* PASS-BAR 슬롯 팔레트 — 모바일 디자인과 통일. 채도 낮은 8색, 한 화면 동시 노출 시 시각 충돌 회피. */
   --color-slot-situation: #3f4e96;
