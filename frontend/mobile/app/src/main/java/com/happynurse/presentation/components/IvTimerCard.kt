@@ -20,6 +20,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -76,16 +77,26 @@ private fun BarCard(iv: IvTimer, elapsedMin: Int, pct: Float, color: Color) {
     val drugLines = iv.drug.split(" + ").map { it.trim() }.filter { it.isNotEmpty() }
     val remainingMin = (iv.totalMin - elapsedMin).coerceAtLeast(0)
     HnCard {
-        Row(verticalAlignment = Alignment.Top) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             // 좌측: IV 백 + 똑똑 떨어지는 방울 (chamber 옆에 gtt/min 라벨이 함께 그려짐)
-            IvDripAnimation(
-                fillRatio = fillRatio,
-                color = color,
-                gttPerMin = gtt,
-                modifier = Modifier.size(width = 90.dp, height = 120.dp),
-            )
+            // IvDripAnimation 은 원본(90×120) 그대로 유지하고, Box 폭만 줄인 뒤
+            // Canvas 를 좌측으로 음의 offset 으로 밀어 "왼쪽만" 잘리도록 함.
+            Box(
+                modifier = Modifier
+                    .size(width = 90.dp, height = 120.dp)
+                    .clipToBounds(),
+            ) {
+                IvDripAnimation(
+                    fillRatio = fillRatio,
+                    color = color,
+                    gttPerMin = gtt,
+                    modifier = Modifier
+                        .size(width = 90.dp, height = 120.dp)
+                        .offset(x = (-10).dp),
+                )
+            }
             // 우측: 환자 + 약물 + 진행 바 + 남은시간
-            Column(modifier = Modifier.weight(1f).offset(x = (-14).dp)) {
+            Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(iv.patient, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
                     Spacer(Modifier.size(6.dp))

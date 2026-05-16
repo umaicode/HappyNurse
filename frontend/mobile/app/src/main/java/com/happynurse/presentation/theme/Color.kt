@@ -12,8 +12,8 @@ object HnColors {
     // Primary
     val Primary       = Color(0xFF1428A0)
     val PrimaryDark   = Color(0xFF0F1F7A)
-    val PrimaryLight  = Color(0xFFE6E9F8)
-    val PrimarySoft   = Color(0xFFFBFBFF)
+    val PrimaryLight  = Color(0xFFEDF2FA)
+    val PrimarySoft   = Color(0xFFEEEEFA)
 
     // Surface / background
     val Bg            = Color(0xFFF7F8FA)
@@ -28,7 +28,7 @@ object HnColors {
     val TextTertiary  = Color(0xFF686970)
 
     // Status
-    val Success       = Color(0xFF31AD6B)
+    val Success       = Color(0xFF2A8A66)
     val Warning       = Color(0xFFF59E0B)
     val Danger        = Color(0xFFD95959)
     val Info          = Color(0xFF3B82F6)

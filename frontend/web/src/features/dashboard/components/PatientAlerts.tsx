@@ -1,7 +1,7 @@
 'use client'
 
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Info, Loader2 } from "lucide-react";
+import { Info, Loader2, Siren } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PanelCard } from "./PanelCard";
 import { useMyNotifications } from "../hooks/useNotifications";
@@ -123,10 +123,11 @@ function NotificationCard({
           {priority && (
             <span
               className={cn(
-                "px-1.5 py-1 rounded text-[14px] font-bold leading-none shrink-0",
+                "flex items-center gap-0.5 px-1.5 py-1 rounded text-[14px] font-bold leading-none shrink-0",
                 PRIORITY_CHIP[priority],
               )}
             >
+              {priority === "CRITICAL" && <Siren className="size-3.5 shrink-0" />}
               {PRIORITY_LABEL[priority]}
             </span>
           )}

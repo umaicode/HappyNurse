@@ -10,6 +10,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,8 +41,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
-import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.CircularProgressIndicator
 import androidx.wear.compose.material3.Icon
@@ -87,33 +87,31 @@ fun SttResultScreen(
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background),
             ) {
-                ScalingLazyColumn(
-                    state = rememberScalingLazyListState(),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(top = 28.dp, bottom = 24.dp, start = 14.dp, end = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(top = 12.dp, bottom = 15.dp, start = 14.dp, end = 14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    item { TimeBadge(text = fireAtDisplay.ifBlank { "—" }) }
-                    item { RecognizedTextCard(text = state.recognizedText) }
+                    TimeBadge(text = fireAtDisplay.ifBlank { "—" })
+                    RecognizedTextCard(text = state.recognizedText)
                     if (state.errorMessage != null && state.phase == RecordPhase.ERROR) {
-                        item {
-                            Text(
-                                text = state.errorMessage.orEmpty(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.error,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
+                        Text(
+                            text = state.errorMessage.orEmpty(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                     if (state.phase != RecordPhase.DONE) {
-                        item {
-                            RestartSubmitRow(
-                                enabled = state.phase == RecordPhase.RESULT,
-                                onSubmit = viewModel::confirm,
-                                onRestart = viewModel::restartRecording,
-                            )
-                        }
+                        RestartSubmitRow(
+                            enabled = state.phase == RecordPhase.RESULT,
+                            onSubmit = viewModel::confirm,
+                            onRestart = viewModel::restartRecording,
+                        )
                     }
                 }
 
@@ -136,28 +134,24 @@ fun SttResultScreen(
 
 @Composable
 private fun TimeBadge(text: String) {
-    Box(
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.primaryContainer)
-            .padding(vertical = 8.dp, horizontal = 6.dp),
-        contentAlignment = Alignment.Center,
+            .padding(vertical = 4.dp, horizontal = 14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "인식된 시간",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
-            )
-            Spacer(Modifier.size(2.dp))
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleSmall.merge(TabularNumStyle),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+        Text(
+            text = "인식된 시간",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium.merge(TabularNumStyle),
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 
@@ -168,7 +162,7 @@ private fun RecognizedTextCard(text: String) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {

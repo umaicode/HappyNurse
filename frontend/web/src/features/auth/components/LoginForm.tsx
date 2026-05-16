@@ -193,7 +193,7 @@ export function LoginForm() {
       {/* 좌측 상단 dev 툴: 환자 라우트 진입 + DEV 전용 동작 (운영 빌드에서는 DEV 동작은 숨김) */}
       <div className="absolute top-4 left-4 z-50 flex items-center gap-2">
         <button
-          onClick={() => router.push('/patient/verify?patientId=2&prefill=1')}
+          onClick={() => router.push('/patient/verify?patientId=3&prefill=1')}
           className="rounded-2xl border border-action-blue-hover bg-[#e2e3e4] px-3 py-1.5 text-[22px] font-bold text-gray-600 hover:bg-[#a0afec] transition-colors"
         >
           환자 로그인
