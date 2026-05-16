@@ -302,7 +302,7 @@ export function HandoverView() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h2 className="text-title-lg font-bold text-content-primary leading-tight tracking-tight">
-            AI 인수인계 리포트
+            AI 인수인계
           </h2>
           <span
             title={`인계 ${SHIFT_LABEL[handoverShift.from]} 시프트(${SHIFT_WINDOW[handoverShift.from]}) → ${SHIFT_LABEL[handoverShift.to]} 시프트(${SHIFT_WINDOW[handoverShift.to]})`}

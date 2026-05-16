@@ -20,7 +20,7 @@ export default function Complete() {
   return (
     <div className="flex flex-1 flex-col gap-5 px-[22px] pt-5 pb-[50px]">
       <div className="flex flex-col items-center pt-15 pb-10">
-        <div className="flex size-[60px] items-center justify-center rounded-full bg-patient-success text-white shadow-[0_0_0_6px_var(--color-patient-success-surface)]">
+        <div className="flex size-[60px] items-center justify-center rounded-full bg-patient-success text-white">
           <Check className="size-8" strokeWidth={3} />
         </div>
         <h1 className="mt-5 text-center text-[21px] leading-[1.35] font-extrabold tracking-tight text-patient-ink">
@@ -39,7 +39,7 @@ export default function Complete() {
           last
           value={
             requestChips.length > 0 ? (
-              <div className="flex flex-wrap justify-end gap-1.5">
+              <div className="flex flex-col items-end gap-1.5">
                 {requestChips.map((chip) => (
                   <span
                     key={chip}

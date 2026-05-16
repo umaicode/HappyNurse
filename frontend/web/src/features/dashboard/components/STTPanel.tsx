@@ -176,11 +176,6 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                         {patientName}
                       </span>
                     )}
-                    {roomBed && (
-                      <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
-                        {roomBed}
-                      </span>
-                    )}
                   </div>
                   <span className="text-body-xs font-medium text-content-tertiary shrink-0 leading-none">
                     {formatMonthDayHHmm(order.createdAt)}
@@ -212,16 +207,16 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                 {/* Info Grid */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 py-1">
                   <InfoCell label="1회량">
-                    <span className="tabular-nums">
-                      {order.dose}
-                      {order.doseUnit}
-                    </span>
+                    <span className="tabular-nums">{order.dose}</span>
+                  </InfoCell>
+                  <InfoCell label="단위">
+                    <span>{order.doseUnit}</span>
                   </InfoCell>
                   <InfoCell label="횟수">
                     <span>{order.frequency}회</span>
                   </InfoCell>
                   <InfoCell label="용법">
-                    <span className="text-brand-primary">{order.route}</span>
+                    <span>{order.route}</span>
                   </InfoCell>
                 </div>
 

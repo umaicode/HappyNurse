@@ -155,10 +155,10 @@ private fun IdleContent(onMicTap: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Text(
-            text = "알람 설정",
-            style = MaterialTheme.typography.titleSmall,
+            text = "타이머 설정",
+            style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
         )
         Spacer(Modifier.weight(1f))
         Box(

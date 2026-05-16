@@ -34,9 +34,15 @@ class LogEntryViewModel @Inject constructor(
     private val _state = MutableStateFlow<LogState>(LogState.Idle)
     val state: StateFlow<LogState> = _state.asStateFlow()
 
+    // 마이크 입력 진폭 시간축 히스토리 (각 0f..1f, 길이 LEVELS_SIZE) —
+    // 80ms 간격 폴링값을 앞에 push, 끝값 pop. UI 이퀄라이저는 인덱스별 막대로 표시 → 좌→우로 흐르는 파형.
+    private val _levels = MutableStateFlow(List(LEVELS_SIZE) { 0f })
+    val levels: StateFlow<List<Float>> = _levels.asStateFlow()
+
     private var patientId: Long = -1L
     private var encounterId: Long = -1L
     private var tickJob: Job? = null
+    private var amplitudeJob: Job? = null
     private var recordedFile: File? = null
 
     fun setContext(patientId: Long, encounterId: Long) {
@@ -60,6 +66,16 @@ class LogEntryViewModel @Inject constructor(
                     if (current is LogState.Recording) _state.value = LogState.Recording(sec) else break
                 }
             }
+            amplitudeJob?.cancel()
+            amplitudeJob = viewModelScope.launch {
+                while (isActive && _state.value is LogState.Recording) {
+                    val raw = audioRecorder.maxAmplitude()
+                    val newLevel = (raw / 8000f).coerceIn(0f, 1f)
+                    _levels.value = (listOf(newLevel) + _levels.value).take(LEVELS_SIZE)
+                    delay(80)
+                }
+                _levels.value = List(LEVELS_SIZE) { 0f }
+            }
         } catch (e: Exception) {
             _state.value = LogState.Error(e.message ?: "녹음 시작 실패")
         }
@@ -69,6 +85,8 @@ class LogEntryViewModel @Inject constructor(
     fun stopAndUpload() {
         if (_state.value !is LogState.Recording) return
         tickJob?.cancel()
+        amplitudeJob?.cancel()
+        _levels.value = List(LEVELS_SIZE) { 0f }
         val file = audioRecorder.stop()
         if (file == null || !file.exists() || file.length() == 0L) {
             _state.value = LogState.Error("녹음 파일이 비어있습니다")
@@ -91,6 +109,8 @@ class LogEntryViewModel @Inject constructor(
     // 다시 녹음 — 결과/에러 카드에서 마이크 버튼으로 돌아갈 때
     fun reset() {
         tickJob?.cancel()
+        amplitudeJob?.cancel()
+        _levels.value = List(LEVELS_SIZE) { 0f }
         audioRecorder.stop()
         recordedFile?.delete()
         recordedFile = null
@@ -101,8 +121,13 @@ class LogEntryViewModel @Inject constructor(
 
     override fun onCleared() {
         tickJob?.cancel()
+        amplitudeJob?.cancel()
         audioRecorder.stop()
         recordedFile?.delete()
         super.onCleared()
+    }
+
+    companion object {
+        const val LEVELS_SIZE = 13
     }
 }
