@@ -279,7 +279,12 @@ fun PatientDetailScreen(
                         }
                     }
                 } else {
-                    items(notes) { NoteRow(it) }
+                    // key 는 STT_NOTE 면 nursingRecordId 로 안정, MEDICATION 은 nursingRecordId 가 0 일 수 있어
+                    // type+time+text 조합으로 충돌 회피. 같은 노트 (예: draft→confirmed 전환) 는 같은 key 라
+                    // LazyColumn 이 재사용해 자연스러운 in-place 갱신.
+                    items(notes) { note ->
+                        NoteRow(note)
+                    }
                 }
             } else {
                 groupedOrders.forEach { (date, list) ->
@@ -709,11 +714,16 @@ private fun NoteRow(n: Note) {
         HnCard(padding = 12.dp, modifier = Modifier.weight(1f)) {
             Column {
                 val validTags = n.tags.filter { it == "투약" || it == "STT" }
+                // STT 음성 노트가 아직 확정되지 않은 임시 본문(status=draft)이면 "확정 전" 칩을 함께 노출.
+                val isDraftStt = n.type == "STT_NOTE" && n.status == "draft"
                 if (validTags.isNotEmpty()) {
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         validTags.forEach { t ->
                             if (t == "투약") TagChip("투약", fg = HnColors.TagInjFg, bg = HnColors.TagInjBg)
                             else TagChip("음성", fg = HnColors.TagFluidFg, bg = HnColors.TagFluidBg)
+                        }
+                        if (isDraftStt) {
+                            TagChip("확정 전", fg = HnColors.TagWatchStrongFg, bg = HnColors.TagWatchStrongBg)
                         }
                     }
                     Spacer(Modifier.height(8.dp))

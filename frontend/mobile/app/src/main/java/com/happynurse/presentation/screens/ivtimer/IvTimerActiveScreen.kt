@@ -31,7 +31,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,7 +41,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.happynurse.BuildConfig
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -103,7 +101,7 @@ fun IvTimerActiveScreen(
         }
 
         when (val s = state) {
-            IvTimerActiveViewModel.ActiveState.NeedsTag -> NeedsTagBody(onDebugInject = viewModel::onTagScanned)
+            IvTimerActiveViewModel.ActiveState.NeedsTag -> NeedsTagBody()
             IvTimerActiveViewModel.ActiveState.Loading -> LoadingBody()
             is IvTimerActiveViewModel.ActiveState.Error -> ErrorBody(s.message)
             is IvTimerActiveViewModel.ActiveState.Loaded -> LoadedBody(
@@ -154,7 +152,7 @@ fun IvTimerActiveScreen(
 }
 
 @Composable
-private fun NeedsTagBody(onDebugInject: (String) -> Unit = {}) {
+private fun NeedsTagBody() {
     Column(
         modifier = Modifier.fillMaxSize().padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -177,31 +175,6 @@ private fun NeedsTagBody(onDebugInject: (String) -> Unit = {}) {
             }
         }
 
-        if (BuildConfig.DEBUG) {
-            var debugUid by remember { mutableStateOf("") }
-            HnCard(padding = 12.dp) {
-                Column {
-                    Text("디버그 — 수액 NFC UID 직접 입력", fontSize = 11.sp, color = HnColors.TextTertiary, fontWeight = FontWeight.SemiBold)
-                    Spacer(Modifier.height(6.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = debugUid,
-                            onValueChange = { debugUid = it },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
-                            placeholder = { Text("AA:BB:CC:DD:EE:FF", fontSize = 13.sp) },
-                        )
-                        Spacer(Modifier.size(8.dp))
-                        HnButton(
-                            text = "주입",
-                            onClick = { onDebugInject(debugUid.trim()) },
-                            enabled = debugUid.isNotBlank(),
-                        )
-                    }
-                }
-            }
-        }
     }
 }
 

@@ -76,6 +76,8 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.okhttp.logging.interceptor)
+    // SSE — 알림 실시간 스트림 (/sse/subscribe)
+    implementation(libs.okhttp.sse)
 
     // Hilt (DI)
     implementation(libs.hilt.android)
