@@ -20,6 +20,7 @@ import type {
   HandoverJobResponse,
   HandoverPayload,
   RosterSummary,
+  WardEventsResponse,
 } from "../types/handover";
 
 export const generateHandover = (): Promise<HandoverJobResponse> =>
@@ -83,3 +84,13 @@ export const patchHandoverChecks = (
   client
     .patch(`/handover/${handoverId}/checks`, { checks })
     .then(() => undefined);
+
+// 오늘 우리 병동의 입퇴원 환자 목록 (BE). 인수인계 화면 상단 "교대 통합 요약" 박스 자리 대체.
+export const getWardEvents = (): Promise<WardEventsResponse> =>
+  client.get("/handover/ward-events").then((response) => {
+    const data = response.data ?? {};
+    return {
+      admissions: data.admissions ?? [],
+      discharges: data.discharges ?? [],
+    };
+  });

@@ -2,60 +2,42 @@
  * 인증 hook.
  *
  * - useAuthStore 의 user 를 읽어 isLoggedIn / roleCode 등 파생값을 노출
- * - logout(): 서버 /auth/logout 호출 → store reset → DEV 토큰 정리 → TanStack Query 캐시 클리어 → /login 이동
  * - 로그인 후 15분 경과 시 강제 세션 만료. 공용 데스크에서 자리 비움 시 자동 로그아웃이 의도라
  *   사용자 활동 추적은 하지 않음 (mousemove/keydown 으로 timer reset 하지 않는다).
  * - expiresAt 은 store 에서 노출 — 카운트다운 표시 컴포넌트가 자체 1초 tick 으로 갱신.
- * - 연장 API 미구현 — extendSession 은 현재 단계에서 no-op (UI placeholder 만).
+ * - 자동 로그아웃 타이머는 expiresAt 잔여 시간 기준으로 setTimeout 등록 — 새로고침 후 sessionStorage
+ *   hydration / 사용자 명시 연장(refreshExpiresAt) 모두 동일 effect 가 반응. 고정 SESSION_TIMEOUT_MS
+ *   setTimeout 은 새로고침으로 idle 을 우회하거나 연장 후에도 원래 시점에 firing 하던 회귀가 있어 제거.
+ * - logout 함수는 useLogout 으로 분리 — 사이드바 버튼과 setTimeout 콜백이 동일 함수 공유.
+ * - extendSession 호출은 PatientSidebar 가 features/auth/api 의 함수 + store.refreshExpiresAt 을 직접
+ *   사용 — useAuth 가 따로 노출하지 않는다.
  */
 'use client'
 
-import { useCallback, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useQueryClient } from '@tanstack/react-query'
-import { logout as logoutApi } from '../api'
-import { SESSION_TIMEOUT_MS, useAuthStore } from '../stores/auth'
-import { devTokenStorage } from '@/lib/client'
+import { useEffect } from 'react'
+import { useAuthStore } from '../stores/auth'
+import { useLogout } from './useLogout'
 
 export function useAuth() {
-  const router = useRouter()
-  const queryClient = useQueryClient()
   const user = useAuthStore((state) => state.user)
   const expiresAt = useAuthStore((state) => state.expiresAt)
-  const reset = useAuthStore((state) => state.reset)
-
-  const logout = useCallback(async () => {
-    try {
-      await logoutApi()
-    } catch {
-      // 서버 호출 실패해도 클라이언트 측 정리는 진행
-    }
-    // queryClient.clear() 를 reset() 보다 먼저 — user reset 직후 (web)/layout 의 useQuery
-    // (enabled: !user) 가 발동되어 만료된 쿠키로 getMe → refresh 도미노가 생기는 race 차단.
-    queryClient.clear()
-    reset()
-    devTokenStorage.clear()
-    router.push('/login')
-  }, [reset, queryClient, router])
+  const logout = useLogout()
 
   useEffect(() => {
-    if (!user) return
-    const timer = setTimeout(logout, SESSION_TIMEOUT_MS)
+    if (!user || expiresAt === null) return
+    const remainingMs = expiresAt - Date.now()
+    if (remainingMs <= 0) {
+      logout()
+      return
+    }
+    const timer = setTimeout(logout, remainingMs)
     return () => clearTimeout(timer)
-  }, [user, logout])
-
-  // 연장 버튼 placeholder — 현재 단계에선 클릭해도 timer/expiresAt 변화 없음.
-  // 백엔드 연장 API 추가되면 useAuthStore.refreshExpiresAt() 호출 + setTimeout 재등록 로직 추가.
-  const extendSession = useCallback(() => {
-    // intentionally no-op for now.
-  }, [])
+  }, [user, expiresAt, logout])
 
   return {
     user,
     roleCode: user?.roleCode ?? null,
     isLoggedIn: !!user,
-    logout,
     expiresAt,
-    extendSession,
   }
 }

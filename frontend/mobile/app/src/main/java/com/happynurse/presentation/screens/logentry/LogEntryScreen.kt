@@ -5,6 +5,9 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,11 +20,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Stop
@@ -46,6 +52,9 @@ import com.happynurse.presentation.components.HnButton
 import com.happynurse.presentation.components.HnButtonVariant
 import com.happynurse.presentation.components.HnCard
 import com.happynurse.presentation.theme.HnColors
+
+// 녹음 강조색 — 메인 네이비(#1428A0)와 어울리는 차분한 brick red
+private val RecordingRed = Color(0xFFC23B36)
 
 @Composable
 fun LogEntryScreen(
@@ -75,16 +84,16 @@ fun LogEntryScreen(
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(12.dp)) {
             Icon(
                 Icons.AutoMirrored.Outlined.KeyboardArrowLeft, "뒤로",
-                modifier = Modifier.size(28.dp).clickable(onClick = onClose),
+                modifier = Modifier.size(46.dp).clickable(onClick = onClose),
             )
-            Spacer(Modifier.size(8.dp))
-            Text("간호일지 등록", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
         }
 
+        val levels by viewModel.levels.collectAsStateWithLifecycle()
         when (val s = state) {
             LogEntryViewModel.LogState.Idle -> IdleBody(onStart = onStartClick)
             is LogEntryViewModel.LogState.Recording -> RecordingBody(
                 seconds = s.seconds,
+                levels = levels,
                 onStop = viewModel::stopAndUpload,
             )
             LogEntryViewModel.LogState.Uploading -> UploadingBody()
@@ -108,40 +117,97 @@ private fun IdleBody(onStart: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxSize().padding(20.dp),
     ) {
+        // RecordingBody 와 동일한 Y 위치 — 텍스트는 안내 카피, 아래 placeholder 들은 자리 유지용.
+        Text(
+            "간호일지 녹음",
+            fontSize = 30.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = HnColors.Text,
+            letterSpacing = 1.2.sp,
+        )
+        Spacer(Modifier.height(40.dp))
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(140.dp).clip(CircleShape)
+            modifier = Modifier.size(180.dp).clip(CircleShape)
                 .background(HnColors.Primary)
                 .clickable(onClick = onStart),
         ) {
-            Icon(Icons.Outlined.Mic, contentDescription = null, tint = Color.White, modifier = Modifier.size(56.dp))
+            Icon(Icons.Outlined.Mic, contentDescription = null, tint = Color.White, modifier = Modifier.size(80.dp))
         }
-        Spacer(Modifier.height(20.dp))
-        Text("버튼을 눌러 녹음을 시작하세요", fontSize = 15.sp, color = HnColors.TextSecondary)
+        Spacer(Modifier.height(30.dp))
+        Text(
+            "00:00",
+            fontSize = 40.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Transparent,
+        )
+        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(80.dp))
     }
 }
 
 @Composable
-private fun RecordingBody(seconds: Int, onStop: () -> Unit) {
+private fun RecordingBody(seconds: Int, levels: List<Float>, onStop: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxSize().padding(20.dp),
     ) {
+        Text(
+            "녹음 중",
+            fontSize = 30.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = RecordingRed,
+            letterSpacing = 1.2.sp,
+        )
+        Spacer(Modifier.height(40.dp))
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(140.dp).clip(CircleShape)
-                .background(HnColors.Danger)
+            modifier = Modifier.size(180.dp).clip(CircleShape)
+                .background(RecordingRed)
                 .clickable(onClick = onStop),
         ) {
-            Icon(Icons.Outlined.Stop, contentDescription = null, tint = Color.White, modifier = Modifier.size(56.dp))
+            Icon(Icons.Outlined.Stop, contentDescription = null, tint = Color.White, modifier = Modifier.size(110.dp))
         }
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(30.dp))
         Text(
             formatSec(seconds),
-            fontSize = 32.sp, fontWeight = FontWeight.Bold, color = HnColors.Danger,
+            fontSize = 40.sp, fontWeight = FontWeight.Bold, color = RecordingRed,
         )
-        Text("녹음 중 · 정지 버튼을 누르세요", fontSize = 13.sp, color = HnColors.TextSecondary)
+        Spacer(Modifier.height(28.dp))
+        RecordingEqualizer(levels = levels)
+    }
+}
+
+@Composable
+private fun RecordingEqualizer(levels: List<Float>) {
+    // 13개 막대 — 인덱스별로 amplitude 히스토리 한 칸씩 매핑.
+    // 0번(가장 왼쪽) = 가장 최근 입력, 12번(오른쪽) = 가장 오래된 입력. tick 마다 좌→우로 흐르는 파형.
+    val maxHeights = listOf(18f, 26f, 36f, 46f, 56f, 64f, 70f, 64f, 56f, 46f, 36f, 26f, 18f)
+    Box(
+        modifier = Modifier.fillMaxWidth().height(80.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
+            maxHeights.forEachIndexed { i, maxH ->
+                val amp = levels.getOrElse(i) { 0f }.coerceIn(0f, 1f).coerceAtLeast(0.05f)
+                val height by animateFloatAsState(
+                    targetValue = maxH * amp,
+                    animationSpec = tween(durationMillis = 90, easing = FastOutSlowInEasing),
+                    label = "bar$i",
+                )
+                Box(
+                    modifier = Modifier
+                        .width(5.dp)
+                        .height(height.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(RecordingRed),
+                )
+            }
+        }
     }
 }
 
@@ -152,9 +218,9 @@ private fun UploadingBody() {
         verticalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxSize().padding(20.dp),
     ) {
-        CircularProgressIndicator(color = HnColors.Primary, modifier = Modifier.size(40.dp))
-        Spacer(Modifier.height(14.dp))
-        Text("STT 변환 중...", fontSize = 13.sp, color = HnColors.TextSecondary)
+        CircularProgressIndicator(color = HnColors.Primary, modifier = Modifier.size(100.dp))
+        Spacer(Modifier.height(40.dp))
+        Text("STT 변환 및 정제중...", fontSize = 24.sp, color = HnColors.Text, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -167,42 +233,51 @@ private fun ResultBody(
     val resp = state.response
     Column(
         modifier = Modifier.fillMaxSize().padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Text(
+        if (resp.nursingRecordId != null) {
             // status='draft' 로 백엔드 저장됨. 확정/수정은 데스크톱 차트에서.
-            if (resp.nursingRecordId != null) "간호일지 임시 등록 완료" else "STT 변환 결과",
-            fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary,
-        )
-        HnCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(HnColors.Success),
+                ) {
+                    Icon(
+                        Icons.Filled.Check,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Text(
+                    "간호일지 임시 등록 완료",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = HnColors.Text,
+                )
+            }
+        }
+        HnCard(modifier = Modifier.fillMaxWidth().weight(1f), padding = 22.dp) {
             Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                resp.correctedText?.let {
-                    Text("교정된 본문", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
-                    Spacer(Modifier.height(2.dp))
-                    Text(it, fontSize = 14.sp, color = HnColors.Text)
-                    Spacer(Modifier.height(10.dp))
-                }
-                resp.originalText?.takeIf { it != resp.correctedText }?.let {
-                    Text("원본", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
-                    Spacer(Modifier.height(2.dp))
-                    Text(it, fontSize = 12.sp, color = HnColors.TextSecondary)
-                    Spacer(Modifier.height(10.dp))
-                }
-                // exact 는 원본=교정본 동일 의미라 표시 가치 낮음 — fuzzy/manual 만 노출
-                val visibleCorrections = resp.corrections.filter { it.type != "exact" }
-                if (visibleCorrections.isNotEmpty()) {
-                    Text("교정 내역", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
-                    Spacer(Modifier.height(2.dp))
-                    visibleCorrections.forEach { c ->
-                        Text(
-                            "${c.original} → ${c.corrected}" + (c.type?.let { " (${it})" } ?: ""),
-                            fontSize = 12.sp, color = HnColors.Text,
-                        )
-                    }
+                val corrected = resp.correctedText?.takeIf { it.isNotBlank() }
+                if (corrected != null) {
+                    Text(corrected, fontSize = 22.sp, lineHeight = 34.sp, color = HnColors.Text)
+                } else {
+                    Text(
+                        "교정된 본문이 없습니다",
+                        fontSize = 18.sp,
+                        color = HnColors.TextTertiary,
+                    )
                 }
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(30.dp)) {
             HnButton(
                 text = "다시 녹음",
                 variant = HnButtonVariant.SECONDARY,

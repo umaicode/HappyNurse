@@ -2,7 +2,7 @@
 
 import { Search, LogOut, ChevronRight, Settings, Loader2 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useLogout } from "@/features/auth/hooks/useLogout";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useAuthStore } from "@/features/auth/stores/auth";
+import { extendSession } from "@/features/auth/api";
 import { useDraftNursingNotes } from "@/features/dashboard/hooks/useDraftNursingNotes";
 import { formatMonthDayHHmm } from "@/lib/time";
 import {
@@ -48,11 +49,23 @@ export function PatientSidebar({
   onOpenAssignModal,
   onJumpToUnconfirmed,
 }: PatientSidebarProps) {
-  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const expiresAt = useAuthStore((state) => state.expiresAt);
-  const reset = useAuthStore((state) => state.reset);
+  const refreshExpiresAt = useAuthStore((state) => state.refreshExpiresAt);
+  const logout = useLogout();
   const [searchQuery, setSearchQuery] = useState("");
+
+  // 연장 버튼 — /auth/refresh 호출 + 성공 시 expiresAt 을 now+15분 으로 재계산.
+  // 실패 시 인터셉터가 401 처리 우회하므로 그냥 무시 (15 분 idle 타이머가 자동 로그아웃 담당).
+  // 로딩 표시 없이 즉시 클릭 가능 (요청 자체가 빠름, 중복 클릭은 멱등이라 무해).
+  const handleExtend = async () => {
+    try {
+      await extendSession();
+      refreshExpiresAt();
+    } catch {
+      // 무시 — useAuth 의 idle 타이머가 만료 처리.
+    }
+  };
   // 1초 tick — 카운트다운 mm:ss 갱신. expiresAt 이 null 이면 동작 안 함.
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
   useEffect(() => {
@@ -112,7 +125,7 @@ export function PatientSidebar({
           />
           {remainingLabel !== null && (
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="font-mono text-body-xs font-bold text-content-secondary tabular-nums leading-none">
+              <span className="text-body-xs font-bold text-content-secondary tabular-nums leading-none">
                 {remainingLabel}
               </span>
               <Button
@@ -120,9 +133,7 @@ export function PatientSidebar({
                 variant="brandOutline"
                 size="sm"
                 className="h-6 px-2 text-body-micro font-bold"
-                onClick={() => {
-                  // placeholder — 백엔드 연장 API 추가 전까지 클릭해도 timer 변화 없음.
-                }}
+                onClick={handleExtend}
               >
                 연장
               </Button>
@@ -151,7 +162,7 @@ export function PatientSidebar({
         >
           <div className="w-full px-4 py-2.5 flex items-center justify-between bg-white border-b border-border-subtle hover:bg-slate-50 transition-colors">
             <CollapsibleTrigger className="flex-1 flex items-center justify-between gap-2 group">
-              <span className="text-[14px] font-black text-brand-primary">
+              <span className="text-[16px] font-bold text-brand-primary">
                 내 담당 환자
               </span>
               <ChevronRight
@@ -185,7 +196,7 @@ export function PatientSidebar({
               ) : (
                 myPatientsByRoom.map(({ roomName, items }) => (
                   <div key={roomName} className="flex flex-col">
-                    <div className="px-4 py-1.5 bg-slate-100/70 border-b border-border-subtle text-[11px] font-bold text-content-tertiary tracking-wider uppercase">
+                    <div className="px-4 py-1.5 bg-slate-100/70 border-b border-border-subtle text-[12px] font-bold text-content-tertiary tracking-wider uppercase">
                       {roomName}
                     </div>
                     {items.map((patient) => (
@@ -212,7 +223,7 @@ export function PatientSidebar({
           className="w-full"
         >
           <CollapsibleTrigger className="w-full px-4 py-2.5 flex items-center justify-between bg-slate-50/50 border-b border-border-subtle group hover:bg-slate-50 transition-colors">
-            <span className="text-[14px] font-black text-content-secondary">
+            <span className="text-[16px] font-bold text-content-secondary">
               전체 환자
             </span>
             <ChevronRight
@@ -252,7 +263,7 @@ export function PatientSidebar({
             <span className="text-[14px] font-black text-content-primary truncate leading-tight">
               {user?.name ?? ""}
               {user?.name && (
-                <span className="ml-1 text-body-xs font-medium text-content-tertiary">
+                <span className="ml-1 text-body-sm font-medium text-content-tertiary">
                   간호사
                 </span>
               )}
@@ -266,10 +277,9 @@ export function PatientSidebar({
 
           <button
             onClick={() => {
-              reset();
-              router.push("/login");
+              logout();
             }}
-            className="p-2 text-brand-primary hover:bg-brand-surface rounded-xl transition-all shadow-xs border border-brand-primary/10"
+            className="p-2 text-status-danger/60 hover:bg-status-danger-surface rounded-xl transition-all shadow-xs border border-status-danger/40"
             title="로그아웃"
           >
             <LogOut className="size-5" />
@@ -440,7 +450,7 @@ function UnconfirmedNotesContent({
           {patient.name} · 확정 전 기록
         </span>
         {draftNotes.length > 0 && (
-          <span className="text-body-micro font-mono text-content-tertiary shrink-0 ml-2">
+          <span className="text-body-micro tabular-nums text-content-tertiary shrink-0 ml-2">
             {draftNotes.length}건
           </span>
         )}
@@ -468,7 +478,7 @@ function UnconfirmedNotesContent({
               className="flex flex-col w-full px-3 py-2 hover:bg-surface-hover transition-colors text-left border-b border-border-subtle/50 last:border-b-0 gap-0.5"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-body-xs font-bold text-content-primary shrink-0">
+                <span className="tabular-nums text-body-xs font-bold text-content-primary shrink-0">
                   {formatMonthDayHHmm(note.occurredAt)}
                 </span>
                 <span className="text-body-micro text-content-muted truncate">

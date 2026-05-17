@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -72,7 +73,7 @@ class AuthServiceTest {
         given(practitionerRoleRepository.findByPractitionerAndPeriodEndIsNull(practitioner)).willReturn(List.of(role));
         given(practitionerRoleRepository.findByPractitionerAndWard_WardIdAndPeriodEndIsNull(practitioner, 3L)).willReturn(Optional.of(role));
         given(sessionLogRepository.save(any(SessionLog.class))).willAnswer(inv -> inv.getArgument(0));
-        given(jwtTokenProvider.createAccessToken(anyLong(), anyString(), anyString(), anyString(), anyString(), anyLong(), anyLong())).willReturn("mock-jwt-token");
+        given(jwtTokenProvider.createAccessToken(anyLong(), anyString(), anyString(), anyString(), anyString(), anyLong(), anyLong(), anyLong())).willReturn("mock-jwt-token");
         given(refreshTokenRepository.save(any(RefreshToken.class))).willAnswer(inv -> inv.getArgument(0));
 
         AuthResult result = authService.login("EMP001", "password", "127.0.0.1", 1L, 3L, 604800000L);
@@ -179,7 +180,7 @@ class AuthServiceTest {
 
         given(reuseDetector.getReusedSessionId(refreshToken.getTokenValue())).willReturn(null);
         given(refreshTokenRepository.findById(refreshToken.getTokenValue())).willReturn(Optional.of(refreshToken));
-        given(jwtTokenProvider.createAccessToken(1L, "EMP001", "홍길동", "nurse", "session-1", 1L, 3L)).willReturn("new-access-token");
+        given(jwtTokenProvider.createAccessToken(eq(1L), eq("EMP001"), eq("홍길동"), eq("nurse"), eq("session-1"), eq(1L), eq(3L), anyLong())).willReturn("new-access-token");
         given(refreshTokenRepository.save(any(RefreshToken.class))).willAnswer(inv -> inv.getArgument(0));
 
         AuthResult result = authService.refresh(refreshToken.getTokenValue());

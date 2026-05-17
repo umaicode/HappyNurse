@@ -24,7 +24,6 @@ import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.MedicalServices
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Nfc
-import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -35,11 +34,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.happynurse.R
 import com.happynurse.domain.model.NfcPatientInfo
 import com.happynurse.presentation.components.HnCard
 import com.happynurse.presentation.components.NfcLifecycleEffect
@@ -74,7 +75,7 @@ fun NfcPatientScreen(
                 modifier = Modifier.size(28.dp).clickable(onClick = onClose),
             )
             Spacer(Modifier.size(8.dp))
-            Text("NFC 인식", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+            Text("환자 NFC", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
         }
         Column(
             Modifier
@@ -140,52 +141,66 @@ private fun SuccessSection(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier.size(56.dp).clip(CircleShape).background(HnColors.TagPillBg),
                 ) {
-                    Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = HnColors.Success, modifier = Modifier.size(32.dp))
+                    Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = HnColors.Success, modifier = Modifier.size(40.dp))
                 }
-                Spacer(Modifier.height(14.dp))
-                Text("인식 완료", fontSize = 13.sp, color = HnColors.Success, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(10.dp))
+                Text("인식 완료", fontSize = 14.sp,  color = HnColors.Success, fontWeight = FontWeight.SemiBold)
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(20.dp))
             // 환자 정보 영역만 좌측 정렬
             Column(horizontalAlignment = Alignment.Start, modifier = Modifier.fillMaxWidth()) {
-                Text(info.patientName, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                // 호실 + 침대 (Mappers.kt 의 room/bed 패턴과 동일)
+                // 1줄: 환자이름 · 생년월일 · 호실/침대
                 val location = listOfNotNull(info.roomName, info.bedName).joinToString(" - ")
-                if (location.isNotBlank()) {
-                    Spacer(Modifier.height(2.dp))
-                    Text(location, fontSize = 12.sp, color = HnColors.TextSecondary)
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        info.patientName,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = HnColors.Text,
+                    )
+                    info.birthDate?.let {
+                        Spacer(Modifier.size(8.dp))
+                        Text(it, fontSize = 16.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.SemiBold)
+                    }
+                    if (location.isNotBlank()) {
+                        Spacer(Modifier.size(6.dp))
+                        Text("/", fontSize = 16.sp, color = HnColors.TextTertiary, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.size(6.dp))
+                        Text(location, fontSize = 16.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.SemiBold)
+                    }
                 }
-                info.birthDate?.let {
-                    Spacer(Modifier.height(2.dp))
-                    Text("생년월일: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
-                }
-                info.diseaseName?.let {
-                    Spacer(Modifier.height(6.dp))
-                    Text("병명: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
-                }
-                info.chiefComplaint?.let {
-                    Spacer(Modifier.height(2.dp))
-                    Text("주증상: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
-                }
-                info.surgeryName?.let {
-                    Spacer(Modifier.height(2.dp))
-                    Text("수술: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
-                }
-                info.attendingPhysicianName?.let {
-                    Spacer(Modifier.height(2.dp))
-                    Text("담당의: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
+                Spacer(Modifier.height(10.dp))
+                // 2열 × 2행 그리드: 병명/입원일, 수술/담당의
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(HnColors.SurfaceAlt)
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            InfoGridCell("병명", info.diseaseName, modifier = Modifier.weight(1f))
+                            InfoGridCell("입원일", info.periodStart, modifier = Modifier.weight(1f))
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            InfoGridCell("수술", info.surgeryName, modifier = Modifier.weight(1f))
+                            InfoGridCell("담당의", info.attendingPhysicianName, modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }
     }
     Spacer(Modifier.height(16.dp))
-    Text("다음 작업을 선택하세요", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary)
+    Text("다음 작업을 선택하세요", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary)
     Spacer(Modifier.height(10.dp))
-    ActionTile(Icons.Outlined.Mic, "간호일지 등록", "음성 녹음 → STT → 전송", onLog)
+    ActionTile(Icons.Outlined.Mic, "간호일지 등록", "음성 녹음 → STT 변환 → 전송", onLog)
     Spacer(Modifier.height(8.dp))
     ActionTile(Icons.Outlined.MedicalServices, "약물 등록", "약물 NFC 태깅 → 리스트 → 전송", onDrug)
     Spacer(Modifier.height(8.dp))
-    ActionTile(Icons.Outlined.WaterDrop, "수액 확인", "진행 중 수액 → NFC 재태깅", onIv)
+    ActionTile(R.drawable.ic_infusion, "수액 타이머 변경", "진행 중 수액 NFC 태깅", onIv)
 }
 
 @Composable
@@ -202,19 +217,62 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
 }
 
 @Composable
+private fun InfoGridCell(label: String, value: String?, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(label, fontSize = 14.sp, color = HnColors.Text, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            value?.takeIf { it.isNotBlank() } ?: "-",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = HnColors.TextSecondary,
+        )
+    }
+}
+
+@Composable
 private fun ActionTile(icon: ImageVector, title: String, desc: String, onClick: () -> Unit) {
+    ActionTileLayout(title, desc, onClick) {
+        Icon(icon, contentDescription = null, tint = HnColors.Primary, modifier = Modifier.size(24.dp))
+    }
+}
+
+@Composable
+private fun ActionTile(
+    @androidx.annotation.DrawableRes iconRes: Int,
+    title: String,
+    desc: String,
+    onClick: () -> Unit,
+) {
+    ActionTileLayout(title, desc, onClick) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            tint = HnColors.Primary,
+            modifier = Modifier.size(30.dp),
+        )
+    }
+}
+
+@Composable
+private fun ActionTileLayout(
+    title: String,
+    desc: String,
+    onClick: () -> Unit,
+    iconContent: @Composable () -> Unit,
+) {
     HnCard(onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(HnColors.PrimarySoft),
-            ) { Icon(icon, contentDescription = null, tint = HnColors.Primary, modifier = Modifier.size(24.dp)) }
+            ) { iconContent() }
             Spacer(Modifier.size(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                Text(desc, fontSize = 12.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(top = 2.dp))
+                Text(desc, fontSize = 14.sp, color = HnColors.TextSecondary, modifier = Modifier.padding(top = 2.dp))
             }
-            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = HnColors.TextTertiary, modifier = Modifier.size(20.dp))
+            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = HnColors.TextTertiary, modifier = Modifier.size(25.dp))
         }
     }
 }

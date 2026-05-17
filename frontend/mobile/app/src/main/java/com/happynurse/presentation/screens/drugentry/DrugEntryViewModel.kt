@@ -39,6 +39,7 @@ class DrugEntryViewModel @Inject constructor(
         val tagUid: String,
         val medicationOrderId: Long,
         val medicationName: String,
+        val orderCode: String?,
     )
 
     private val _verifiedDrugs = MutableStateFlow<List<VerifiedDrug>>(emptyList())
@@ -56,8 +57,9 @@ class DrugEntryViewModel @Inject constructor(
     private var patientId: Long = -1L
     private var encounterId: Long = -1L
     @Volatile private var verifying = false
-    // medicationOrderId → medicationName(orderName) 매핑 캐시. /drug/verify 응답엔 ID 만 와서 별도 fetch.
+    // medicationOrderId → (orderName, orderCode) 매핑 캐시. /drug/verify 응답엔 ID 만 와서 별도 fetch.
     private var orderNames: Map<Long, String> = emptyMap()
+    private var orderCodes: Map<Long, String?> = emptyMap()
 
     fun setContext(patientId: Long, encounterId: Long) {
         this.patientId = patientId
@@ -73,6 +75,9 @@ class DrugEntryViewModel @Inject constructor(
                 if (res.isSuccessful && body?.success == true && body.data != null) {
                     orderNames = body.data.orders.associate {
                         it.medicationOrderId to (it.orderName ?: "처방 #${it.medicationOrderId}")
+                    }
+                    orderCodes = body.data.orders.associate {
+                        it.medicationOrderId to it.orderCode
                     }
                     _patientName.value = body.data.patientName
                 }
@@ -95,7 +100,7 @@ class DrugEntryViewModel @Inject constructor(
                         val name = orderNames[res.medicationOrderId]
                             ?: "처방 #${res.medicationOrderId}"
                         _verifiedDrugs.update {
-                            it + VerifiedDrug(tagUid, res.medicationOrderId, name)
+                            it + VerifiedDrug(tagUid, res.medicationOrderId, name, orderCodes[res.medicationOrderId])
                         }
                         _verifyError.value = null
                     } else {

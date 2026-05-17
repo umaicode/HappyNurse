@@ -12,23 +12,24 @@ import com.happynurse.wear.presentation.theme.HnAccent
 
 @Composable
 fun SttAlarmScreen(
-    patientName: String,
     contentSummary: String,
-    roomBedTime: String,
     onDismiss: () -> Unit,
 ) {
     HnFullScreenAlarmScaffold(
         badgeText = "알람",
         badgeColor = HnAccent,
-        patientName = patientName,
         content = contentSummary,
-        roomBedTime = roomBedTime,
         bottomButton = {
             EdgeButton(
                 onClick = onDismiss,
                 modifier = Modifier,
             ) {
-                Text("확인", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiary)
+                Text(
+                    text = "확인",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onTertiary,
+                )
             }
         },
     )

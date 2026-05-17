@@ -10,6 +10,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,8 +41,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
-import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.CircularProgressIndicator
 import androidx.wear.compose.material3.Icon
@@ -68,16 +68,14 @@ fun SttResultScreen(
 
     LaunchedEffect(state.phase) {
         when (state.phase) {
+            // DONE 진입 즉시 화면을 닫고 홈으로 복귀. IDLE 로의 자동 복귀는 ViewModel 이 책임진다.
             RecordPhase.DONE -> {
                 delay(DONE_AUTO_DISMISS_MS)
-                // 화면 이동 명령을 먼저 내보내고 그 후 ViewModel reset — 순서가 반대면
-                // consumeDone 의 IDLE 전환이 LaunchedEffect 재실행을 유발해 이 코루틴이
-                // cancel 되고 onSubmitted 가 호출 안 될 위험이 있음.
                 onSubmitted()
-                viewModel.consumeDone()
             }
-            // 재녹음 트리거 후 phase 가 RECORDING 으로 바뀌면 RecordScreen 으로 복귀.
-            RecordPhase.IDLE, RecordPhase.RECORDING -> onCancel()
+            // 재녹음 트리거로 phase 가 RECORDING 으로 바뀌면 RecordScreen 으로 복귀.
+            // IDLE 은 등록 완료 후의 자동 reset 신호이므로 onCancel 트리거에서 제외한다.
+            RecordPhase.RECORDING -> onCancel()
             else -> Unit
         }
     }
@@ -89,33 +87,31 @@ fun SttResultScreen(
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background),
             ) {
-                ScalingLazyColumn(
-                    state = rememberScalingLazyListState(),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(top = 28.dp, bottom = 24.dp, start = 14.dp, end = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(top = 12.dp, bottom = 15.dp, start = 14.dp, end = 14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    item { TimeBadge(text = fireAtDisplay.ifBlank { "—" }) }
-                    item { RecognizedTextCard(text = state.recognizedText) }
+                    TimeBadge(text = fireAtDisplay.ifBlank { "—" })
+                    RecognizedTextCard(text = state.recognizedText)
                     if (state.errorMessage != null && state.phase == RecordPhase.ERROR) {
-                        item {
-                            Text(
-                                text = state.errorMessage.orEmpty(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.error,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
+                        Text(
+                            text = state.errorMessage.orEmpty(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                     if (state.phase != RecordPhase.DONE) {
-                        item {
-                            RestartSubmitRow(
-                                enabled = state.phase == RecordPhase.RESULT,
-                                onSubmit = viewModel::confirm,
-                                onRestart = viewModel::restartRecording,
-                            )
-                        }
+                        RestartSubmitRow(
+                            enabled = state.phase == RecordPhase.RESULT,
+                            onSubmit = viewModel::confirm,
+                            onRestart = viewModel::restartRecording,
+                        )
                     }
                 }
 
@@ -138,28 +134,24 @@ fun SttResultScreen(
 
 @Composable
 private fun TimeBadge(text: String) {
-    Box(
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.primaryContainer)
-            .padding(vertical = 8.dp, horizontal = 12.dp),
-        contentAlignment = Alignment.Center,
+            .padding(vertical = 4.dp, horizontal = 14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "인식된 시간",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
-            )
-            Spacer(Modifier.size(2.dp))
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleSmall.merge(TabularNumStyle),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+        Text(
+            text = "인식된 시간",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium.merge(TabularNumStyle),
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 
@@ -170,7 +162,7 @@ private fun RecognizedTextCard(text: String) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -245,7 +237,7 @@ private fun ActionPill(
 
 /**
  * Material 3 Expressive 스타일 체크 아이콘 — 부드러운 spring scale-in 으로 등장.
- * 외곽 ring(primary alpha 22%) + 안쪽 원(primary) + 둥근 체크 아이콘 3중 레이어로 깊이감.
+ * primary 원 + 둥근 체크 아이콘 단일 레이어.
  */
 @Composable
 private fun DoneToast(modifier: Modifier = Modifier) {
@@ -263,25 +255,17 @@ private fun DoneToast(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .scale(scale)
-            .size(56.dp)
+            .size(44.dp)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)),
+            .background(MaterialTheme.colorScheme.primary),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Check,
-                contentDescription = "등록 완료",
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(26.dp),
-            )
-        }
+        Icon(
+            imageVector = Icons.Rounded.Check,
+            contentDescription = "등록 완료",
+            tint = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.size(26.dp),
+        )
     }
 }
 

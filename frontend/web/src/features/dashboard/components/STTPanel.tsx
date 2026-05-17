@@ -168,15 +168,12 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                 key={order.medicationOrderId}
                 variantClass={isCompleted ? "opacity-70" : undefined}
               >
-                {/* 1행: 타입 라벨 + (변경 칩) | 시간 */}
+                {/* 1행: 환자명 + 호실-침대 (좌) | 시간 (우) — IV타이머 카드와 통일 */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-body-base font-semibold tracking-tight text-brand-primary shrink-0 leading-none">
-                      {ORDER_TYPE_LABEL[order.orderType] ?? order.orderType}
-                    </span>
-                    {isChanged && (
-                      <span className="px-1.5 py-0.5 rounded bg-brand-surface text-brand-primary text-[10px] font-bold leading-none shrink-0">
-                        변경
+                  <div className="flex items-center gap-2 min-w-0">
+                    {patientName && (
+                      <span className="text-body-sm font-bold text-content-primary leading-none truncate">
+                        {patientName}
                       </span>
                     )}
                   </div>
@@ -185,47 +182,48 @@ export function STTPanel({ encounterId }: STTPanelProps) {
                   </span>
                 </div>
 
-                {/* 2행: 처방코드 */}
-                <span className="font-mono font-bold text-body-xs text-content-tertiary leading-none">
+                {/* 2행: 타입 라벨 + (변경 칩) */}
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-body-base font-bold tracking-tight text-brand-primary shrink-0 leading-none">
+                    {ORDER_TYPE_LABEL[order.orderType] ?? order.orderType}
+                  </span>
+                  {isChanged && (
+                    <span className="px-1.5 py-0.5 rounded bg-brand-surface text-brand-primary text-[12px] font-semibold shrink-0">
+                      변경
+                    </span>
+                  )}
+                </div>
+
+                {/* 3행: 처방코드 */}
+                <span className="tabular-nums font-bold text-body-xs text-content-tertiary leading-none">
                   {order.orderCode}
                 </span>
 
-                {/* 3행: 처방명 */}
-                <p className="text-body-sm font-bold text-content-primary leading-tight break-words">
+                {/* 4행: 처방명 */}
+                <p className="text-body-sm mt-1 font-bold text-content-primary leading-tight break-words">
                   {order.orderName}
                 </p>
-
-                {patientName && (
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-body-sm font-bold text-content-primary leading-none truncate">
-                      {patientName}
-                    </span>
-                    {roomBed && (
-                      <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
-                        {roomBed}
-                      </span>
-                    )}
-                  </div>
-                )}
 
                 {/* Info Grid */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 py-1">
                   <InfoCell label="1회량">
-                    <span className="font-mono">
-                      {order.dose}
-                      {order.doseUnit}
-                    </span>
+                    <span className="tabular-nums">{order.dose}</span>
+                  </InfoCell>
+                  <InfoCell label="단위">
+                    <span>{order.doseUnit}</span>
                   </InfoCell>
                   <InfoCell label="횟수">
                     <span>{order.frequency}회</span>
                   </InfoCell>
                   <InfoCell label="용법">
-                    <span className="text-brand-primary">{order.route}</span>
+                    <span>{order.route}</span>
                   </InfoCell>
                 </div>
 
+                {order.remarks && <hr className="border-t border-border-base" />}
+
                 {order.remarks && (
-                  <p className="text-[15px] leading-relaxed text-content-primary break-words">
+                  <p className="text-[14px] leading-relaxed text-content-primary break-words">
                     {order.remarks}
                   </p>
                 )}
@@ -242,7 +240,7 @@ function InfoCell({ label, children }: { label: string; children: React.ReactNod
   return (
     <div className="flex items-baseline gap-2">
       <span className="text-body-micro text-content-muted shrink-0">{label}</span>
-      <span className="text-[15px] text-content-primary leading-none">
+      <span className="text-[14px] text-content-primary leading-none">
         {children}
       </span>
     </div>

@@ -10,8 +10,8 @@ type TabType = 'orders' | 'alerts' | 'iv-timer';
 
 const TABS: { id: TabType; label: string }[] = [
   { id: 'orders', label: '의사 오더' },
-  { id: 'alerts', label: '알림' },
   { id: 'iv-timer', label: '수액 타이머' },
+  { id: 'alerts', label: '알림' },
 ];
 
 interface RightPanelProps {
@@ -32,7 +32,7 @@ export function RightPanel({ encounterId }: RightPanelProps) {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex-1 py-2 text-[13px] font-bold rounded-md transition-all flex items-center justify-center",
+                  "flex-1 py-2 text-[15px] font-bold rounded-md transition-all flex items-center justify-center",
                   isActive
                     ? "bg-white text-brand-primary shadow-sm"
                     : "text-content-muted hover:text-content-secondary",
@@ -45,10 +45,10 @@ export function RightPanel({ encounterId }: RightPanelProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden">
-        {activeTab === 'orders' && <STTPanel encounterId={encounterId} />}
-        {activeTab === 'alerts' && <PatientAlerts />}
-        {activeTab === 'iv-timer' && <IVTimerPanel />}
+      <div className="flex-1 overflow-hidden relative">
+        <div className={cn("absolute inset-0", activeTab !== 'orders' && 'hidden')}><STTPanel encounterId={encounterId} /></div>
+        <div className={cn("absolute inset-0", activeTab !== 'alerts' && 'hidden')}><PatientAlerts /></div>
+        <div className={cn("absolute inset-0", activeTab !== 'iv-timer' && 'hidden')}><IVTimerPanel /></div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 package com.happynurse.wear.di
 
 import com.happynurse.wear.BuildConfig
-import com.happynurse.wear.data.auth.AuthInterceptor
+import com.happynurse.wear.data.remote.AuthInterceptor
 import com.happynurse.wear.data.remote.api.IvInfusionApi
 import com.happynurse.wear.data.remote.api.SttRecognitionApi
 import com.happynurse.wear.data.remote.api.SttReminderApi

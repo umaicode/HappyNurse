@@ -6,7 +6,7 @@ class Settings(BaseSettings):
 
     gms_api_key: str
     anthropic_base_url: str = "https://gms.ssafy.io/gmsapi/api.anthropic.com"
-    llm_model: str = "claude-haiku-4-5-20251001"
+    llm_model: str = "claude-sonnet-4-5-20250929"
     llm_max_tokens: int = 4096
     llm_total_timeout_s: float = 120.0
 

@@ -3,6 +3,11 @@
  * Node.js 런타임 동작.
  * 비로그인(ACCESS_TOKEN 쿠키 없음) → /login 리다이렉트.
  *
+ * 루트 `/` 진입 분기는 proxy 가 아닌 `app/page.tsx` 서버 컴포넌트가 처리한다 —
+ * Next.js 16 의 proxy matcher 는 bare `'/'` 패턴을 안정적으로 매칭하지 않아서
+ * (path-to-regexp 의 root 처리 quirk) 정규식 회피 패치보다 server component 의
+ * `cookies()` + `redirect()` 가 표준 패턴.
+ *
  * [Next.js 16 변경]
  * 파일명: middleware.ts  →  proxy.ts
  * 함수명: middleware()   →  proxy()

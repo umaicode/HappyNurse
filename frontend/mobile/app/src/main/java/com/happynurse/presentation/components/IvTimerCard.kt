@@ -15,9 +15,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -40,32 +43,60 @@ fun IvTimerCard(
     iv: IvTimer,
     layout: IvTimerLayout = IvTimerLayout.BAR,
 ) {
-    val pct = (iv.elapsedMin.toFloat() / iv.totalMin).coerceIn(0f, 1f)
+    val liveElapsedMin = rememberLiveElapsedMin(iv)
+    val pct = (liveElapsedMin.toFloat() / iv.totalMin).coerceIn(0f, 1f)
     val color: Color = when {
         pct < 0.5f -> IvSafeColor
         pct < 0.8f -> IvCautionColor
         else       -> IvUrgentColor
     }
-    if (layout == IvTimerLayout.RING) RingCard(iv, pct, color) else BarCard(iv, pct, color)
+    if (layout == IvTimerLayout.RING) RingCard(iv, liveElapsedMin, pct, color)
+    else BarCard(iv, liveElapsedMin, pct, color)
+}
+
+// 1초마다 startedAtEpochMs 기준으로 현재 elapsedMin 재계산.
+// fallback: epoch가 0이면(과거 데이터/누락) iv.elapsedMin 그대로 사용.
+@Composable
+private fun rememberLiveElapsedMin(iv: IvTimer): Int {
+    if (iv.startedAtEpochMs <= 0L) return iv.elapsedMin
+    val elapsed by produceState(initialValue = iv.elapsedMin, iv.id, iv.startedAtEpochMs, iv.totalMin) {
+        while (true) {
+            val elapsedSec = ((System.currentTimeMillis() - iv.startedAtEpochMs) / 1000L)
+                .coerceIn(0L, iv.totalMin.toLong() * 60L)
+            value = (elapsedSec / 60L).toInt()
+            kotlinx.coroutines.delay(1000L)
+        }
+    }
+    return elapsed
 }
 
 @Composable
-private fun BarCard(iv: IvTimer, pct: Float, color: Color) {
+private fun BarCard(iv: IvTimer, elapsedMin: Int, pct: Float, color: Color) {
     val fillRatio = (1f - pct).coerceIn(0f, 1f)
     val gtt = iv.rateGttPerMin?.takeIf { it > 0 }
     val drugLines = iv.drug.split(" + ").map { it.trim() }.filter { it.isNotEmpty() }
-    val remainingMin = (iv.totalMin - iv.elapsedMin).coerceAtLeast(0)
+    val remainingMin = (iv.totalMin - elapsedMin).coerceAtLeast(0)
     HnCard {
-        Row(verticalAlignment = Alignment.Top) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             // 좌측: IV 백 + 똑똑 떨어지는 방울 (chamber 옆에 gtt/min 라벨이 함께 그려짐)
-            IvDripAnimation(
-                fillRatio = fillRatio,
-                color = color,
-                gttPerMin = gtt,
-                modifier = Modifier.size(width = 90.dp, height = 120.dp),
-            )
+            // IvDripAnimation 은 원본(90×120) 그대로 유지하고, Box 폭만 줄인 뒤
+            // Canvas 를 좌측으로 음의 offset 으로 밀어 "왼쪽만" 잘리도록 함.
+            Box(
+                modifier = Modifier
+                    .size(width = 90.dp, height = 120.dp)
+                    .clipToBounds(),
+            ) {
+                IvDripAnimation(
+                    fillRatio = fillRatio,
+                    color = color,
+                    gttPerMin = gtt,
+                    modifier = Modifier
+                        .size(width = 90.dp, height = 120.dp)
+                        .offset(x = (-10).dp),
+                )
+            }
             // 우측: 환자 + 약물 + 진행 바 + 남은시간
-            Column(modifier = Modifier.weight(1f).offset(x = (-14).dp)) {
+            Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(iv.patient, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
                     Spacer(Modifier.size(6.dp))
@@ -118,7 +149,7 @@ private fun BarCard(iv: IvTimer, pct: Float, color: Color) {
 }
 
 @Composable
-private fun RingCard(iv: IvTimer, pct: Float, color: Color) {
+private fun RingCard(iv: IvTimer, elapsedMin: Int, pct: Float, color: Color) {
     HnCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             ProgressRing(pct = pct, color = color)
@@ -130,7 +161,7 @@ private fun RingCard(iv: IvTimer, pct: Float, color: Color) {
                     TagChip(iv.room, fg = HnColors.Primary, bg = HnColors.PrimarySoft)
                 }
                 Text(iv.drug, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text, modifier = Modifier.padding(top = 4.dp))
-                val remaining = iv.totalMin - iv.elapsedMin
+                val remaining = iv.totalMin - elapsedMin
                 Text(
                     "남은 시간 ${remaining / 60}h ${remaining % 60}m · 종료 ${iv.endsAt}",
                     fontSize = 12.sp,

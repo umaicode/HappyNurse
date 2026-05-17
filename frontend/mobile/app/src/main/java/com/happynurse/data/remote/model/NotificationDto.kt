@@ -13,6 +13,7 @@ data class NotificationListItemResponse(
     @SerializedName("sourceEntityId") val sourceEntityId: Long?,
     @SerializedName("createdAt") val createdAt: String?,
     @SerializedName("recipientPractitionerId") val recipientPractitionerId: Long?,
+    @SerializedName("priority") val priority: String? = null,
 )
 
 data class NotificationListResponse(

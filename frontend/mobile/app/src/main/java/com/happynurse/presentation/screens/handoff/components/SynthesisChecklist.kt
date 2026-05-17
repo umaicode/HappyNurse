@@ -45,7 +45,7 @@ fun SynthesisChecklist(
 ) {
     if (items.isEmpty()) return
     val accent = HnColors.Success
-    val bg = accent.copy(alpha = 0.08f)
+    val bg = accent.copy(alpha = 0.04f)
     val done = checkedMap?.count { (idx, _) -> idx in items.indices } ?: 0
 
     Column(

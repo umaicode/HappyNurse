@@ -14,9 +14,9 @@ export default function Auth() {
   const resolvedPatientId = devPatientId;
   const isPrefill = searchParams.get("prefill") === "1";
 
-  const [name, setName] = useState(isPrefill ? "이승연" : "");
+  const [name, setName] = useState(isPrefill ? "김환자" : "");
   const [birthDigits, setBirthDigits] = useState<string[]>(
-    isPrefill ? ["9", "9", "0", "7", "2", "5"] : Array(6).fill(""),
+    isPrefill ? ["9", "0", "1", "1", "0", "8"] : Array(6).fill(""),
   );
   const [focusIdx, setFocusIdx] = useState(0);
   const [submitting, setSubmitting] = useState(false);

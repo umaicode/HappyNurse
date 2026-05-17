@@ -11,8 +11,6 @@ import { DROP_SET_LABEL, type IvInfusionListItem } from "../types/iv-infusion";
 import { PanelCard } from "./PanelCard";
 
 const TICK_INTERVAL_MS = 60_000;
-// 잔여 5분 미만이면 게이지 색을 danger 로 override — iv_alert SSE 5분 전 발행 시점과 align.
-const CRITICAL_REMAINING_MS = 5 * 60 * 1000;
 
 function formatDuration(milliseconds: number): string {
   const totalMinutes = Math.max(0, Math.floor(milliseconds / 60_000));
@@ -134,21 +132,17 @@ export function IVTimerPanel() {
           const elapsedMs = Math.max(0, now - startedAtMs);
           const progressPercent = Math.min(100, (elapsedMs / totalMs) * 100);
 
-          // 게이지 색 — 모바일 IVTimerCard.kt 와 동일한 경과율 기준 50%/80% 3단계.
-          // 단 잔여 5분 미만이면 무조건 danger override (iv_alert SSE 발행 시점과 align).
-          // 텍스트는 의사오더/알림 카드와 통일된 차분 톤으로 — 사용자 안전 강조는 게이지가 담당.
-          const isCritical = remainingMs < CRITICAL_REMAINING_MS;
-          const barColorClass = isCritical
-            ? "bg-status-danger"
-            : progressPercent < 50
-              ? "bg-status-active"
-              : progressPercent < 80
-                ? "bg-status-warning"
-                : "bg-status-danger";
+          // 게이지 색 — 잔여율 기준 3단계. 50% 이상 green, 20% 이상 amber, 그 외 red.
+          const remainingPercent = 100 - progressPercent;
+          const barColor =
+            remainingPercent >= 50
+              ? "#5BAD8A"
+              : remainingPercent >= 20
+                ? "#E8BE57"
+                : "#D25757";
 
           const info = infoByPatientId.get(item.patientId);
           const roomBed = info?.roomBed ?? "";
-          const fluidLabel = item.medicationNames.join(" + ");
 
           // 종료 시각 — 같은 날이면 시간만, 다음 날 넘어가면 "M/D HH:mm".
           const endIsSameDay = isSameDay(new Date(item.expectedEndAt), now);
@@ -160,12 +154,12 @@ export function IVTimerPanel() {
             <PanelCard key={item.ivInfusionId}>
               {/* 1행: 환자명 + 호실-침대 칩 (좌) | 종료 시각 (우) — 모바일 BarCard 정렬 */}
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-body-sm font-bold text-content-primary leading-none break-words">
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="text-body-lg font-bold text-content-primary leading-none break-words">
                     {item.patientName}
                   </span>
                   {roomBed && (
-                    <span className="px-1.5 py-0.5 rounded bg-[#F7F8FA] text-content-secondary text-[11px] font-bold leading-none shrink-0">
+                    <span className="px-1.5 py-1 rounded bg-[#F7F8FA] text-content-secondary text-[12px] font-semibold">
                       {roomBed}
                     </span>
                   )}
@@ -177,22 +171,29 @@ export function IVTimerPanel() {
                 </span>
               </div>
 
-              {/* 2행: 수액 이름 — 길면 다음 줄로 (truncate 금지) */}
-              <span className="text-body-sm font-bold text-content-primary leading-snug break-words">
-                {fluidLabel}
-              </span>
+              {/* 2행: 수액 이름 — 약물 1개당 한 줄. 길면 다음 줄로 (truncate 금지) */}
+              <ul className="flex flex-col gap-0.5">
+                {item.medicationNames.map((medicationName, medicationIndex) => (
+                  <li
+                    key={medicationIndex}
+                    className="text-body-sm font-bold text-content-primary leading-snug break-words"
+                  >
+                    {medicationName}
+                  </li>
+                ))}
+              </ul>
 
               {/* 2.5행: 주입 속도 + 세트 — BE 5/11 IvInfusionListItemResponse 확장분 (rateGttPerMin · dropSet).
                   마이그레이션 누락 row 는 둘 다 null 가능 → mL/hr 만 노출. */}
               <span className="text-body-micro font-medium text-content-tertiary leading-none">
-                <span className="font-mono">
+                <span className="tabular-nums">
                   {item.currentRateMlPerHr}
                 </span>{" "}
                 mL/hr
                 {item.rateGttPerMin !== null && (
                   <>
                     {" · "}
-                    <span className="font-mono">{item.rateGttPerMin}</span>
+                    <span className="tabular-nums">{item.rateGttPerMin}</span>
                     {" gtt/min"}
                   </>
                 )}
@@ -207,15 +208,15 @@ export function IVTimerPanel() {
               {/* 3행: 진행 막대바 — startedAt → expectedEndAt 구간 기준 elapsed/total */}
               <div className="h-1.5 w-full rounded-full bg-surface-hover overflow-hidden">
                 <div
-                  className={cn("h-full rounded-full transition-all", barColorClass)}
-                  style={{ width: `${progressPercent}%` }}
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${progressPercent}%`, backgroundColor: barColor }}
                 />
               </div>
 
               {/* 4행: 잔여 시간 — 종료시각과 동일하게 차분한 톤. 사용자 안전 강조는 게이지 색 + 1행 종료시각이 담당. */}
               <span className="text-body-xs font-medium text-content-tertiary leading-none">
                 남은 시간{" "}
-                <span className="font-mono">{formatDuration(remainingMs)}</span>
+                <span>{formatDuration(remainingMs)}</span>
               </span>
             </PanelCard>
           );

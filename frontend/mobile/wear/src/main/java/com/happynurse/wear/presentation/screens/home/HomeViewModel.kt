@@ -5,10 +5,10 @@ package com.happynurse.wear.presentation.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.happynurse.wear.alarm.AlarmScheduler
-import com.happynurse.wear.data.auth.PhoneTokenSyncClient
-import com.happynurse.wear.data.auth.WearTokenStore
-import com.happynurse.wear.data.model.IvInfusionTimer
-import com.happynurse.wear.data.model.SttTimer
+import com.happynurse.wear.data.remote.wearable.PhoneTokenSyncClient
+import com.happynurse.wear.data.remote.WearTokenStore
+import com.happynurse.wear.domain.model.IvInfusionTimer
+import com.happynurse.wear.domain.model.SttTimer
 import com.happynurse.wear.data.repository.IvInfusionRepository
 import com.happynurse.wear.data.repository.SttReminderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel

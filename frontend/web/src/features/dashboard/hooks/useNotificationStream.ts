@@ -29,6 +29,10 @@ const SOURCE_EVENTS = [
   "vital_alert",
 ] as const;
 
+// EMR 간호기록 갱신용 — Notification DB 미저장이라 알림함 카운트와 무관.
+// BE 는 ward 채널로만 발사 (NursingRecordSseService.send).
+const NURSING_EVENT = "nursing_record";
+
 type SourceEventName = (typeof SOURCE_EVENTS)[number];
 
 const isLocalhostDevelopment = () =>
@@ -59,15 +63,33 @@ export function useNotificationStream() {
   // 병동 채널 — 같은 ward 의 모든 알림. IV 캐시 갱신은 개인 채널이 담당하므로
   // 여기서는 알림 카운트만 갱신한다 (한 이벤트로 두 채널이 동시에 IV 캐시를 invalidate
   // 하면 staleTime 통과 시 /iv 가 두 번 fetch 되는 문제 회피).
+  //
+  // nursing_record 는 의미가 다르다 — 알림함이 아니라 EMR 간호기록 그리드 갱신용.
+  // BE 는 Notification DB 에 저장하지 않고 ward 채널로만 발사한다.
   useEffect(() => {
     if (!isLoggedIn || wardId === null) return;
     if (isLocalhostDevelopment()) return;
-    const handler = () => {
+
+    const notificationHandler = () => {
       queryClient.invalidateQueries({ queryKey: ["notifications", "ward", wardId] });
     };
-    const onEvent = Object.fromEntries(
-      SOURCE_EVENTS.map((name) => [name, handler]),
-    );
+
+    // useNursingNotes 의 queryKey: ["encounter", encounterId, "nursing-notes", date]
+    // SSE payload 에 encounterId 가 없어 predicate 로 prefix 매칭한다.
+    // useDraftNursingNotes (["encounter", id, "nursing-notes", "drafts"]) /
+    // useMonthNursingCounts (날짜별 동일 prefix) 도 함께 갱신됨.
+    const nursingHandler = () => {
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "encounter" && query.queryKey[2] === "nursing-notes",
+      });
+    };
+
+    const onEvent = {
+      ...Object.fromEntries(SOURCE_EVENTS.map((name) => [name, notificationHandler])),
+      [NURSING_EVENT]: nursingHandler,
+    };
+
     return openSse("/sse/ward-subscribe", { onEvent });
   }, [isLoggedIn, wardId, queryClient]);
 }

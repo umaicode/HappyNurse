@@ -4,10 +4,11 @@
  * client 응답 인터셉터가 { success, data, ... } wrapper 의 data 만 평탄화하여 내려주므로
  * 각 함수는 response.data 를 그대로 반환한다.
  *
- * - [간호사용 웹] login() · logout() · getMe() · devLogin() · devSignup()
+ * - [간호사용 웹] login() · logout() · getMe() · devLogin() · devSignup() · extendSession()
  * - [환자용 웹앱] verifyPatient(request) — ACCESS_TOKEN 쿠키 발급
  *
- * 토큰 갱신(/auth/refresh) 은 client.ts 의 401 인터셉터가 직접 호출하므로 별도 export 하지 않는다.
+ * /auth/refresh — 401 인터셉터가 자동 호출 (REFRESH_TOKEN 으로 ACCESS+REFRESH 둘 다 재발급)
+ * /auth/extend  — 사용자 명시 연장 (ACCESS_TOKEN 만 재발급, REFRESH_TOKEN 그대로 유지)
  */
 import { client } from "@/lib/client";
 import type {
@@ -31,6 +32,11 @@ export const logout = (): Promise<void> =>
 
 export const getMe = (): Promise<AuthUser> =>
   client.get('/practitioners/me').then((response) => response.data)
+
+// 사용자 명시 세션 연장 — 사이드바의 "연장" 버튼이 호출. BE 가 ACCESS_TOKEN 쿠키만 재발급.
+// REFRESH_TOKEN 은 그대로 유지되므로 보안 영향 적음. 응답 body 는 ApiResponseVoid.
+export const extendSession = (): Promise<void> =>
+  client.post("/auth/extend").then(() => undefined);
 
 // [간호사용 웹] DEV 로그인 / DEV 회원가입 — NEXT_PUBLIC_APP_ENV === 'dev' 환경에서만 호출
 
