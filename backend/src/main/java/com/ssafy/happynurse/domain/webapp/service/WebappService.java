@@ -11,6 +11,7 @@ import com.ssafy.happynurse.domain.webapp.dto.EncounterContext;
 import com.ssafy.happynurse.domain.webapp.entity.InputMethod;
 import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
 import com.ssafy.happynurse.domain.webapp.entity.QuickSymptomButton;
+import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
 import com.ssafy.happynurse.domain.webapp.event.SymptomSubmittedEvent;
 import com.ssafy.happynurse.domain.webapp.repository.PatientSelfReportRepository;
 import com.ssafy.happynurse.domain.webapp.repository.QuickSymptomButtonRepository;
@@ -163,12 +164,14 @@ public class WebappService {
 
         // 자유텍스트가 있으면 AI filter 호출하여 부적절 발화 정제.
         // 카드 단독 케이스는 호출 안 함 (button label 만 사용).
+        boolean isPlaceholderText = false;
         if (hasText) {
             String cleaned = filterClient.filter(symptomText).cleanedText();
             if (cleaned != null) {
                 if (cleaned.isBlank()) {
                     log.info("[ProfanityFilter] patientId={} 부적절 발화만 — placeholder 치환", jwtPatientId);
                     symptomText = EMPTY_AFTER_FILTER_PLACEHOLDER;
+                    isPlaceholderText = true;
                 } else {
                     log.info("[ProfanityFilter] patientId={} 정제 적용 (originalLen={}, cleanedLen={})",
                             jwtPatientId, symptomText.length(), cleaned.length());
@@ -177,10 +180,17 @@ public class WebappService {
             }
         }
 
-        // 분류를 save 보다 먼저 호출 — 정제된 텍스트로 priority 산출.
-        SymptomClassificationService.SymptomClassificationResult classification = hasButton
-                ? classificationService.classifyButton(button.getLabel())
-                : classificationService.classify(symptomText, EncounterContext.from(encounter));
+        // 분류 — placeholder 케이스는 의료 호소가 아니므로 분류 LLM 우회 후 LOW 고정.
+        // (분류 LLM 에 placeholder 를 넣으면 invalid response → 502 → MEDIUM fallback 이 매번 발생함)
+        SymptomClassificationService.SymptomClassificationResult classification;
+        if (hasButton) {
+            classification = classificationService.classifyButton(button.getLabel());
+        } else if (isPlaceholderText) {
+            classification = new SymptomClassificationService.SymptomClassificationResult(
+                    SymptomPriority.LOW, null);
+        } else {
+            classification = classificationService.classify(symptomText, EncounterContext.from(encounter));
+        }
 
         PatientSelfReport savedReport = patientSelfReportRepository.save(
                 PatientSelfReport.create(patient, encounter, inputMethod, button, symptomText));
