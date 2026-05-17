@@ -87,8 +87,25 @@ export function useNotificationStream() {
       });
     };
 
+    // useOrders 의 queryKey: ["encounter", encounterId, "orders"]
+    // EMRGrid 의 OrderTab + RightPanel 의 STTPanel(사이드바 의사오더 탭) 이 같은 캐시 공유 → 한 번에 갱신됨.
+    // ward 채널에서만 처리 — 개인 채널에서도 invalidate 하면 한 이벤트로 두 번 fetch 됨.
+    const orderHandler = () => {
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "encounter" && query.queryKey[2] === "orders",
+      });
+    };
+
+    // order_change 는 알림 카운트(notificationHandler) + 오더 캐시(orderHandler) 동시 갱신.
+    const orderChangeHandler = () => {
+      notificationHandler();
+      orderHandler();
+    };
+
     const onEvent = {
       ...Object.fromEntries(SOURCE_EVENTS.map((name) => [name, notificationHandler])),
+      order_change: orderChangeHandler,
       [NURSING_EVENT]: nursingHandler,
       [MEDICATION_ADMIN_EVENT]: nursingHandler,
     };
