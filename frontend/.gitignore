@@ -91,6 +91,7 @@ src.zip
 
 # 현지
 web/swagger.json
+web/swagger-ai.json
 mobile/swagger.json
 mobile/swagger-ai.json
 mobile/app/google-services.json

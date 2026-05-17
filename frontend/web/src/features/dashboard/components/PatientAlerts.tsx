@@ -1,21 +1,47 @@
 'use client'
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, useEffect } from "react";
 import { Info, Loader2, Siren } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PanelCard } from "./PanelCard";
 import { useMyNotifications } from "../hooks/useNotifications";
 import { useWardPatients } from "@/features/patient/hooks/useWardPatients";
 import {
-  PRIORITY_CHIP,
-  PRIORITY_LABEL,
-  SOURCE_TYPE_LABEL,
-  SOURCE_TYPE_TONE,
   type NotificationListItem,
   type SourceType,
   type SymptomPriority,
 } from "../types/notification";
 import { formatRelativeTime } from "@/lib/time";
+
+const SOURCE_TYPE_LABEL: Record<SourceType, string> = {
+  self_report: "환자 요청",
+  iv_alert: "수액 타이머",
+  timer: "타이머",
+  order_change: "오더 변경",
+  vital_alert: "바이탈 경고",
+};
+
+const SOURCE_TYPE_TONE: Record<SourceType, string> = {
+  self_report: "text-[#5945b0]",
+  iv_alert: "text-[#4098cf]",
+  timer: "text-status-warning",
+  order_change: "text-status-success",
+  vital_alert: "text-status-danger-strong",
+};
+
+const PRIORITY_LABEL: Record<SymptomPriority, string> = {
+  CRITICAL: "긴급",
+  HIGH: "높음",
+  MEDIUM: "보통",
+  LOW: "낮음",
+};
+
+const PRIORITY_CHIP: Record<SymptomPriority, string> = {
+  CRITICAL: "bg-status-danger-surface text-status-danger-strong",
+  HIGH: "bg-status-danger-surface text-status-danger",
+  MEDIUM: "bg-status-warning-surface text-status-warning",
+  LOW: "bg-surface-hover text-status-neutral",
+};
 
 export function PatientAlerts() {
   const { data, isPending, isError } = useMyNotifications();
@@ -45,6 +71,24 @@ export function PatientAlerts() {
     );
   }, [data]);
 
+  // 이전 렌더에 없던 notificationId 를 "새 알림"으로 표시.
+  const seenIds = useRef<Set<number>>(new Set());
+  const [newIds, setNewIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    if (sorted.length === 0) return;
+    const incoming = sorted
+      .map((a) => a.notificationId)
+      .filter((id) => !seenIds.current.has(id));
+    if (incoming.length === 0) return;
+    incoming.forEach((id) => seenIds.current.add(id));
+    // 최초 마운트(seenIds 비어있음)엔 애니메이션 없이 전부 등록만.
+    if (seenIds.current.size === incoming.length) return;
+    setNewIds(new Set(incoming));
+    const timer = setTimeout(() => setNewIds(new Set()), 500);
+    return () => clearTimeout(timer);
+  }, [sorted]);
+
   return (
     <div className="flex flex-col h-full bg-surface-base">
       <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2.5">
@@ -59,6 +103,7 @@ export function PatientAlerts() {
             <NotificationCard
               key={alert.notificationId}
               alert={alert}
+              isNew={newIds.has(alert.notificationId)}
               roomBed={
                 alert.patientId !== null
                   ? roomBedByPatientId.get(alert.patientId) ?? ""
@@ -75,9 +120,11 @@ export function PatientAlerts() {
 function NotificationCard({
   alert,
   roomBed,
+  isNew,
 }: {
   alert: NotificationListItem;
   roomBed: string;
+  isNew: boolean;
 }) {
   const sourceType = alert.sourceType as SourceType;
   const label = SOURCE_TYPE_LABEL[sourceType] ?? alert.sourceType;
@@ -94,6 +141,7 @@ function NotificationCard({
 
   return (
     <PanelCard
+      style={isNew ? { animation: "slideInFromTop 0.4s ease-out" } : undefined}
       onClick={isInteractive ? toggle : undefined}
       role={isInteractive ? "button" : undefined}
       tabIndex={isInteractive ? 0 : undefined}
