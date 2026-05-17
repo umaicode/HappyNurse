@@ -133,7 +133,7 @@ public class WebappController {
     public ResponseEntity<ApiResponse<SymptomSubmitResponse>> submitSymptom(
         @Parameter(description = "환자 ID (JWT의 subject와 일치해야 함)", example = "1", required = true)
         @PathVariable Long patientId,
-        @RequestBody SymptomSubmitRequest request,
+        @Valid @RequestBody SymptomSubmitRequest request,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         return ResponseEntity.ok(ApiResponse.ok(
