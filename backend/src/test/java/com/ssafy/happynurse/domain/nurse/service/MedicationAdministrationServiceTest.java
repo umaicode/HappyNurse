@@ -15,6 +15,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.ssafy.happynurse.domain.patient.entity.Encounter;
+import com.ssafy.happynurse.domain.patient.entity.Patient;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,6 +38,8 @@ class MedicationAdministrationServiceTest {
 
     @Mock
     MedicationAdministrationRepository medicationAdministrationRepository;
+    @Mock
+    ApplicationEventPublisher eventPublisher;
     @InjectMocks
     MedicationAdministrationService medicationAdministrationService;
 
@@ -291,6 +296,14 @@ class MedicationAdministrationServiceTest {
         setField(ma, "nfcTagVerified", nfcTagVerified);
         setField(ma, "dosageQuantity", new BigDecimal("1.000"));
         setField(ma, "dosageUnit", "mg");
+
+        // SSE 이벤트 발행을 위한 encounter/patient 보강 (confirm() 안에서 head.getEncounter()/getPatient() 호출)
+        Encounter encounter = newInstance(Encounter.class);
+        setField(encounter, "encounterId", 42L);
+        setField(ma, "encounter", encounter);
+        Patient patient = newInstance(Patient.class);
+        setField(ma, "patient", patient);
+
         return ma;
     }
 

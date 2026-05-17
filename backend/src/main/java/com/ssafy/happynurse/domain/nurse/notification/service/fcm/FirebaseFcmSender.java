@@ -78,12 +78,13 @@ public class FirebaseFcmSender implements FcmSender {
         }
     }
 
-    private Map<String, String> buildDataPayload(NotificationEnvelope env) {
+    Map<String, String> buildDataPayload(NotificationEnvelope env) {
         Map<String, String> data = new HashMap<>();
         data.put("notificationId", String.valueOf(env.notificationId()));
         data.put("sourceType", env.sourceType().name());
         if (env.patientId() != null) data.put("patientId", String.valueOf(env.patientId()));
         if (env.sourceEntityId() != null) data.put("sourceEntityId", String.valueOf(env.sourceEntityId()));
+        if (env.priority() != null) data.put("priority", env.priority().name());
 
         // envelope.payload 가 Map<String,String> 이면 추가 키들을 그대로 전달
         // (워치 SttAlarmActivity 등이 patientName, contentSummary, roomBedTime 등을 읽음)
