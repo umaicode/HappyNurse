@@ -7,6 +7,9 @@ package com.happynurse.presentation.components
 import android.graphics.Paint
 import android.graphics.Typeface
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.res.ResourcesCompat
+import com.happynurse.R
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -14,6 +17,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -62,6 +66,15 @@ fun IvDripAnimation(
     val t = if (animate) progress else 0f
     val wp = if (animate) wavePhase else 0f
     val ratio = fillRatio.coerceIn(0f, 1f)
+
+    val context = LocalContext.current
+    val pretendardTypeface = remember(context) {
+        ResourcesCompat.getFont(context, R.font.pretendard)
+            ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    val pretendardBold = remember(pretendardTypeface) {
+        Typeface.create(pretendardTypeface, Typeface.BOLD)
+    }
 
     Canvas(modifier = modifier) {
         val w = size.width
@@ -342,7 +355,7 @@ fun IvDripAnimation(
                 isAntiAlias = true
                 this.color = strokeColor
                 textSize = h * 0.23f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                typeface = pretendardBold
                 textAlign = Paint.Align.CENTER
                 style = Paint.Style.STROKE
                 strokeWidth = 3.5f
@@ -352,14 +365,14 @@ fun IvDripAnimation(
                 isAntiAlias = true
                 this.color = textColor
                 textSize = h * 0.23f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                typeface = pretendardBold
                 textAlign = Paint.Align.CENTER
             }
             val unitStrokePaint = Paint().apply {
                 isAntiAlias = true
                 this.color = strokeColor
                 textSize = h * 0.085f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                typeface = pretendardBold
                 textAlign = Paint.Align.CENTER
                 style = Paint.Style.STROKE
                 strokeWidth = 2.0f
@@ -369,7 +382,7 @@ fun IvDripAnimation(
                 isAntiAlias = true
                 this.color = textColor
                 textSize = h * 0.085f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                typeface = pretendardBold
                 textAlign = Paint.Align.CENTER
             }
 
