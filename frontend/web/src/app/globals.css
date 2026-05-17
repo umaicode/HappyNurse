@@ -235,8 +235,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-family: "Pretendard", sans-serif;
+    @apply bg-background text-foreground font-sans;
   }
 
   html {

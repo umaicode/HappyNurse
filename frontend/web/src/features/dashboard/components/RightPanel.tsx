@@ -45,10 +45,10 @@ export function RightPanel({ encounterId }: RightPanelProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden">
-        {activeTab === 'orders' && <STTPanel encounterId={encounterId} />}
-        {activeTab === 'alerts' && <PatientAlerts />}
-        {activeTab === 'iv-timer' && <IVTimerPanel />}
+      <div className="flex-1 overflow-hidden relative">
+        <div className={cn("absolute inset-0", activeTab !== 'orders' && 'hidden')}><STTPanel encounterId={encounterId} /></div>
+        <div className={cn("absolute inset-0", activeTab !== 'alerts' && 'hidden')}><PatientAlerts /></div>
+        <div className={cn("absolute inset-0", activeTab !== 'iv-timer' && 'hidden')}><IVTimerPanel /></div>
       </div>
     </div>
   );
