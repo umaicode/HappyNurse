@@ -2,6 +2,17 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @font-face {
   font-family: "Pretendard";
   src: url("/fonts/PretendardVariable.ttf") format("truetype");
@@ -205,7 +216,7 @@
   ============================================================ */
   --color-patient-accent-surface: #f0f2fe;
   --color-patient-primary: #1428a0;
-  --color-patient-success: #497461;
+  --color-patient-success: #43916f;
   --color-patient-success-surface: #e7f4ed;
   --color-patient-slate: #37404a;
   --color-patient-slate-surface: #eef0f3;
@@ -224,8 +235,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-family: "Pretendard", sans-serif;
+    @apply bg-background text-foreground font-sans;
   }
 
   html {

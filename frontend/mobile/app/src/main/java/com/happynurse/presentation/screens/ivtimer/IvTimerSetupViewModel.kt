@@ -24,6 +24,7 @@ enum class PatientType(val raw: String, val gttPerMl: Int) {
 /** 처방 1건의 표시용 정보. 카드 표시 + 처방 용량 합계 검증에 사용. */
 data class OrderInfo(
     val orderName: String,
+    val orderCode: String?,
     /** doseUnit == "mL" 이고 dose 가 있을 때만 채워짐. 없으면 max 검증에서 제외. */
     val doseMl: Int?,
 )
@@ -67,6 +68,7 @@ class IvTimerSetupViewModel @Inject constructor(
                             else null
                         o.medicationOrderId to OrderInfo(
                             orderName = o.orderName ?: "처방 #${o.medicationOrderId}",
+                            orderCode = o.orderCode,
                             doseMl = mlDose,
                         )
                     }

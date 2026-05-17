@@ -35,6 +35,9 @@ class AudioRecorder @Inject constructor(
         return file
     }
 
+    // 마이크 입력 진폭 — 마지막 호출 이후 PCM 피크 (0..32767). 녹음 중이 아니면 0.
+    fun maxAmplitude(): Int = recorder?.maxAmplitude ?: 0
+
     // 녹음 정지 — 정상 정지 시 file 반환. 실패 / 정지 안 된 경우 null.
     fun stop(): File? {
         val r = recorder ?: return null

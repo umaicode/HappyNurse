@@ -25,6 +25,8 @@ import com.happynurse.presentation.screens.patients.PatientsScreen
 import com.happynurse.presentation.screens.timer.TasksScreen
 import com.happynurse.presentation.screens.timer.TasksViewModel
 import com.happynurse.presentation.theme.HnColors
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 @Composable
 fun MainScaffold(
@@ -40,6 +42,15 @@ fun MainScaffold(
     val upcoming = notifications.count { it.minutesAgo in -1440..1440 }
     // 탭 전환 시마다 refresh (담당환자 변경 후 다른 탭 → 벨 카운트 / 시트 자동 갱신)
     LaunchedEffect(tab) { tasksViewModel.refreshBellNotifications() }
+    // 시트가 열려있는 동안에는 빠른 폴링(3초) — 시트 닫히면 자동 종료, 기본 15초 폴링으로 복귀
+    LaunchedEffect(notificationOpen) {
+        if (notificationOpen) {
+            while (isActive) {
+                tasksViewModel.refreshBellNotifications()
+                delay(3_000L)
+            }
+        }
+    }
     val openNotifications: () -> Unit = {
         tasksViewModel.refreshBellNotifications()
         notificationOpen = true

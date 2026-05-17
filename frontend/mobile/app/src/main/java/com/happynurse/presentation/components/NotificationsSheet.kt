@@ -1,12 +1,21 @@
 // 알림 바텀시트 — 카테고리별 색칩 + 긴급(빨간 점) + 시간 라벨
 package com.happynurse.presentation.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,7 +31,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +60,9 @@ fun NotificationsSheet(
         sheetState = sheetState,
         containerColor = HnColors.Surface,
     ) {
+      Column(modifier = Modifier
+          .fillMaxWidth()
+          .fillMaxHeight(0.8f)) {
         // 과거 24h ~ 미래 24h 알림만 표시 (워치알람은 minutesAgo 가 음수)
         val recent = notifications.filter { it.minutesAgo in -1440..1440 }
         Text(
@@ -93,11 +107,29 @@ fun NotificationsSheet(
                     .padding(horizontal = 20.dp, vertical = 6.dp),
             ) {
                 items(sorted, key = { it.id }) { notification ->
-                    NotificationRow(notification)
+                    // 신규 진입 시 페이드 + 위에서 슬라이드 다운 애니메이션.
+                    // remember 가 첫 컴포지션에서 false 로 캡처된 뒤 LaunchedEffect 로 true 전환 —
+                    // LazyColumn 안에서 신규 item 이 마운트될 때마다 enter 트랜지션 보장.
+                    val visibleState = remember {
+                        MutableTransitionState(initialState = false)
+                    }
+                    LaunchedEffect(notification.id) { visibleState.targetState = true }
+                    AnimatedVisibility(
+                        visibleState = visibleState,
+                        modifier = Modifier.animateItem(),
+                        enter = fadeIn(animationSpec = tween(300)) +
+                            slideInVertically(animationSpec = tween(300)) { -it / 2 } +
+                            expandVertically(animationSpec = tween(300)),
+                        exit = fadeOut(animationSpec = tween(200)) +
+                            shrinkVertically(animationSpec = tween(200)),
+                    ) {
+                        NotificationRow(notification)
+                    }
                 }
                 item { Spacer(Modifier.height(20.dp)) }
             }
         }
+      } // end inner Column (시트 최대 높이 70% 강제)
     }
 }
 

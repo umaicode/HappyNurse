@@ -24,6 +24,7 @@ export const useMyNotifications = () =>
     queryKey: ["notifications", "me"] as const,
     queryFn: () => getMyNotifications({ limit: DEFAULT_LIMIT }),
     select: filterHidden,
+    staleTime: 0,
   });
 
 export const useWardNotifications = (wardId: number | null) =>
@@ -32,4 +33,5 @@ export const useWardNotifications = (wardId: number | null) =>
     queryFn: () => getWardNotifications(wardId as number, { limit: DEFAULT_LIMIT }),
     enabled: wardId !== null,
     select: filterHidden,
+    staleTime: 0,
   });

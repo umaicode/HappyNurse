@@ -696,13 +696,13 @@ function NoteRow({
     <div
       ref={rowRef}
       className={cn(
-        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-1 min-h-[40px] border-b border-border-base/50 items-center hover:bg-surface-hover/60 transition-[background-color,box-shadow] duration-500 relative",
+        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-2 min-h-[40px] border-b border-border-base/50 items-center hover:bg-surface-hover/60 transition-[background-color,box-shadow] duration-500 relative",
         // 우선순위: medication > draft > isEditing (마지막 매치가 이김)
         // draft 는 hover 도 같은 톤으로 고정 — 임시 기록이라 hover 강조 의미 없음. 좌측 3px accent 로 임시상태 시각화.
         note.status === "draft" &&
-          "bg-sub-alpha-10 hover:bg-sub-alpha-10 border-l-[3px] border-l-status-warning",
-        note.type === "MEDICATION" && "bg-brand-surface/20",
-        isEditing && "bg-brand-surface/15",
+          "bg-[#f8f3ef] hover:bg-[#f8edd7] border-l-[3px] border-l-status-warning",
+        note.type === "MEDICATION" && "bg-brand-surface/30",
+        isEditing && "bg-brand-surface/30",
         // highlighted — 사이드바/인수인계에서 점프해 온 행 잠시 강조. inset shadow 로 외곽 ring 효과.
         isHighlighted &&
           "bg-status-warning-surface hover:bg-status-warning-surface shadow-[inset_0_0_0_2px_var(--color-status-warning)]",
@@ -750,7 +750,7 @@ function NoteRow({
                 target.style.height = "auto";
                 target.style.height = `${target.scrollHeight}px`;
               }}
-              className="w-full bg-white border border-brand-primary/30 rounded px-2 py-1 text-body-sm leading-[1.6] text-content-primary resize-none focus:outline-none focus:ring-1 focus:ring-brand-primary/20 shadow-xs"
+              className="w-full bg-white border border-brand-primary/30 rounded px-2 py-1 text-body-base leading-[1.6] text-content-primary resize-none focus:outline-none focus:ring-1 focus:ring-brand-primary/20 shadow-xs"
               rows={1}
             />
             <QuickCorrectionPanel
@@ -777,7 +777,7 @@ function NoteRow({
       </div>
 
       {/* 구분 */}
-      <div className="pt-1 h-full flex items-center justify-center border-r border-border-base/50 pr-4">
+      <div className="h-full flex items-center justify-center border-r border-border-base/50 pr-4">
         <span
           className={cn(
             "text-body-xs font-semibold",
@@ -794,7 +794,7 @@ function NoteRow({
       </div>
 
       {/* 동작 — 확정은 위, 수정/삭제는 아래 줄 */}
-      <div className="pt-1 h-full flex flex-col items-center justify-center gap-1">
+      <div className="h-full flex flex-col items-center justify-center gap-1">
         {note.editable ? (
           isEditing ? (
             <div className="flex gap-1">
@@ -985,7 +985,7 @@ function ConfirmButton({
 
 function SttContent({ content }: { content: string }) {
   return (
-    <div className="text-body-sm font-medium leading-[1.6] text-content-primary whitespace-pre-wrap break-all">
+    <div className="text-body-base font-medium leading-[1.6] text-content-primary whitespace-pre-wrap break-all">
       {content}
     </div>
   );
@@ -1033,7 +1033,7 @@ function MedicationRow({
   return (
     <li className="flex flex-col gap-0.5">
       <div className="flex items-baseline gap-2 min-w-0">
-        <span className="font-medium text-content-primary text-body-sm truncate">
+        <span className="font-medium text-content-primary text-body-base truncate">
           {medication.productName}
         </span>
         <span className="tabular-nums text-body-micro text-content-muted shrink-0">

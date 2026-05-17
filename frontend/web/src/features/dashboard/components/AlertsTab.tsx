@@ -46,7 +46,7 @@ export function AlertsTab({ patientId, date }: AlertsTabProps) {
             symptoms.map((symptom) => (
               <div
                 key={symptom.selfReportId}
-                className="grid grid-cols-[90px_1fr] gap-4 px-4 py-3 border-b border-border-base/50 items-center hover:bg-surface-hover/30 transition-all text-body-sm text-content-secondary"
+                className="grid grid-cols-[90px_1fr] gap-4 px-4 py-2 border-b border-border-base/50 items-center hover:bg-surface-hover/30 transition-all text-body-sm text-content-secondary"
               >
                 {/* 시간 — NursingTab 과 동일 패턴 (border-r + pr-4 + 내부 w-full text-center) */}
                 <div className="py-1 border-r border-border-base/50 pr-4">
@@ -54,13 +54,8 @@ export function AlertsTab({ patientId, date }: AlertsTabProps) {
                     {formatHHmm(symptom.submittedAt)}
                   </div>
                 </div>
-                <div className="pt-1">
-                  {symptom.buttonLabel && (
-                    <span className="inline-block px-1.5 py-0.5 mr-1.5 text-body-sm font-bold rounded bg-brand-surface text-brand-primary leading-snug align-middle">
-                      {symptom.buttonLabel}
-                    </span>
-                  )}
-                  <span className="font-medium text-content-primary whitespace-pre-wrap break-words">
+                <div>
+                  <span className="font-medium text-lg text-content-primary whitespace-pre-wrap break-words">
                     {symptom.symptomText}
                   </span>
                 </div>

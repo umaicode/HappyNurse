@@ -4,7 +4,7 @@ import { ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
-  Share2,
+  ArrowLeftRight,
   UserPlus,
   ChevronLeft,
   ChevronRight,
@@ -31,7 +31,7 @@ type QuickActionId = "handover" | "assign-patient";
 
 interface QuickAction {
   id: QuickActionId;
-  icon: typeof Share2;
+  icon: typeof ArrowLeftRight;
   label: string;
   color: string;
 }
@@ -39,9 +39,9 @@ interface QuickAction {
 const QUICK_ACTIONS: QuickAction[] = [
   {
     id: "handover",
-    icon: Share2,
-    label: "AI 인수인계 리포트",
-    color: "text-emerald-500",
+    icon: ArrowLeftRight,
+    label: "AI 인수인계",
+    color: "text-brand-primary",
   },
   {
     id: "assign-patient",
