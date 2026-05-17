@@ -12,6 +12,8 @@ import com.ssafy.happynurse.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ssafy.happynurse.domain.nurse.event.MedicationAdministrationSavedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 public class MedicationAdministrationService {
 
     private final MedicationAdministrationRepository medicationAdministrationRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public MedicationAdministrationWriteResponse confirm(String taggingId, Long currentPractitionerId) {
         List<MedicationAdministration> group = loadGroupAndAuthorize(taggingId, currentPractitionerId);
@@ -33,6 +36,15 @@ public class MedicationAdministrationService {
         }
 
         medicationAdministrationRepository.confirmByTaggingId(taggingId);
+
+        // confirm DB UPDATE 후 비동기 SSE 발송 트리거 (트랜잭션 commit 후 발사)
+        MedicationAdministration head = group.get(0);
+        eventPublisher.publishEvent(new MedicationAdministrationSavedEvent(
+                taggingId,
+                head.getEncounter().getEncounterId(),
+                head.getPatient().getPatientId(),
+                currentPractitionerId
+        ));
 
         List<MedicationAdministration> refreshed = medicationAdministrationRepository.findAllByTaggingId(taggingId);
         return toResponse(taggingId, refreshed);
