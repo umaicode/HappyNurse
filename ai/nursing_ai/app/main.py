@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from app.routers import stt, correction
 from app.routers import handover
 from app.routers import stt, correction, classification
+from app.routers import filter as filter_router_module
 
 load_dotenv()
 
@@ -29,6 +30,7 @@ app = FastAPI(
         {"name": "STT 음성인식", "description": "음성 파일 → 텍스트 변환 + 의료 용어 매핑"},
         {"name": "용어 교정 피드백", "description": "교정 이력 저장 및 매핑 사전 관리"},
         {"name": "중요도 분류", "description": "환자 발화 텍스트 → priority(LLM 분류)"},
+        {"name": "부적절 발화 정제", "description": "환자 자유텍스트 → 부적절 표현 삭제 (LLM)"},
         {"name": "서버 상태", "description": "서버 상태 확인"},
         {"name": "AI 인수인계", "description": "PASS-BAR 인수인계 리포트 생성 및 조회"},
     ]
@@ -138,6 +140,7 @@ async def _startup_handover():
         freshness_repo=freshness_repo,
     )
 app.include_router(classification.router, prefix="/api", tags=["중요도 분류"])
+app.include_router(filter_router_module.router, prefix="/api", tags=["부적절 발화 정제"])
 
 @app.get("/", tags=["서버 상태"])
 def root():
