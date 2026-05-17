@@ -315,10 +315,18 @@ class LlmClassifier:
         if client is not None:
             self.client = client
         else:
-            key = api_key or os.getenv("ANTHROPIC_API_KEY")
+            # GMS 게이트웨이 토큰을 anthropic SDK 의 api_key 자리에 그대로 전달.
+            # handover/clients/llm_client.py 와 동일 컨벤션.
+            key = api_key or os.getenv("GMS_API_KEY")
             if not key:
-                raise RuntimeError("ANTHROPIC_API_KEY is not set")
-            self.client = anthropic.Anthropic(api_key=key)
+                raise RuntimeError("GMS_API_KEY is not set")
+            self.client = anthropic.Anthropic(
+                base_url=os.getenv(
+                    "ANTHROPIC_BASE_URL",
+                    "https://gms.ssafy.io/gmsapi/api.anthropic.com",
+                ),
+                api_key=key,
+            )
 
     def classify(
         self,
