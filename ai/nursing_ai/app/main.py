@@ -6,6 +6,7 @@ from app.routers import stt, correction
 from app.routers import handover
 from app.routers import stt, correction, classification
 from app.routers import filter as filter_router_module
+from app.routers import stt_patient as stt_patient_module
 
 load_dotenv()
 
@@ -31,6 +32,7 @@ app = FastAPI(
         {"name": "용어 교정 피드백", "description": "교정 이력 저장 및 매핑 사전 관리"},
         {"name": "중요도 분류", "description": "환자 발화 텍스트 → priority(LLM 분류)"},
         {"name": "부적절 발화 정제", "description": "환자 자유텍스트 → 부적절 표현 삭제 (LLM)"},
+        {"name": "환자 STT", "description": "환자 음성 호출 → 텍스트 변환 (CLOVA + NC만, 의료용어 매핑 없음)"},
         {"name": "서버 상태", "description": "서버 상태 확인"},
         {"name": "AI 인수인계", "description": "PASS-BAR 인수인계 리포트 생성 및 조회"},
     ]
@@ -141,6 +143,7 @@ async def _startup_handover():
     )
 app.include_router(classification.router, prefix="/api", tags=["중요도 분류"])
 app.include_router(filter_router_module.router, prefix="/api", tags=["부적절 발화 정제"])
+app.include_router(stt_patient_module.router, prefix="/api", tags=["환자 STT"])
 
 @app.get("/", tags=["서버 상태"])
 def root():
