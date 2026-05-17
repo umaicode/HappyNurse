@@ -68,12 +68,10 @@ fun IvDripAnimation(
     val ratio = fillRatio.coerceIn(0f, 1f)
 
     val context = LocalContext.current
-    val pretendardTypeface = remember(context) {
-        ResourcesCompat.getFont(context, R.font.pretendard)
+    // Pretendard ExtraBold (w800) — gtt/min 라벨 전용. variable font 합성 BOLD 대신 실제 weight 파일을 로드한다.
+    val pretendardExtraBold = remember(context) {
+        ResourcesCompat.getFont(context, R.font.pretendard_extrabold)
             ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-    }
-    val pretendardBold = remember(pretendardTypeface) {
-        Typeface.create(pretendardTypeface, Typeface.BOLD)
     }
 
     Canvas(modifier = modifier) {
@@ -355,7 +353,7 @@ fun IvDripAnimation(
                 isAntiAlias = true
                 this.color = strokeColor
                 textSize = h * 0.23f
-                typeface = pretendardBold
+                typeface = pretendardExtraBold
                 textAlign = Paint.Align.CENTER
                 style = Paint.Style.STROKE
                 strokeWidth = 3.5f
@@ -365,14 +363,14 @@ fun IvDripAnimation(
                 isAntiAlias = true
                 this.color = textColor
                 textSize = h * 0.23f
-                typeface = pretendardBold
+                typeface = pretendardExtraBold
                 textAlign = Paint.Align.CENTER
             }
             val unitStrokePaint = Paint().apply {
                 isAntiAlias = true
                 this.color = strokeColor
                 textSize = h * 0.085f
-                typeface = pretendardBold
+                typeface = pretendardExtraBold
                 textAlign = Paint.Align.CENTER
                 style = Paint.Style.STROKE
                 strokeWidth = 2.0f
@@ -382,7 +380,7 @@ fun IvDripAnimation(
                 isAntiAlias = true
                 this.color = textColor
                 textSize = h * 0.085f
-                typeface = pretendardBold
+                typeface = pretendardExtraBold
                 textAlign = Paint.Align.CENTER
             }
 
