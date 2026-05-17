@@ -352,8 +352,10 @@ export default function Help() {
                   className={`flex size-9 items-center justify-center rounded-full transition-colors ${
                     submitting || recorder.state === "processing"
                       ? "cursor-not-allowed bg-[#e5e7eb] text-patient-fade"
-                      : "bg-patient-primary text-white hover:bg-[#0F1F7A]"
-                  } ${recorder.state === "recording" ? "animate-pulse" : ""}`}
+                      : recorder.state === "recording"
+                        ? "animate-pulse bg-red-500 text-white hover:bg-red-600"
+                        : "bg-patient-primary text-white hover:bg-[#0F1F7A]"
+                  }`}
                 >
                   {recorder.state === "processing" ? (
                     <Loader2
