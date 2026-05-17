@@ -30,8 +30,10 @@ const SOURCE_EVENTS = [
 ] as const;
 
 // EMR 간호기록 갱신용 — Notification DB 미저장이라 알림함 카운트와 무관.
-// BE 는 ward 채널로만 발사 (NursingRecordSseService.send).
+// BE 는 ward 채널로만 발사 (NursingRecordSseService / MedicationAdministrationSseService).
+// 두 이벤트 모두 동일한 NursingNoteItemResponse payload (type=STT_NOTE | MEDICATION) 라 같은 invalidate 로직을 공유한다.
 const NURSING_EVENT = "nursing_record";
+const MEDICATION_ADMIN_EVENT = "medication_admin";
 
 type SourceEventName = (typeof SOURCE_EVENTS)[number];
 
@@ -64,8 +66,8 @@ export function useNotificationStream() {
   // 여기서는 알림 카운트만 갱신한다 (한 이벤트로 두 채널이 동시에 IV 캐시를 invalidate
   // 하면 staleTime 통과 시 /iv 가 두 번 fetch 되는 문제 회피).
   //
-  // nursing_record 는 의미가 다르다 — 알림함이 아니라 EMR 간호기록 그리드 갱신용.
-  // BE 는 Notification DB 에 저장하지 않고 ward 채널로만 발사한다.
+  // nursing_record / medication_admin 은 의미가 다르다 — 알림함이 아니라 EMR 간호기록 그리드 갱신용.
+  // BE 는 Notification DB 에 저장하지 않고 ward 채널로만 발사한다 (notificationId: null).
   useEffect(() => {
     if (!isLoggedIn || wardId === null) return;
     if (isLocalhostDevelopment()) return;
@@ -85,9 +87,27 @@ export function useNotificationStream() {
       });
     };
 
+    // useOrders 의 queryKey: ["encounter", encounterId, "orders"]
+    // EMRGrid 의 OrderTab + RightPanel 의 STTPanel(사이드바 의사오더 탭) 이 같은 캐시 공유 → 한 번에 갱신됨.
+    // ward 채널에서만 처리 — 개인 채널에서도 invalidate 하면 한 이벤트로 두 번 fetch 됨.
+    const orderHandler = () => {
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "encounter" && query.queryKey[2] === "orders",
+      });
+    };
+
+    // order_change 는 알림 카운트(notificationHandler) + 오더 캐시(orderHandler) 동시 갱신.
+    const orderChangeHandler = () => {
+      notificationHandler();
+      orderHandler();
+    };
+
     const onEvent = {
       ...Object.fromEntries(SOURCE_EVENTS.map((name) => [name, notificationHandler])),
+      order_change: orderChangeHandler,
       [NURSING_EVENT]: nursingHandler,
+      [MEDICATION_ADMIN_EVENT]: nursingHandler,
     };
 
     return openSse("/sse/ward-subscribe", { onEvent });

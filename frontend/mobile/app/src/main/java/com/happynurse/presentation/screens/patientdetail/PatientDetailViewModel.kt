@@ -3,6 +3,9 @@ package com.happynurse.presentation.screens.patientdetail
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
+import com.happynurse.data.remote.sse.NotificationStream
+import com.happynurse.data.remote.sse.NursingNoteSseEnvelope
 import com.happynurse.data.repository.EncounterRepository
 import com.happynurse.data.repository.PatientRepository
 import com.happynurse.domain.model.Note
@@ -16,14 +19,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.YearMonth
+import java.time.ZoneId
 import javax.inject.Inject
 
 @HiltViewModel
 class PatientDetailViewModel @Inject constructor(
     private val patientRepository: PatientRepository,
     private val encounterRepository: EncounterRepository,
+    private val notificationStream: NotificationStream,
     savedStateHandle: SavedStateHandle,
 ) : BaseViewModel() {
 
@@ -53,6 +61,39 @@ class PatientDetailViewModel @Inject constructor(
     init {
         if (initialId > 0L) loadPatient(initialId)
         loadMyPatients()
+        // SSE 구독 시작 (이미 시작됐으면 중복 가드로 무시됨) — 알림 화면과 동일한 NotificationStream singleton.
+        notificationStream.start(viewModelScope)
+        // ward 채널의 nursing_record/medication_admin 이벤트만 처리 → 현재 보고 있는 날짜면 화면 즉시 갱신.
+        viewModelScope.launch {
+            notificationStream.events.collect { ev ->
+                if (ev.sourceType != "nursing_record" && ev.sourceType != "medication_admin") return@collect
+                handleNursingNoteEvent(ev.data)
+            }
+        }
+    }
+
+    // envelope.occurredAt → LocalDate 추출 후 현재 선택 날짜와 비교. 같으면 loadNotes, 같은 월이면 loadMonthNotes.
+    private fun handleNursingNoteEvent(json: String) {
+        val eid = _patient.value?.encounterId ?: return
+        if (eid <= 0L) return
+        val envelope = runCatching { Gson().fromJson(json, NursingNoteSseEnvelope::class.java) }.getOrNull() ?: return
+        val occurredLocalDate = parseOccurredDate(envelope.occurredAt) ?: return
+        val selected = _selectedDate.value
+        if (occurredLocalDate == selected) {
+            loadNotes(eid, selected)
+        }
+        val occurredMonth = YearMonth.from(occurredLocalDate)
+        if (occurredMonth == _visibleMonth.value) {
+            loadMonthNotes(eid, occurredMonth)
+        }
+    }
+
+    private fun parseOccurredDate(raw: String?): LocalDate? {
+        if (raw.isNullOrBlank()) return null
+        // BE 는 Instant (ISO_INSTANT) 로 직렬화하는 게 기본. 혹시 OffsetDateTime/LocalDateTime 도 들어올 수 있어 fallback.
+        return runCatching { Instant.parse(raw).atZone(ZoneId.systemDefault()).toLocalDate() }.getOrNull()
+            ?: runCatching { OffsetDateTime.parse(raw).toLocalDate() }.getOrNull()
+            ?: runCatching { LocalDateTime.parse(raw).toLocalDate() }.getOrNull()
     }
 
     fun loadPatient(patientId: Long) {

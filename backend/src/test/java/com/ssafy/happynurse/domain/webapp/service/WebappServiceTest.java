@@ -57,6 +57,8 @@ public class WebappServiceTest {
     ApplicationEventPublisher eventPublisher;
     @Mock
     SymptomClassificationService classificationService;
+    @Mock
+    AiServiceFilterClient filterClient;
 
     @BeforeEach
     void stubClassifierDefaults() {
@@ -67,6 +69,10 @@ public class WebappServiceTest {
         Mockito.lenient()
                 .when(classificationService.classify(Mockito.anyString(), Mockito.any()))
                 .thenReturn(new SymptomClassificationService.SymptomClassificationResult(SymptomPriority.MEDIUM, null));
+        // filter 기본 stub: passthrough (정제 없이 원문 통과). 정제 검증 케이스는 개별로 덮어씀.
+        Mockito.lenient()
+                .when(filterClient.filter(Mockito.anyString()))
+                .thenReturn(AiServiceFilterClient.FilterResponse.passthrough());
     }
 
     @Test

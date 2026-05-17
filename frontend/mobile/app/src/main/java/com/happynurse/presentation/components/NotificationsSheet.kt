@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -100,7 +101,15 @@ fun NotificationsSheet(
             val sorted = recent.sortedWith(
                 compareBy<Notification> { it.minutesAgo },
             )
+            // 새 알림이 들어와 최상단 id 가 바뀌면 자동으로 맨 위로 스크롤.
+            // 사용자가 스크롤을 내려서 과거 알림을 보고 있어도 새 알림은 화면 안에 들어오도록 보장.
+            val listState = rememberLazyListState()
+            val topId = sorted.firstOrNull()?.id
+            LaunchedEffect(topId) {
+                if (topId != null) listState.animateScrollToItem(0)
+            }
             LazyColumn(
+                state = listState,
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier
                     .fillMaxWidth()

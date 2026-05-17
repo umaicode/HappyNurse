@@ -11,6 +11,7 @@ import com.ssafy.happynurse.domain.webapp.dto.EncounterContext;
 import com.ssafy.happynurse.domain.webapp.entity.InputMethod;
 import com.ssafy.happynurse.domain.webapp.entity.PatientSelfReport;
 import com.ssafy.happynurse.domain.webapp.entity.QuickSymptomButton;
+import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
 import com.ssafy.happynurse.domain.webapp.event.SymptomSubmittedEvent;
 import com.ssafy.happynurse.domain.webapp.repository.PatientSelfReportRepository;
 import com.ssafy.happynurse.domain.webapp.repository.QuickSymptomButtonRepository;
@@ -33,6 +34,7 @@ import java.util.List;
 public class WebappService {
 
     private static final DateTimeFormatter BIRTH_FORMATTER = DateTimeFormatter.ofPattern("yyMMdd");
+    private static final String EMPTY_AFTER_FILTER_PLACEHOLDER = "(부적절한 내용 — 본문 미표시)";
 
     private final PatientRepository patientRepository;
     private final EncounterRepository encounterRepository;
@@ -41,6 +43,7 @@ public class WebappService {
     private final PatientSelfReportRepository patientSelfReportRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final SymptomClassificationService classificationService;
+    private final AiServiceFilterClient filterClient;
 
     public NfcEntryResponse getPatientEntry(String token) {
         Patient patient = patientRepository.findByNfcToken(token)
@@ -159,14 +162,40 @@ public class WebappService {
             inputMethod = InputMethod.text;
         }
 
+        // 자유텍스트가 있으면 AI filter 호출하여 부적절 발화 정제.
+        // 카드 단독 케이스는 호출 안 함 (button label 만 사용).
+        boolean isPlaceholderText = false;
+        if (hasText) {
+            String cleaned = filterClient.filter(symptomText).cleanedText();
+            if (cleaned != null) {
+                if (cleaned.isBlank()) {
+                    log.info("[ProfanityFilter] patientId={} 부적절 발화만 — placeholder 치환", jwtPatientId);
+                    symptomText = EMPTY_AFTER_FILTER_PLACEHOLDER;
+                    isPlaceholderText = true;
+                } else {
+                    log.info("[ProfanityFilter] patientId={} 정제 적용 (originalLen={}, cleanedLen={})",
+                            jwtPatientId, symptomText.length(), cleaned.length());
+                    symptomText = cleaned;
+                }
+            }
+        }
+
+        // 분류 — placeholder 케이스는 의료 호소가 아니므로 분류 LLM 우회 후 LOW 고정.
+        // (분류 LLM 에 placeholder 를 넣으면 invalid response → 502 → MEDIUM fallback 이 매번 발생함)
+        SymptomClassificationService.SymptomClassificationResult classification;
+        if (hasButton) {
+            classification = classificationService.classifyButton(button.getLabel());
+        } else if (isPlaceholderText) {
+            classification = new SymptomClassificationService.SymptomClassificationResult(
+                    SymptomPriority.LOW, null);
+        } else {
+            classification = classificationService.classify(symptomText, EncounterContext.from(encounter));
+        }
+
         PatientSelfReport savedReport = patientSelfReportRepository.save(
                 PatientSelfReport.create(patient, encounter, inputMethod, button, symptomText));
 
         Practitioner assignedPractitioner = encounter.getAssignedPractitioner();
-
-        SymptomClassificationService.SymptomClassificationResult classification = hasButton
-                ? classificationService.classifyButton(button.getLabel())
-                : classificationService.classify(symptomText, EncounterContext.from(encounter));
 
         // 이벤트 발행 — SymptomSubmittedNotificationAdapter 가 트랜잭션 커밋 후 dispatcher 통해 알림 영속화 + 채널 발사
         eventPublisher.publishEvent(new SymptomSubmittedEvent(
