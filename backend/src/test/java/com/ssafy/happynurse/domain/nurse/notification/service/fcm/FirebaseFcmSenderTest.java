@@ -13,6 +13,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.ssafy.happynurse.domain.webapp.entity.SymptomPriority;
+import java.util.Map;
 
 import java.util.List;
 
@@ -127,6 +129,32 @@ class FirebaseFcmSenderTest {
         sender.sendToActiveDevicesOf(1L, env());
 
         org.mockito.Mockito.verify(d1, org.mockito.Mockito.never()).deactivate();
+    }
+
+    @Test
+    @DisplayName("buildDataPayload — priority 가 있으면 data 에 'priority' 키로 enum.name() 포함")
+    void buildDataPayload_includesPriority_whenPresent() {
+        NotificationEnvelope env = new NotificationEnvelope(
+                SourceType.self_report, 99L, 1L, 1L, 7L,
+                "환자 자가보고", "환자가 통증을 호소합니다", null,
+                java.time.Instant.now(), 42L, PushPolicy.ALERT_CRITICAL, SymptomPriority.CRITICAL);
+
+        Map<String, String> data = sender.buildDataPayload(env);
+
+        assertThat(data).containsEntry("priority", "CRITICAL");
+    }
+
+    @Test
+    @DisplayName("buildDataPayload — priority 가 null 이면 'priority' 키 미포함 (iv_alert/timer 등)")
+    void buildDataPayload_omitsPriority_whenNull() {
+        NotificationEnvelope env = new NotificationEnvelope(
+                SourceType.iv_alert, 99L, 1L, 1L, 7L,
+                "수액 알림", "주입 완료 임박", null,
+                java.time.Instant.now(), 42L, PushPolicy.ASSIGN_DELIVERY, null);
+
+        Map<String, String> data = sender.buildDataPayload(env);
+
+        assertThat(data).doesNotContainKey("priority");
     }
 
     private SendResponse mockFailureResponse(MessagingErrorCode code) {

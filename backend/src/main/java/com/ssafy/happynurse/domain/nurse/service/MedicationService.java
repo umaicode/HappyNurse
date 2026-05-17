@@ -24,6 +24,8 @@ import com.ssafy.happynurse.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ssafy.happynurse.domain.nurse.event.MedicationAdministrationSavedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -44,6 +46,7 @@ public class MedicationService {
     private final PatientRepository patientRepository;
     private final EncounterRepository encounterRepository;
     private final PractitionerRepository practitionerRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public MedicationVerifyResponse verify(MedicationVerifyRequest request) {
         Patient patient = patientRepository.findById(request.patientId())
@@ -149,6 +152,15 @@ public class MedicationService {
 
         List<MedicationAdministration> saved = medicationAdministrationRepository.saveAll(records);
         List<Long> savedIds = saved.stream().map(MedicationAdministration::getMedicationAdminId).toList();
+
+        // saveAll 후 비동기 SSE 발송 트리거 (트랜잭션 commit 후 발사)
+        eventPublisher.publishEvent(new MedicationAdministrationSavedEvent(
+                taggingId,
+                encounter.getEncounterId(),
+                patient.getPatientId(),
+                practitioner.getPractitionerId()
+        ));
+
         return new MedicationAdministrationSaveResponse(taggingId, saved.size(), savedIds);
     }
 
