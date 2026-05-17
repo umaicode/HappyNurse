@@ -18,7 +18,7 @@ object HnColors {
     // Surface / background
     val Bg            = Color(0xFFF7F8FA)
     val Surface       = Color(0xFFFCFCFC)
-    val SurfaceAlt    = Color(0xFFF4F4F5)
+    val SurfaceAlt    = Color(0xFFF3F3F5)
     val Border        = Color(0xFFE5E7EB)
     val BorderStrong  = Color(0xFFD1D5DB)
 
@@ -45,7 +45,7 @@ object HnColors {
 
     // 알림 시트 전용 — 진한 톤 카테고리 태그
     val TagFluidStrongBg   = Color(0xFFF0F2FE); val TagFluidStrongFg   = Color(0xFF1428A0) // 수액 — Primary 블루
-    val TagOrderStrongBg   = Color(0xFFF8F5FE); val TagOrderStrongFg   = Color(0xFF5B21B6) // 의사오더 — 진한 퍼플
+    val TagOrderStrongBg   = Color(0xFFF0ECFA); val TagOrderStrongFg   = Color(0xFF5B21B6) // 의사오더 — 진한 퍼플
     val TagRequestStrongBg = Color(0xFFECF6F5); val TagRequestStrongFg = Color(0xFF166C65) // 환자요청 — 진한 레드
     val TagWatchStrongBg   = Color(0xFFFEFAED); val TagWatchStrongFg   = Color(0xFFB45309) // 워치 — 진한 옐로/앰버
     val TagSessionStrongBg = Color(0xFFECFDF5); val TagSessionStrongFg = Color(0xFF065F46) // 웹세션 — 진한 그린

@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -106,10 +107,13 @@ fun NotificationsSheet(
                     .padding(horizontal = 20.dp, vertical = 6.dp),
             ) {
                 items(sorted, key = { it.id }) { notification ->
-                    // 신규 진입 시 페이드 + 위에서 슬라이드 다운 애니메이션
+                    // 신규 진입 시 페이드 + 위에서 슬라이드 다운 애니메이션.
+                    // remember 가 첫 컴포지션에서 false 로 캡처된 뒤 LaunchedEffect 로 true 전환 —
+                    // LazyColumn 안에서 신규 item 이 마운트될 때마다 enter 트랜지션 보장.
                     val visibleState = remember {
-                        MutableTransitionState(initialState = false).apply { targetState = true }
+                        MutableTransitionState(initialState = false)
                     }
+                    LaunchedEffect(notification.id) { visibleState.targetState = true }
                     AnimatedVisibility(
                         visibleState = visibleState,
                         modifier = Modifier.animateItem(),
