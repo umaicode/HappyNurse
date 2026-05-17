@@ -7,9 +7,27 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import Optional
 import json
+import os
+import httpx
+
+BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL", "http://localhost:8080")
 
 router = APIRouter()
 audio_storage = AudioStorage()
+
+
+async def _notify_backend(nursing_record_id: int) -> None:
+    """nursing_record 생성을 백엔드에 알려 SSE를 발사한다.
+    실패해도 STT 응답에는 영향을 주지 않는 best-effort 호출.
+    """
+    url = f"{BACKEND_BASE_URL}/internal/ai/nursing-records/{nursing_record_id}/notify"
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.post(url)
+            resp.raise_for_status()
+    except Exception as e:
+        print(f"[notify] SSE 알림 실패 [nursing_record_id={nursing_record_id}]: {e}")
+
 
 async def _run_recognize(
     audio: UploadFile,
@@ -59,7 +77,8 @@ async def _run_recognize(
             })
             nursing_record_id = row.fetchone()[0]
             db.commit()
-
+            await _notify_backend(nursing_record_id)
+            
         return {
             "success": True,
             "nursing_record_id": nursing_record_id,
