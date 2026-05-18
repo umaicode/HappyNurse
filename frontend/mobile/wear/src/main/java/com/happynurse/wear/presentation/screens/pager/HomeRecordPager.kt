@@ -9,7 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.withResumed
 import com.happynurse.wear.domain.model.IvInfusionTimer
 import com.happynurse.wear.domain.model.SttTimer
 import com.happynurse.wear.presentation.screens.home.HomeScreen
@@ -23,21 +25,31 @@ fun HomeRecordPager(
     onIvClick: (IvInfusionTimer) -> Unit,
     onSttClick: (SttTimer) -> Unit,
     onShowResult: () -> Unit,
-    autoStartRecord: Boolean = false,
+    autoStartRecordTrigger: Long = 0L,
     onAutoStartConsumed: () -> Unit = {},
 ) {
-    val initialPage = if (autoStartRecord) 1 else 0
+    val hasTrigger = autoStartRecordTrigger > 0L
+    val initialPage = if (hasTrigger) 1 else 0
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { 2 })
     // rememberPagerState 는 한 번 만들면 initialPage 를 다시 안 봄 — 저장된 page 가 우선이라
-    // 제스처로 재진입했을 때 record(1) 로 못 가는 문제가 있음. autoStartRecord 신호가 켜지면 강제로 page 1.
-    LaunchedEffect(autoStartRecord) {
-        if (autoStartRecord && pagerState.currentPage != 1) {
+    // 제스처로 재진입했을 때 record(1) 로 못 가는 문제가 있음. trigger 가 들어오면 강제로 page 1.
+    // lifecycle RESUMED 까지 대기해서 STOPPED→STARTED 전환 frame timing 에 scroll 이 무시되는 race 차단.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(autoStartRecordTrigger) {
+        if (autoStartRecordTrigger <= 0L) return@LaunchedEffect
+        lifecycleOwner.lifecycle.withResumed { }
+        if (pagerState.pageCount > 0 && pagerState.currentPage != 1) {
             pagerState.scrollToPage(1)
         }
     }
     // 녹음 중에는 페이지 스와이프를 막아 좌→우 제스처를 RecordScreen 의 "녹음 취소"로만 쓰이게 한다.
     val recordState by recordViewModel.state.collectAsStateWithLifecycle()
     val pagerScrollEnabled = recordState.phase != RecordPhase.RECORDING
+    // HorizontalPager 는 인접 페이지(page 0/1) 를 동시에 compose 하므로, autoStart 신호를 RecordScreen
+    // 에 그대로 넘기면 page 0(Home) 머무는 동안에도 녹음이 시작될 수 있다. page 1 이 실제 활성 상태
+    // (currentPage=1 + targetPage=1, 즉 스크롤 안정화) 일 때만 신호를 전달한다.
+    val isRecordPageActive = pagerState.currentPage == 1 && pagerState.targetPage == 1
+    val recordAutoStartTrigger = if (hasTrigger && isRecordPageActive) autoStartRecordTrigger else 0L
     HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize(),
@@ -53,7 +65,7 @@ fun HomeRecordPager(
                 viewModel = recordViewModel,
                 onShowResult = onShowResult,
                 pagerCurrentPage = pagerState.currentPage,
-                autoStart = autoStartRecord,
+                autoStartTrigger = recordAutoStartTrigger,
                 onAutoStartConsumed = onAutoStartConsumed,
             )
         }
