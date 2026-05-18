@@ -142,7 +142,7 @@ class NursingNoteEditControllerTest {
                 null, null,
                 TAG, true,
                 List.of(new MedicationItemResponse(31L, "PC1", "약A",
-                        new BigDecimal("1.500"), "tab", null, null)));
+                        new BigDecimal("1.500"), "tab", null, null, null)));
         given(nursingNoteEditService.updateMedication(eq(TAG), any(), eq(1L))).willReturn(response);
 
         String body = "{\"medications\":[{\"medicationAdminId\":31,\"dosageQuantity\":1.500}]}";
@@ -167,7 +167,7 @@ class NursingNoteEditControllerTest {
                 null, null,
                 TAG, true,
                 List.of(new MedicationItemResponse(31L, "PC1", "약A",
-                        new BigDecimal("1.000"), "tab", null, null)));
+                        new BigDecimal("1.000"), "tab", null, null, null)));
         given(nursingNoteEditService.updateMedication(eq(TAG), any(), eq(1L))).willReturn(response);
 
         String body = "{\"confirmedAt\":\"2026-05-04T10:00:00\"}";
@@ -254,7 +254,7 @@ class NursingNoteEditControllerTest {
                 null, null,
                 TAG, true,
                 List.of(new MedicationItemResponse(31L, "PC1", "약A",
-                        new BigDecimal("1.000"), "tab", null, null)));
+                        new BigDecimal("1.000"), "tab", null, null, null)));
         given(nursingNoteEditService.confirm(eq(TAG), eq(1L))).willReturn(response);
 
         mockMvc.perform(post("/nursing-notes/" + TAG + "/confirm"))
