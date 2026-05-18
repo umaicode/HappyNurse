@@ -18,6 +18,9 @@ export interface MedicationItem {
   dosageUnit: string;
   frequency: number;
   route: string;
+  // IV 수액 행에만 존재. NFC 약물 행은 BE 가 JSON 에서 생략 (@JsonInclude NON_NULL).
+  // 유무로 IV/NFC 분기 렌더링 + IV 그룹 편집 차단 판정.
+  ivRateMlPerHr?: number;
 }
 
 interface NursingNoteCommon {
