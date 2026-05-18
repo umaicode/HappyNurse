@@ -141,7 +141,8 @@ public interface IvInfusionRepository extends JpaRepository<IvInfusion, Long> {
      */
     @Query("""
               SELECT iv FROM IvInfusion iv JOIN iv.medications m
-               WHERE m.medicationOrder.medicationOrderId = :orderId
+              WHERE m.medicationOrder.medicationOrderId = :orderId
+              AND iv.status = com.ssafy.happynurse.domain.watch.entity.InfusionStatus.IN_PROGRESS
               """)
     Optional<IvInfusion> findByMedicationOrderId(@Param("orderId") Long orderId);
 }
