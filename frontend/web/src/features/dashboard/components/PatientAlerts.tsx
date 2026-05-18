@@ -23,7 +23,7 @@ const SOURCE_TYPE_LABEL: Record<SourceType, string> = {
 
 const SOURCE_TYPE_TONE: Record<SourceType, string> = {
   self_report: "text-[#5945b0]",
-  iv_alert: "text-[#4098cf]",
+  iv_alert: "text-[#3b84b3]",
   timer: "text-status-warning",
   order_change: "text-status-success",
   vital_alert: "text-status-danger-strong",
