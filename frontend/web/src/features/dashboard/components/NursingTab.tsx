@@ -801,7 +801,7 @@ function NoteRow({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2.5 text-[14px] font-Bold"
+                className="h-7 px-2.5 text-[14px] font-Bold border border-gray-300 rounded-md"
                 disabled={
                   isUpdating || (!isMedication && !draftContent.trim())
                 }
@@ -812,7 +812,7 @@ function NoteRow({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2.5 text-[14px] font-Bold"
+                className="h-7 px-2.5 text-[14px] font-Bold border border-gray-300 rounded-md"
                 onClick={cancelEdit}
               >
                 취소
@@ -926,6 +926,11 @@ function MedicationActions({
   isConfirming: boolean;
   isDeleting: boolean;
 }) {
+  // IV 그룹은 워치에서 시작/속도 변경/종료로만 다뤄야 함 — 간호기록 화면에서 수정/삭제 모두 차단.
+  // BE editable 은 "작성자 본인" 여부만 보므로 IV 차단은 FE 책임.
+  const isIvGroup = note.medications.some(
+    (medication) => medication.ivRateMlPerHr !== undefined,
+  );
   return (
     <>
       {note.status === "draft" && !isEditMode && (
@@ -934,7 +939,7 @@ function MedicationActions({
           disabled={isConfirming}
         />
       )}
-      {isEditMode && (
+      {isEditMode && !isIvGroup && (
         <div className="flex gap-1">
           <Button
             variant="ghost"
@@ -1066,6 +1071,15 @@ function MedicationRow({
         <span className="text-content-tertiary">회</span>
         <span className="text-border-base">·</span>
         <span className="font-bold text-content-secondary">{medication.route}</span>
+        {medication.ivRateMlPerHr !== undefined && (
+          <>
+            <span className="text-border-base">·</span>
+            <span className="tabular-nums font-bold text-brand-primary">
+              {medication.ivRateMlPerHr}
+            </span>
+            <span className="text-content-tertiary font-medium">mL/hr</span>
+          </>
+        )}
       </div>
     </li>
   );
