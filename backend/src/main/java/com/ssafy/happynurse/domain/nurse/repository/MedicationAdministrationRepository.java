@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface MedicationAdministrationRepository
         extends JpaRepository<MedicationAdministration, Long> {
@@ -80,4 +81,10 @@ public interface MedicationAdministrationRepository
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM MedicationAdministration ma WHERE ma.taggingId = :taggingId")
     int deleteByTaggingId(@Param("taggingId") String taggingId);
+
+    /**
+     * IvInfusion → taggingId 역방향 조회.
+     * changeRateByTag() 에서 SSE 이벤트 발행 시 taggingId 를 얻기 위해 사용.
+     */
+    Optional<MedicationAdministration> findFirstByMedicationOrder_MedicationOrderId(Long orderId);
 }

@@ -27,6 +27,9 @@ public record MedicationItemResponse(
         Integer frequency,
 
         @Schema(description = "투여 경로 (의사 처방 route)", example = "IV")
-        String route
+        String route,
+
+        @Schema(description = "[IV 한정] 현재 주입 속도 mL/hr. NFC 약물 행은 응답에서 생략됨")
+        BigDecimal ivRateMlPerHr
 ) {
 }

@@ -53,6 +53,8 @@ class IvInfusionServiceTest {
     @Mock EncounterRepository encounterRepository;
     @Mock PractitionerRepository practitionerRepository;
     @Mock IvAlertScheduler scheduler;
+    @Mock com.ssafy.happynurse.domain.nurse.repository.MedicationAdministrationRepository medicationAdministrationRepository;
+    @Mock org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @InjectMocks IvInfusionService service;
 
