@@ -658,6 +658,17 @@ function NoteRow({
   rowRef?: (element: HTMLDivElement | null) => void;
 } & NoteRowCallbacks) {
   const isMedication = note.type === "MEDICATION";
+  // 구분 라벨 — MEDICATION 은 ivRateMlPerHr 유무로 IV(수액) / NFC 알약(약물) 분기 (모바일과 일관).
+  // 색: 약물=success 그린, 수액=brand-primary 네이비, 음성=content-tertiary 그레이.
+  const isIvGroup =
+    note.type === "MEDICATION"
+    && note.medications.some((m) => m.ivRateMlPerHr !== undefined);
+  const typeLabel = note.type === "MEDICATION"
+    ? (isIvGroup ? "수액" : "약물")
+    : NOTE_TYPE_LABEL[note.type];
+  const typeTone = note.type === "MEDICATION"
+    ? (isIvGroup ? "text-brand-primary" : "text-status-success")
+    : NOTE_TYPE_TONE[note.type];
 
   // STT_NOTE: content + occurredAt / MEDICATION: dosageQuantity + confirmedAt
   // 헤더 "편집" 토글 변화 시 NoteRow 가 key 변경으로 remount 되므로 isEditing 도 자연 초기화됨.
@@ -853,10 +864,10 @@ function NoteRow({
         <span
           className={cn(
             "text-body-xs font-semibold",
-            NOTE_TYPE_TONE[note.type] ?? "text-content-tertiary",
+            typeTone ?? "text-content-tertiary",
           )}
         >
-          {NOTE_TYPE_LABEL[note.type] ?? note.type}
+          {typeLabel ?? note.type}
         </span>
       </div>
 
