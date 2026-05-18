@@ -144,6 +144,20 @@ public class IvInfusionService {
         iv.updateDropSet(req.dropSet());
         iv.changeRate(newRate, now);
 
+        // SSE 트리거 — MA 경유 taggingId 역방향 조회
+        String taggingId = medicationAdministrationRepository
+                .findFirstByMedicationOrder_MedicationOrderId(
+                        iv.getMedicationOrder().getMedicationOrderId())
+                .map(MedicationAdministration::getTaggingId)
+                .orElse(null);
+        if (taggingId != null) {
+            eventPublisher.publishEvent(new MedicationAdministrationSavedEvent(
+                    taggingId,
+                    iv.getEncounter().getEncounterId(),
+                    iv.getPatient().getPatientId(),
+                    iv.getPractitioner().getPractitionerId()));
+        }
+
         afterCommit(() -> {
             scheduler.cancelAll(iv.getIvInfusionId());
             scheduler.register(iv, AlertType.FIVE_MIN_BEFORE);
