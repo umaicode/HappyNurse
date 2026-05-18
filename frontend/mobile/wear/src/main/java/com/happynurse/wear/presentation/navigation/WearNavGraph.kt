@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.delay
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -25,20 +26,28 @@ import com.happynurse.wear.presentation.screens.stt.SttResultScreen
 @Composable
 fun WearNavGraph(
     navController: NavHostController,
-    autoStartRecord: Boolean = false,
+    autoStartRecordTrigger: Long = 0L,
     onAutoStartConsumed: () -> Unit = {},
 ) {
     val activity = LocalContext.current as ComponentActivity
     val recordViewModel: RecordViewModel = hiltViewModel(viewModelStoreOwner = activity)
 
-    // 제스처 신호 도착 시 → 어떤 detail 화면에 있었든 HomePager 로 강제 복귀 (popUpTo inclusive 로 백스택 리셋).
-    // 이렇게 해야 HomeRecordPager 가 새로 composed → initialPage=1(record)로 진입 → 자동 녹음 트리거.
-    LaunchedEffect(autoStartRecord) {
-        if (autoStartRecord && navController.currentDestination?.route != WearRoute.HomePager.path) {
-            navController.navigate(WearRoute.HomePager.path) {
-                popUpTo(WearRoute.HomePager.path) { inclusive = true }
-                launchSingleTop = true
-            }
+    // 제스처 신호 도착 시 → 무조건 HomePager 를 새로 만들어 진입 (popUpTo inclusive 로 백스택 리셋).
+    // currentDestination 체크를 제거 — 이미 HomePager 에 있어도 새로 composed 되어
+    // initialPage=1(record) 가 확실히 적용되도록. 백그라운드 재진입 race 방지.
+    LaunchedEffect(autoStartRecordTrigger) {
+        if (autoStartRecordTrigger <= 0L) return@LaunchedEffect
+        // NavHost 가 setup 완료될 때까지 대기 — composition 직후에는 currentDestination 이 null 일 수 있음.
+        var attempts = 0
+        while (navController.currentDestination == null && attempts < 50) {
+            delay(20)
+            attempts++
+        }
+        // HomePager 든 다른 화면이든 무조건 navigate 호출 — popUpTo inclusive 로 HomePager 가 새로 composed 되어
+        // initialPage=1 이 확실히 적용되도록. HomeRecordPager 내부의 scrollToPage race 이슈 우회.
+        navController.navigate(WearRoute.HomePager.path) {
+            popUpTo(WearRoute.HomePager.path) { inclusive = true }
+            launchSingleTop = true
         }
     }
 
@@ -56,7 +65,7 @@ fun WearNavGraph(
                         launchSingleTop = true
                     }
                 },
-                autoStartRecord = autoStartRecord,
+                autoStartRecordTrigger = autoStartRecordTrigger,
                 onAutoStartConsumed = onAutoStartConsumed,
             )
         }

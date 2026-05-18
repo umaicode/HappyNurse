@@ -1,6 +1,6 @@
 // 센서 기반 제스처 감지 — 자이로 X축(손목 회전) peak 패턴으로 손목 제스처 인식.
 // Mode 에 따라 두 패턴 중 하나만 활성화:
-//   - DOUBLE_SNAP: 빠른 좌→우→좌→우 회전 2회 (반대 방향 두 peak) — 앱 외부에서 녹음 시작 트리거
+//   - DOUBLE_SNAP: 빠르게 두 번 비틀기 (방향 무관, X축 peak 2회) — 앱 외부에서 녹음 시작 트리거
 //   - SINGLE_SNAP: 한 번 회전 (X축 peak 1회) + 다축 정지 가드 — 녹음 중지/등록 확정 트리거
 // GestureService 가 start()/stop() 으로 라이프사이클을 제어하고, setMode() 로 patten 을 전환한다.
 package com.happynurse.wear.gesture
@@ -40,11 +40,9 @@ class GestureDetector @Inject constructor(
     // mode 전환 직후 잔여 회전 차단용. setMode 호출 시 갱신.
     @Volatile private var modeSwitchTimestampMs: Long = 0L
 
-    // DOUBLE_SNAP 검출 상태
+    // DOUBLE_SNAP 검출 상태 — 마지막 peak 시각만 추적 (방향 무관, 빠른 두 번 비틀기 인식)
     private var lastSnapTimestampMs: Long = 0L
-    private var lastSnapSign: Int = 0
     private var lastEmitTimestampMs: Long = 0L
-    private var sawQuietSinceLastSnap: Boolean = false
 
     fun start() {
         if (running) return
@@ -79,8 +77,6 @@ class GestureDetector @Inject constructor(
 
     private fun resetState() {
         lastSnapTimestampMs = 0L
-        lastSnapSign = 0
-        sawQuietSinceLastSnap = false
     }
 
     override fun onSensorChanged(event: SensorEvent) {
@@ -93,43 +89,35 @@ class GestureDetector @Inject constructor(
 
     private fun handleDoubleSnap(event: SensorEvent) {
         val gx = event.values[0]
+        val gy = event.values[1]
+        val gz = event.values[2]
         val absGx = abs(gx)
+        if (absGx < GYRO_PEAK_THRESHOLD) return
+        // 다축 정지 가드 — 팔 들기/시계 보기 같은 다축 동작은 무시.
+        if (abs(gy) + abs(gz) > DOUBLE_SNAP_MULTI_AXIS_THRESHOLD) return
+
         val nowMs = System.currentTimeMillis()
         if (nowMs - lastEmitTimestampMs < EMIT_COOLDOWN_MS) return
 
-        // 두 peak 사이의 정지 구간 추적 — 한 번의 비틀기+복귀 진동(연속 진동)을
-        // 두 peak 로 오인식하지 않도록, peak 사이에 |gx|<QUIET_THRESHOLD 인 구간이 있어야 함.
-        if (lastSnapTimestampMs != 0L && absGx < BETWEEN_PEAKS_QUIET_THRESHOLD) {
-            sawQuietSinceLastSnap = true
-        }
-
-        if (absGx < GYRO_PEAK_THRESHOLD) return
-
-        val sign = if (gx >= 0f) 1 else -1
         val sinceLastSnap = nowMs - lastSnapTimestampMs
 
         when {
-            // 첫 peak or 너무 오래 지난 경우 → 첫 peak 로 기록
-            lastSnapTimestampMs == 0L || sinceLastSnap > MAX_GAP_MS -> {
+            // 첫 peak — 시각 기록.
+            lastSnapTimestampMs == 0L -> {
                 lastSnapTimestampMs = nowMs
-                lastSnapSign = sign
-                sawQuietSinceLastSnap = false
             }
-            // 너무 빨라 같은 비틀기의 진동 — 무시
-            sinceLastSnap < MIN_GAP_MS -> Unit
-            // 두 peak 사이 정지 구간이 없었으면 한 번의 비틀기+복귀 진동 — 무시
-            !sawQuietSinceLastSnap -> Unit
-            // 진짜 두 번째 스냅
-            sign != lastSnapSign -> {
+            // 한 peak 의 진동 구간 — 같은 peak 로 간주, 갱신 안 함.
+            sinceLastSnap < PEAK_REFRACTORY_MS -> Unit
+            // 너무 오래 지나면 마지막 peak 만 남기고 카운트 리셋.
+            sinceLastSnap > MAX_GAP_MS -> {
+                lastSnapTimestampMs = nowMs
+            }
+            // 두 peak 사이 정상 간격 → 더블 스냅 인정.
+            sinceLastSnap in MIN_GAP_MS..MAX_GAP_MS -> {
                 Log.d(TAG, "WRIST_DOUBLE_SNAP detected gap=${sinceLastSnap}ms")
                 _events.tryEmit(Gesture.WRIST_DOUBLE_SNAP)
                 lastEmitTimestampMs = nowMs
                 resetState()
-            }
-            else -> {
-                lastSnapTimestampMs = nowMs
-                lastSnapSign = sign
-                sawQuietSinceLastSnap = false
             }
         }
     }
@@ -162,16 +150,18 @@ class GestureDetector @Inject constructor(
         const val SAMPLING_PERIOD_US = SensorManager.SENSOR_DELAY_GAME
 
         // 손목 회전 각속도 임계값 (rad/s). DOUBLE_SNAP / SINGLE_SNAP 동일.
-        const val GYRO_PEAK_THRESHOLD = 8.0f
+        const val GYRO_PEAK_THRESHOLD = 10.0f
 
-        // DOUBLE_SNAP 두 peak 사이 허용 시간 — MIN 을 250ms 로 늘려 한 번 비틀기 + 복귀 진동
-        // (보통 80~200ms 안에 발생) 이 더블 스냅으로 오인식되는 것 차단.
-        const val MIN_GAP_MS = 250L
-        const val MAX_GAP_MS = 1200L
+        // 한 peak 의 진동 구간을 한 peak 로 묶기 위한 짧은 불응기.
+        const val PEAK_REFRACTORY_MS = 120L
 
-        // 두 peak 사이 정지 구간 임계값 — 이 값 미만으로 자이로가 떨어진 적이 있어야
-        // 두 peak 가 별개의 동작으로 인정됨. 한 번의 비틀기는 진동 중 0 근처를 안 지남.
-        const val BETWEEN_PEAKS_QUIET_THRESHOLD = 2.0f
+        // DOUBLE_SNAP 두 peak 사이 허용 시간. 방향 무관, 빠른 두 번 비틀기를 모두 흡수.
+        const val MIN_GAP_MS = 180L
+        const val MAX_GAP_MS = 700L
+
+        // DOUBLE_SNAP 다축 정지 가드 — |gy|+|gz| 가 이 값 이하일 때만 X축 peak 인정.
+        // SingleSnap 가드(5.0f)보다 살짝 완화 — 더블 동작 중 사소한 다축 흔들림은 허용.
+        const val DOUBLE_SNAP_MULTI_AXIS_THRESHOLD = 7.0f
 
         // DOUBLE_SNAP 이중 발화 방지
         const val EMIT_COOLDOWN_MS = 2_000L

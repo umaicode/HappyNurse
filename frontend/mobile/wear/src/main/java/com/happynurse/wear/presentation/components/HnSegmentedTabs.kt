@@ -25,7 +25,10 @@ import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 
-data class HnTab(val label: String)
+data class HnTab(
+    val label: String,
+    val iconContent: (@Composable () -> Unit)? = null,
+)
 
 @Composable
 fun HnSegmentedTabs(
@@ -37,8 +40,8 @@ fun HnSegmentedTabs(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 26.dp)
-            .height(26.dp),
+            .padding(horizontal = 22.dp)
+            .height(32.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -60,7 +63,7 @@ fun HnSegmentedTabs(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(30.dp)
+                    .height(32.dp)
                     .clip(RoundedCornerShape(50))
                     .background(bg)
                     .clickable(
@@ -71,14 +74,24 @@ fun HnSegmentedTabs(
                     .padding(horizontal = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = tab.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = fg,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        androidx.wear.compose.material3.LocalContentColor provides fg,
+                    ) {
+                        tab.iconContent?.invoke()
+                    }
+                    Text(
+                        text = tab.label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = fg,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }

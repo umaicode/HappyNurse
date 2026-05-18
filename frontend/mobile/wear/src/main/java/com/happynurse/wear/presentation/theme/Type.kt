@@ -15,6 +15,7 @@ val RobotoFlex: FontFamily = FontFamily(
     Font(R.font.roboto_flex, FontWeight.Normal),
     Font(R.font.roboto_flex, FontWeight.Medium),
     Font(R.font.roboto_flex, FontWeight.Bold),
+    Font(R.font.roboto_flex, FontWeight.Black),
 )
 
 // 카운트다운 / 시간 디스플레이용 — tabular figures(폭 고정 숫자) 활성화

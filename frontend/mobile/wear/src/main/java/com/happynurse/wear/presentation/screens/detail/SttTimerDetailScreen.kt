@@ -6,11 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -43,7 +45,7 @@ fun SttTimerDetailScreen(
                 ScalingLazyColumn(
                     state = rememberScalingLazyListState(),
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(top = 28.dp, bottom = 24.dp, start = 14.dp, end = 14.dp),
+                    contentPadding = PaddingValues(top = 20.dp, bottom = 10.dp, start = 14.dp, end = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     item { AlertTimeChip(endAt = stt.endAtDisplay) }
@@ -56,19 +58,26 @@ fun SttTimerDetailScreen(
 
 @Composable
 private fun AlertTimeChip(endAt: String) {
-    Box(
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(50))
+            .width(80.dp)
+            .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.primaryContainer)
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        contentAlignment = Alignment.Center,
+            .padding(horizontal = 4.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(
-            text = "알림 $endAt",
-            style = MaterialTheme.typography.labelSmall.merge(TabularNumStyle),
+            text = "알림",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = endAt,
+            style = MaterialTheme.typography.titleMedium.merge(TabularNumStyle),
             color = MaterialTheme.colorScheme.onPrimaryContainer,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Black,
         )
     }
 }
@@ -80,15 +89,9 @@ private fun RecordedContent(text: String) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = "녹음 내용",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.size(6.dp))
         Text(
             text = text.ifBlank { "(내용 없음)" },
             style = MaterialTheme.typography.bodyMedium,
