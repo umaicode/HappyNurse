@@ -10,14 +10,17 @@ import com.happynurse.data.repository.EncounterRepository
 import com.happynurse.data.repository.PatientRepository
 import com.happynurse.domain.model.Note
 import com.happynurse.domain.model.Order
+import com.happynurse.domain.model.highlightKey
 import com.happynurse.domain.model.Patient
 import com.happynurse.presentation.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -58,6 +61,11 @@ class PatientDetailViewModel @Inject constructor(
     private val _monthCounts = MutableStateFlow<Map<LocalDate, Int>>(emptyMap())
     val monthCounts: StateFlow<Map<LocalDate, Int>> = _monthCounts.asStateFlow()
 
+    // SSE 도착으로 신규 추가된 간호일지 행의 식별자 모음 — 화면에서 2.5초간 카드 border 강조 표시 후 자동 해제.
+    // 사용자 액션(날짜/환자 변경, 첫 진입) 의 loadNotes 는 영향 없음 — reloadNotesAndHighlightNew 가 호출될 때만 동작.
+    private val _recentlyAddedKeys = MutableStateFlow<Set<String>>(emptySet())
+    val recentlyAddedKeys: StateFlow<Set<String>> = _recentlyAddedKeys.asStateFlow()
+
     init {
         if (initialId > 0L) loadPatient(initialId)
         loadMyPatients()
@@ -72,7 +80,7 @@ class PatientDetailViewModel @Inject constructor(
         }
     }
 
-    // envelope.occurredAt → LocalDate 추출 후 현재 선택 날짜와 비교. 같으면 loadNotes, 같은 월이면 loadMonthNotes.
+    // envelope.occurredAt → LocalDate 추출 후 현재 선택 날짜와 비교. 같으면 reload+highlight, 같은 월이면 loadMonthNotes.
     private fun handleNursingNoteEvent(json: String) {
         val eid = _patient.value?.encounterId ?: return
         if (eid <= 0L) return
@@ -80,12 +88,34 @@ class PatientDetailViewModel @Inject constructor(
         val occurredLocalDate = parseOccurredDate(envelope.occurredAt) ?: return
         val selected = _selectedDate.value
         if (occurredLocalDate == selected) {
-            loadNotes(eid, selected)
+            reloadNotesAndHighlightNew(eid, selected)
         }
         val occurredMonth = YearMonth.from(occurredLocalDate)
         if (occurredMonth == _visibleMonth.value) {
             loadMonthNotes(eid, occurredMonth)
         }
+    }
+
+    // SSE 트리거 reload — 이전 노트 목록과 비교해 신규 식별자를 _recentlyAddedKeys 에 2.5초 동안 등록.
+    // 사용자 액션 reload (loadNotes) 와 분리되어 있어 날짜/환자 변경 시 강조가 발사되지 않는다.
+    private fun reloadNotesAndHighlightNew(encounterId: Long, date: LocalDate) {
+        val previousKeys = _notes.value.mapNotNull { it.highlightKey() }.toSet()
+        launchWithResult(block = { encounterRepository.getNursingNotes(encounterId, date.toString()) }) { list ->
+            val sorted = list.sortedBy { it.time }
+            _notes.value = sorted
+            val newKeys = sorted.mapNotNull { it.highlightKey() }.filter { it !in previousKeys }.toSet()
+            if (newKeys.isNotEmpty()) {
+                _recentlyAddedKeys.update { it + newKeys }
+                viewModelScope.launch {
+                    delay(HIGHLIGHT_DURATION_MS)
+                    _recentlyAddedKeys.update { it - newKeys }
+                }
+            }
+        }
+    }
+
+    private companion object {
+        const val HIGHLIGHT_DURATION_MS = 2500L
     }
 
     private fun parseOccurredDate(raw: String?): LocalDate? {
