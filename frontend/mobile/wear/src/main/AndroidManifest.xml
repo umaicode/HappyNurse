@@ -71,6 +71,16 @@
             android:taskAffinity=""
             android:excludeFromRecents="true" />
 
+        <!-- 환자 요청 HIGH/CRITICAL 풀스크린 알람 호스트 -->
+        <activity
+            android:name=".alarm.PatientCallAlarmActivity"
+            android:exported="false"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:excludeFromRecents="true" />
+
         <!-- AlarmManager → 풀스크린 알림 발행용 Receiver -->
         <receiver
             android:name=".alarm.SttAlarmReceiver"

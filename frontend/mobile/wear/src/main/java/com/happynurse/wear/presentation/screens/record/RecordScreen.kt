@@ -187,7 +187,7 @@ private fun IdleContent(onMicTap: () -> Unit) {
             fontWeight = FontWeight.Black,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 20.dp),
+                .padding(top = 24.dp),
         )
         Box(
             modifier = Modifier
@@ -202,7 +202,7 @@ private fun IdleContent(onMicTap: () -> Unit) {
                 imageVector = Icons.Filled.Mic,
                 contentDescription = "녹음 시작",
                 tint = Color.White,
-                modifier = Modifier.size(45.dp),
+                modifier = Modifier.size(40.dp),
             )
         }
     }

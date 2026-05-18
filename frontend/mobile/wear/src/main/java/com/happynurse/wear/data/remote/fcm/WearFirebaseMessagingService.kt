@@ -8,6 +8,7 @@ import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.happynurse.wear.alarm.IvAlarmActivity
+import com.happynurse.wear.alarm.PatientCallAlarmActivity
 import com.happynurse.wear.alarm.SttAlarmActivity
 import com.happynurse.wear.domain.model.NotificationType
 import com.happynurse.wear.data.eventbus.WearEventBus
@@ -62,16 +63,24 @@ class WearFirebaseMessagingService : FirebaseMessagingService() {
             sourceType == "timer" -> startSttAlarm(title, body, data)
 
             sourceType == "self_report" -> {
-                SystemNotificationBuilder.showTray(
-                    context = this,
-                    notificationId = notifId,
-                    title = title.ifBlank { "환자 알림" },
-                    body = body,
-                    deepLinkExtras = mapOf(
-                        "sourceType" to "self_report",
-                        "patientId" to data["patientId"].orEmpty(),
-                    ),
-                )
+                val priority = data["priority"]
+                val isHighOrCritical = priority == "HIGH" || priority == "CRITICAL"
+                if (isHighOrCritical) {
+                    // HIGH / CRITICAL → 빨간 배경 풀스크린 알람
+                    startPatientCallAlarm(title, body, data, priority ?: "HIGH")
+                } else {
+                    // LOW / MEDIUM / 없음 → 기존 시스템 트레이 알림만
+                    SystemNotificationBuilder.showTray(
+                        context = this,
+                        notificationId = notifId,
+                        title = title.ifBlank { "환자 알림" },
+                        body = body,
+                        deepLinkExtras = mapOf(
+                            "sourceType" to "self_report",
+                            "patientId" to data["patientId"].orEmpty(),
+                        ),
+                    )
+                }
                 eventBus.emitNotification(
                     WearNotification(
                         title = title.ifBlank { "환자 알림" },
@@ -92,6 +101,22 @@ class WearFirebaseMessagingService : FirebaseMessagingService() {
             putExtra(IvAlarmActivity.EXTRA_PATIENT, data["patientName"].orEmpty().ifBlank { title })
             putExtra(IvAlarmActivity.EXTRA_MEDICATION, data["medicationName"].orEmpty().ifBlank { body })
             putExtra(IvAlarmActivity.EXTRA_ROOM_BED_TIME, data["roomBedTime"].orEmpty())
+        }
+        startActivity(intent)
+    }
+
+    private fun startPatientCallAlarm(
+        title: String,
+        body: String,
+        data: Map<String, String>,
+        priority: String,
+    ) {
+        val intent = Intent(this, PatientCallAlarmActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            putExtra(PatientCallAlarmActivity.EXTRA_PATIENT, data["patientName"].orEmpty().ifBlank { title })
+            putExtra(PatientCallAlarmActivity.EXTRA_BODY, body)
+            putExtra(PatientCallAlarmActivity.EXTRA_ROOM_LOCATION, data["roomLocation"].orEmpty())
+            putExtra(PatientCallAlarmActivity.EXTRA_PRIORITY, priority)
         }
         startActivity(intent)
     }
