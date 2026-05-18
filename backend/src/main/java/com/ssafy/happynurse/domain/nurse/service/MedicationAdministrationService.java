@@ -123,7 +123,8 @@ public class MedicationAdministrationService {
                 ma.getDosageQuantity(),
                 ma.getDosageUnit(),
                 mo != null ? mo.getFrequency() : null,
-                mo != null ? mo.getRoute() : null
+                mo != null ? mo.getRoute() : null,
+                null
         );
     }
 }

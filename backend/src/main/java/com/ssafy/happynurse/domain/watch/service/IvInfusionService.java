@@ -27,6 +27,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import com.ssafy.happynurse.domain.nurse.entity.MedicationAdministration;
+import com.ssafy.happynurse.domain.nurse.event.MedicationAdministrationSavedEvent;
+import com.ssafy.happynurse.domain.nurse.repository.MedicationAdministrationRepository;
+import org.springframework.context.ApplicationEventPublisher;
+import java.util.ArrayList;
+import java.util.UUID;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -44,6 +50,10 @@ public class IvInfusionService {
     private final EncounterRepository encounterRepository;
     private final PractitionerRepository practitionerRepository;
     private final IvAlertScheduler scheduler;
+
+    // 간호기록 SSE를 위한 작업
+    private final MedicationAdministrationRepository medicationAdministrationRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public IvInfusionResponse start(StartIvRequest req, Long practitionerId) {
@@ -80,10 +90,11 @@ public class IvInfusionService {
         Practitioner nurse = practitionerRepository.findById(practitionerId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRACTITIONER_NOT_FOUND));
 
-        // 6) IvInfusion + components 생성.
-        // orders 그대로 entity 에 넘기면 entity 각 order 에서 medication 도출 + IvInfusionMedication 생성
+        // 6) IvInfusion + components 생성 + 간호기록(N행) 생성
         BigDecimal rate = req.resolveRateMlPerHr();
         LocalDateTime now = LocalDateTime.now();
+        String taggingId = UUID.randomUUID().toString();
+
         IvInfusion iv = IvInfusion.start(
                 orders.get(0).getPatient(),
                 encounter,
@@ -95,6 +106,27 @@ public class IvInfusionService {
                 now,
                 req.note());
         IvInfusion saved = repository.save(iv);
+
+        // 간호기록용 MedicationAdministration N행 (markCompleted 는 호출 안 함)
+        List<MedicationAdministration> mas = new ArrayList<>(orders.size());
+        for (MedicationOrder order : orders) {
+            mas.add(MedicationAdministration.ofIv(
+                    orders.get(0).getPatient(),
+                    encounter,
+                    nurse,
+                    order,
+                    order.getMedication(),
+                    now,
+                    taggingId));
+        }
+        medicationAdministrationRepository.saveAll(mas);
+
+        // SSE 트리거 (AFTER_COMMIT 발사)
+        eventPublisher.publishEvent(new MedicationAdministrationSavedEvent(
+                taggingId,
+                encounter.getEncounterId(),
+                orders.get(0).getPatient().getPatientId(),
+                nurse.getPractitionerId()));
 
         afterCommit(() -> {
             scheduler.register(saved, AlertType.FIVE_MIN_BEFORE);
@@ -111,6 +143,20 @@ public class IvInfusionService {
         LocalDateTime now = LocalDateTime.now();
         iv.updateDropSet(req.dropSet());
         iv.changeRate(newRate, now);
+
+        // SSE 트리거 — MA 경유 taggingId 역방향 조회
+        String taggingId = medicationAdministrationRepository
+                .findFirstByMedicationOrder_MedicationOrderId(
+                        iv.getMedicationOrder().getMedicationOrderId())
+                .map(MedicationAdministration::getTaggingId)
+                .orElse(null);
+        if (taggingId != null) {
+            eventPublisher.publishEvent(new MedicationAdministrationSavedEvent(
+                    taggingId,
+                    iv.getEncounter().getEncounterId(),
+                    iv.getPatient().getPatientId(),
+                    iv.getPractitioner().getPractitionerId()));
+        }
 
         afterCommit(() -> {
             scheduler.cancelAll(iv.getIvInfusionId());

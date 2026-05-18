@@ -18,6 +18,8 @@ import com.ssafy.happynurse.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ssafy.happynurse.domain.watch.entity.IvInfusion;
+import com.ssafy.happynurse.domain.watch.repository.IvInfusionRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -37,6 +39,7 @@ public class NursingNoteService {
     private final NursingRecordRepository nursingRecordRepository;
     private final MedicationAdministrationRepository medicationAdministrationRepository;
     private final PractitionerRepository practitionerRepository;
+    private final IvInfusionRepository ivInfusionRepository;
 
     public List<NursingNoteItemResponse> getNursingNotes(Long encounterId,
                                                         LocalDate date,
@@ -125,11 +128,17 @@ public class NursingNoteService {
         if (group == null || group.isEmpty()) return null;
 
         MedicationAdministration head = group.get(0);
+
+        IvInfusion iv = (head.getMedicationOrder() != null)
+                ? ivInfusionRepository.findByMedicationOrderId(
+                head.getMedicationOrder().getMedicationOrderId()).orElse(null)
+                : null;
+
         boolean editable = currentPractitionerId != null
                 && head.getPractitioner().getPractitionerId().equals(currentPractitionerId);
 
         List<MedicationItemResponse> medItems = group.stream()
-                .map(this::toMedicationItem)
+                .map(ma -> toMedicationItem(ma, iv))
                 .toList();
 
         return new NursingNoteItemResponse(
@@ -191,7 +200,7 @@ public class NursingNoteService {
         });
     }
 
-    private MedicationItemResponse toMedicationItem(MedicationAdministration ma) {
+    private MedicationItemResponse toMedicationItem(MedicationAdministration ma, IvInfusion iv) {
         MedicationOrder mo = ma.getMedicationOrder();
         return new MedicationItemResponse(
                 ma.getMedicationAdminId(),
@@ -200,7 +209,8 @@ public class NursingNoteService {
                 ma.getDosageQuantity(),
                 ma.getDosageUnit(),
                 mo != null ? mo.getFrequency() : null,
-                mo != null ? mo.getRoute() : null
+                mo != null ? mo.getRoute() : null,
+                iv != null ? iv.getCurrentRateMlPerHr() : null
         );
     }
 
