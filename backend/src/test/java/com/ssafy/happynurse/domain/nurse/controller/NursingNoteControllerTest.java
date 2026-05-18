@@ -74,7 +74,7 @@ class NursingNoteControllerTest {
                 "tag-uuid-1", true,
                 List.of(new MedicationItemResponse(
                         31L, "PC1", "모르핀황산염주사",
-                        new BigDecimal("5.000"), "mg", 1, "IV")));
+                        new BigDecimal("5.000"), "mg", 1, "IV", null)));
 
         given(nursingNoteService.getNursingNotes(eq(42L), eq(LocalDate.of(2026, 5, 3)), eq(1L), eq(3L)))
                 .willReturn(List.of(stt, med));

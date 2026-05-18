@@ -34,7 +34,7 @@ import java.util.List;
 public class WebappService {
 
     private static final DateTimeFormatter BIRTH_FORMATTER = DateTimeFormatter.ofPattern("yyMMdd");
-    private static final String EMPTY_AFTER_FILTER_PLACEHOLDER = "(부적절한 내용 — 본문 미표시)";
+    private static final String EMPTY_AFTER_FILTER_PLACEHOLDER = "클린봇이 부적절한 표현을 감지했습니다";
 
     private final PatientRepository patientRepository;
     private final EncounterRepository encounterRepository;

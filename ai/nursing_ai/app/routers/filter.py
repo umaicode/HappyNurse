@@ -58,7 +58,7 @@ async def filter_symptom_text(req: FilterRequest) -> FilterResponse:
     try:
         result = _get_filter().filter(req.symptom_text)
     except RuntimeError as e:
-        # AbuseFilter 가 ANTHROPIC_API_KEY 누락 시 RuntimeError
+        # AbuseFilter 가 GMS_API_KEY 누락 시 RuntimeError
         logger.error("Filter configuration error: %s", e)
         raise HTTPException(status_code=503, detail="filter service unavailable") from e
     except ValueError as e:
