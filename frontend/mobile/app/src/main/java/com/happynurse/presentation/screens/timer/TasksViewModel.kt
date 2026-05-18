@@ -75,11 +75,16 @@ class TasksViewModel @Inject constructor(
             }
         }
         // SSE 도착 즉시 알림함 새로고침 — 15초 폴링 주기를 기다리지 않고 실시간 반영.
-        // iv_alert 면 수액 보드도 함께 갱신해 종료된 IV 가 즉시 사라지도록 한다.
+        // 수액 보드 추가 갱신:
+        //  - iv_alert: 종료 5분 전/종료 스케줄러 알람 → 종료된 IV 즉시 사라짐
+        //  - medication_admin: 워치에서 IV 시작/속도 변경 → 새 IV 카드 즉시 추가/속도 갱신
+        //    (NFC 알약 투약에서도 같은 이벤트가 나와 over-fetch 가 한 번 발생하나 응답 동일 시 no-op)
         viewModelScope.launch {
             notificationStream.events.collect { event ->
                 refreshBellNotifications()
-                if (event.sourceType == "iv_alert") refreshIvBoard()
+                if (event.sourceType == "iv_alert" || event.sourceType == "medication_admin") {
+                    refreshIvBoard()
+                }
             }
         }
         // 앱 살아있는 동안 SSE 연결을 시도/재시도 유지. ViewModel onCleared 시 자동 종료.

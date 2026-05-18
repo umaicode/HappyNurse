@@ -25,6 +25,11 @@ private fun mapSex(gender: String?): String = when (gender?.lowercase()) {
     else -> "M"
 }
 
+// BigDecimal serialization 결과("1000.000", "1.500") 에서 trailing zero + 끝 소수점 제거.
+// 정수표기(소수점 없는)에선 끝 0 보존 — "100" → "100".
+private fun String?.stripTrailingDecimalZerosOrEmpty(): String =
+    this?.let { s -> if (s.contains('.')) s.trimEnd('0').trimEnd('.') else s }.orEmpty()
+
 private fun ageFromBirth(birthDate: String?): Int {
     val d = runCatching { LocalDate.parse(birthDate) }.getOrNull() ?: return 0
     return Period.between(d, LocalDate.now()).years
@@ -102,9 +107,25 @@ fun NursingNoteDto.toDomain(): Note {
         ?: runCatching { LocalDateTime.parse(occurredAt) }.getOrNull()
     val time = ldt?.format(DateTimeFormatter.ofPattern("HH:mm")).orEmpty()
     val date = ldt?.toLocalDate()?.toString().orEmpty()
-    val tag = if (type == "MEDICATION") "투약" else "STT"
+    // MEDICATION 그룹 안에 ivRateMlPerHr 가 한 행이라도 있으면 수액 (IV), 아니면 NFC 알약(약물).
+    val isIvGroup = type == "MEDICATION" && medications.orEmpty().any { it.ivRateMlPerHr != null }
+    val tag = when {
+        type != "MEDICATION" -> "STT"
+        isIvGroup -> "수액"
+        else -> "약물"
+    }
     val text = content
-        ?: medications.orEmpty().joinToString { "${it.productName.orEmpty()} ${it.dosageQuantity.orEmpty()}".trim() }
+        ?: medications.orEmpty().joinToString { med ->
+            val rate = med.ivRateMlPerHr?.let { if (it % 1.0 == 0.0) it.toLong().toString() else it.toString() }
+            if (rate != null) {
+                // IV 수액 행: 약물명 + 현재 속도만 표시. dosageQuantity 는 bag 단위라 의미가 약해 생략 (웹과 별개 모바일 정책).
+                "${med.productName.orEmpty()} · $rate mL/hr".trim()
+            } else {
+                // NFC 알약 행: 약물명 + 투여량 (trailing zero strip). dosageQuantity 가 정수/소수 일 수 있어 정리.
+                val qty = med.dosageQuantity.stripTrailingDecimalZerosOrEmpty()
+                "${med.productName.orEmpty()} $qty".trim()
+            }
+        }
     val author = authorName?.takeIf { it.isNotBlank() }?.let { "$it 간호사" }.orEmpty()
     return Note(
         time = time,
@@ -116,6 +137,7 @@ fun NursingNoteDto.toDomain(): Note {
         type = type,
         status = status.orEmpty(),
         editable = editable,
+        taggingId = taggingId,
     )
 }
 
