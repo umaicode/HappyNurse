@@ -132,6 +132,15 @@ export function NursingTab({
   // 추가 직후 새 행 강조 — 서버 응답의 nursingRecordId 를 받아 filteredNotes 에 반영되면 scroll + ring.
   const [pendingFocusId, setPendingFocusId] = useState<number | null>(null);
 
+  // SSE 도착으로 새로 추가된 행 강조 — 사이드바 점프(highlightedKey) 와 별개 트랙. 2.5s 후 자동 해제.
+  // filteredNotes 변경 시 이전 키 set 과 diff 해 신규 키만 강조. 환자/일자/myRecordsOnly 변경 (사용자 액션)
+  // 시엔 발사 안 함. ref + 별도 timeout map 으로 키별 독립 타이머 운용.
+  const [recentlyAddedSseKeys, setRecentlyAddedSseKeys] = useState<Set<string>>(() => new Set());
+  const prevFilteredKeysRef = useRef<Set<string>>(new Set());
+  const prevDatasetKeyRef = useRef(datasetKey);
+  const prevMyRecordsOnlyRef = useRef(myRecordsOnly);
+  const sseHighlightTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
   useEffect(() => {
     if (filteredNotes.length === 0) return;
 
@@ -200,6 +209,61 @@ export function NursingTab({
     return () => window.clearTimeout(timeoutId);
   }, [highlightedKey]);
 
+  // SSE 도착 시 신규 키 강조 — invalidate → 재조회 후 filteredNotes 가 새 키를 포함하면 highlight 발사.
+  // 사용자 액션 (날짜/환자/myRecordsOnly 토글) 의 변경은 SSE 가 아니므로 발사 안 함. 첫 로드 (이전 빈 set)
+  // 도 마찬가지로 발사 안 함 — 초기 데이터 도착을 신규 추가로 오인하지 않기 위함.
+  useEffect(() => {
+    const currentKeys = new Set(filteredNotes.map(rowKey));
+
+    if (
+      prevDatasetKeyRef.current !== datasetKey
+      || prevMyRecordsOnlyRef.current !== myRecordsOnly
+    ) {
+      prevDatasetKeyRef.current = datasetKey;
+      prevMyRecordsOnlyRef.current = myRecordsOnly;
+      prevFilteredKeysRef.current = currentKeys;
+      return;
+    }
+
+    if (prevFilteredKeysRef.current.size === 0) {
+      prevFilteredKeysRef.current = currentKeys;
+      return;
+    }
+
+    const newKeys = [...currentKeys].filter((k) => !prevFilteredKeysRef.current.has(k));
+    if (newKeys.length > 0) {
+      setRecentlyAddedSseKeys((prev) => {
+        const next = new Set(prev);
+        for (const k of newKeys) next.add(k);
+        return next;
+      });
+      for (const k of newKeys) {
+        const existing = sseHighlightTimeoutsRef.current.get(k);
+        if (existing) clearTimeout(existing);
+        const id = setTimeout(() => {
+          setRecentlyAddedSseKeys((prev) => {
+            if (!prev.has(k)) return prev;
+            const next = new Set(prev);
+            next.delete(k);
+            return next;
+          });
+          sseHighlightTimeoutsRef.current.delete(k);
+        }, 2500);
+        sseHighlightTimeoutsRef.current.set(k, id);
+      }
+    }
+    prevFilteredKeysRef.current = currentKeys;
+  }, [filteredNotes, datasetKey, myRecordsOnly]);
+
+  // 언마운트 시 SSE highlight 타이머 모두 정리 — 메모리 누수 + dangling setState 방지.
+  useEffect(() => {
+    const timeouts = sseHighlightTimeoutsRef.current;
+    return () => {
+      timeouts.forEach((id) => clearTimeout(id));
+      timeouts.clear();
+    };
+  }, []);
+
   return (
     <div
       ref={scrollContainerRef}
@@ -253,6 +317,7 @@ export function NursingTab({
                       note={note}
                       isEditMode={isEditMode}
                       isHighlighted={highlightedKey === key}
+                      isRecentlySseAdded={recentlyAddedSseKeys.has(key)}
                       onUpdateStt={handleUpdateStt}
                       onUpdateMedication={handleUpdateMedication}
                       onConfirm={handleConfirm}
@@ -573,6 +638,7 @@ function NoteRow({
   note,
   isEditMode,
   isHighlighted,
+  isRecentlySseAdded,
   onUpdateStt,
   onUpdateMedication,
   onConfirm,
@@ -587,6 +653,8 @@ function NoteRow({
   isEditMode: boolean;
   // 사이드바 / 인수인계 citation 에서 점프해 온 row 잠시 강조 (NursingTab 에서 2.5초 후 해제).
   isHighlighted: boolean;
+  // SSE 도착으로 새로 추가된 행 잠시 강조 (NursingTab 에서 2.5초 후 해제). focus 점프와 시각 구분 — primary 색.
+  isRecentlySseAdded?: boolean;
   rowRef?: (element: HTMLDivElement | null) => void;
 } & NoteRowCallbacks) {
   const isMedication = note.type === "MEDICATION";
@@ -706,6 +774,10 @@ function NoteRow({
         // highlighted — 사이드바/인수인계에서 점프해 온 행 잠시 강조. inset shadow 로 외곽 ring 효과.
         isHighlighted &&
           "bg-status-warning-surface hover:bg-status-warning-surface shadow-[inset_0_0_0_2px_var(--color-status-warning)]",
+        // SSE 도착으로 새로 추가된 행 — primary 색 ring (focus 점프 warning 과 시각 구분, 의도 다른 두 효과).
+        // focus 점프와 동시에 두 조건이 켜지면 focus 가 우선 (사용자가 명시 클릭한 거라 warning ring 보존).
+        !isHighlighted && isRecentlySseAdded &&
+          "shadow-[inset_0_0_0_2px_var(--color-brand-primary)]",
       )}
     >
       {/* 시간 — 편집 모드에선 HH : mm 분리 입력. STT_NOTE / MEDICATION 모두 body 의 confirmedAt 키로 송신. */}
