@@ -103,11 +103,20 @@ export function useNotificationStream() {
       orderHandler();
     };
 
+    // medication_admin 은 NFC 투약 + IV 시작/속도 변경 시 모두 발사된다.
+    // IV 시작/속도 변경 시엔 IVTimerPanel(["iv","ward",wardId])도 즉시 갱신되어야 하는데
+    // BE 가 iv_alert 을 함께 쏘진 않으므로 여기서 IV 캐시도 같이 invalidate.
+    // NFC 투약 케이스에선 /iv-infusions 가 한 번 더 호출되지만 응답 동일이라 사실상 no-op.
+    const medicationAdminHandler = () => {
+      nursingHandler();
+      queryClient.invalidateQueries({ queryKey: ["iv", "ward", wardId] });
+    };
+
     const onEvent = {
       ...Object.fromEntries(SOURCE_EVENTS.map((name) => [name, notificationHandler])),
       order_change: orderChangeHandler,
       [NURSING_EVENT]: nursingHandler,
-      [MEDICATION_ADMIN_EVENT]: nursingHandler,
+      [MEDICATION_ADMIN_EVENT]: medicationAdminHandler,
     };
 
     return openSse("/sse/ward-subscribe", { onEvent });
