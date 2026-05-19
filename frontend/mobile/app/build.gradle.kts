@@ -33,6 +33,7 @@ android {
             buildConfigField("String", "BASE_URL", "\"https://k14e101.p.ssafy.io/api/\"")
             buildConfigField("String", "AI_BASE_URL", "\"https://k14e101.p.ssafy.io/ai/\"")
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
