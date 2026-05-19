@@ -61,6 +61,16 @@
             android:taskAffinity=""
             android:excludeFromRecents="true" />
 
+        <!-- 환자요청(위급/높음) 풀스크린 알람 호스트 -->
+        <activity
+            android:name=".alarm.SelfReportAlarmActivity"
+            android:exported="false"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:excludeFromRecents="true" />
+
         <!-- s13 STT 타이머 풀스크린 알람 호스트 -->
         <activity
             android:name=".alarm.SttAlarmActivity"
