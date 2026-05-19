@@ -2,25 +2,38 @@
 // 시계(TimeText) 는 표시하지 않으며, 원형 베젤에 탭이 잘리지 않도록 상단에 안전 마진을 둔다.
 package com.happynurse.wear.presentation.screens.home
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material3.AppScaffold
+import androidx.wear.compose.material3.Icon
+import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
+import com.happynurse.wear.R
 import com.happynurse.wear.domain.model.IvInfusionTimer
 import com.happynurse.wear.domain.model.SttTimer
 import com.happynurse.wear.presentation.components.HnPagerIndicator
-import com.happynurse.wear.presentation.components.HnSegmentedTabs
-import com.happynurse.wear.presentation.components.HnTab
 import com.happynurse.wear.presentation.screens.home.tabs.IvListTab
 import com.happynurse.wear.presentation.screens.home.tabs.SttListTab
 
@@ -32,22 +45,17 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val tabs = listOf(
-        HnTab(HomeTab.IV.label),
-        HnTab(HomeTab.STT.label),
-    )
     AppScaffold(timeText = {}) {
         ScreenScaffold {
             Box(modifier = Modifier.fillMaxSize()) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = 34.dp, bottom = 16.dp),
+                        .padding(top = 18.dp, bottom = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    HnSegmentedTabs(
-                        tabs = tabs,
+                    CircleTabRow(
                         selectedIndex = state.selectedTab.ordinal,
                         onSelected = { idx -> viewModel.selectTab(HomeTab.entries[idx]) },
                     )
@@ -75,6 +83,63 @@ fun HomeScreen(
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 4.dp),
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CircleTabRow(
+    selectedIndex: Int,
+    onSelected: (Int) -> Unit,
+) {
+    val icons: List<@Composable () -> Unit> = listOf(
+        {
+            Icon(
+                painter = painterResource(R.drawable.ic_infusion),
+                contentDescription = HomeTab.IV.label,
+                modifier = Modifier.size(30.dp),
+            )
+        },
+        {
+            Icon(
+                imageVector = Icons.Filled.Timer,
+                contentDescription = HomeTab.STT.label,
+                modifier = Modifier.size(30.dp),
+            )
+        },
+    )
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        icons.forEachIndexed { index, iconContent ->
+            val isSelected = index == selectedIndex
+            val targetBg = if (isSelected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.surfaceContainer
+            val targetFg = if (isSelected) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onSurfaceVariant
+            val bg by animateColorAsState(targetBg, label = "circleTabBg-$index")
+            val fg by animateColorAsState(targetFg, label = "circleTabFg-$index")
+            val interactionSource = remember { MutableInteractionSource() }
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(bg)
+                    .clickable(
+                        onClick = { onSelected(index) },
+                        indication = null,
+                        interactionSource = interactionSource,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                androidx.wear.compose.material3.LocalContentColor
+                androidx.compose.runtime.CompositionLocalProvider(
+                    androidx.wear.compose.material3.LocalContentColor provides fg,
+                ) {
+                    iconContent()
+                }
             }
         }
     }

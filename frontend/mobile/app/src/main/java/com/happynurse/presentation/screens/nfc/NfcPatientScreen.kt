@@ -24,7 +24,6 @@ import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.MedicalServices
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Nfc
-import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -35,11 +34,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.happynurse.R
 import com.happynurse.domain.model.NfcPatientInfo
 import com.happynurse.presentation.components.HnCard
 import com.happynurse.presentation.components.NfcLifecycleEffect
@@ -74,7 +75,7 @@ fun NfcPatientScreen(
                 modifier = Modifier.size(28.dp).clickable(onClick = onClose),
             )
             Spacer(Modifier.size(8.dp))
-            Text("NFC 인식", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+            Text("환자 NFC", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
         }
         Column(
             Modifier
@@ -142,10 +143,10 @@ private fun SuccessSection(
                 ) {
                     Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = HnColors.Success, modifier = Modifier.size(40.dp))
                 }
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(10.dp))
                 Text("인식 완료", fontSize = 14.sp,  color = HnColors.Success, fontWeight = FontWeight.SemiBold)
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(20.dp))
             // 환자 정보 영역만 좌측 정렬
             Column(horizontalAlignment = Alignment.Start, modifier = Modifier.fillMaxWidth()) {
                 // 1줄: 환자이름 · 생년월일 · 호실/침대
@@ -169,7 +170,7 @@ private fun SuccessSection(
                     }
                 }
                 Spacer(Modifier.height(10.dp))
-                // 2열 × 2행 그리드: 병명/주증상, 수술/담당의 — 연한 회색 라운드 컨테이너
+                // 2열 × 2행 그리드: 병명/입원일, 수술/담당의
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -180,7 +181,7 @@ private fun SuccessSection(
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Row(modifier = Modifier.fillMaxWidth()) {
                             InfoGridCell("병명", info.diseaseName, modifier = Modifier.weight(1f))
-                            InfoGridCell("주증상", info.chiefComplaint, modifier = Modifier.weight(1f))
+                            InfoGridCell("입원일", info.periodStart, modifier = Modifier.weight(1f))
                         }
                         Spacer(Modifier.height(12.dp))
                         Row(modifier = Modifier.fillMaxWidth()) {
@@ -195,11 +196,11 @@ private fun SuccessSection(
     Spacer(Modifier.height(16.dp))
     Text("다음 작업을 선택하세요", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextSecondary)
     Spacer(Modifier.height(10.dp))
-    ActionTile(Icons.Outlined.Mic, "간호일지 등록", "음성 녹음 → STT → 전송", onLog)
+    ActionTile(Icons.Outlined.Mic, "간호일지 등록", "음성 녹음 → STT 변환 → 전송", onLog)
     Spacer(Modifier.height(8.dp))
     ActionTile(Icons.Outlined.MedicalServices, "약물 등록", "약물 NFC 태깅 → 리스트 → 전송", onDrug)
     Spacer(Modifier.height(8.dp))
-    ActionTile(Icons.Outlined.WaterDrop, "수액 확인", "진행 중 수액 → NFC 재태깅", onIv)
+    ActionTile(R.drawable.ic_infusion, "수액 타이머 변경", "진행 중 수액 NFC 태깅", onIv)
 }
 
 @Composable
@@ -218,11 +219,11 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
 @Composable
 private fun InfoGridCell(label: String, value: String?, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
-        Text(label, fontSize = 16.sp, color = HnColors.Text, fontWeight = FontWeight.SemiBold)
+        Text(label, fontSize = 14.sp, color = HnColors.Text, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(4.dp))
         Text(
             value?.takeIf { it.isNotBlank() } ?: "-",
-            fontSize = 16.sp,
+            fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             color = HnColors.TextSecondary,
         )
@@ -231,12 +232,41 @@ private fun InfoGridCell(label: String, value: String?, modifier: Modifier = Mod
 
 @Composable
 private fun ActionTile(icon: ImageVector, title: String, desc: String, onClick: () -> Unit) {
+    ActionTileLayout(title, desc, onClick) {
+        Icon(icon, contentDescription = null, tint = HnColors.Primary, modifier = Modifier.size(24.dp))
+    }
+}
+
+@Composable
+private fun ActionTile(
+    @androidx.annotation.DrawableRes iconRes: Int,
+    title: String,
+    desc: String,
+    onClick: () -> Unit,
+) {
+    ActionTileLayout(title, desc, onClick) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            tint = HnColors.Primary,
+            modifier = Modifier.size(30.dp),
+        )
+    }
+}
+
+@Composable
+private fun ActionTileLayout(
+    title: String,
+    desc: String,
+    onClick: () -> Unit,
+    iconContent: @Composable () -> Unit,
+) {
     HnCard(onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(HnColors.PrimarySoft),
-            ) { Icon(icon, contentDescription = null, tint = HnColors.Primary, modifier = Modifier.size(24.dp)) }
+            ) { iconContent() }
             Spacer(Modifier.size(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)

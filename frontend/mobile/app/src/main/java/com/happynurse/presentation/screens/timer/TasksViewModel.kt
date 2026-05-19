@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.happynurse.data.remote.mapper.toDomain
 import com.happynurse.data.remote.model.IvInfusionListItemResponse
 import com.happynurse.data.remote.model.NotificationListItemResponse
+import com.happynurse.data.remote.sse.NotificationStream
 import com.happynurse.data.repository.AuthRepository
 import com.happynurse.data.repository.IvRepository
 import com.happynurse.data.repository.NotificationRepository
@@ -37,6 +38,7 @@ class TasksViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val ivRepository: IvRepository,
     private val notificationRepository: NotificationRepository,
+    private val notificationStream: NotificationStream,
     private val patientRepository: PatientRepository,
     private val sttReminderRepository: SttReminderRepository,
 ) : ViewModel() {
@@ -58,8 +60,7 @@ class TasksViewModel @Inject constructor(
     val error: StateFlow<String?> = _error.asStateFlow()
 
     init {
-        // 벨 배지 실시간 갱신 — ViewModel 살아있는 동안 주기적으로 알림함 폴링.
-        // 백엔드에 push 채널이 phone 쪽으로 안 와있어서 폴링이 가장 단순하고 견고함.
+        // 벨 배지 갱신 — 기본 동기화는 SSE 가 담당하고, 폴링은 SSE 끊김/누락 대비 백업.
         viewModelScope.launch {
             while (isActive) {
                 refreshBellNotifications()
@@ -73,6 +74,21 @@ class TasksViewModel @Inject constructor(
                 delay(WATCH_ALARM_POLL_INTERVAL_MS)
             }
         }
+        // SSE 도착 즉시 알림함 새로고침 — 15초 폴링 주기를 기다리지 않고 실시간 반영.
+        // 수액 보드 추가 갱신:
+        //  - iv_alert: 종료 5분 전/종료 스케줄러 알람 → 종료된 IV 즉시 사라짐
+        //  - medication_admin: 워치에서 IV 시작/속도 변경 → 새 IV 카드 즉시 추가/속도 갱신
+        //    (NFC 알약 투약에서도 같은 이벤트가 나와 over-fetch 가 한 번 발생하나 응답 동일 시 no-op)
+        viewModelScope.launch {
+            notificationStream.events.collect { event ->
+                refreshBellNotifications()
+                if (event.sourceType == "iv_alert" || event.sourceType == "medication_admin") {
+                    refreshIvBoard()
+                }
+            }
+        }
+        // 앱 살아있는 동안 SSE 연결을 시도/재시도 유지. ViewModel onCleared 시 자동 종료.
+        notificationStream.start(viewModelScope)
     }
 
     fun refreshIvBoard() {

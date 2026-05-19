@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ChevronLeft,
   HelpCircle,
+  Loader2,
+  Mic,
+  Square,
   type LucideIcon,
 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
@@ -16,7 +19,13 @@ import {
   FaBedPulse,
 } from "react-icons/fa6";
 import { GiMedicalDrip, GiBandageRoll } from "react-icons/gi";
-import { getButtons, getFaq, submitSymptom } from "@/features/patient/api";
+import {
+  getButtons,
+  getFaq,
+  recognizeVoice,
+  submitSymptom,
+} from "@/features/patient/api";
+import { useVoiceRecorder } from "@/features/patient/hooks/useVoiceRecorder";
 import { usePatientStore } from "@/features/patient/stores/patient";
 import type { FaqItem, SymptomButton } from "@/features/patient/types/patient";
 
@@ -83,6 +92,8 @@ export default function Help() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const recorder = useVoiceRecorder();
 
   useEffect(() => {
     getButtons()
@@ -102,6 +113,32 @@ export default function Help() {
   const toggleSymptom = (buttonId: number) => {
     setSelectedButtonId((prev) => (prev === buttonId ? null : buttonId));
   };
+
+  const handleVoiceToggle = useCallback(async () => {
+    setVoiceError(null);
+    if (recorder.state === "idle" || recorder.state === "error") {
+      await recorder.start();
+      return;
+    }
+    if (recorder.state === "recording") {
+      const blob = await recorder.stop();
+      if (!blob) {
+        setVoiceError("녹음에 실패했습니다.");
+        recorder.reset();
+        return;
+      }
+      try {
+        const { text } = await recognizeVoice(blob);
+        if (text) {
+          setDirectInput((prev) => (prev ? `${prev} ${text}` : text));
+        }
+      } catch {
+        setVoiceError("음성 인식에 실패했습니다. 다시 시도해 주세요.");
+      } finally {
+        recorder.reset();
+      }
+    }
+  }, [recorder]);
 
   const handleSubmit = async () => {
     const trimmedInput = directInput.trim();
@@ -297,9 +334,44 @@ export default function Help() {
             </div>
 
             <div className="mt-4 flex flex-col gap-3">
-              <label className="text-lg font-bold text-patient-sub">
-                그 외 증상
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-lg font-bold text-patient-sub">
+                  그 외 증상
+                </label>
+                <button
+                  type="button"
+                  aria-label={
+                    recorder.state === "recording"
+                      ? "녹음 정지"
+                      : recorder.state === "processing"
+                        ? "음성 변환 중"
+                        : "음성으로 입력"
+                  }
+                  onClick={handleVoiceToggle}
+                  disabled={submitting || recorder.state === "processing"}
+                  className={`flex size-9 items-center justify-center rounded-full transition-colors ${
+                    submitting || recorder.state === "processing"
+                      ? "cursor-not-allowed bg-[#e5e7eb] text-patient-fade"
+                      : recorder.state === "recording"
+                        ? "animate-pulse bg-red-500 text-white hover:bg-red-600"
+                        : "bg-patient-primary text-white hover:bg-[#0F1F7A]"
+                  }`}
+                >
+                  {recorder.state === "processing" ? (
+                    <Loader2
+                      className="size-[18px] animate-spin"
+                      strokeWidth={2.2}
+                    />
+                  ) : recorder.state === "recording" ? (
+                    <Square
+                      className="size-[18px] fill-white"
+                      strokeWidth={2.2}
+                    />
+                  ) : (
+                    <Mic className="size-[18px]" strokeWidth={2.2} />
+                  )}
+                </button>
+              </div>
               <textarea
                 value={directInput}
                 onChange={(event) => setDirectInput(event.target.value)}
@@ -308,6 +380,9 @@ export default function Help() {
               />
               {errorMessage ? (
                 <p className="text-sm font-bold text-red-500">{errorMessage}</p>
+              ) : null}
+              {voiceError ? (
+                <p className="text-sm font-bold text-red-500">{voiceError}</p>
               ) : null}
             </div>
           </div>

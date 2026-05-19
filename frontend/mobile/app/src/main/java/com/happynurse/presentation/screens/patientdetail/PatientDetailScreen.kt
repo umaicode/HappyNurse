@@ -2,6 +2,7 @@
 package com.happynurse.presentation.screens.patientdetail
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -67,6 +68,7 @@ import com.happynurse.domain.model.Note
 import com.happynurse.domain.model.Order
 import com.happynurse.domain.model.OrderKind
 import com.happynurse.domain.model.Patient
+import com.happynurse.domain.model.highlightKey
 import com.happynurse.presentation.components.HnCard
 import com.happynurse.presentation.components.TagChip
 import com.happynurse.presentation.theme.HnColors
@@ -92,6 +94,7 @@ fun PatientDetailScreen(
     }
     val loadedPatient = vm.patient.collectAsStateWithLifecycle().value
     val notes by vm.notes.collectAsStateWithLifecycle()
+    val recentlyAddedKeys by vm.recentlyAddedKeys.collectAsStateWithLifecycle()
     val orders by vm.orders.collectAsStateWithLifecycle()
     val myPatients by vm.myPatients.collectAsStateWithLifecycle()
     // 상세 API 응답 전에는 담당환자 목록에서 매칭되는 항목으로 즉시 표시 (깜빡임 방지)
@@ -279,7 +282,13 @@ fun PatientDetailScreen(
                         }
                     }
                 } else {
-                    items(notes) { NoteRow(it) }
+                    // key 는 STT_NOTE 면 nursingRecordId 로 안정, MEDICATION 은 nursingRecordId 가 0 일 수 있어
+                    // type+time+text 조합으로 충돌 회피. 같은 노트 (예: draft→confirmed 전환) 는 같은 key 라
+                    // LazyColumn 이 재사용해 자연스러운 in-place 갱신.
+                    items(notes) { note ->
+                        val isHighlighted = note.highlightKey()?.let { it in recentlyAddedKeys } == true
+                        NoteRow(note, isHighlighted = isHighlighted)
+                    }
                 }
             } else {
                 groupedOrders.forEach { (date, list) ->
@@ -701,19 +710,39 @@ private fun MonthGrid(
 }
 
 @Composable
-private fun NoteRow(n: Note) {
+private fun NoteRow(n: Note, isHighlighted: Boolean = false) {
     Row(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.width(56.dp).padding(top = 12.dp)) {
             Text(n.time, fontSize = 16.sp, fontWeight = FontWeight.Medium , color = HnColors.Text)
         }
-        HnCard(padding = 12.dp, modifier = Modifier.weight(1f)) {
+        // SSE 로 새로 도착한 행에 2.5초간 카드 외곽 강조 — 웹의 transition-[box-shadow] duration-500 과 동일하게
+        // border color 알파를 500ms tween 으로 fade in/out. 모서리는 HnCard 의 RoundedCornerShape(12.dp) 와 일치.
+        val borderColor by animateColorAsState(
+            targetValue = if (isHighlighted) HnColors.Primary else Color.Transparent,
+            animationSpec = tween(durationMillis = 500),
+            label = "noteRowHighlightBorder",
+        )
+        HnCard(
+            padding = 12.dp,
+            modifier = Modifier
+                .weight(1f)
+                .border(2.dp, borderColor, RoundedCornerShape(12.dp)),
+        ) {
             Column {
-                val validTags = n.tags.filter { it == "투약" || it == "STT" }
+                val validTags = n.tags.filter { it == "약물" || it == "수액" || it == "STT" }
+                // STT 음성 노트가 아직 확정되지 않은 임시 본문(status=draft)이면 "확정 전" 칩을 함께 노출.
+                val isDraftStt = n.type == "STT_NOTE" && n.status == "draft"
                 if (validTags.isNotEmpty()) {
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         validTags.forEach { t ->
-                            if (t == "투약") TagChip("투약", fg = HnColors.TagInjFg, bg = HnColors.TagInjBg)
-                            else TagChip("음성", fg = HnColors.TagFluidFg, bg = HnColors.TagFluidBg)
+                            when (t) {
+                                "약물" -> TagChip("약물", fg = HnColors.TagInjFg, bg = HnColors.TagInjBg)
+                                "수액" -> TagChip("수액", fg = HnColors.TagFluidFg, bg = HnColors.TagFluidBg)
+                                else -> TagChip("음성", fg = HnColors.TagFluidFg, bg = HnColors.TagFluidBg)
+                            }
+                        }
+                        if (isDraftStt) {
+                            TagChip("확정 전", fg = HnColors.TagWatchStrongFg, bg = HnColors.TagWatchStrongBg)
                         }
                     }
                     Spacer(Modifier.height(8.dp))

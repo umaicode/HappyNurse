@@ -12,6 +12,8 @@ import com.ssafy.happynurse.domain.patient.entity.Encounter;
 import com.ssafy.happynurse.domain.patient.repository.EncounterRepository;
 import com.ssafy.happynurse.global.exception.CustomException;
 import com.ssafy.happynurse.global.exception.ErrorCode;
+import com.ssafy.happynurse.domain.nurse.event.NursingRecordSavedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,7 @@ public class NursingRecordService {
     private final EncounterRepository encounterRepository;
     private final PractitionerRepository practitionerRepository;
     private final NursingRecordFactory nursingRecordFactory;
+    private final ApplicationEventPublisher eventPublisher;
 
     public NursingRecordWriteResponse createManual(NursingRecordManualCreateRequest request,
                                                    Long currentPractitionerId) {
@@ -69,6 +72,13 @@ public class NursingRecordService {
         String finalContent = record.getEditContent();
 
         nursingRecordRepository.confirmDraft(nursingRecordId, finalContent);
+
+        // confirm DB UPDATE 후 비동기 SSE 발송 트리거
+        eventPublisher.publishEvent(new NursingRecordSavedEvent(
+                nursingRecordId,
+                record.getPatientId(),
+                record.getAuthorPractitionerId()
+        ));
 
         return new NursingRecordWriteResponse(
                 nursingRecordId,

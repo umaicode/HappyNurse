@@ -10,7 +10,7 @@ data class NfcPatientInfo(
     val bedName: String?,
     val birthDate: String?,
     val diseaseName: String?,
-    val chiefComplaint: String?,
+    val periodStart: String?,
     val surgeryName: String?,
     val attendingPhysicianName: String?,
 )
@@ -26,7 +26,18 @@ data class Note(
     val type: String = "STT_NOTE",
     val status: String = "draft",
     val editable: Boolean = true,
+    val taggingId: String? = null, // MEDICATION (NFC 알약/IV) 그룹 식별자. STT_NOTE 는 null.
 )
+
+// Note 의 SSE highlight 용 안정 식별자.
+//  - STT_NOTE: "stt:{nursingRecordId}" (nursingRecordId > 0 인 경우만)
+//  - MEDICATION (NFC 알약 / IV): "med:{taggingId}" (taggingId 비어있지 않은 경우만)
+// 키 없는 노트(예: 매핑 누락) 는 highlight 대상에서 제외.
+fun Note.highlightKey(): String? = when (type) {
+    "STT_NOTE" -> nursingRecordId.takeIf { it > 0L }?.let { "stt:$it" }
+    "MEDICATION" -> taggingId?.takeIf { it.isNotBlank() }?.let { "med:$it" }
+    else -> null
+}
 
 // 의사 오더 종류 — 주사/수액/처치/검사/영상/투약
 enum class OrderKind { INJ, FLUID, ORDER, LIS, IMG, PILL }

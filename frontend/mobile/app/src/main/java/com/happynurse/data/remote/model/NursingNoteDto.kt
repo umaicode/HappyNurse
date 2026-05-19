@@ -20,4 +20,6 @@ data class NursingNoteDto(
 data class MedicationItemDto(
     @SerializedName("productName") val productName: String?,
     @SerializedName("dosageQuantity") val dosageQuantity: String?,
+    // IV 수액 행에만 포함 (BE @JsonInclude NON_NULL). 모바일 IV 도메인(IvDto, IvTimer) 의 currentRateMlPerHr 와 동일하게 Double 로 받음.
+    @SerializedName("ivRateMlPerHr") val ivRateMlPerHr: Double?,
 )

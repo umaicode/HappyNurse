@@ -47,8 +47,8 @@ import com.happynurse.domain.model.WardEventEntry
 import com.happynurse.domain.model.WardEvents
 import com.happynurse.presentation.theme.HnColors
 
-private val AdmissionColor = Color(0xFF2563EB) // 입원 — 진한 파랑
-private val DischargeColor = Color(0xFF0EA5A4) // 퇴원 — 청록
+private val AdmissionColor = Color(0xFF284893) // 입원 — 진한 파랑
+private val DischargeColor = Color(0xFF249494) // 퇴원 — 청록
 
 @Composable
 fun WardEventsStrip(

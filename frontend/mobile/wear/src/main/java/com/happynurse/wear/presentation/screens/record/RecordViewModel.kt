@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
+import kotlin.math.sqrt
 
 enum class RecordPhase {
     IDLE,
@@ -53,8 +54,25 @@ class RecordViewModel @Inject constructor(
     private val _state = MutableStateFlow(RecordUiState())
     val state: StateFlow<RecordUiState> = _state.asStateFlow()
 
+    // 녹음 중 amplitude 시각화용 ring buffer (오른쪽 끝이 최신).
+    private val _amplitudes = MutableStateFlow(List(AMPLITUDE_BUFFER_SIZE) { 0f })
+    val amplitudes: StateFlow<List<Float>> = _amplitudes.asStateFlow()
+
     private var elapsedJob: Job? = null
+    private var amplitudeJob: Job? = null
     private var currentAudio: File? = null
+
+    // 이미 consume 한 auto-start trigger timestamp. 같은 trigger 가 stale state 부활로 다시 들어와도
+    // 두 번 startRecording 하지 않도록 가드.
+    private var lastConsumedAutoStartTrigger: Long = 0L
+
+    /** trigger 가 새로운 것이면 true 반환하면서 기록. 이미 consume 했다면 false. */
+    fun tryConsumeAutoStartTrigger(trigger: Long): Boolean {
+        if (trigger <= 0L) return false
+        if (trigger == lastConsumedAutoStartTrigger) return false
+        lastConsumedAutoStartTrigger = trigger
+        return true
+    }
 
     init {
         // 외부(GestureService 등) 의 stop 요청 → 녹음 중일 때만 stop. 다른 phase 면 무시.
@@ -98,6 +116,7 @@ class RecordViewModel @Inject constructor(
         runCatching { audioRecorder.start() }
             .onFailure { fail("녹음을 시작할 수 없어요"); return }
         _state.update { RecordUiState(phase = RecordPhase.RECORDING, elapsedSec = 0) }
+        _amplitudes.value = List(AMPLITUDE_BUFFER_SIZE) { 0f }
         elapsedJob?.cancel()
         elapsedJob = viewModelScope.launch {
             var sec = 0
@@ -108,11 +127,27 @@ class RecordViewModel @Inject constructor(
             }
             stopRecording()
         }
+        amplitudeJob?.cancel()
+        amplitudeJob = viewModelScope.launch {
+            // getMaxAmplitude() 는 마지막 호출 이후 max 라 첫 호출은 0 이 나옴 — 한 번 비워두기.
+            audioRecorder.currentAmplitude()
+            while (true) {
+                delay(AMPLITUDE_POLL_MS)
+                val amp = audioRecorder.currentAmplitude()
+                val normalized = normalizeAmplitude(amp)
+                _amplitudes.update { buffer ->
+                    // 왼쪽 drop + 오른쪽 push → 시간이 갈수록 오래된 값이 왼쪽으로 흘러감.
+                    buffer.drop(1) + normalized
+                }
+            }
+        }
     }
 
     fun stopRecording() {
         elapsedJob?.cancel()
         elapsedJob = null
+        amplitudeJob?.cancel()
+        amplitudeJob = null
         val file = runCatching { audioRecorder.stop() }.getOrNull()
         currentAudio = file
         if (file == null || !file.exists() || file.length() == 0L) {
@@ -125,9 +160,12 @@ class RecordViewModel @Inject constructor(
     fun cancelRecording() {
         elapsedJob?.cancel()
         elapsedJob = null
+        amplitudeJob?.cancel()
+        amplitudeJob = null
         runCatching { audioRecorder.cancel() }
         currentAudio = null
         _state.value = RecordUiState()
+        _amplitudes.value = List(AMPLITUDE_BUFFER_SIZE) { 0f }
     }
 
     private suspend fun processRecording(file: File) {
@@ -229,10 +267,20 @@ class RecordViewModel @Inject constructor(
         recordingBus.setAwaitingConfirm(false)
     }
 
+    private fun normalizeAmplitude(amp: Int): Float {
+        if (amp <= 0) return 0f
+        // sqrt 스케일 정규화 — 로그보다 높낮이 차이가 잘 드러남.
+        // 조용할 때(~500) ≈ 12%, 말할 때(~10000) ≈ 55%, 큰 소리(~30000) ≈ 96%
+        return sqrt(amp / 32768f).coerceIn(0f, 1f)
+    }
+
     private companion object {
         const val MAX_RECORD_SEC = 60
         // SttResultScreen 의 토스트 delay(1500ms) + onSubmitted() 호출 + moveTaskToBack 까지 끝난 뒤
         // 안전하게 IDLE 로 복귀하도록 충분한 여유(약 1초) 를 둔다.
         const val DONE_TO_IDLE_DELAY_MS = 2500L
+
+        const val AMPLITUDE_BUFFER_SIZE = 40
+        const val AMPLITUDE_POLL_MS = 60L
     }
 }

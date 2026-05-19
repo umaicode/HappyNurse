@@ -162,7 +162,7 @@ export function EMRGrid({
               <span className="text-body-base font-bold text-content-primary tracking-tight leading-none">
                 {patientInfo.name}
               </span>
-              <div className="flex items-center gap-2 text-body-base font-mono font-bold text-content-tertiary">
+              <div className="flex items-center gap-2 text-body-base tabular-nums font-bold text-content-tertiary">
                 <span>{patientInfo.genderAge}</span>
                 <span className="text-border-base font-normal">|</span>
                 <span>{patientInfo.id}</span>
@@ -188,7 +188,7 @@ export function EMRGrid({
                   >
                     <CalendarIcon className="w-4 h-4 text-brand-primary" />
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-body-base font-mono font-bold text-content-primary">
+                      <span className="text-body-base tabular-nums font-bold text-content-primary">
                         {format(selectedDate, "yyyy.MM.dd")}
                       </span>
                       <span className="text-body-sm font-medium text-content-tertiary">
@@ -290,7 +290,7 @@ export function EMRGrid({
                 생년월일
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
-                <span className="font-mono font-bold text-content-secondary truncate w-full">
+                <span className="tabular-nums font-bold text-content-secondary truncate w-full">
                   {patientInfo.birthday}
                 </span>
               </div>
@@ -303,7 +303,7 @@ export function EMRGrid({
                 호실/침대
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
-                <span className="font-mono font-bold text-content-secondary truncate w-full">
+                <span className="tabular-nums font-bold text-content-secondary truncate w-full">
                   {patientInfo.roomBed}
                 </span>
               </div>
@@ -313,7 +313,7 @@ export function EMRGrid({
                 입원일
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
-                <span className="font-mono font-bold text-content-secondary truncate w-full">
+                <span className="tabular-nums font-bold text-content-secondary truncate w-full">
                   {patientInfo.date}
                 </span>
               </div>
@@ -323,7 +323,7 @@ export function EMRGrid({
                 휴대폰
               </div>
               <div className="px-2.5 py-1 flex items-center flex-1 min-w-0">
-                <span className="font-mono font-bold text-content-secondary truncate w-full">
+                <span className="tabular-nums font-bold text-content-secondary truncate w-full">
                   {patientInfo.phone}
                 </span>
               </div>

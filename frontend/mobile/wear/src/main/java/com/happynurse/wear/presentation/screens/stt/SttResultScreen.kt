@@ -10,6 +10,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,9 +22,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,8 +44,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
-import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.CircularProgressIndicator
 import androidx.wear.compose.material3.Icon
@@ -87,33 +90,32 @@ fun SttResultScreen(
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background),
             ) {
-                ScalingLazyColumn(
-                    state = rememberScalingLazyListState(),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(top = 28.dp, bottom = 24.dp, start = 14.dp, end = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(top = 12.dp, bottom = 15
+                            .dp, start = 14.dp, end = 14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    item { TimeBadge(text = fireAtDisplay.ifBlank { "—" }) }
-                    item { RecognizedTextCard(text = state.recognizedText) }
+                    TimeBadge(text = fireAtDisplay.ifBlank { "—" })
+                    RecognizedTextCard(text = state.recognizedText)
                     if (state.errorMessage != null && state.phase == RecordPhase.ERROR) {
-                        item {
-                            Text(
-                                text = state.errorMessage.orEmpty(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.error,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
+                        Text(
+                            text = state.errorMessage.orEmpty(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                     if (state.phase != RecordPhase.DONE) {
-                        item {
-                            RestartSubmitRow(
-                                enabled = state.phase == RecordPhase.RESULT,
-                                onSubmit = viewModel::confirm,
-                                onRestart = viewModel::restartRecording,
-                            )
-                        }
+                        RestartSubmitRow(
+                            enabled = state.phase == RecordPhase.RESULT,
+                            onSubmit = viewModel::confirm,
+                            onRestart = viewModel::restartRecording,
+                        )
                     }
                 }
 
@@ -136,28 +138,25 @@ fun SttResultScreen(
 
 @Composable
 private fun TimeBadge(text: String) {
-    Box(
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .width(100.dp)
+            .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.primaryContainer)
-            .padding(vertical = 8.dp, horizontal = 6.dp),
-        contentAlignment = Alignment.Center,
+            .padding(vertical = 4.dp, horizontal = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "인식된 시간",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
-            )
-            Spacer(Modifier.size(2.dp))
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleSmall.merge(TabularNumStyle),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+        Text(
+            text = "인식된 시간",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium.merge(TabularNumStyle),
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            fontWeight = FontWeight.ExtraBold,
+        )
     }
 }
 
@@ -168,7 +167,7 @@ private fun RecognizedTextCard(text: String) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -195,20 +194,22 @@ private fun RestartSubmitRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ActionPill(
-            label = "재녹음",
+        CircleActionButton(
+            icon = Icons.Filled.Refresh,
+            contentDescription = "재녹음",
             background = MaterialTheme.colorScheme.surfaceContainerHigh,
             contentColor = MaterialTheme.colorScheme.onSurface,
             enabled = enabled,
             onClick = onRestart,
         )
-        ActionPill(
-            label = "등록",
+        CircleActionButton(
+            icon = Icons.Filled.Check,
+            contentDescription = "등록",
             background = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
+            contentColor = Color.White,
             enabled = enabled,
             onClick = onSubmit,
         )
@@ -216,8 +217,9 @@ private fun RestartSubmitRow(
 }
 
 @Composable
-private fun ActionPill(
-    label: String,
+private fun CircleActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
     background: Color,
     contentColor: Color,
     enabled: Boolean,
@@ -226,17 +228,17 @@ private fun ActionPill(
     val alpha = if (enabled) 1f else 0.4f
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(percent = 50))
+            .size(44.dp)
+            .clip(CircleShape)
             .background(background.copy(alpha = alpha))
-            .clickable(enabled = enabled) { onClick() }
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .clickable(enabled = enabled) { onClick() },
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = contentColor.copy(alpha = alpha),
-            fontWeight = FontWeight.SemiBold,
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = contentColor.copy(alpha = alpha),
+            modifier = Modifier.size(22.dp),
         )
     }
 }
@@ -269,8 +271,8 @@ private fun DoneToast(modifier: Modifier = Modifier) {
         Icon(
             imageVector = Icons.Rounded.Check,
             contentDescription = "등록 완료",
-            tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(26.dp),
+            tint = Color.White,
+            modifier = Modifier.size(34.dp),
         )
     }
 }

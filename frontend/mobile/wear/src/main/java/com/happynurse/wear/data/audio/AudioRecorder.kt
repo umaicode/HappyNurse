@@ -50,6 +50,9 @@ class AudioRecorder @Inject constructor(
         outputFile = null
     }
 
+    // 마지막 호출 이후 최대 amplitude. 녹음 중이 아니면 0.
+    fun currentAmplitude(): Int = runCatching { mediaRecorder?.maxAmplitude ?: 0 }.getOrDefault(0)
+
     private fun stopQuietly() {
         mediaRecorder?.runCatching {
             stop()

@@ -14,21 +14,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.ChildCare
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.Nfc
+import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Stop
-import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,17 +44,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.happynurse.R
 import com.happynurse.data.remote.model.IvInfusionResponse
 import com.happynurse.presentation.components.HnButton
 import com.happynurse.presentation.components.HnButtonVariant
 import com.happynurse.presentation.components.HnCard
+import com.happynurse.presentation.components.IvDripAnimation
 import com.happynurse.presentation.components.NfcLifecycleEffect
 import com.happynurse.presentation.theme.HnColors
 import kotlinx.coroutines.delay
@@ -85,14 +91,13 @@ fun IvTimerActiveScreen(
     var showRateDialog by remember { mutableStateOf(false) }
     var showCompleteDialog by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize().background(Color(0xFFF5F5F5))) {
+    Column(Modifier.fillMaxSize().background(HnColors.Bg)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(12.dp)) {
             Icon(
                 Icons.Outlined.Close, "닫기",
+                tint = HnColors.Text,
                 modifier = Modifier.size(28.dp).clickable(onClick = onClose),
             )
-            Spacer(Modifier.size(8.dp))
-            Text("진행 중 수액", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
         }
 
         when (val s = state) {
@@ -127,16 +132,20 @@ fun IvTimerActiveScreen(
     if (showCompleteDialog && loaded != null && loaded.tagUid != null) {
         AlertDialog(
             onDismissRequest = { showCompleteDialog = false },
-            title = { Text("수액 종료", fontWeight = FontWeight.Bold) },
-            text = { Text("진행 중인 수액을 종료하시겠습니까?", fontSize = 14.sp) },
+            containerColor = HnColors.Surface,
+            shape = RoundedCornerShape(12.dp),
+            title = { Text("수액 종료", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text) },
+            text = { Text("진행 중인 수액을 종료하시겠습니까?", fontSize = 18.sp, color = HnColors.TextSecondary) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.submitComplete()
                     showCompleteDialog = false
-                }) { Text("종료", color = HnColors.Danger, fontWeight = FontWeight.Bold) }
+                }) { Text("종료", fontSize = 16.sp, color = HnColors.Danger, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { showCompleteDialog = false }) { Text("취소", color = HnColors.TextSecondary) }
+                TextButton(onClick = { showCompleteDialog = false }) {
+                    Text("취소", fontSize = 16.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.Bold)
+                }
             },
         )
     }
@@ -153,13 +162,19 @@ private fun NeedsTagBody() {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier.size(64.dp).clip(RoundedCornerShape(16.dp)).background(HnColors.PrimarySoft),
-                ) { Icon(Icons.Outlined.Nfc, contentDescription = null, tint = HnColors.Primary, modifier = Modifier.size(36.dp)) }
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_nfc_label),
+                        contentDescription = null,
+                        tint = HnColors.Primary,
+                        modifier = Modifier.size(36.dp),
+                    )
+                }
                 Spacer(Modifier.height(14.dp))
-                Text("진행 중 수액에 NFC 태깅", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
-                Spacer(Modifier.height(4.dp))
-                Text("수액 백의 NFC 태그를 디바이스에 가까이 대주세요", fontSize = 13.sp, color = HnColors.TextSecondary)
+                Text("진행 중인 수액 NFC 태깅", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
             }
         }
+
     }
 }
 
@@ -223,21 +238,57 @@ private fun LoadedBody(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        // 카운트다운 카드
+        // 색상 분기 — 애니메이션 + 카운트다운 공통
+        val accentColor = when {
+            isCompleted -> HnColors.Success
+            critical || expired -> HnColors.Danger
+            else -> HnColors.Primary
+        }
+        val countdownBg = when {
+            isCompleted -> HnColors.Success.copy(alpha = 0.12f)
+            critical || expired -> HnColors.Danger.copy(alpha = 0.10f)
+            else -> Color(0xFFE3F2FD)
+        }
+
+        // Hero IV 백 애니메이션 + 약물명
+        val total = infusion.totalVolumeMl.takeIf { it > 0.0 } ?: 1.0
+        val remaining = (infusion.remainingVolumeMl ?: 0.0).coerceAtLeast(0.0)
+        val fillRatio = (remaining / total).toFloat().coerceIn(0f, 1f)
+        val pct = (1f - fillRatio).coerceIn(0f, 1f)
+
+        // IvTimerCard 와 동일한 3단계 색상 — 수액 백 액체 색
+        val ivColor: Color = when {
+            pct < 0.5f -> Color(0xFF5BAD8A) // IvSafeColor    (여유)
+            pct < 0.8f -> Color(0xFFE8BE57) // IvCautionColor (주의)
+            else       -> Color(0xFFD25757) // IvUrgentColor  (임박)
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            IvDripAnimation(
+                fillRatio = fillRatio,
+                color = ivColor,
+                animate = !isCompleted,
+                gttPerMin = infusion.rateGttPerMin?.takeIf { it > 0 },
+                modifier = Modifier.size(width = 180.dp, height = 240.dp),
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                infusion.medications
+                    .sortedBy { it.sequence }
+                    .joinToString(" + ") { it.medicationName },
+                fontSize = 20.sp, fontWeight = FontWeight.Bold, color = HnColors.Text,
+            )
+        }
+          Spacer(Modifier.height(20.dp))
+        // 카운트다운 카드 — 옅은 톤
         Box(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(
-                    Brush.linearGradient(
-                        when {
-                            isCompleted -> listOf(HnColors.Success, HnColors.Success)
-                            critical || expired -> listOf(HnColors.Danger, Color(0xFFB91C1C))
-                            // setup 카드 / 버튼과 동일한 라이트 인디고 톤
-                            else -> listOf(Color(0xFF5C6BC0), Color(0xFF3F51B5))
-                        },
-                    ),
-                )
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(color = 0xFFF0F2F8))
                 .padding(20.dp),
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -248,61 +299,25 @@ private fun LoadedBody(
                         critical -> "곧 종료됩니다"
                         else -> "남은 시간"
                     },
-                    fontSize = 13.sp, color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = accentColor.copy(alpha = 0.85f),
                 )
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(
                     formatRemaining(remainingSec, isCompleted),
-                    fontSize = 42.sp, fontWeight = FontWeight.Black, color = Color.White,
+                    fontSize = 28.sp, fontWeight = FontWeight.Black, color = accentColor,
                 )
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(20.dp))
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    Stat("총량", "${infusion.totalVolumeMl.toInt()} mL", Modifier.weight(1f))
+                    Stat("총량", "${infusion.totalVolumeMl.toInt()} mL", accentColor, Modifier.weight(1f))
                     Stat(
                         "잔여",
                         "${infusion.remainingVolumeMl?.toInt() ?: 0} mL",
+                        accentColor,
                         Modifier.weight(1f),
                     )
-                    Stat("속도", "%.1f mL/hr".format(infusion.currentRateMlPerHr), Modifier.weight(1f))
-                }
-            }
-        }
-
-        // 약물명 (mix IV 면 N개 join)
-        HnCard {
-            Column {
-                Text("약물", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = HnColors.TextTertiary)
-                Spacer(Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.WaterDrop, contentDescription = null, tint = HnColors.Purple, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.size(8.dp))
-                    Text(
-                        infusion.medications
-                            .sortedBy { it.sequence }
-                            .joinToString(" + ") { it.medicationName },
-                        fontSize = 16.sp, fontWeight = FontWeight.Bold, color = HnColors.Text,
-                    )
-                }
-                infusion.patientName?.let {
-                    Spacer(Modifier.height(8.dp))
-                    // 호실/침대: IvInfusionResponse 에는 없으므로 WardPatientListResponse 룩업값 사용
-                    val room = patientLocation?.first?.takeIf { s -> s.isNotBlank() }
-                    val bed = patientLocation?.second?.takeIf { s -> s.isNotBlank() }
-                    val roomBed = listOfNotNull(room, bed).joinToString("-")
-                    val patientLine = if (roomBed.isNotBlank()) "환자: $it · $roomBed" else "환자: $it"
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFF1F3F5))
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
-                    ) {
-                        Text(patientLine, fontSize = 12.sp, color = HnColors.TextSecondary)
-                    }
-                }
-                infusion.note?.let {
-                    Spacer(Modifier.height(2.dp))
-                    Text("메모: $it", fontSize = 12.sp, color = HnColors.TextSecondary)
+                    Stat("속도", "%.1f mL/hr".format(infusion.currentRateMlPerHr), accentColor, Modifier.weight(1f))
                 }
             }
         }
@@ -322,56 +337,39 @@ private fun LoadedBody(
                     Icon(Icons.Outlined.ErrorOutline, contentDescription = null, tint = HnColors.Danger, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(8.dp))
                     Text(e.message, fontSize = 13.sp, color = HnColors.Text, modifier = Modifier.weight(1f))
-                    Text("닫기", fontSize = 12.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.SemiBold)
+                    Text("닫기", fontSize = 13.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
 
       } // end inner scrollable Column
 
-        Spacer(Modifier.height(12.dp))
-
-        // tagUid 없을 때 안내
-        if (tagUid == null && !isCompleted) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(HnColors.PrimarySoft)
-                    .padding(12.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.Nfc, contentDescription = null, tint = HnColors.Primary, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(8.dp))
-                    Text(
-                        "속도 변경 / 종료 전, 수액 백을 다시 태깅해 주세요",
-                        fontSize = 12.sp, color = HnColors.Primary,
-                    )
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-        }
-
         val submitting = actionState is IvTimerActiveViewModel.ActionState.Submitting
         val canAct = tagUid != null && !isCompleted && !submitting
-        HnButton(
-            text = "속도 변경",
-            full = true,
-            icon = Icons.Outlined.Speed,
-            variant = HnButtonVariant.SECONDARY,
-            enabled = canAct,
-            onClick = onRequestRateChange,
-        )
-        Spacer(Modifier.height(8.dp))
-        HnButton(
-            text = if (isCompleted) "닫기" else "수액 종료",
-            full = true,
-            icon = Icons.Outlined.Stop,
-            variant = HnButtonVariant.DANGER,
-            enabled = isCompleted || canAct,
-            loading = submitting,
-            onClick = if (isCompleted) ({}) else onRequestComplete,
-        )
+
+        // tagUid 가 있거나 종료된 경우에만 액션 버튼을 노출.
+        // Setup 화면에서 막 진입한 직후(tagUid == null)에는 안내/버튼을 모두 숨김.
+        if (tagUid != null || isCompleted) {
+            Spacer(Modifier.height(12.dp))
+            HnButton(
+                text = "속도 변경",
+                full = true,
+                icon = Icons.Outlined.Speed,
+                variant = HnButtonVariant.SECONDARY,
+                enabled = canAct,
+                onClick = onRequestRateChange,
+            )
+            Spacer(Modifier.height(8.dp))
+            HnButton(
+                text = if (isCompleted) "닫기" else "수액 종료",
+                full = true,
+                icon = Icons.Outlined.Stop,
+                variant = HnButtonVariant.DANGER,
+                enabled = isCompleted || canAct,
+                loading = submitting,
+                onClick = if (isCompleted) ({}) else onRequestComplete,
+            )
+        }
     }
 }
 
@@ -385,68 +383,166 @@ private fun RateChangeDialog(
     var patientType by remember { mutableStateOf(PatientType.SET_20) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("주입 속도 변경", fontWeight = FontWeight.Bold) },
+        containerColor = HnColors.Surface,
+        shape = RoundedCornerShape(12.dp),
         text = {
             Column {
-                Text("수액 세트", fontSize = 12.sp, color = HnColors.TextSecondary)
-                Spacer(Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("수액 세트", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text)
+                    Text(" (gtt/mL)", fontSize = 16.sp, color = HnColors.TextTertiary)
+                }
+                Spacer(Modifier.height(20.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     PatientType.entries.forEach { p ->
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (patientType == p) HnColors.PrimarySoft else HnColors.Surface)
-                                .border(
-                                    1.dp,
-                                    if (patientType == p) HnColors.Primary else HnColors.Border,
-                                    RoundedCornerShape(8.dp),
-                                )
-                                .clickable { patientType = p }
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                        ) {
-                            Text(
-                                p.gttPerMl.toString(),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (patientType == p) HnColors.Primary else HnColors.TextSecondary,
-                            )
-                        }
+                        PresetChip(
+                            label = p.gttPerMl.toString(),
+                            active = patientType == p,
+                            icon = if (p == PatientType.SET_60) Icons.Outlined.ChildCare else null,
+                            modifier = Modifier.weight(1f),
+                            onClick = { patientType = p },
+                        )
                     }
                 }
-                Spacer(Modifier.height(14.dp))
-                Text("주입 속도 (gtt/min)", fontSize = 12.sp, color = HnColors.TextSecondary)
-                Spacer(Modifier.height(4.dp))
-                Text("$rate", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = HnColors.Primary)
-                Slider(
-                    value = rate.toFloat(),
-                    onValueChange = { rate = it.toInt() },
-                    valueRange = 1f..100f,
-                    steps = 98,
-                    colors = SliderDefaults.colors(
-                        thumbColor = HnColors.Primary,
-                        activeTrackColor = HnColors.Primary,
-                        inactiveTrackColor = HnColors.Border,
-                    ),
+                Spacer(Modifier.height(30.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("주입 속도", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = HnColors.Text)
+                    Text(" (gtt/min)", fontSize = 16.sp, color = HnColors.TextTertiary)
+                }
+                Spacer(Modifier.height(20.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    StepBtn(Icons.Outlined.Remove) { rate = (rate - 1).coerceAtLeast(1) }
+                    Spacer(Modifier.size(20.dp))
+                    Box(
+                        modifier = Modifier.widthIn(min = 70.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("$rate", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = HnColors.Primary)
+                    }
+                    Spacer(Modifier.size(20.dp))
+                    StepBtn(Icons.Outlined.Add) { rate = (rate + 1).coerceAtMost(100) }
+                }
+                Spacer(Modifier.height(15.dp))
+                SlimSlider(
+                    value = rate,
+                    onValueChange = { rate = it },
+                    valueRange = 1..100,
                 )
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Text("1", fontSize = 16.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.weight(1f))
+                    Text("100", fontSize = 16.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.Bold)
+                }
             }
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(rate, patientType) }) {
-                Text("확인", color = HnColors.Primary, fontWeight = FontWeight.Bold)
+                Text("확인", fontSize = 18.sp, color = HnColors.Primary, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("취소", color = HnColors.TextSecondary) }
+            TextButton(onClick = onDismiss) {
+                Text("취소", fontSize = 18.sp, color = HnColors.TextSecondary, fontWeight = FontWeight.Bold)
+            }
         },
     )
 }
 
 @Composable
-private fun Stat(label: String, value: String, mod: Modifier) {
+private fun Stat(label: String, value: String, accent: Color, mod: Modifier) {
     Column(mod) {
-        Text(label, fontSize = 11.sp, color = Color.White.copy(alpha = 0.8f))
-        Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text(label, fontSize = 16.sp, color = HnColors.Text, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(4.dp))
+        Text(value, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HnColors.Text)
+    }
+}
+
+@Composable
+private fun StepBtn(icon: ImageVector, onClick: () -> Unit) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(38.dp)
+            .clip(CircleShape)
+            .background(Color(0xFFF2F2F3))
+            .clickable(onClick = onClick),
+    ) { Icon(icon, contentDescription = null, tint = HnColors.Primary, modifier = Modifier.size(26.dp)) }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SlimSlider(
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    valueRange: IntRange,
+) {
+    Slider(
+        value = value.toFloat(),
+        onValueChange = { onValueChange(it.toInt()) },
+        valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
+        modifier = Modifier.fillMaxWidth().height(20.dp),
+        thumb = {
+            Box(
+                Modifier
+                    .size(16.dp)
+                    .clip(CircleShape)
+                    .background(HnColors.Primary),
+            )
+        },
+        track = { sliderState ->
+            val start = sliderState.valueRange.start
+            val end = sliderState.valueRange.endInclusive
+            val fraction = if (end > start) ((sliderState.value - start) / (end - start)).coerceIn(0f, 1f) else 0f
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(HnColors.Border),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(HnColors.Primary),
+                )
+            }
+        },
+    )
+}
+
+@Composable
+private fun PresetChip(
+    label: String,
+    active: Boolean,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    onClick: () -> Unit,
+) {
+    val fg = if (active) HnColors.Primary else HnColors.TextSecondary
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (active) HnColors.PrimarySoft else HnColors.Surface)
+            .border(1.dp, if (active) HnColors.Primary else HnColors.Border, RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+            Text(label, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = fg)
+            if (icon != null) {
+                Spacer(Modifier.size(4.dp))
+                Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(20.dp))
+            }
+        }
     }
 }
 

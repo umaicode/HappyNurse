@@ -35,19 +35,17 @@ export function OrderTab({ encounterId, date }: OrderTabProps) {
   return (
     <div className="flex-1 overflow-auto bg-surface-card min-h-0 relative text-body-base">
       <div className="min-w-[1150px] flex flex-col h-full">
-        {/* Header Row — 시간 셀은 NursingTab 과 동일하게 border-r + pr-4 패턴.
-            처방명칭/참고사항은 minmax(0,Nfr) 로 가용 공간을 비율 분배 (2.5 : 1).
-            다른 고정 컬럼은 텍스트 길이에 맞춰 좁힘 — 처방명칭이 truncate 안 되게 여유 확보. */}
-        <div className="grid grid-cols-[90px_60px_88px_minmax(0,2.5fr)_60px_48px_56px_60px_80px_minmax(0,1fr)] gap-4 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-extrabold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
+        {/* Header Row */}
+        <div className="grid grid-cols-[90px_60px_150px_minmax(0,1.25fr)_60px_48px_56px_60px_80px_minmax(0,1fr)] gap-4 px-4 py-1.5 bg-surface-hover border-b border-border-base text-body-sm font-bold text-content-secondary sticky top-0 z-20 tracking-tight shadow-sm">
           <div className="border-r border-border-base pr-4 text-center">시간</div>
-          <div className="border-r border-border-base/50 pr-4">구분</div>
-          <div className="border-r border-border-base/50 pr-4">처방코드</div>
-          <div className="border-r border-border-base/50 pr-4">처방명칭</div>
-          <div className="text-center border-r border-border-base/50 pr-4">1회량</div>
-          <div className="text-center border-r border-border-base/50 pr-4">횟수</div>
-          <div className="text-center border-r border-border-base/50 pr-4">단위</div>
-          <div className="text-center border-r border-border-base/50 pr-4">용법</div>
-          <div className="text-center border-r border-border-base/50 pr-4">진행상태</div>
+          <div className="border-r border-border-base pr-4 text-center">구분</div>
+          <div className="border-r border-border-base pr-4">처방코드</div>
+          <div className="border-r border-border-base pr-4">처방명칭</div>
+          <div className="text-center border-r border-border-base pr-4">1회량</div>
+          <div className="text-center border-r border-border-base pr-4">횟수</div>
+          <div className="text-center border-r border-border-base pr-4">단위</div>
+          <div className="text-center border-r border-border-base pr-4">용법</div>
+          <div className="text-center border-r border-border-base pr-4">진행상태</div>
           <div>참고사항</div>
         </div>
 
@@ -65,42 +63,57 @@ export function OrderTab({ encounterId, date }: OrderTabProps) {
             orders.map((order) => (
               <div
                 key={order.medicationOrderId}
-                className="grid grid-cols-[90px_60px_88px_minmax(0,2.5fr)_60px_48px_56px_60px_80px_minmax(0,1fr)] gap-4 px-4 py-3 border-b border-border-base/50 items-center hover:bg-surface-hover/30 transition-all text-body-sm text-content-secondary"
+                className="grid grid-cols-[90px_60px_150px_minmax(0,1.25fr)_60px_48px_56px_60px_80px_minmax(0,1fr)] gap-4 px-4 py-2 min-h-[40px] border-b border-border-base/50 items-center hover:bg-surface-hover/60 transition-colors text-body-base text-content-secondary"
               >
-                {/* 시간 — NursingTab 과 동일 패턴 (border-r + pr-4 + 내부 w-full text-center) */}
-                <div className="border-r border-border-base/50 pr-4">
-                  <div className="w-full text-center font-mono font-extrabold text-[15px] text-content-primary leading-[1.6]">
+                {/* 시간 */}
+                <div className="py-1 border-r border-border-base/50 pr-4">
+                  <div className="w-full text-center tabular-nums font-bold text-[15px] text-content-primary leading-[1.6]">
                     {formatHHmm(order.createdAt)}
                   </div>
                 </div>
-                <div className="font-bold text-content-tertiary truncate">
-                  {ORDER_TYPE_LABEL[order.orderType] ?? order.orderType}
+                {/* 구분 */}
+                <div className="h-full flex items-center justify-center border-r border-border-base/50 pr-4">
+                  <span className="text-body-lg font-semibold text-content-primary">
+                    {ORDER_TYPE_LABEL[order.orderType] ?? order.orderType}
+                  </span>
                 </div>
-                <div className="font-mono font-bold text-content-primary truncate">
+                {/* 처방코드 */}
+                <div className="border-r border-border-base/50 tabular-nums font-medium text-content-primary truncate">
                   {order.orderCode}
                 </div>
-                <div className="font-medium text-content-secondary truncate">
+                {/* 처방명칭 */}
+                <div className="border-r border-border-base/50 pr-4 font-medium text-content-primary truncate">
                   {order.orderName}
                 </div>
-                <div className="text-center font-mono font-bold">{order.dose}</div>
-                <div className="text-center font-mono font-bold">{order.frequency}</div>
-                <div className="text-center text-content-tertiary">
+                {/* 1회량 */}
+                <div className="text-center border-r border-border-base/50 pr-4 tabular-nums font-medium text-content-tertiary">
+                  {order.dose}
+                </div>
+                {/* 횟수 */}
+                <div className="text-center border-r border-border-base/50 pr-4 tabular-nums font-medium text-content-tertiary">
+                  {order.frequency}
+                </div>
+                {/* 단위 */}
+                <div className="text-center border-r border-border-base/50 pr-4 text-content-tertiary font-medium">
                   {order.doseUnit}
                 </div>
-                <div className="text-center text-content-primary font-bold">
+                {/* 용법 */}
+                <div className="text-center border-r border-border-base/50 pr-4 font-medium text-content-tertiary">
                   {order.route}
                 </div>
-                <div className="flex justify-center">
+                {/* 진행상태 */}
+                <div className="pt-1 h-full flex items-center justify-center border-r border-border-base/50 pr-4">
                   <span
                     className={cn(
-                      "text-body-xs font-semibold",
-                      ORDER_STATUS_TONE[order.status] ?? "text-status-neutral",
+                      "text-body-sm font-semibold",
+                      ORDER_STATUS_TONE[order.status] ?? "text-content-tertiary",
                     )}
                   >
                     {ORDER_STATUS_LABEL[order.status] ?? order.status}
                   </span>
                 </div>
-                <div className="font-medium text-content-secondary truncate">
+                {/* 참고사항 */}
+                <div className="font-medium text-content-tertiary truncate">
                   {order.remarks ?? ""}
                 </div>
               </div>

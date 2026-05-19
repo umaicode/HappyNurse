@@ -7,6 +7,9 @@ package com.happynurse.presentation.components
 import android.graphics.Paint
 import android.graphics.Typeface
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.res.ResourcesCompat
+import com.happynurse.R
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -14,6 +17,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -50,16 +54,33 @@ fun IvDripAnimation(
         ),
         label = "iv-drip-progress",
     )
+    // 출렁임(메니스커스) 전용 — 점적 사이클과 독립된 느린 사인 위상
+    val wavePhase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2f * Math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(4200, easing = LinearEasing),
+        ),
+        label = "iv-wave-phase",
+    )
     val t = if (animate) progress else 0f
+    val wp = if (animate) wavePhase else 0f
     val ratio = fillRatio.coerceIn(0f, 1f)
+
+    val context = LocalContext.current
+    // Pretendard ExtraBold (w800) — gtt/min 라벨 전용. variable font 합성 BOLD 대신 실제 weight 파일을 로드한다.
+    val pretendardExtraBold = remember(context) {
+        ResourcesCompat.getFont(context, R.font.pretendard_extrabold)
+            ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
 
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
 
-        // 백을 컨테이너 폭의 60% 차지 → 좌측 정렬, 우측 40% 영역에 chamber/튜브/gtt
+        // 백을 컨테이너 폭의 58% 차지 → 가로 중앙 정렬
         val bagW = w * 0.58f
-        val bagX = w * 0.04f
+        val bagX = (w - bagW) / 2f
         // 위쪽에 hanger/port 가 들어갈 여유 공간을 살짝 남김
         val bagTop = h * (12f / 130f)
         val bagBottom = h * (90f / 130f)
@@ -146,9 +167,22 @@ fun IvDripAnimation(
             val top = fluidY
             val bottom = bagBottom - inset * 0.4f
 
+            // 메니스커스(수면 출렁임) — 좌우 끝의 높이가 사인파로 위아래 진동, 중앙은 반대 위상
+            val width = right - left
+            val waveAmp = (width * 0.02f).coerceAtMost(fluidH * 0.18f)
+            val leftWaveDy = kotlin.math.sin(wp.toDouble()).toFloat() * waveAmp
+            val rightWaveDy = kotlin.math.sin(wp + Math.PI.toFloat()).toFloat() * waveAmp
+            val midDy = kotlin.math.sin(wp + Math.PI.toFloat() / 2f).toFloat() * waveAmp * 0.5f
+            val leftTopY = top + leftWaveDy
+            val rightTopY = top + rightWaveDy
+            val midX = (left + right) / 2f
+            val midTopY = top + midDy
+
             val fluidPath = Path().apply {
-                moveTo(left, top)
-                lineTo(right, top)
+                moveTo(left, leftTopY)
+                // 좌→중앙→우 를 두 개의 quadratic bezier 로 연결해 부드러운 물결
+                quadraticBezierTo(left + width * 0.25f, leftTopY + (midTopY - leftTopY) * 1.4f, midX, midTopY)
+                quadraticBezierTo(left + width * 0.75f, midTopY + (rightTopY - midTopY) * 1.4f, right, rightTopY)
                 lineTo(right, bottom - bottomCorner)
                 quadraticBezierTo(right, bottom, right - bottomCorner, bottom)
                 lineTo(left + bottomCorner, bottom)
@@ -186,8 +220,9 @@ fun IvDripAnimation(
 
             // (3) 표면 광택(specular) — 표면 바로 아래 6~10% 영역에 밝은 띠
             if (fluidH > 6f) {
-                val specTop = top
-                val specBot = top + (bottom - top).coerceAtMost(fluidH) * 0.18f
+                val surfaceTop = minOf(leftTopY, rightTopY, midTopY)
+                val specTop = surfaceTop
+                val specBot = surfaceTop + (bottom - surfaceTop).coerceAtMost(fluidH) * 0.18f
                 val specPath = Path().apply {
                     moveTo(left, specTop)
                     lineTo(right, specTop)
@@ -207,16 +242,18 @@ fun IvDripAnimation(
                 drawPath(specPath, brush = specBrush)
             }
 
-            // (4) 표면 직하 가는 흰 라인 — 수면 반사. 좌우/알파 미세 호흡.
+            // (4) 표면 직하 가는 흰 라인 — 수면 반사. 메니스커스 곡선 따라 흔들림.
             if (fluidH > 4f) {
                 val phase = kotlin.math.sin(t * 2f * Math.PI).toFloat()
                 val shift = phase * (right - left) * 0.05f
                 val hLeft = left + (right - left) * 0.20f + shift
                 val hRight = right - (right - left) * 0.20f + shift
+                // 중앙 부근 메니스커스 높이에 라인을 붙임
+                val lineY = midTopY + 1.4f
                 drawLine(
                     color = Color.White.copy(alpha = (0.50f + phase * 0.15f).coerceIn(0.30f, 0.75f)),
-                    start = Offset(hLeft, top + 1.4f),
-                    end = Offset(hRight, top + 1.4f),
+                    start = Offset(hLeft, lineY),
+                    end = Offset(hRight, lineY),
                     strokeWidth = 0.9f,
                 )
             }
@@ -316,7 +353,7 @@ fun IvDripAnimation(
                 isAntiAlias = true
                 this.color = strokeColor
                 textSize = h * 0.23f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                typeface = pretendardExtraBold
                 textAlign = Paint.Align.CENTER
                 style = Paint.Style.STROKE
                 strokeWidth = 3.5f
@@ -326,14 +363,14 @@ fun IvDripAnimation(
                 isAntiAlias = true
                 this.color = textColor
                 textSize = h * 0.23f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                typeface = pretendardExtraBold
                 textAlign = Paint.Align.CENTER
             }
             val unitStrokePaint = Paint().apply {
                 isAntiAlias = true
                 this.color = strokeColor
                 textSize = h * 0.085f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                typeface = pretendardExtraBold
                 textAlign = Paint.Align.CENTER
                 style = Paint.Style.STROKE
                 strokeWidth = 2.0f
@@ -343,7 +380,7 @@ fun IvDripAnimation(
                 isAntiAlias = true
                 this.color = textColor
                 textSize = h * 0.085f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                typeface = pretendardExtraBold
                 textAlign = Paint.Align.CENTER
             }
 

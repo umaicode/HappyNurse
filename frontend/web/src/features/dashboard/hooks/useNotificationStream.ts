@@ -29,6 +29,12 @@ const SOURCE_EVENTS = [
   "vital_alert",
 ] as const;
 
+// EMR 간호기록 갱신용 — Notification DB 미저장이라 알림함 카운트와 무관.
+// BE 는 ward 채널로만 발사 (NursingRecordSseService / MedicationAdministrationSseService).
+// 두 이벤트 모두 동일한 NursingNoteItemResponse payload (type=STT_NOTE | MEDICATION) 라 같은 invalidate 로직을 공유한다.
+const NURSING_EVENT = "nursing_record";
+const MEDICATION_ADMIN_EVENT = "medication_admin";
+
 type SourceEventName = (typeof SOURCE_EVENTS)[number];
 
 const isLocalhostDevelopment = () =>
@@ -59,15 +65,60 @@ export function useNotificationStream() {
   // 병동 채널 — 같은 ward 의 모든 알림. IV 캐시 갱신은 개인 채널이 담당하므로
   // 여기서는 알림 카운트만 갱신한다 (한 이벤트로 두 채널이 동시에 IV 캐시를 invalidate
   // 하면 staleTime 통과 시 /iv 가 두 번 fetch 되는 문제 회피).
+  //
+  // nursing_record / medication_admin 은 의미가 다르다 — 알림함이 아니라 EMR 간호기록 그리드 갱신용.
+  // BE 는 Notification DB 에 저장하지 않고 ward 채널로만 발사한다 (notificationId: null).
   useEffect(() => {
     if (!isLoggedIn || wardId === null) return;
     if (isLocalhostDevelopment()) return;
-    const handler = () => {
+
+    const notificationHandler = () => {
       queryClient.invalidateQueries({ queryKey: ["notifications", "ward", wardId] });
     };
-    const onEvent = Object.fromEntries(
-      SOURCE_EVENTS.map((name) => [name, handler]),
-    );
+
+    // useNursingNotes 의 queryKey: ["encounter", encounterId, "nursing-notes", date]
+    // SSE payload 에 encounterId 가 없어 predicate 로 prefix 매칭한다.
+    // useDraftNursingNotes (["encounter", id, "nursing-notes", "drafts"]) /
+    // useMonthNursingCounts (날짜별 동일 prefix) 도 함께 갱신됨.
+    const nursingHandler = () => {
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "encounter" && query.queryKey[2] === "nursing-notes",
+      });
+    };
+
+    // useOrders 의 queryKey: ["encounter", encounterId, "orders"]
+    // EMRGrid 의 OrderTab + RightPanel 의 STTPanel(사이드바 의사오더 탭) 이 같은 캐시 공유 → 한 번에 갱신됨.
+    // ward 채널에서만 처리 — 개인 채널에서도 invalidate 하면 한 이벤트로 두 번 fetch 됨.
+    const orderHandler = () => {
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "encounter" && query.queryKey[2] === "orders",
+      });
+    };
+
+    // order_change 는 알림 카운트(notificationHandler) + 오더 캐시(orderHandler) 동시 갱신.
+    const orderChangeHandler = () => {
+      notificationHandler();
+      orderHandler();
+    };
+
+    // medication_admin 은 NFC 투약 + IV 시작/속도 변경 시 모두 발사된다.
+    // IV 시작/속도 변경 시엔 IVTimerPanel(["iv","ward",wardId])도 즉시 갱신되어야 하는데
+    // BE 가 iv_alert 을 함께 쏘진 않으므로 여기서 IV 캐시도 같이 invalidate.
+    // NFC 투약 케이스에선 /iv-infusions 가 한 번 더 호출되지만 응답 동일이라 사실상 no-op.
+    const medicationAdminHandler = () => {
+      nursingHandler();
+      queryClient.invalidateQueries({ queryKey: ["iv", "ward", wardId] });
+    };
+
+    const onEvent = {
+      ...Object.fromEntries(SOURCE_EVENTS.map((name) => [name, notificationHandler])),
+      order_change: orderChangeHandler,
+      [NURSING_EVENT]: nursingHandler,
+      [MEDICATION_ADMIN_EVENT]: medicationAdminHandler,
+    };
+
     return openSse("/sse/ward-subscribe", { onEvent });
   }, [isLoggedIn, wardId, queryClient]);
 }

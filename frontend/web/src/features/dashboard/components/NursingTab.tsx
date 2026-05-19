@@ -132,6 +132,15 @@ export function NursingTab({
   // 추가 직후 새 행 강조 — 서버 응답의 nursingRecordId 를 받아 filteredNotes 에 반영되면 scroll + ring.
   const [pendingFocusId, setPendingFocusId] = useState<number | null>(null);
 
+  // SSE 도착으로 새로 추가된 행 강조 — 사이드바 점프(highlightedKey) 와 별개 트랙. 2.5s 후 자동 해제.
+  // filteredNotes 변경 시 이전 키 set 과 diff 해 신규 키만 강조. 환자/일자/myRecordsOnly 변경 (사용자 액션)
+  // 시엔 발사 안 함. ref + 별도 timeout map 으로 키별 독립 타이머 운용.
+  const [recentlyAddedSseKeys, setRecentlyAddedSseKeys] = useState<Set<string>>(() => new Set());
+  const prevFilteredKeysRef = useRef<Set<string>>(new Set());
+  const prevDatasetKeyRef = useRef(datasetKey);
+  const prevMyRecordsOnlyRef = useRef(myRecordsOnly);
+  const sseHighlightTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
   useEffect(() => {
     if (filteredNotes.length === 0) return;
 
@@ -200,6 +209,61 @@ export function NursingTab({
     return () => window.clearTimeout(timeoutId);
   }, [highlightedKey]);
 
+  // SSE 도착 시 신규 키 강조 — invalidate → 재조회 후 filteredNotes 가 새 키를 포함하면 highlight 발사.
+  // 사용자 액션 (날짜/환자/myRecordsOnly 토글) 의 변경은 SSE 가 아니므로 발사 안 함. 첫 로드 (이전 빈 set)
+  // 도 마찬가지로 발사 안 함 — 초기 데이터 도착을 신규 추가로 오인하지 않기 위함.
+  useEffect(() => {
+    const currentKeys = new Set(filteredNotes.map(rowKey));
+
+    if (
+      prevDatasetKeyRef.current !== datasetKey
+      || prevMyRecordsOnlyRef.current !== myRecordsOnly
+    ) {
+      prevDatasetKeyRef.current = datasetKey;
+      prevMyRecordsOnlyRef.current = myRecordsOnly;
+      prevFilteredKeysRef.current = currentKeys;
+      return;
+    }
+
+    if (prevFilteredKeysRef.current.size === 0) {
+      prevFilteredKeysRef.current = currentKeys;
+      return;
+    }
+
+    const newKeys = [...currentKeys].filter((k) => !prevFilteredKeysRef.current.has(k));
+    if (newKeys.length > 0) {
+      setRecentlyAddedSseKeys((prev) => {
+        const next = new Set(prev);
+        for (const k of newKeys) next.add(k);
+        return next;
+      });
+      for (const k of newKeys) {
+        const existing = sseHighlightTimeoutsRef.current.get(k);
+        if (existing) clearTimeout(existing);
+        const id = setTimeout(() => {
+          setRecentlyAddedSseKeys((prev) => {
+            if (!prev.has(k)) return prev;
+            const next = new Set(prev);
+            next.delete(k);
+            return next;
+          });
+          sseHighlightTimeoutsRef.current.delete(k);
+        }, 2500);
+        sseHighlightTimeoutsRef.current.set(k, id);
+      }
+    }
+    prevFilteredKeysRef.current = currentKeys;
+  }, [filteredNotes, datasetKey, myRecordsOnly]);
+
+  // 언마운트 시 SSE highlight 타이머 모두 정리 — 메모리 누수 + dangling setState 방지.
+  useEffect(() => {
+    const timeouts = sseHighlightTimeoutsRef.current;
+    return () => {
+      timeouts.forEach((id) => clearTimeout(id));
+      timeouts.clear();
+    };
+  }, []);
+
   return (
     <div
       ref={scrollContainerRef}
@@ -253,6 +317,7 @@ export function NursingTab({
                       note={note}
                       isEditMode={isEditMode}
                       isHighlighted={highlightedKey === key}
+                      isRecentlySseAdded={recentlyAddedSseKeys.has(key)}
                       onUpdateStt={handleUpdateStt}
                       onUpdateMedication={handleUpdateMedication}
                       onConfirm={handleConfirm}
@@ -414,7 +479,7 @@ function TimeInput({
   // display 모드 시간 셀 (`text-[15px] font-extrabold leading-[1.6]`) 과 글자 크기/높이 동일하게.
   // 너비는 글자 2자 폭에 맞춰 좁게 — w-9 처럼 넓으면 가운데 정렬에서 양 끝으로 벌어져 보임.
   const cellClass =
-    "w-6 text-center bg-transparent focus:outline-none font-mono font-bold text-[15px] leading-[1.6] text-content-primary";
+    "w-6 text-center bg-transparent focus:outline-none tabular-nums font-bold text-[15px] leading-[1.6] text-content-primary";
 
   return (
     <div className="flex items-center justify-center gap-0.5 w-full border border-border-base rounded bg-white focus-within:ring-1 focus-within:ring-content-primary/20">
@@ -433,7 +498,7 @@ function TimeInput({
         onBlur={() => update(hour ? hour.padStart(2, "0") : "00", minute)}
         className={cellClass}
       />
-      <span className="font-mono font-bold text-[15px] leading-[1.6] text-content-muted">:</span>
+      <span className="tabular-nums font-bold text-[15px] leading-[1.6] text-content-muted">:</span>
       <input
         type="text"
         inputMode="numeric"
@@ -573,6 +638,7 @@ function NoteRow({
   note,
   isEditMode,
   isHighlighted,
+  isRecentlySseAdded,
   onUpdateStt,
   onUpdateMedication,
   onConfirm,
@@ -587,9 +653,22 @@ function NoteRow({
   isEditMode: boolean;
   // 사이드바 / 인수인계 citation 에서 점프해 온 row 잠시 강조 (NursingTab 에서 2.5초 후 해제).
   isHighlighted: boolean;
+  // SSE 도착으로 새로 추가된 행 잠시 강조 (NursingTab 에서 2.5초 후 해제). focus 점프와 시각 구분 — primary 색.
+  isRecentlySseAdded?: boolean;
   rowRef?: (element: HTMLDivElement | null) => void;
 } & NoteRowCallbacks) {
   const isMedication = note.type === "MEDICATION";
+  // 구분 라벨 — MEDICATION 은 ivRateMlPerHr 유무로 IV(수액) / NFC 알약(약물) 분기 (모바일과 일관).
+  // 색: 약물=success 그린, 수액=brand-primary 네이비, 음성=content-tertiary 그레이.
+  const isIvGroup =
+    note.type === "MEDICATION"
+    && note.medications.some((m) => m.ivRateMlPerHr !== undefined);
+  const typeLabel = note.type === "MEDICATION"
+    ? (isIvGroup ? "수액" : "약물")
+    : NOTE_TYPE_LABEL[note.type];
+  const typeTone = note.type === "MEDICATION"
+    ? (isIvGroup ? "text-brand-primary" : "text-status-success")
+    : NOTE_TYPE_TONE[note.type];
 
   // STT_NOTE: content + occurredAt / MEDICATION: dosageQuantity + confirmedAt
   // 헤더 "편집" 토글 변화 시 NoteRow 가 key 변경으로 remount 되므로 isEditing 도 자연 초기화됨.
@@ -696,16 +775,20 @@ function NoteRow({
     <div
       ref={rowRef}
       className={cn(
-        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-1 min-h-[60px] border-b border-border-base/50 items-center hover:bg-surface-hover/60 transition-[background-color,box-shadow] duration-500 relative",
+        "grid grid-cols-[90px_1fr_70px_90px_140px] gap-4 px-4 py-2 min-h-[40px] border-b border-border-base/50 items-center hover:bg-surface-hover/60 transition-[background-color,box-shadow] duration-500 relative",
         // 우선순위: medication > draft > isEditing (마지막 매치가 이김)
         // draft 는 hover 도 같은 톤으로 고정 — 임시 기록이라 hover 강조 의미 없음. 좌측 3px accent 로 임시상태 시각화.
         note.status === "draft" &&
-          "bg-sub-alpha-10 hover:bg-sub-alpha-10 border-l-[3px] border-l-status-warning",
-        note.type === "MEDICATION" && "bg-brand-surface/20",
-        isEditing && "bg-brand-surface/15",
+          "bg-[#f8f3ef] hover:bg-[#f8edd7] border-l-[3px] border-l-status-warning",
+        note.type === "MEDICATION" && "bg-brand-surface/30",
+        isEditing && "bg-brand-surface/30",
         // highlighted — 사이드바/인수인계에서 점프해 온 행 잠시 강조. inset shadow 로 외곽 ring 효과.
         isHighlighted &&
           "bg-status-warning-surface hover:bg-status-warning-surface shadow-[inset_0_0_0_2px_var(--color-status-warning)]",
+        // SSE 도착으로 새로 추가된 행 — primary 색 ring (focus 점프 warning 과 시각 구분, 의도 다른 두 효과).
+        // focus 점프와 동시에 두 조건이 켜지면 focus 가 우선 (사용자가 명시 클릭한 거라 warning ring 보존).
+        !isHighlighted && isRecentlySseAdded &&
+          "shadow-[inset_0_0_0_2px_var(--color-brand-primary)]",
       )}
     >
       {/* 시간 — 편집 모드에선 HH : mm 분리 입력. STT_NOTE / MEDICATION 모두 body 의 confirmedAt 키로 송신. */}
@@ -713,7 +796,7 @@ function NoteRow({
         {isEditing ? (
           <TimeInput value={draftTime} onChange={setDraftTime} />
         ) : (
-          <div className="w-full text-center font-mono font-bold text-[15px] text-content-primary leading-[1.6]">
+          <div className="w-full text-center tabular-nums font-bold text-[15px] text-content-primary leading-[1.6]">
             {formatHHmm(note.occurredAt)}
           </div>
         )}
@@ -750,7 +833,7 @@ function NoteRow({
                 target.style.height = "auto";
                 target.style.height = `${target.scrollHeight}px`;
               }}
-              className="w-full bg-white border border-brand-primary/30 rounded px-2 py-1 text-body-sm leading-[1.6] text-content-primary resize-none focus:outline-none focus:ring-1 focus:ring-brand-primary/20 shadow-xs"
+              className="w-full bg-white border border-brand-primary/30 rounded px-2 py-1 text-body-base leading-[1.6] text-content-primary resize-none focus:outline-none focus:ring-1 focus:ring-brand-primary/20 shadow-xs"
               rows={1}
             />
             <QuickCorrectionPanel
@@ -777,14 +860,14 @@ function NoteRow({
       </div>
 
       {/* 구분 */}
-      <div className="pt-1 h-full flex items-center justify-center border-r border-border-base/50 pr-4">
+      <div className="h-full flex items-center justify-center border-r border-border-base/50 pr-4">
         <span
           className={cn(
             "text-body-xs font-semibold",
-            NOTE_TYPE_TONE[note.type] ?? "text-content-tertiary",
+            typeTone ?? "text-content-tertiary",
           )}
         >
-          {NOTE_TYPE_LABEL[note.type] ?? note.type}
+          {typeLabel ?? note.type}
         </span>
       </div>
 
@@ -794,14 +877,14 @@ function NoteRow({
       </div>
 
       {/* 동작 — 확정은 위, 수정/삭제는 아래 줄 */}
-      <div className="pt-1 h-full flex flex-col items-center justify-center gap-1">
+      <div className="h-full flex flex-col items-center justify-center gap-1">
         {note.editable ? (
           isEditing ? (
             <div className="flex gap-1">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2.5 text-[14px] font-Bold"
+                className="h-7 px-2.5 text-[14px] font-Bold border border-gray-300 rounded-md"
                 disabled={
                   isUpdating || (!isMedication && !draftContent.trim())
                 }
@@ -812,7 +895,7 @@ function NoteRow({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2.5 text-[14px] font-Bold"
+                className="h-7 px-2.5 text-[14px] font-Bold border border-gray-300 rounded-md"
                 onClick={cancelEdit}
               >
                 취소
@@ -926,6 +1009,11 @@ function MedicationActions({
   isConfirming: boolean;
   isDeleting: boolean;
 }) {
+  // IV 그룹은 워치에서 시작/속도 변경/종료로만 다뤄야 함 — 간호기록 화면에서 수정/삭제 모두 차단.
+  // BE editable 은 "작성자 본인" 여부만 보므로 IV 차단은 FE 책임.
+  const isIvGroup = note.medications.some(
+    (medication) => medication.ivRateMlPerHr !== undefined,
+  );
   return (
     <>
       {note.status === "draft" && !isEditMode && (
@@ -934,7 +1022,7 @@ function MedicationActions({
           disabled={isConfirming}
         />
       )}
-      {isEditMode && (
+      {isEditMode && !isIvGroup && (
         <div className="flex gap-1">
           <Button
             variant="ghost"
@@ -985,7 +1073,7 @@ function ConfirmButton({
 
 function SttContent({ content }: { content: string }) {
   return (
-    <div className="text-body-sm font-medium leading-[1.6] text-content-primary whitespace-pre-wrap break-all">
+    <div className="text-body-base font-medium leading-[1.6] text-content-primary whitespace-pre-wrap break-all">
       {content}
     </div>
   );
@@ -1033,10 +1121,10 @@ function MedicationRow({
   return (
     <li className="flex flex-col gap-0.5">
       <div className="flex items-baseline gap-2 min-w-0">
-        <span className="font-medium text-content-primary text-body-sm truncate">
+        <span className="font-medium text-content-primary text-body-base truncate">
           {medication.productName}
         </span>
-        <span className="font-mono text-body-micro text-content-muted shrink-0">
+        <span className="tabular-nums text-body-micro text-content-muted shrink-0">
           {medication.productCode}
         </span>
       </div>
@@ -1053,19 +1141,28 @@ function MedicationRow({
               if (!Number.isFinite(next) || next < 0) return;
               onChangeDraft(next);
             }}
-            className="w-16 px-1.5 py-0.5 rounded bg-white border border-brand-primary/40 font-mono font-bold text-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/30"
+            className="w-16 px-1.5 py-0.5 rounded bg-white border border-brand-primary/40 tabular-nums font-bold text-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/30"
           />
         ) : (
-          <span className="font-mono font-bold text-brand-primary">
+          <span className="tabular-nums font-bold text-brand-primary">
             {medication.dosageQuantity}
           </span>
         )}
         <span className="text-content-tertiary font-medium">{medication.dosageUnit}</span>
         <span className="text-border-base">·</span>
-        <span className="font-mono font-bold text-content-primary">{medication.frequency}</span>
+        <span className="tabular-nums font-bold text-content-primary">{medication.frequency}</span>
         <span className="text-content-tertiary">회</span>
         <span className="text-border-base">·</span>
         <span className="font-bold text-content-secondary">{medication.route}</span>
+        {medication.ivRateMlPerHr !== undefined && (
+          <>
+            <span className="text-border-base">·</span>
+            <span className="tabular-nums font-bold text-brand-primary">
+              {medication.ivRateMlPerHr}
+            </span>
+            <span className="text-content-tertiary font-medium">mL/hr</span>
+          </>
+        )}
       </div>
     </li>
   );

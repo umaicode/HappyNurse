@@ -134,4 +134,15 @@ public interface IvInfusionRepository extends JpaRepository<IvInfusion, Long> {
 
     /** start 시 중복 방지 가드용 — 같은 처방으로 IN_PROGRESS IV 가 이미 있는지 확인 */
     boolean existsByMedicationOrder_MedicationOrderIdAndStatus(Long medicationOrderId, InfusionStatus status);
+
+    /**
+     * MA 그룹 → IvInfusion 조회 (IvInfusionMedication 경유).
+     * 믹스 IV 의 어떤 orderId 로 조회해도 동일 IvInfusion 을 반환.
+     */
+    @Query("""
+              SELECT iv FROM IvInfusion iv JOIN iv.medications m
+              WHERE m.medicationOrder.medicationOrderId = :orderId
+              AND iv.status = com.ssafy.happynurse.domain.watch.entity.InfusionStatus.IN_PROGRESS
+              """)
+    Optional<IvInfusion> findByMedicationOrderId(@Param("orderId") Long orderId);
 }
