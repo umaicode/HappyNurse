@@ -190,15 +190,15 @@ export function LoginForm() {
       {/* Layer 6: Soft white veil */}
       <div className="absolute inset-0 z-2 bg-gradient-to-b from-white/15 via-transparent to-white/10" />
 
-      {/* 좌측 상단 dev 툴: 환자 라우트 진입 + DEV 전용 동작 (운영 빌드에서는 DEV 동작은 숨김) */}
-      <div className="absolute top-4 left-4 z-50 flex items-center gap-2">
-        <button
-          onClick={() => router.push('/patient/verify?patientId=3&prefill=1')}
-          className="rounded-2xl border border-action-blue-hover bg-[#e2e3e4] px-3 py-1.5 text-[22px] font-bold text-gray-600 hover:bg-[#a0afec] transition-colors"
-        >
-          환자 로그인
-        </button>
-        {isDevelopment ? (
+      {/* 좌측 상단 dev 툴: 환자 라우트 진입 + DEV 전용 동작 (운영 빌드에서는 통째로 숨김) */}
+      {isDevelopment ? (
+        <div className="absolute top-4 left-4 z-50 flex items-center gap-2">
+          <button
+            onClick={() => router.push('/patient/verify?patientId=3&prefill=1')}
+            className="rounded-2xl border border-action-blue-hover bg-[#e2e3e4] px-3 py-1.5 text-[22px] font-bold text-gray-600 hover:bg-[#a0afec] transition-colors"
+          >
+            환자 로그인
+          </button>
           <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white/80 px-2 py-1.5 shadow-sm backdrop-blur">
             <span className="text-xs font-bold text-content-muted">
               개발 환경 전용
@@ -223,8 +223,8 @@ export function LoginForm() {
               테스트 회원가입
             </Button>
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       {/* Content Layer */}
       <div className="relative z-10 flex w-full h-full">
