@@ -11,6 +11,7 @@ object WearableMessagePaths {
     const val IV_ALERT = "/notification/iv_alert"        // 수액 알림
     const val TIMER_ALARM = "/notification/timer_alarm"  // 타이머 종료 알람
     const val PATIENT_CALL = "/notification/patient_call" // 환자 호출/요구사항
+    const val SELF_REPORT_ALARM = "/notification/self_report_alarm" // 위급/높음 환자요청 풀스크린 알람 트리거
     const val SESSION_LOGOUT = "/session/logout"         // 폰 로그아웃 시 워치 세션 동시 해제
     const val WEAR_AUTH_TOKEN_RESPONSE = "/wear/auth/token/response" // 폰이 accessToken/wardId 응답
 }
