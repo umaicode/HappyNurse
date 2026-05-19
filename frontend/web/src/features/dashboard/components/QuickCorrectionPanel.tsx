@@ -1,18 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useAnalyzeCorrections, useApplyCorrection } from "../hooks/useCorrection";
-import type {
-  CorrectionCandidate,
-  CorrectionItem,
-} from "../types/correction";
+import {
+  useAnalyzeCorrections,
+  useApplyCorrection,
+} from "../hooks/useCorrection";
+import type { CorrectionCandidate, CorrectionItem } from "../types/correction";
 
 const correctionKey = (correction: CorrectionItem) =>
   `${correction.start}-${correction.end}-${correction.original}`;
@@ -66,15 +66,14 @@ export function QuickCorrectionPanel({
 
   // 본문 등장 순서 (사용자 결정) — 적용 여부와 무관하게 분석된 모든 칩을 유지.
   const sortedCorrections = useMemo<CorrectionItem[]>(
-    () =>
-      [...(data?.corrections ?? [])].sort((a, b) => a.start - b.start),
+    () => [...(data?.corrections ?? [])].sort((a, b) => a.start - b.start),
     [data],
   );
 
   if (isPending) {
     return (
       <div className="mt-1.5 flex items-center gap-1.5 text-body-micro text-content-muted">
-        <Sparkles className="size-3" />
+        <Zap className="size-3 fill-yellow-400 text-yellow-400" />
         <span>퀵수정 후보 분석 중...</span>
       </div>
     );
@@ -86,9 +85,12 @@ export function QuickCorrectionPanel({
 
   return (
     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-      <div className="flex items-center gap-1 text-[14px] leading-none font-medium text-content-tertiary">
-        <Sparkles className="size-3 text-brand-primary" />
-        <span>퀵수정 후보 ({sortedCorrections.length})</span>
+      <div className="flex items-center gap-1 text-[14px] leading-none font-medium text-[#323233]">
+        <Zap className="size-4 fill-yellow-400 text-yellow-400" />
+        <span>퀵수정 후보</span>
+        <span className="inline-flex items-center justify-center size-4 rounded-full bg-amber-400 text-white text-[12px] font-semibold leading-none">
+          {sortedCorrections.length}
+        </span>
       </div>
       {sortedCorrections.map((correction) => {
         const key = correctionKey(correction);
