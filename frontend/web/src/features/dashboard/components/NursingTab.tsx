@@ -104,16 +104,26 @@ export function NursingTab({
 
   // 백엔드는 occurredAt desc 로 내려주지만, 화면은 시간 asc (오래된 위 / 최신 아래) 로 표시 후
   // 현재 시각 근처 카드를 가운데로 자동 스크롤한다 (PatientAlerts 와 동일 패턴).
+  //
+  // 정렬 키는 HH:mm (분 단위) — full datetime 이 아니라 화면 표시 시각만으로 비교한다.
+  // 이유: prod 에서 AI raw SQL INSERT (`stt.py` 의 NOW()) 와 BE @PrePersist (LocalDateTime.now())
+  // 가 서로 다른 TZ wall-clock 으로 저장되어 occurredAt 의 날짜 부분이 9시간 어긋난 채 같은 date
+  // 필터에 함께 걸려 옴. full datetime 으로 정렬하면 어긋난 날짜 블록이 통째로 앞/뒤로 밀린다.
+  // BE date 필터가 단일 캘린더 날짜 범위로 한정하므로 응답은 한 날 짜리 → HH:mm 정렬로 충분.
   const filteredNotes = useMemo(() => {
     return (data ?? [])
       .filter((note) => {
         if (myRecordsOnly && note.authorName !== currentUser) return false;
         return true;
       })
-      .sort(
-        (a, b) =>
-          new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime(),
-      );
+      .sort((a, b) => {
+        const aDate = new Date(a.occurredAt);
+        const bDate = new Date(b.occurredAt);
+        return (
+          (aDate.getHours() * 60 + aDate.getMinutes()) -
+          (bDate.getHours() * 60 + bDate.getMinutes())
+        );
+      });
   }, [data, myRecordsOnly, currentUser]);
 
   const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
@@ -168,12 +178,17 @@ export function NursingTab({
     if (lastAutoScrolledDatasetRef.current === datasetKey) return;
     lastAutoScrolledDatasetRef.current = datasetKey;
 
-    const now = Date.now();
+    // 거리 키는 HH:mm 분 단위 — 정렬과 동일한 사유 (prod 의 TZ 어긋남 케이스에서 AI 기록의
+    // 날짜 부분이 빗나가 full datetime 비교 시 거리가 9시간씩 부풀려지는 것을 피한다).
+    const nowDate = new Date();
+    const nowMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
+    const minutesOfDay = (iso: string) => {
+      const date = new Date(iso);
+      return date.getHours() * 60 + date.getMinutes();
+    };
     const closest = filteredNotes.reduce((best, note) => {
-      const distance = Math.abs(new Date(note.occurredAt).getTime() - now);
-      const bestDistance = Math.abs(
-        new Date(best.occurredAt).getTime() - now,
-      );
+      const distance = Math.abs(minutesOfDay(note.occurredAt) - nowMinutes);
+      const bestDistance = Math.abs(minutesOfDay(best.occurredAt) - nowMinutes);
       return distance < bestDistance ? note : best;
     }, filteredNotes[0]);
     const target = itemRefs.current.get(rowKey(closest));
