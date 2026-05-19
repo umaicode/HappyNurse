@@ -1,4 +1,5 @@
-// FCM 수신 서비스 — 새 토큰 등록 콜백 + 포그라운드 알림 표시
+// FCM 수신 서비스 — 새 토큰 등록 콜백 + 포그라운드 알림 표시.
+// self_report priority CRITICAL/HIGH 면 워치에 DataLayer 로 풀스크린 알람 트리거 메시지 전송.
 package com.happynurse.data.remote.fcm
 
 import android.app.NotificationManager
@@ -12,7 +13,15 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.happynurse.MainActivity
 import com.happynurse.R
+import com.happynurse.data.wearable.PhoneDataClient
+import com.happynurse.data.wearable.SelfReportAlarmPayload
+import com.happynurse.data.wearable.WearableMessagePaths
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import kotlin.random.Random
 
@@ -20,6 +29,9 @@ import kotlin.random.Random
 class HappyNurseFirebaseMessagingService : FirebaseMessagingService() {
 
     @Inject lateinit var fcmTokenRegistrar: FcmTokenRegistrar
+    @Inject lateinit var phoneDataClient: PhoneDataClient
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
@@ -33,6 +45,57 @@ class HappyNurseFirebaseMessagingService : FirebaseMessagingService() {
         val sourceType = message.data["sourceType"]
         Log.d(TAG, "메시지 수신: title=$title body=$body sourceType=$sourceType data=${message.data}")
         showNotification(title, body, sourceType)
+
+        // 위급/높음 환자요청 → 워치에 풀스크린 알람 트리거.
+        // Wear OS 가 폰 트레이 알림을 자동 브리지하지만 priority 정보는 유실되므로
+        // DataLayer 로 별도 메시지를 보내 워치에서 분기 처리한다.
+        if (sourceType == "self_report") {
+            val priority = message.data["priority"].orEmpty().trim().uppercase()
+            if (priority == "CRITICAL" || priority == "HIGH") {
+                // 백엔드 FCM data 에 patientName 이 빠져 있어 title("X님의 증상 알림") 에서 추출.
+                val patientName = message.data["patientName"].orEmpty()
+                    .ifBlank { extractPatientNameFromTitle(title) }
+                triggerWearSelfReportAlarm(
+                    patientName = patientName,
+                    roomLocation = message.data["roomLocation"].orEmpty(),
+                    body = body,
+                    priority = priority,
+                )
+            }
+        }
+    }
+
+    private fun extractPatientNameFromTitle(title: String): String {
+        // "김환자님의 증상 알림" → "김환자"
+        return title.substringBefore("님의").trim()
+    }
+
+    private fun triggerWearSelfReportAlarm(
+        patientName: String,
+        roomLocation: String,
+        body: String,
+        priority: String,
+    ) {
+        scope.launch {
+            runCatching {
+                val payload = Json.encodeToString(
+                    SelfReportAlarmPayload.serializer(),
+                    SelfReportAlarmPayload(
+                        patientName = patientName,
+                        roomLocation = roomLocation,
+                        body = body,
+                        priority = priority,
+                    ),
+                )
+                phoneDataClient.send(
+                    WearableMessagePaths.SELF_REPORT_ALARM,
+                    payload.toByteArray(Charsets.UTF_8),
+                )
+                Log.d(TAG, "워치 풀스크린 알람 트리거 전송 — priority=$priority")
+            }.onFailure {
+                Log.w(TAG, "워치 풀스크린 알람 트리거 실패", it)
+            }
+        }
     }
 
     private fun showNotification(title: String, body: String, sourceType: String?) {

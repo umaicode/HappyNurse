@@ -8,6 +8,7 @@ import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.happynurse.wear.alarm.IvAlarmActivity
+import com.happynurse.wear.alarm.SelfReportAlarmActivity
 import com.happynurse.wear.alarm.SttAlarmActivity
 import com.happynurse.wear.domain.model.NotificationType
 import com.happynurse.wear.data.eventbus.WearEventBus
@@ -30,6 +31,13 @@ class WearFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
+        Log.d(
+            TAG,
+            "★ onMessageReceived 호출됨 — from=${message.from} " +
+                "messageId=${message.messageId} " +
+                "notification=${message.notification?.let { "title=${it.title}, body=${it.body}" }} " +
+                "data=${message.data}",
+        )
         val data = message.data
         val sourceType = data["sourceType"] ?: run {
             Log.w(TAG, "sourceType 누락 — 무시: ${data}")
@@ -44,7 +52,7 @@ class WearFirebaseMessagingService : FirebaseMessagingService() {
             Log.d(TAG, "중복 알림 스킵: $notificationId")
             return
         }
-        Log.d(TAG, "수신: sourceType=$sourceType id=$notificationId preview=$previewMinutes")
+        Log.d(TAG, "수신: sourceType=$sourceType id=$notificationId preview=$previewMinutes priority=${data["priority"]} dataKeys=${data.keys}")
 
         val notifId = notificationId?.toIntOrNull() ?: Random.nextInt()
         when {
@@ -62,16 +70,26 @@ class WearFirebaseMessagingService : FirebaseMessagingService() {
             sourceType == "timer" -> startSttAlarm(title, body, data)
 
             sourceType == "self_report" -> {
-                SystemNotificationBuilder.showTray(
-                    context = this,
-                    notificationId = notifId,
-                    title = title.ifBlank { "환자 알림" },
-                    body = body,
-                    deepLinkExtras = mapOf(
-                        "sourceType" to "self_report",
-                        "patientId" to data["patientId"].orEmpty(),
-                    ),
-                )
+                val priority = data["priority"].orEmpty().trim().uppercase()
+                Log.d(TAG, "self_report 분기: priority='$priority'")
+                // 위급(CRITICAL) / 높음(HIGH) — 풀스크린 알람으로 즉시 띄움.
+                // 보통(MEDIUM) / 낮음(LOW) / 누락 — 기존대로 시스템 트레이만.
+                if (priority == "CRITICAL" || priority == "HIGH") {
+                    Log.d(TAG, "self_report 풀스크린 알람 트리거 — priority=$priority")
+                    startSelfReportAlarm(title, body, priority, data)
+                } else {
+                    Log.d(TAG, "self_report 트레이 알림 트리거 — priority=$priority")
+                    SystemNotificationBuilder.showTray(
+                        context = this,
+                        notificationId = notifId,
+                        title = title.ifBlank { "환자 알림" },
+                        body = body,
+                        deepLinkExtras = mapOf(
+                            "sourceType" to "self_report",
+                            "patientId" to data["patientId"].orEmpty(),
+                        ),
+                    )
+                }
                 eventBus.emitNotification(
                     WearNotification(
                         title = title.ifBlank { "환자 알림" },
@@ -92,6 +110,22 @@ class WearFirebaseMessagingService : FirebaseMessagingService() {
             putExtra(IvAlarmActivity.EXTRA_PATIENT, data["patientName"].orEmpty().ifBlank { title })
             putExtra(IvAlarmActivity.EXTRA_MEDICATION, data["medicationName"].orEmpty().ifBlank { body })
             putExtra(IvAlarmActivity.EXTRA_ROOM_BED_TIME, data["roomBedTime"].orEmpty())
+        }
+        startActivity(intent)
+    }
+
+    private fun startSelfReportAlarm(
+        title: String,
+        body: String,
+        priority: String,
+        data: Map<String, String>,
+    ) {
+        val intent = Intent(this, SelfReportAlarmActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            putExtra(SelfReportAlarmActivity.EXTRA_PATIENT, data["patientName"].orEmpty().ifBlank { title })
+            putExtra(SelfReportAlarmActivity.EXTRA_ROOM, data["roomLocation"].orEmpty())
+            putExtra(SelfReportAlarmActivity.EXTRA_BODY, body)
+            putExtra(SelfReportAlarmActivity.EXTRA_PRIORITY, priority)
         }
         startActivity(intent)
     }
