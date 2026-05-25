@@ -14,7 +14,7 @@ from app.services.handover.processing.phi_tokenizer import PHITokenizer
 # KHNA 통합 모듈
 from app.services.handover.clinical.profile_parser import parse_profile
 from app.services.handover.clinical.scale_evaluator import (
-    compute_news2, compute_qsofa, compute_morse_fall, compute_caprini, compute_gcs,
+    compute_news2, compute_qsofa,
 )
 from app.services.handover.clinical.khna_classifier import classify_score
 from app.services.handover.clinical.isolation_mapper import detect_isolation_requirements
@@ -244,56 +244,15 @@ datetime.now(timezone.utc).isoformat()),
                 "details": {"action": cls_q.action},
             })
 
-        # Caprini (수술 환자)
-        if ctx.tier2.surgery:
-            cap = compute_caprini(
-                age=ctx.tier2.age or 0,
-                major_surgery=True,
-                bed_rest_72h=True,
-                cancer=("cancer" in (ctx.tier2.admission_dx or "").lower()
-                        or "암" in (ctx.tier2.admission_dx or "")),
-                prior_vte=("DVT" in profile.history_ids),
-                bmi_gt_25=False,
-            )
-            cls_cap = classify_score("vte_risk", cap.score)
-            scores.append({
-                "scale_id": "caprini", "score": cap.score,
-                "classification": cap.classification, "sources": cap.sources,
-                "details": {"factor_scores": cap.factor_scores},
-                "ui_color": cls_cap.ui_color, "ui_severity": cls_cap.ui_severity,
-            })
-
-        # Morse Fall (수술/IV 환자에 자동 추정)
-        # 보수적 추정: nursing_record 텍스트의 키워드로 보정
-        if ctx.tier2.surgery or "IV" in full_text:
-            morse = compute_morse_fall(
-                fall_history=False,
-                secondary_diagnosis=bool(ctx.tier2.surgery),
-                ambulation_aid=("walker_or_cane" if "보행기" in full_text else "none"),
-                iv_or_heparin_lock=("IV" in full_text or "정맥주사" in full_text),
-                gait=("weak" if "보행기" in full_text else "normal"),
-                mental_status_oriented=True,
-            )
-            cls_morse = classify_score("fall_risk", morse.score)
-            scores.append({
-                "scale_id": "morse", "score": morse.score,
-                "classification": morse.classification, "sources": morse.sources,
-                "details": {"item_scores": morse.item_scores},
-                "ui_color": cls_morse.ui_color, "ui_severity": cls_morse.ui_severity,
-            })
-
         raw["scores"] = scores
 
         # 임상 스코어를 I-PASS-BAR 슬롯에 통합 — severity_flag로 위험 배너·카운트 연동
-        # NEWS2/qSOFA/GCS/CAM → assessment, Morse/Caprini/Braden → safety
+        # NEWS2/qSOFA → assessment (활력징후 수치 기반 결정론적 계산만)
         _score_slot = {
-            "news2": "assessment", "qsofa": "assessment", "gcs": "assessment", "cam": "assessment",
-            "morse": "safety", "caprini": "safety", "braden": "safety",
+            "news2": "assessment", "qsofa": "assessment",
         }
         _score_src = {
             "news2": "RCP NEWS2 2017", "qsofa": "Sepsis-3 2016",
-            "morse": "KHNA 낙상관리·Morse", "caprini": "KHNA VTE 2023·Caprini",
-            "braden": "KHNA 욕창 2022·Braden", "gcs": "KHNA·GCS", "cam": "CAM·Inouye",
         }
         for s in scores:
             sid = s.get("scale_id", "")
@@ -364,18 +323,11 @@ datetime.now(timezone.utc).isoformat()),
                     "source_layer": 2,
                     "confidence": 1.0,
                 })
-
-        # 인계 체인 — 이전 ShiftHandover의 background 회수
-        if ctx.prior_handover_facts:
-            for item in ctx.prior_handover_facts.get("background_items", []):
-                if not any(i.get("value") == item.get("value")
-                           for i in raw["slots"]["background"]["items"]):
-                    item_copy = dict(item)
-                    item_copy["kind"] = (item_copy.get("kind") or "inherited") + "_inherited"
-                    raw["slots"]["background"]["items"].append(item_copy)
     except Exception as e:
         logger.warning("KHNA 통합 모듈 처리 실패 [encounter=%s]: %s", encounter_id, e)
         raw.setdefault("scores", [])
+
+    raw["slots"] = _prioritize_and_cap(raw["slots"], raw.get("citations", []))
 
     raw["meta"] = {
         "model": settings_meta["model"],
@@ -396,6 +348,75 @@ datetime.now(timezone.utc).isoformat()),
         text=text, payload=raw,
     )
     return HandoverResult(handover_id=str(saved.handover_id), text=text, payload=raw)
+
+
+_SLOT_CAPS = {
+    "patient_problem": 3,
+    "assessment": 4,
+    "situation": 3,
+    "safety": 5,
+    "background": 3,
+    "action": 5,
+    "recommendation": 3,
+    # synthesis: 상한 없음 — 프롬프트가 3~5건 선별 보장
+}
+
+# 위험도 순위 (작을수록 우선 보존)
+_SEV_RANK = {"unstable": 0, "watcher": 1}
+
+# 결정론적 위험 신호 — 동급에서 우선 보존 (KHNA 스코어·격리·손상고위험·약물·IV)
+_PROTECTED_KINDS = {
+    "clinical_score", "isolation_detected", "injury_high_risk_abcs",
+    "iv_status", "iv_expiry", "medication",
+}
+
+
+def _parse_epoch(s) -> float | None:
+    if not s:
+        return None
+    try:
+        dt = datetime.fromisoformat(s)
+        if dt.tzinfo is not None:
+            dt = dt.replace(tzinfo=None)
+        return dt.timestamp()
+    except Exception:
+        return None
+
+
+def _prioritize_and_cap(slots: dict, citations: list[dict]) -> dict:
+    """슬롯별 우선순위 정렬 후 상한 적용 — 인계를 요약 분량으로.
+
+    우선순위: ①위험도(unstable>watcher) ②결정론적 신호 ③시간지정 처치
+    ④최신 사실(동순위 tie-breaker, citation ts 역순) ⑤원래 순서.
+    상한 초과분은 조용히 제외 — 인계는 핵심 선별이 본질이므로 별도 표기 안 함.
+    """
+    cite_ts: dict[str, float] = {}
+    for c in citations or []:
+        ts = _parse_epoch(c.get("ts"))
+        if ts is not None and c.get("id"):
+            cite_ts[c["id"]] = ts
+
+    for key, cap in _SLOT_CAPS.items():
+        slot = slots.get(key)
+        if not slot or not slot.get("items"):
+            continue
+        items = slot["items"]
+        if len(items) <= cap:
+            continue
+
+        def sort_key(pair):
+            idx, it = pair
+            sev = _SEV_RANK.get(it.get("severity_flag"), 2)
+            protected = 0 if it.get("kind") in _PROTECTED_KINDS else 1
+            has_tw = 0 if it.get("time_window") else 1
+            ids = it.get("citation_ids") or []
+            ts_vals = [cite_ts[c] for c in ids if c in cite_ts]
+            neg_ts = -max(ts_vals) if ts_vals else 0.0
+            return (sev, protected, has_tw, neg_ts, idx)
+
+        ranked = sorted(enumerate(items), key=sort_key)
+        slot["items"] = [it for _, it in ranked[:cap]]
+    return slots
 
 
 def _vitals_from_text(text: str) -> dict:

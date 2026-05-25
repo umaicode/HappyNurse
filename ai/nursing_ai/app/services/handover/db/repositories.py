@@ -83,29 +83,6 @@ class DBRecordRepository:
             attending_practitioner_id=str(row["attending_physician_id"]) if row.get("attending_physician_id") else None,
         )
 
-    async def fetch_latest_handover(self, encounter_id: str) -> dict | None:
-        """직전 ShiftHandover의 background + safety + scores 회수.
-        인계 체인을 통한 환자 프로필 영속화.
-        """
-        async with self._sf() as session:
-            result = await session.execute(text("""
-                SELECT auto_summary_json
-                FROM shift_handover
-                WHERE encounter_id = :eid
-                ORDER BY created_at DESC
-                LIMIT 1
-            """), {"eid": int(encounter_id)})
-            row = result.scalar_one_or_none()
-        if not row:
-            return None
-        payload = row if isinstance(row, dict) else {}
-        slots = payload.get("slots", {}) if isinstance(payload, dict) else {}
-        return {
-            "background_items": (slots.get("background", {}) or {}).get("items", []),
-            "safety_items": (slots.get("safety", {}) or {}).get("items", []),
-            "scores": payload.get("scores", []) if isinstance(payload, dict) else [],
-        }
-
     async def fetch_nfc_meds_in_window(
         self, encounter_id: str, start: datetime, end: datetime
     ) -> list[NfcMedRecord]:
