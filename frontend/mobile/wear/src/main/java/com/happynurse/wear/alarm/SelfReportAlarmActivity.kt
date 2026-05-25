@@ -1,4 +1,4 @@
-// SelfReportAlarmActivity — 환자요청(자가보고) 풀스크린 알람. priority=CRITICAL/HIGH 일 때만 띄움.
+// SelfReportAlarmActivity — 환자요청(자가보고) 풀스크린 알람. priority=CRITICAL 일 때만 띄움.
 // SttAlarmActivity 와 동일한 패턴: ringtone(짧게) → TTS, 진동 병행, 사운드 모드 존중.
 package com.happynurse.wear.alarm
 

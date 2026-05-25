@@ -72,9 +72,9 @@ class WearFirebaseMessagingService : FirebaseMessagingService() {
             sourceType == "self_report" -> {
                 val priority = data["priority"].orEmpty().trim().uppercase()
                 Log.d(TAG, "self_report 분기: priority='$priority'")
-                // 위급(CRITICAL) / 높음(HIGH) — 풀스크린 알람으로 즉시 띄움.
-                // 보통(MEDIUM) / 낮음(LOW) / 누락 — 기존대로 시스템 트레이만.
-                if (priority == "CRITICAL" || priority == "HIGH") {
+                // 위급(CRITICAL) — 풀스크린 알람으로 즉시 띄움.
+                // 높음(HIGH) / 보통(MEDIUM) / 낮음(LOW) / 누락 — 기존대로 시스템 트레이만.
+                if (priority == "CRITICAL") {
                     Log.d(TAG, "self_report 풀스크린 알람 트리거 — priority=$priority")
                     startSelfReportAlarm(title, body, priority, data)
                 } else {

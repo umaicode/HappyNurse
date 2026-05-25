@@ -69,16 +69,21 @@ class WearDataListenerService : WearableListenerService() {
     private fun handleSelfReportAlarm(data: ByteArray) {
         runCatching {
             val payload = Json.decodeFromString<SelfReportAlarmPayload>(data.decodeToString())
+            val priority = payload.priority.trim().uppercase()
             android.util.Log.d(
                 "WearListener",
-                "self_report 풀스크린 알람 트리거 — priority=${payload.priority} patient=${payload.patientName}",
+                "self_report 수신 — priority=$priority patient=${payload.patientName}",
             )
+            if (priority != "CRITICAL") {
+                android.util.Log.d("WearListener", "self_report 풀스크린 알람 스킵 — priority=$priority")
+                return@runCatching
+            }
             val intent = Intent(this, SelfReportAlarmActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 putExtra(SelfReportAlarmActivity.EXTRA_PATIENT, payload.patientName)
                 putExtra(SelfReportAlarmActivity.EXTRA_ROOM, payload.roomLocation)
                 putExtra(SelfReportAlarmActivity.EXTRA_BODY, payload.body)
-                putExtra(SelfReportAlarmActivity.EXTRA_PRIORITY, payload.priority)
+                putExtra(SelfReportAlarmActivity.EXTRA_PRIORITY, priority)
             }
             startActivity(intent)
         }.onFailure {
