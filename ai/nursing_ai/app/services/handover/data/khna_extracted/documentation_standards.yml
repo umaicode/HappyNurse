@@ -1,0 +1,115 @@
+version: "2026.05.24"
+note: "환자군별 nursing_record에 반드시 포함되어야 할 사정 항목. 데이터 갭 ALERT 정교화용."
+
+required_assessments_by_condition:
+  fall_high_risk:
+    source: "병원간호사회. 낙상관리 임상간호실무지침. 권고 III-1.5~III-1.11."
+    initial_24h:
+      - 낙상_과거력_3개월
+      - 기동성_보행장애_평가
+      - 보행보조기구_사용여부
+      - 인지장애_MMSE
+      - 감각기능_시력_청력
+    per_shift:
+      - 기립성저혈압_위험
+      - 환경안전점검
+      - 라운딩
+    rounding_frequency_moderate: "2시간"
+    rounding_frequency_high: "1시간"
+
+  vte_high_risk:
+    source: "병원간호사회. 정맥혈전색전증 예방간호 임상간호실무지침(2023)."
+    initial:
+      - Caprini_점수_계산
+      - HAS_BLED_점수_계산_항응고제_적응
+      - 말초동맥질환_여부_PAD
+    per_shift:
+      - 환측_하지_부종_발적_열감
+      - Homan_sign
+      - 기계적예방_적용_확인_IPC_SCD_GCS_AES
+
+  pain_active:
+    source: "병원간호사회. 통증간호 임상간호실무지침. 권고 23-32."
+    initial:
+      - 통증_사정도구_선택
+      - 통증_부위_강도_양상
+    per_episode:
+      - NRS_점수
+      - 발생시각
+      - 진통제_투여시각
+      - 재평가_30분후
+    intervention_adequacy_threshold_nrs: 4
+
+  iv_peripheral:
+    source: "병원간호사회. 말초정맥 주입요법 임상간호실무지침(2024 개정)."
+    per_shift_minimum:
+      - 삽입부위_발적_부종_침윤
+      - 정맥염_등급_Phlebitis_Scale
+      - 카테터_고정상태
+      - 드레싱_청결
+      - 주입속도_확인
+
+  iv_central:
+    source: "병원간호사회. 중심정맥 주입요법 임상간호실무지침(2023 개정)."
+    per_shift_minimum:
+      - 삽입부위_상태
+      - 드레싱_청결_CHG_권장
+      - 카테터_삽입길이
+      - 폐색_여부
+    daily:
+      - 카테터_필요성_평가_CLABSI_번들
+
+  enteral_nutrition:
+    source: "병원간호사회. 경장영양 임상간호실무지침(2019 개정)."
+    per_shift_minimum:
+      - HOB_30_45도_유지
+      - 위잔여량_GRV_확인
+      - 연하상태_평가
+      - 흡인_징후_관찰
+
+  ostomy:
+    source: "병원간호사회. 장루간호 임상간호실무지침."
+    per_shift_minimum:
+      - 장루_색깔_분홍_정상_보라_검정_비정상
+      - 배액_양_성상
+      - 주위피부_자극_발적
+      - 봉합부위
+
+  artificial_airway:
+    source: "병원간호사회. 인공기도 흡인간호 임상간호실무지침."
+    pre_suction:
+      - 활력_SpO2_확인
+    suction_parameters:
+      pressure_range: "-80 ~ -150 mmHg"
+      max_duration_seconds: 15
+    post_suction:
+      - SpO2_회복_확인
+      - 분비물_양_성상_색
+
+  indwelling_catheter:
+    source: "병원간호사회. 유치도뇨 간호 임상간호실무지침(2023 개정)."
+    per_shift_minimum:
+      - 적응증_재평가
+      - 폐쇄_배뇨_시스템_유지
+      - 요도구_청결
+      - 소변_양_성상_색
+      - 카테터_고정_상태
+
+post_fall_protocol:
+  source: "병원간호사회. 낙상관리 임상간호실무지침. 권고 III-3.1~III-3.6."
+  immediate:
+    - GCS_의식상태_사정
+    - 활력징후_BP_HR_RR_SpO2
+    - 외상부위_관찰
+    - 척추손상_가능성_평가
+    - 골절_징후_확인
+  after_4_hours:
+    - GCS_재측정
+    - 활력_재측정
+    - 통증_사정
+    - 추가_진단_X_ray_CT_검토
+  documentation:
+    - 낙상_발생_시각
+    - 낙상_장소
+    - 목격_여부
+    - 부상_여부_부위

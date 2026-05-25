@@ -33,6 +33,14 @@ class EncounterStatic:
     isolation: str
     dnr: str
     high_alert_meds: list[str]
+    # 확장 필드 (encounter 테이블 활용)
+    age: int | None = None
+    department_code: str | None = None
+    chief_complaint: str | None = None
+    patient_name: str | None = None
+    mrn: str | None = None
+    room_label: str | None = None
+    attending_practitioner_id: str | None = None
 
 
 @dataclass
@@ -44,12 +52,14 @@ class LoadedContext:
     tier3_records: list[NursingRecord] = field(default_factory=list)
     last_record_ts: datetime | None = None
     tiers_used: list[str] = field(default_factory=lambda: ["tier1", "tier2"])
+    prior_handover_facts: dict | None = None  # 이전 ShiftHandover 인계 체인
 
 
 class RecordRepository(Protocol):
     async def fetch_records_in_window(self, encounter_id: str, start: datetime, end: datetime) -> list[NursingRecord]: ...
     async def fetch_static_facts(self, encounter_id: str) -> EncounterStatic: ...
     async def fetch_nfc_meds_in_window(self, encounter_id: str, start: datetime, end: datetime) -> list[NfcMedRecord]: ...
+    async def fetch_latest_handover(self, encounter_id: str) -> dict | None: ...
 
 
 class RecordLoader:
@@ -59,10 +69,20 @@ class RecordLoader:
     async def load(self, *, encounter_id: str, shift_start: datetime, shift_end: datetime) -> LoadedContext:
         tier1 = await self._repo.fetch_records_in_window(encounter_id, shift_start, shift_end)
         tier2 = await self._repo.fetch_static_facts(encounter_id)
+        # 인계 체인 — 이전 ShiftHandover의 background·safety·scores 인입
+        prior = None
+        if hasattr(self._repo, "fetch_latest_handover"):
+            try:
+                prior = await self._repo.fetch_latest_handover(encounter_id)
+            except Exception:
+                prior = None
         text = "\n".join(f"[{r.ts.isoformat()}|{r.record_id}] {r.text}" for r in tier1)
         last_ts = max((r.ts for r in tier1), default=None)
-        return LoadedContext(tier1_text=text, tier1_records=list(tier1),
-                             tier2=tier2, last_record_ts=last_ts)
+        return LoadedContext(
+            tier1_text=text, tier1_records=list(tier1),
+            tier2=tier2, last_record_ts=last_ts,
+            prior_handover_facts=prior,
+        )
 
     async def load_nfc_meds(self, *, encounter_id: str, shift_start: datetime, shift_end: datetime) -> list[NfcMedRecord]:
         return await self._repo.fetch_nfc_meds_in_window(encounter_id, shift_start, shift_end)

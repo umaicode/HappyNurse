@@ -1,0 +1,64 @@
+version: "2026.05.24"
+source: "5 W's of Postoperative Fever (Surgical Literature). 시점별 감별진단 후보 분류만 — 진단·권고 X."
+note: "이 표는 임상가 평가의 보조 reference. 시스템은 시점·증상 매칭만 표시하고 진단을 만들지 않음."
+
+postoperative_fever_5ws:
+  - pod_range: "POD 1-2"
+    category: Wind
+    common_causes_korean: [무기폐, 폐렴]
+    associated_findings:
+      - "호흡음 감소"
+      - "SpO2 저하"
+      - "객담"
+      - "호흡곤란"
+      - "rales"
+      - "수포음"
+      - "기침"
+    suggested_assessment_reference: 호흡음_청진_심호흡_격려_KHNA_구강간호_VAP번들
+
+  - pod_range: "POD 3-5"
+    category: Water
+    common_causes_korean: [요로감염, UTI]
+    associated_findings:
+      - "Foley 유지"
+      - "혼탁뇨"
+      - "혈뇨"
+      - "배뇨통"
+      - "소변량 감소"
+      - "탁한 소변"
+    suggested_assessment_reference: 소변_성상_확인_KHNA_유치도뇨_CAUTI번들
+
+  - pod_range: "POD 4-6"
+    category: Wound
+    common_causes_korean: [수술부위 감염, SSI]
+    associated_findings:
+      - "수술부위 발적"
+      - "수술부위 부종"
+      - "삼출"
+      - "화농성 배액"
+      - "압통"
+      - "wound dehiscence"
+    suggested_assessment_reference: 수술부위_사정_드레싱_상태_확인
+
+  - pod_range: "POD 5-7"
+    category: Walking
+    common_causes_korean: [심부정맥혈전증, DVT, 폐색전증, PE]
+    associated_findings:
+      - "종아리 부종"
+      - "종아리 발적"
+      - "Homan sign"
+      - "환측 하지 통증"
+      - "다리 무거움"
+      - "갑작스러운 호흡곤란"
+      - "흉통"
+    suggested_assessment_reference: KHNA_VTE_예방간호_권고안
+
+  - pod_range: "POD 7+"
+    category: Wonder_drugs
+    common_causes_korean: [약물열, drug fever]
+    associated_findings:
+      - "약물 변경 후 발열"
+      - "다른 감염원 배제"
+      - "약물 알레르기"
+      - "백혈구 증가 없는 발열"
+    suggested_assessment_reference: 의사_보고_약물검토_권장

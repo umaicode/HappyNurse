@@ -1,0 +1,60 @@
+version: "2026.05.24"
+source_authority: "병원간호사회(KHNA) 임상간호실무지침"
+
+classifications:
+  fall_risk:
+    source: "병원간호사회. 낙상관리 임상간호실무지침. 도구 2 (Morse Fall Scale)."
+    score_to_label:
+      - {score_range: "0-24", label: low_risk_for_fall, ui_color: green, ui_severity: stable}
+      - {score_range: "25-44", label: moderate_risk_for_fall, ui_color: yellow, ui_severity: watcher}
+      - {score_range: "≥45", label: high_risk_for_fall, ui_color: red, ui_severity: unstable}
+    rounding_frequency:
+      moderate: "2시간 간격"
+      high: "1시간 간격"
+      source_quote: "정규순회는 2시간 간격으로, 고위험 환자를 대상으로 하는 특별순회는 1시간 간격으로 시행한다."
+
+  vte_risk:
+    source: "병원간호사회. 정맥혈전색전증 예방간호 임상간호실무지침(2023)."
+    score_to_label:
+      - {score_range: "0-1", label: very_low_risk_VTE, ui_color: green, ui_severity: stable}
+      - {score_range: "2", label: low_risk_VTE, ui_color: green, ui_severity: stable}
+      - {score_range: "3-4", label: moderate_risk_VTE, ui_color: yellow, ui_severity: watcher}
+      - {score_range: "≥5", label: high_risk_VTE, ui_color: red, ui_severity: unstable}
+
+  pain_intensity:
+    source: "병원간호사회. 통증간호 임상간호실무지침."
+    score_to_label:
+      - {score_range: "0", label: no_pain, ui_color: green}
+      - {score_range: "1-3", label: mild_pain, ui_color: green, intervention_recommended: false}
+      - {score_range: "4-6", label: moderate_pain, ui_color: yellow, ui_severity: watcher, intervention_recommended: true}
+      - {score_range: "7-10", label: severe_pain, ui_color: red, ui_severity: unstable, intervention_recommended: true}
+    intervention_threshold_nrs: 4
+    note: "NRS ≥4 시 적극적 통증 조절 권장 (KHNA 통증간호 지침)"
+
+  gcs:
+    source: "병원간호사회. 낙상관리 임상간호실무지침. 권고 III-3.1. + Teasdale 1974."
+    score_to_label:
+      - {score_range: "13-15", label: mild_injury_alert, ui_color: green, ui_severity: stable}
+      - {score_range: "9-12", label: moderate_injury, ui_color: yellow, ui_severity: watcher}
+      - {score_range: "3-8", label: severe_injury_coma, ui_color: red, ui_severity: unstable, action: 기도확보_고려}
+
+  news2:
+    source: "Royal College of Physicians. NEWS2. London: RCP, 2017."
+    score_to_label:
+      - {score_range: "0-4", label: low_risk, ui_color: green, ui_severity: stable}
+      - {score_range: "5-6", label: moderate_risk, ui_color: yellow, ui_severity: watcher}
+      - {score_range: "≥7", label: high_risk_clinical_deterioration, ui_color: red, ui_severity: unstable}
+
+  qsofa:
+    source: "Singer M et al. JAMA 2016. Sepsis-3."
+    score_to_label:
+      - {score_range: "0-1", label: negative_for_sepsis, ui_color: green, ui_severity: stable}
+      - {score_range: "≥2", label: positive_sepsis_possible, ui_color: red, ui_severity: unstable, action: 패혈증_평가_시행}
+
+  braden:
+    source: "병원간호사회. 욕창간호 임상간호실무지침(2022). + Bergstrom 1987."
+    score_to_label:
+      - {score_range: "≤12", label: high_risk_pressure_injury, ui_color: red, ui_severity: unstable}
+      - {score_range: "13-14", label: moderate_risk_pressure_injury, ui_color: yellow, ui_severity: watcher}
+      - {score_range: "15-18", label: mild_risk_pressure_injury, ui_color: green, ui_severity: stable}
+      - {score_range: "≥19", label: no_significant_risk, ui_color: green, ui_severity: stable}

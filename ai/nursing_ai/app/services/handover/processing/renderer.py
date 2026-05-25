@@ -16,28 +16,39 @@ _SEVERITY_BADGE = {
 }
 
 
+def _severity_prefix(item: dict) -> str:
+    sev = item.get("severity_flag")
+    if sev == "unstable":
+        return "🔴 "
+    if sev == "watcher":
+        return "🟡 "
+    return ""
+
+
 def _item_line(item: dict, slot_key: str) -> str:
     text = item.get("value") or item.get("quote") or ""
     cites = ",".join(item.get("citation_ids", []))
     cite_str = f" [출처:{cites}]" if cites else ""
+    sev = _severity_prefix(item)
 
     if slot_key == "synthesis":
-        return f"□ {text}"
+        return f"□ {sev}{text}"
 
     if slot_key == "action":
         tw = item.get("time_window")
         if tw and tw != "PRN":
-            return f"⏰ {tw}  {text}{cite_str}"
+            return f"⏰ {tw}  {sev}{text}{cite_str}"
         if tw == "PRN":
-            return f"⚠️ PRN  {text}{cite_str}"
-        return f"- {text}{cite_str}"
+            return f"⚠️ PRN  {sev}{text}{cite_str}"
+        return f"- {sev}{text}{cite_str}"
 
     if slot_key == "recommendation":
         contingency = item.get("contingency")
         if contingency:
-            return f"  {contingency}{cite_str}"
+            # 버그 수정: value(text)도 함께 출력
+            return f"- {sev}{text}\n  └ {contingency}{cite_str}"
 
-    return f"- {text}{cite_str}"
+    return f"- {sev}{text}{cite_str}"
 
 
 def render_markdown(payload: dict) -> str:
@@ -50,6 +61,9 @@ def render_markdown(payload: dict) -> str:
         f"## [I] 중증도: {badge}",
         "",
     ]
+
+    # 임상 스코어는 pipeline에서 I-PASS-BAR 슬롯(assessment/safety)에 통합되므로
+    # 별도 섹션을 렌더하지 않음. payload["scores"]는 프론트 호환용으로 유지.
 
     partial_slots: list[str] = []
     for key, title in SLOT_TITLES:
