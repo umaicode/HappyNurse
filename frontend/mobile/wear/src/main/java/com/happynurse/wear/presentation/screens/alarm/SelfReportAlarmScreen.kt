@@ -1,5 +1,6 @@
-// SelfReportAlarmScreen — 환자요청 위급/높음 풀스크린 알람.
-// InfiniteTransition 으로 빨간 배경 알파를 0.4↔1.0 반복(450ms) — 깜빡거리는 경고 효과.
+// SelfReportAlarmScreen — 환자요청 풀스크린 알람.
+// CRITICAL: 빨간 배경 + 깜빡임(0.4↔1.0, 450ms) — 경고 강조.
+// non-CRITICAL: STT 알람과 동일한 HnFullScreenAlarmScaffold 레이아웃.
 package com.happynurse.wear.presentation.screens.alarm
 
 import androidx.compose.animation.core.LinearEasing
@@ -35,6 +36,7 @@ import androidx.wear.compose.material3.EdgeButtonSize
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.happynurse.wear.presentation.components.HnFullScreenAlarmScaffold
 
 @Composable
 fun SelfReportAlarmScreen(
@@ -45,8 +47,31 @@ fun SelfReportAlarmScreen(
     onDismiss: () -> Unit,
 ) {
     val isCritical = priority.equals("CRITICAL", ignoreCase = true)
-    val baseColor = if (isCritical) Color(0xFFD32F2F) else Color(0xFFE1685F)
 
+    if (!isCritical) {
+        HnFullScreenAlarmScaffold(
+            content = body,
+            patientName = patientName,
+            roomBedTime = roomLocation,
+            bottomButton = {
+                EdgeButton(
+                    onClick = onDismiss,
+                    modifier = Modifier,
+                    buttonSize = EdgeButtonSize.Small,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Check,
+                        contentDescription = "확인",
+                        tint = Color.White,
+                        modifier = Modifier.size(36.dp),
+                    )
+                }
+            },
+        )
+        return
+    }
+
+    val baseColor = Color(0xFFD32F2F)
     val infinite = rememberInfiniteTransition(label = "self-report-flash")
     val alpha by infinite.animateFloat(
         initialValue = 0.40f,
@@ -71,7 +96,7 @@ fun SelfReportAlarmScreen(
             verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
         ) {
             Text(
-                text = if (isCritical) "위급" else "높음",
+                text = "위급",
                 style = MaterialTheme.typography.labelMedium,
                 color = Color.White,
                 fontWeight = FontWeight.Bold,

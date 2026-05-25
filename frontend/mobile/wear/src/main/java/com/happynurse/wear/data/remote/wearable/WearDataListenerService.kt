@@ -12,6 +12,7 @@ import com.happynurse.wear.data.remote.model.WearNotificationPayload
 import com.happynurse.wear.data.remote.WearTokenStore
 import android.content.Intent
 import com.happynurse.wear.alarm.SelfReportAlarmActivity
+import com.happynurse.wear.alarm.SelfReportAlarmNotifier
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -74,18 +75,24 @@ class WearDataListenerService : WearableListenerService() {
                 "WearListener",
                 "self_report 수신 — priority=$priority patient=${payload.patientName}",
             )
-            if (priority != "CRITICAL") {
-                android.util.Log.d("WearListener", "self_report 풀스크린 알람 스킵 — priority=$priority")
-                return@runCatching
+            if (priority == "CRITICAL") {
+                val intent = Intent(this, SelfReportAlarmActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    putExtra(SelfReportAlarmActivity.EXTRA_PATIENT, payload.patientName)
+                    putExtra(SelfReportAlarmActivity.EXTRA_ROOM, payload.roomLocation)
+                    putExtra(SelfReportAlarmActivity.EXTRA_BODY, payload.body)
+                    putExtra(SelfReportAlarmActivity.EXTRA_PRIORITY, priority)
+                }
+                startActivity(intent)
+            } else {
+                SelfReportAlarmNotifier.showFullScreen(
+                    context = this,
+                    patient = payload.patientName,
+                    room = payload.roomLocation,
+                    body = payload.body,
+                    priority = priority,
+                )
             }
-            val intent = Intent(this, SelfReportAlarmActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                putExtra(SelfReportAlarmActivity.EXTRA_PATIENT, payload.patientName)
-                putExtra(SelfReportAlarmActivity.EXTRA_ROOM, payload.roomLocation)
-                putExtra(SelfReportAlarmActivity.EXTRA_BODY, payload.body)
-                putExtra(SelfReportAlarmActivity.EXTRA_PRIORITY, priority)
-            }
-            startActivity(intent)
         }.onFailure {
             android.util.Log.e("WearListener", "self_report 알람 페이로드 처리 실패", it)
         }
