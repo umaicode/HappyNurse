@@ -44,11 +44,9 @@ class DBRecordRepository:
                         e.department_code, e.chief_complaint,
                         e.name AS patient_name,
                         e.attending_physician_id,
-                        p.identifier_value AS mrn,
-                        r.name AS room_name
+                        p.identifier_value AS mrn
                 FROM encounter e
                 LEFT JOIN patient p ON e.patient_id = p.patient_id
-                LEFT JOIN room r ON e.room_id = r.room_id
                 WHERE e.encounter_id = :eid
             """), {"eid": int(encounter_id)})
             row = result.mappings().first()
@@ -64,12 +62,7 @@ class DBRecordRepository:
 
         hd = _calc_hd(row.get("period_start"))
         age = _calc_age(row.get("birth_date"))
-        room_label = None
-        if row.get("room_name"):
-            bed = row.get("bed_name", "")
-            room_label = f"{row['room_name']}-{bed}" if bed else row["room_name"]
-        elif row.get("bed_name"):
-            room_label = row["bed_name"]
+        room_label = row.get("bed_name")
 
         return EncounterStatic(
             encounter_id=encounter_id,
