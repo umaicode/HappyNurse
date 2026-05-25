@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -327,6 +328,7 @@ datetime.now(timezone.utc).isoformat()),
         logger.warning("KHNA 통합 모듈 처리 실패 [encounter=%s]: %s", encounter_id, e)
         raw.setdefault("scores", [])
 
+    raw["slots"] = _dedup_across_slots(raw["slots"])
     raw["slots"] = _prioritize_and_cap(raw["slots"], raw.get("citations", []))
 
     raw["meta"] = {
@@ -416,6 +418,45 @@ def _prioritize_and_cap(slots: dict, citations: list[dict]) -> dict:
 
         ranked = sorted(enumerate(items), key=sort_key)
         slot["items"] = [it for _, it in ranked[:cap]]
+    return slots
+
+
+# 슬롯 간 중복 제거 대상 (synthesis 체크리스트는 핵심 재진술이 목적이라 제외)
+_DEDUP_SLOT_PRIORITY = [
+    "safety", "recommendation", "action", "assessment",
+    "situation", "patient_problem", "background",
+]
+
+
+def _norm_tokens(text: str) -> set[str]:
+    return set(re.findall(r"[가-힣A-Za-z0-9]+", (text or "").lower()))
+
+
+def _dedup_across_slots(slots: dict) -> dict:
+    """우선순위 높은 슬롯부터 훑어, 같은 인용을 공유하면서 토큰이 다수 겹치는
+    항목을 후순위 슬롯에서 제거. (조건부 PRN 등이 평가·조치·권고에 중복되는 문제 완화)
+
+    판정: citation 공유 AND 토큰 60% 이상 겹침 → 중복. synthesis 는 제외.
+    인용이 없는 항목(IV 등, citation_ids=[])은 교집합이 비어 절대 제거되지 않음 — 보수적.
+    """
+    seen: list[tuple[set[str], set[str]]] = []  # (토큰셋, citation셋)
+    for key in _DEDUP_SLOT_PRIORITY:
+        slot = slots.get(key)
+        if not slot or not slot.get("items"):
+            continue
+        kept = []
+        for it in slot["items"]:
+            toks = _norm_tokens(it.get("value") or it.get("quote") or "")
+            cites = set(it.get("citation_ids") or [])
+            is_dup = any(
+                (cites & p_cites) and toks and len(toks & p_toks) / len(toks) >= 0.6
+                for p_toks, p_cites in seen
+            )
+            if is_dup:
+                continue
+            kept.append(it)
+            seen.append((toks, cites))
+        slot["items"] = kept
     return slots
 
 

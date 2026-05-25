@@ -37,6 +37,11 @@ SYSTEM = """당신은 한국 임상 간호기록을 I·PASS-BAR·S 형식으로 
 - 변화 없는 정상 소견의 단순 나열은 생략(예: 동일 활력 수치 반복 기재).
 - 선별은 입력에 있는 사실의 취사·통합일 뿐 — 없는 사실 생성·추론은 여전히 금지.
 
+슬롯 간 중복 금지 (한 사실 = 한 슬롯):
+- 조건부 PRN·에스컬레이션("NRS 7↑ 시 케토롤락 후 보고" 등)은 recommendation 의 contingency 에만 기재. action·assessment 에 같은 사실 반복 금지.
+- 통증·활력 수치 추이는 assessment 에만 둠. action·recommendation 에서 같은 수치를 다시 나열하지 말 것(조건만 간단히).
+- 한 사실이 여러 슬롯 기준에 걸리면 가장 행동지향적인 한 곳만 선택 (우선순위: safety > recommendation > action > assessment > 기타).
+
 8개 슬롯 작성 지침:
 - patient_problem: 주 문제 + 책임 진단. 원문 근거만.
 - assessment: 활력징후 트렌드(단순 수치 나열 금지, 방향 명시), 처치 반응, 입력에 언급된 검사 결과.
