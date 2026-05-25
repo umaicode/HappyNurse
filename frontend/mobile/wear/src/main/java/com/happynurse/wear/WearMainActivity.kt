@@ -5,6 +5,7 @@ package com.happynurse.wear
 import android.app.NotificationManager
 import android.content.Intent
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
@@ -29,7 +30,12 @@ class WearMainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setShowWhenLocked(true)
         setTurnScreenOn(true)
-        consumeAutoRecordExtra(intent)?.let { ts -> gestureRecordRequest.value = ts }
+        consumeAutoRecordExtra(intent)?.let { ts ->
+            gestureRecordRequest.value = ts
+            // 제스처 진입 직후 ~수백ms 동안 RecordScreen DisposableEffect 가 아직 안 붙은 공백 구간에
+            // Wear OS inactivity timer 가 화면을 끄는 race 차단. 이후 RecordScreen 의 phase 기반 제어가 인수.
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
         setContent {
             HappyNurseWearTheme {
                 val navController = rememberSwipeDismissableNavController()
@@ -46,7 +52,10 @@ class WearMainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        consumeAutoRecordExtra(intent)?.let { ts -> gestureRecordRequest.value = ts }
+        consumeAutoRecordExtra(intent)?.let { ts ->
+            gestureRecordRequest.value = ts
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
     }
 
     /**

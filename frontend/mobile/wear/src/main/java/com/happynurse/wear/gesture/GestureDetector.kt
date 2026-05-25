@@ -150,18 +150,22 @@ class GestureDetector @Inject constructor(
         const val SAMPLING_PERIOD_US = SensorManager.SENSOR_DELAY_GAME
 
         // 손목 회전 각속도 임계값 (rad/s). DOUBLE_SNAP / SINGLE_SNAP 동일.
-        const val GYRO_PEAK_THRESHOLD = 10.0f
+        // 일상 손목 동작(시계 보기 등)과 의도적 비틀기 구분 — 확실히 빠른 회전만 인정.
+        const val GYRO_PEAK_THRESHOLD = 14.0f
 
-        // 한 peak 의 진동 구간을 한 peak 로 묶기 위한 짧은 불응기.
-        const val PEAK_REFRACTORY_MS = 120L
+        // 한 peak 의 진동 구간을 한 peak 로 묶기 위한 불응기.
+        // 1회 회전 시 발생하는 시작 peak + 정지 반작용 peak 를 한 peak 로 흡수해
+        // "1회 동작이 2회로 오감지" 되는 문제 차단.
+        const val PEAK_REFRACTORY_MS = 250L
 
         // DOUBLE_SNAP 두 peak 사이 허용 시간. 방향 무관, 빠른 두 번 비틀기를 모두 흡수.
-        const val MIN_GAP_MS = 180L
+        // MIN_GAP 은 의도적 2회 비틀기 간격(보통 300~500ms) 은 통과시키되 1회 동작의 반작용은 거름.
+        const val MIN_GAP_MS = 280L
         const val MAX_GAP_MS = 700L
 
         // DOUBLE_SNAP 다축 정지 가드 — |gy|+|gz| 가 이 값 이하일 때만 X축 peak 인정.
-        // SingleSnap 가드(5.0f)보다 살짝 완화 — 더블 동작 중 사소한 다축 흔들림은 허용.
-        const val DOUBLE_SNAP_MULTI_AXIS_THRESHOLD = 7.0f
+        // 팔 들기/시계 보기 시 함께 도는 y/z 회전을 더 엄격히 필터.
+        const val DOUBLE_SNAP_MULTI_AXIS_THRESHOLD = 5.5f
 
         // DOUBLE_SNAP 이중 발화 방지
         const val EMIT_COOLDOWN_MS = 2_000L
