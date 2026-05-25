@@ -48,9 +48,14 @@ async def generate(current_user: dict = Depends(get_current_user)):
 async def _run_job(job_id: str, practitioner_id: str, encounter_ids: list[str]):
     from datetime import datetime, timezone, timedelta
     from app.services.handover.coordination.roster_summary import assemble_roster
-    now = datetime.now(timezone.utc)
-    shift = (now - timedelta(hours=8), now)
-    prev = (now - timedelta(hours=16), now - timedelta(hours=8))
+    # 인계 대상 = 전날(어제) 하루. KST 기준 어제 00:00 ~ 오늘 00:00.
+    # 예: 5/26 실행 시 5/25 기록 전체를 인계 (야간/주간 시프트 모두 포함).
+    # (기존: 실행 시각 직전 8시간 시프트 — 데이터 시각을 실행 시각에 맞춰야 했음)
+    KST = timezone(timedelta(hours=9))
+    now_kst = datetime.now(KST).replace(tzinfo=None)
+    today_midnight = now_kst.replace(hour=0, minute=0, second=0, microsecond=0)
+    shift = (today_midnight - timedelta(days=1), today_midnight)                       # 어제 하루
+    prev = (today_midnight - timedelta(days=2), today_midnight - timedelta(days=1))     # 그제 하루
 
     async def one(enc_id: str):
         await _job_coordinator.emit_progress(job_id, enc_id, "started")

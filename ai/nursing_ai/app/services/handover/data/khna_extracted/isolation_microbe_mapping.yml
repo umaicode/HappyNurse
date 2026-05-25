@@ -1,0 +1,57 @@
+version: "2026.05.24"
+source: "병원간호사회. 의료기관의 격리주의지침."
+
+isolation_types:
+  contact:
+    label: 접촉주의
+    ppe: [장갑, 가운]
+    microbes:
+      - {pattern: "MRSA|methicillin.*resistant.*staph", name: "MRSA"}
+      - {pattern: "VRE|vancomycin.*resistant", name: "VRE"}
+      - {pattern: "CRE|carbapenem.*resistant", name: "CRE"}
+      - {pattern: "C[\\s.]*diff(icile)?|Clostridi", name: "C. difficile"}
+      - {pattern: "MDR|다제내성", name: "다제내성균"}
+      - {pattern: "옴|scabies", name: "옴"}
+      - {pattern: "RSV|호흡기세포융합", name: "RSV"}
+      - {pattern: "rotavirus|로타바이러스", name: "로타바이러스"}
+      - {pattern: "norovirus|노로바이러스", name: "노로바이러스"}
+      - {pattern: "ESBL|extended.*spectrum.*beta.*lactamase", name: "ESBL"}
+
+  droplet:
+    label: 비말주의
+    ppe: [수술용마스크]
+    microbes:
+      - {pattern: "인플루엔자|influenza", name: "인플루엔자"}
+      - {pattern: "Bordetella|pertussis|백일해", name: "백일해"}
+      - {pattern: "Neisseria meningitidis|수막구균", name: "수막구균"}
+      - {pattern: "Haemophilus influenzae type B|Hib", name: "Hib"}
+      - {pattern: "Mycoplasma pneumoniae|마이코플라스마", name: "Mycoplasma pneumonia"}
+      - {pattern: "rubella|풍진", name: "풍진"}
+      - {pattern: "mumps|볼거리|이하선염", name: "이하선염"}
+      - {pattern: "성홍열|scarlet fever", name: "성홍열"}
+      - {pattern: "diphtheria|디프테리아", name: "디프테리아"}
+
+  airborne:
+    label: 공기주의
+    ppe: [N95_마스크, 음압격리실]
+    microbes:
+      - {pattern: "T[Bb]\\b|tuberculosis|결핵|tubercle bacilli|AFB", name: "결핵"}
+      - {pattern: "varicella|수두|VZV", name: "수두/대상포진(파종성)"}
+      - {pattern: "measles|홍역|rubeola", name: "홍역"}
+      - {pattern: "SARS|MERS|COVID|코로나", name: "신종 호흡기 감염"}
+      - {pattern: "smallpox|두창", name: "두창"}
+
+  reverse_isolation:
+    label: 역격리_보호격리
+    purpose: 면역저하_환자_보호
+    indications:
+      - {pattern: "neutropenia|호중구감소|ANC.{0,5}500", name: "심한 호중구감소증"}
+      - {pattern: "골수이식|stem cell transplant|SCT|BMT", name: "골수/조혈모세포 이식 후"}
+      - {pattern: "agranulocytosis|무과립구증", name: "무과립구증"}
+      - {pattern: "포괄적 면역억제|severe immunosuppression", name: "중증 면역억제 상태"}
+
+release_criteria_examples:
+  mrsa: "3회 연속 음성 배양 (최소 1주 간격)"
+  cdiff: "증상 소실 후 48시간 + 정상 배변"
+  tb: "3회 연속 객담 도말 음성 + 적정 치료 시작"
+  vre: "3회 연속 음성 직장 배양 (최소 1주 간격)"

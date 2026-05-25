@@ -1,0 +1,174 @@
+version: "2026.05.24"
+source_authority: "병원간호사회(KHNA) 근거기반 임상간호실무지침"
+
+scales:
+  morse_fall_scale:
+    name_ko: Morse 낙상 위험 사정 도구
+    name_en: Morse Fall Scale
+    sources:
+      - "병원간호사회. 낙상관리 임상간호실무지침. 도구 2."
+      - "Morse JM, Black C, Oberle K. Development of a scale to identify the fall-prone patient. Can J Aging. 1989;8(4):366-77."
+    items:
+      - id: fall_history
+        label: 낙상 과거력 (최근 또는 과거)
+        scores: {no: 0, yes: 25}
+      - id: secondary_diagnosis
+        label: 이차진단명 (≥2 의무기록 등록)
+        scores: {no: 0, yes: 15}
+      - id: ambulation_aid
+        label: 보행보조기구
+        scores: {none_or_bedrest: 0, walker_or_cane: 15, furniture_holding: 30}
+      - id: iv_or_heparin_lock
+        label: 정맥주사/헤파린락
+        scores: {no: 0, yes: 20}
+      - id: gait
+        label: 걸음걸이
+        scores: {normal_or_bedrest: 0, weak: 10, impaired: 20}
+      - id: mental_status
+        label: 정신상태
+        scores: {oriented: 0, forgets_or_overestimates: 15}
+    cutoffs:
+      low_risk: {range: "0-24", label: 저위험}
+      moderate_risk: {range: "25-44", label: 중간위험}
+      high_risk: {range: "≥45", label: 고위험}
+    sensitivity_range: "0.72-0.96"
+    specificity_range: "0.51-0.83"
+    reassessment_triggers:
+      - admission_within_24h
+      - on_transfer
+      - after_fall
+      - status_change
+      - patient_request
+
+  caprini_ram:
+    name_ko: Caprini 정맥혈전색전증 위험 평가
+    name_en: Caprini Risk Assessment Model
+    sources:
+      - "병원간호사회. 정맥혈전색전증 예방간호 임상간호실무지침(2023 개정)."
+      - "Caprini JA. Risk assessment as a guide for the prevention of the many faces of venous thromboembolism. Am J Surg. 2010;199(1 Suppl):S3-10."
+      - "Bahl V, Hu HM, Henke PK, et al. Ann Surg. 2010;251(2):344-50."
+    cutoffs:
+      very_low: {range: "0-1", label: 매우낮음}
+      low: {range: "2", label: 낮음}
+      moderate: {range: "3-4", label: 중등도}
+      high: {range: "≥5", label: 고위험}
+    mechanical_prophylaxis_devices:
+      - {id: IPC, name: 간헐적 공기압박장치}
+      - {id: SCD, name: 순차적 압박장치}
+      - {id: GCS, name: 점진적 압박스타킹}
+      - {id: AES, name: 항혈전스타킹}
+      - {id: FID, name: 발 임펄스 장치}
+    contraindication_PAD: "말초동맥질환자는 발 임펄스 장치 우선 (압박장치 금기)"
+    age_scoring:
+      - {range: "<41", points: 0}
+      - {range: "41-60", points: 1}
+      - {range: "61-74", points: 2}
+      - {range: "≥75", points: 3}
+
+  news2:
+    name_ko: National Early Warning Score 2
+    name_en: NEWS2
+    sources:
+      - "Royal College of Physicians. National Early Warning Score (NEWS) 2. London: RCP, 2017."
+    scoring:
+      rr:
+        - {range: "≤8", points: 3}
+        - {range: "9-11", points: 1}
+        - {range: "12-20", points: 0}
+        - {range: "21-24", points: 2}
+        - {range: "≥25", points: 3}
+      spo2:
+        - {range: "≤91", points: 3}
+        - {range: "92-93", points: 2}
+        - {range: "94-95", points: 1}
+        - {range: "≥96", points: 0}
+      supplemental_o2:
+        - {value: false, points: 0}
+        - {value: true, points: 2}
+      temp:
+        - {range: "≤35.0", points: 3}
+        - {range: "35.1-36.0", points: 1}
+        - {range: "36.1-38.0", points: 0}
+        - {range: "38.1-39.0", points: 1}
+        - {range: "≥39.1", points: 2}
+      bp_sys:
+        - {range: "≤90", points: 3}
+        - {range: "91-100", points: 2}
+        - {range: "101-110", points: 1}
+        - {range: "111-219", points: 0}
+        - {range: "≥220", points: 3}
+      hr:
+        - {range: "≤40", points: 3}
+        - {range: "41-50", points: 1}
+        - {range: "51-90", points: 0}
+        - {range: "91-110", points: 1}
+        - {range: "111-130", points: 2}
+        - {range: "≥131", points: 3}
+      consciousness:
+        - {value: alert, points: 0}
+        - {value: altered, points: 3}
+    cutoffs:
+      low: {range: "0-4", label: 저위험}
+      moderate: {range: "5-6", label: 중등도}
+      high: {range: "≥7", label: 고위험}
+
+  qsofa:
+    name_ko: Quick Sequential Organ Failure Assessment
+    name_en: qSOFA
+    sources:
+      - "Singer M, et al. The Third International Consensus Definitions for Sepsis and Septic Shock (Sepsis-3). JAMA. 2016;315(8):801-810."
+    items:
+      - {id: rr_22_or_higher, label: "호흡수 ≥22/min", points: 1}
+      - {id: bp_sys_100_or_lower, label: "수축기 BP ≤100 mmHg", points: 1}
+      - {id: altered_mental_status, label: "의식 변화", points: 1}
+    cutoffs:
+      negative: {range: "0-1", label: 음성}
+      positive: {range: "≥2", label: 양성_패혈증_가능}
+
+  braden_scale:
+    name_ko: Braden 욕창 위험 사정도구
+    name_en: Braden Scale
+    sources:
+      - "병원간호사회. 욕창간호 임상간호실무지침(2022 개정)."
+      - "Bergstrom N, Braden BJ, Laguzza A, Holman V. The Braden Scale for Predicting Pressure Sore Risk. Nurs Res. 1987;36(4):205-10."
+      - "한국형 cutoff: 이영희 등 (2003)"
+    subscales: [감각지각, 습도, 활동성, 이동성, 영양상태, 마찰_전단력]
+    cutoffs:
+      high_risk: {range: "≤12", label: 고위험}
+      moderate_risk: {range: "13-14", label: 중등도위험}
+      mild_risk: {range: "15-18", label: 경미한위험}
+      no_risk: {range: "≥19", label: 위험없음}
+    korea_cutoff: 17
+
+  gcs:
+    name_ko: Glasgow Coma Scale
+    name_en: Glasgow Coma Scale
+    sources:
+      - "병원간호사회. 낙상관리 임상간호실무지침. 권고 III-3.1."
+      - "Teasdale G, Jennett B. Assessment of coma and impaired consciousness. Lancet. 1974;2(7872):81-4."
+    components:
+      eye_opening: {4: 자발적, 3: 언어자극, 2: 통증자극, 1: 없음}
+      motor_response: {6: 지시따름, 5: 통증위치파악, 4: 통증회피, 3: 굴곡, 2: 신전, 1: 없음}
+      verbal_response: {5: 지남력있음, 4: 혼동, 3: 부적절단어, 2: 이해불가소리, 1: 없음}
+    cutoffs:
+      mild: {range: "13-15", label: 경미한손상, consciousness: 명료}
+      moderate: {range: "9-12", label: 중등도손상}
+      severe: {range: "3-8", label: 중증손상_혼수, action_required: "기도 확보 고려"}
+
+  cam:
+    name_ko: Confusion Assessment Method
+    name_en: CAM
+    sources:
+      - "Inouye SK, van Dyck CH, Alessi CA, et al. Clarifying confusion: the confusion assessment method. Ann Intern Med. 1990;113(12):941-8."
+      - "병원간호사회. 낙상관리 임상간호실무지침. 권고 III-1.8 (섬망 평가)."
+    criteria:
+      cam_1a: 정신 기능의 급격한 변화
+      cam_1b: 행동 변동
+      cam_2: 주의집중 어려움
+      cam_3: 사고의 비조직화
+      cam_4: 의식 수준 변화
+    positive_rule: "(cam_1a OR cam_1b) AND cam_2 AND (cam_3 OR cam_4)"
+    alternative_tools_korean_validated:
+      - DRS: Delirium Rating Scale
+      - NDSC: Nurses Delirium Screening Checklist
+      - MDAS: Memorial Delirium Assessment Scale

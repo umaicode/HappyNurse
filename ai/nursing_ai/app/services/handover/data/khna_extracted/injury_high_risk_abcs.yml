@@ -1,0 +1,56 @@
+version: "2026.05.24"
+source: "병원간호사회. 낙상관리 임상간호실무지침. 권고 III-1.15: 손상고위험 요인(ABCs)."
+
+abcs_factors:
+  A_age:
+    label: 고령
+    threshold_years: 85
+    rationale: 골다공증·근감소·치유지연 동반
+
+  B_bone_disorder:
+    label: 골 질환
+    conditions:
+      - {id: osteoporosis, name: 골다공증, terms: [osteoporosis, 골다공증, "T-score ≤-2.5"]}
+      - {id: prior_fracture, name: 과거 골절력, terms: [골절 과거력, "fracture history", "prior fracture"]}
+      - {id: hip_or_spine_fracture_hx, name: 고관절_척추_골절_과거력, terms: ["hip fracture", "spine fracture", 고관절 골절, 척추 골절]}
+      - {id: renal_bone_disease, name: 신성 골질환_투석, terms: ["renal bone disease", 신성 골질환, dialysis, 투석]}
+
+  C_coagulation_disorder:
+    label: 응고 장애
+    conditions:
+      - {id: hemophilia, name: 혈우병, terms: [hemophilia, 혈우병]}
+      - {id: thrombocytopenia, name: 혈소판 감소증, terms: [thrombocytopenia, 혈소판감소, "PLT <100K"]}
+      - {id: anticoagulant_therapy, name: 항응고 치료, terms: [warfarin, heparin, LMWH, enoxaparin, rivaroxaban, dabigatran, apixaban, 와파린]}
+      - {id: antiplatelet_therapy, name: 항혈소판 치료, terms: [aspirin, clopidogrel, ticagrelor, plavix, 아스피린]}
+      - {id: liver_disease, name: 간 질환, terms: ["liver disease", "liver failure", "Child-Pugh", "간경변", "간기능 저하"]}
+      - {id: renal_dialysis, name: 신장 질환_혈액투석, terms: [hemodialysis, "renal dialysis", 혈액투석, "HD via cath"]}
+
+  S_surgery:
+    label: 최근 수술
+    perioperative_risk_factors:
+      - 울혈성_심부전
+      - 응고장애
+      - 간질환
+      - 신경계_질환
+      - 수분전해질_불균형
+      - 체중감소
+      - 폐순환계_질환
+    recovery_complications:
+      - 마취제_효과
+      - 활력_변동
+      - 갑작스러운_허약감
+      - 수술부위_상태_변화
+    specific_high_risk_surgeries:
+      - {id: thoracic_abdominal, name: 흉부/복부 수술}
+      - {id: lower_limb_amputation, name: 하지 절단}
+      - {id: pelvic_knee, name: 골반/무릎 수술}
+      - {id: spine_fusion, name: 척추 융합술}
+
+pelvic_fracture_risk_factors:
+  source: "권고 III-1.17"
+  factors:
+    - 낙상_과거력
+    - 골절_과거력
+    - 기동성_장애
+    - 하지_근력_약화
+    - 만성질환: [관절염, 심혈관계_질환_기립성저혈압, 골다공증, 파킨슨병, 뇌졸중]

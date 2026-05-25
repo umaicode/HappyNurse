@@ -11,6 +11,17 @@ from app.services.handover.processing.renderer import render_markdown
 from app.services.handover.clinical.rule_trigger import should_fetch_tier3
 from app.services.handover.clinical.record_loader import RecordLoader, LoadedContext
 from app.services.handover.processing.phi_tokenizer import PHITokenizer
+# KHNA 통합 모듈
+from app.services.handover.clinical.profile_parser import parse_profile
+from app.services.handover.clinical.scale_evaluator import (
+    compute_news2, compute_qsofa, compute_morse_fall, compute_caprini, compute_gcs,
+)
+from app.services.handover.clinical.khna_classifier import classify_score
+from app.services.handover.clinical.isolation_mapper import detect_isolation_requirements
+from app.services.handover.clinical.medication_classifier import compute_medication_fall_risk_score
+from app.services.handover.clinical.postop_timeline import suggest_complication_categories
+from app.services.handover.clinical.injury_risk_evaluator import evaluate_injury_risk
+from app.services.handover.clinical.patient_categorizer import categorize_patient, applicable_bundles
 
 logger = logging.getLogger(__name__)
 
@@ -65,10 +76,23 @@ async def generate_for_encounter(
     masked_tier2, m2 = tokenizer.mask(tier2_text, fields)
     mapping.update(m2)
 
+    # 환자 컨디션 자동 분류 — LLM prompt 컨디션 주입용
+    # (documentation_standards/bundle_care 자산 활용)
+    try:
+        patient_types = categorize_patient(
+            tier2=ctx.tier2,
+            nursing_record_text=ctx.tier1_text + "\n" + ctx.tier3_text,
+        )
+        bundle_ids = applicable_bundles(patient_types)
+    except Exception as e:
+        logger.warning("환자 분류 실패 [encounter=%s]: %s", encounter_id, e)
+        patient_types, bundle_ids = [], []
+
     try:
         raw = await extract_handover(
             tier1=masked_tier1, tier2=masked_tier2, tier3=masked_tier3,
-            llm=llm, lexicon=lexicon)
+            llm=llm, lexicon=lexicon,
+            patient_types=patient_types, bundle_ids=bundle_ids)
         failures = []
     except Exception as e:
         logger.error("LLM 추출 실패 [encounter=%s]: %s", encounter_id, e, exc_info=True)
@@ -185,6 +209,173 @@ datetime.now(timezone.utc).isoformat()),
     vitals = {"vitals": _vitals_from_text(ctx.tier1_text)}
     fired = rule_engine.evaluate_clinical(vitals)
     raw.setdefault("rules_fired", []).extend(fired)
+
+    # ───── KHNA 통합: profile_parser + scale_evaluator + classifier 모듈 ─────
+    try:
+        full_text = ctx.tier1_text + "\n" + ctx.tier3_text
+        profile = parse_profile(full_text)
+        scores: list[dict] = []
+        latest_v = profile.vitals_series[-1] if profile.vitals_series else None
+
+        # NEWS2 (활력 있으면 계산)
+        if latest_v:
+            n2 = compute_news2(
+                rr=latest_v.rr, spo2=latest_v.spo2, on_oxygen=False,
+                temp=latest_v.temp, bp_sys=latest_v.bp_sys, hr=latest_v.hr,
+                alert=True,
+            )
+            cls_n2 = classify_score("news2", n2.score)
+            scores.append({
+                "scale_id": "news2", "score": n2.score,
+                "classification": n2.classification, "sources": n2.sources,
+                "incomplete": n2.incomplete, "missing_inputs": n2.missing_inputs,
+                "details": {"component_scores": n2.component_scores},
+                "ui_color": cls_n2.ui_color, "ui_severity": cls_n2.ui_severity,
+            })
+            # qSOFA
+            q = compute_qsofa(
+                rr=latest_v.rr, bp_sys=latest_v.bp_sys, altered_mental_status=False,
+            )
+            cls_q = classify_score("qsofa", q.score)
+            scores.append({
+                "scale_id": "qsofa", "score": q.score,
+                "classification": q.classification, "sources": q.sources,
+                "ui_color": cls_q.ui_color, "ui_severity": cls_q.ui_severity,
+                "details": {"action": cls_q.action},
+            })
+
+        # Caprini (수술 환자)
+        if ctx.tier2.surgery:
+            cap = compute_caprini(
+                age=ctx.tier2.age or 0,
+                major_surgery=True,
+                bed_rest_72h=True,
+                cancer=("cancer" in (ctx.tier2.admission_dx or "").lower()
+                        or "암" in (ctx.tier2.admission_dx or "")),
+                prior_vte=("DVT" in profile.history_ids),
+                bmi_gt_25=False,
+            )
+            cls_cap = classify_score("vte_risk", cap.score)
+            scores.append({
+                "scale_id": "caprini", "score": cap.score,
+                "classification": cap.classification, "sources": cap.sources,
+                "details": {"factor_scores": cap.factor_scores},
+                "ui_color": cls_cap.ui_color, "ui_severity": cls_cap.ui_severity,
+            })
+
+        # Morse Fall (수술/IV 환자에 자동 추정)
+        # 보수적 추정: nursing_record 텍스트의 키워드로 보정
+        if ctx.tier2.surgery or "IV" in full_text:
+            morse = compute_morse_fall(
+                fall_history=False,
+                secondary_diagnosis=bool(ctx.tier2.surgery),
+                ambulation_aid=("walker_or_cane" if "보행기" in full_text else "none"),
+                iv_or_heparin_lock=("IV" in full_text or "정맥주사" in full_text),
+                gait=("weak" if "보행기" in full_text else "normal"),
+                mental_status_oriented=True,
+            )
+            cls_morse = classify_score("fall_risk", morse.score)
+            scores.append({
+                "scale_id": "morse", "score": morse.score,
+                "classification": morse.classification, "sources": morse.sources,
+                "details": {"item_scores": morse.item_scores},
+                "ui_color": cls_morse.ui_color, "ui_severity": cls_morse.ui_severity,
+            })
+
+        raw["scores"] = scores
+
+        # 임상 스코어를 I-PASS-BAR 슬롯에 통합 — severity_flag로 위험 배너·카운트 연동
+        # NEWS2/qSOFA/GCS/CAM → assessment, Morse/Caprini/Braden → safety
+        _score_slot = {
+            "news2": "assessment", "qsofa": "assessment", "gcs": "assessment", "cam": "assessment",
+            "morse": "safety", "caprini": "safety", "braden": "safety",
+        }
+        _score_src = {
+            "news2": "RCP NEWS2 2017", "qsofa": "Sepsis-3 2016",
+            "morse": "KHNA 낙상관리·Morse", "caprini": "KHNA VTE 2023·Caprini",
+            "braden": "KHNA 욕창 2022·Braden", "gcs": "KHNA·GCS", "cam": "CAM·Inouye",
+        }
+        for s in scores:
+            sid = s.get("scale_id", "")
+            slot_key = _score_slot.get(sid, "assessment")
+            label = _score_src.get(sid, "")
+            inc = (f" ⚠️미완(누락:{','.join(s.get('missing_inputs', []))})"
+                   if s.get("incomplete") else "")
+            src = f" (출처: {label})" if label else ""
+            raw["slots"][slot_key]["items"].append({
+                "kind": "clinical_score",
+                "value": f"{sid.upper()} {s.get('score')}점 — {s.get('classification', '')}{inc}{src}",
+                "citation_ids": [],
+                "source_layer": 2,
+                "confidence": 1.0,
+                "severity_flag": s.get("ui_severity"),
+            })
+
+        # 격리 자동 매핑 — safety 슬롯에 추가
+        for det in detect_isolation_requirements(full_text):
+            raw["slots"]["safety"]["items"].append({
+                "kind": "isolation_detected",
+                "value": f"{det.isolation_type} ({det.microbe_name}) — PPE: {', '.join(det.ppe_required)}",
+                "citation_ids": [],
+                "source_layer": 2,
+                "confidence": 1.0,
+                "severity_flag": "watcher",
+            })
+
+        # 손상고위험 ABCs (KHNA 낙상관리 III-1.15) — Age·Bone·Coagulation·Surgery
+        # nursing_record + medication + 과거력 + surgery를 종합한 위험 프로파일링
+        injury_eval = evaluate_injury_risk(
+            age=ctx.tier2.age,
+            nursing_record_text=full_text,
+            surgery_name=ctx.tier2.surgery,
+            admission_dx=ctx.tier2.admission_dx,
+            history_ids=profile.history_ids,
+            medications=ctx.tier2.high_alert_meds,
+        )
+        if injury_eval.factors:
+            factor_summaries = [
+                f"{f.label}({', '.join(f.conditions_matched[:2])})"
+                for f in injury_eval.factors
+            ]
+            raw["slots"]["safety"]["items"].append({
+                "kind": "injury_high_risk_abcs",
+                "value": (
+                    f"손상 고위험 — {' + '.join(factor_summaries)} → "
+                    f"낙상·외상 시 심각도 증가"
+                ),
+                "citation_ids": [],
+                "source_layer": 2,
+                "confidence": 1.0,
+                "severity_flag": injury_eval.severity_flag,
+            })
+
+        # 5W's 수술 후 합병증 후보 (POD + 발열 시)
+        has_fever = bool(latest_v and latest_v.temp and latest_v.temp >= 38.0)
+        if profile.pod and has_fever:
+            for s in suggest_complication_categories(
+                pod=profile.pod, has_fever=True, symptom_text=full_text,
+            ):
+                cand_str = ", ".join(s["candidates"])
+                matched = f" (관찰소견: {', '.join(s['matched_findings'])})" if s["matched_findings"] else ""
+                raw["slots"]["assessment"]["items"].append({
+                    "kind": "postop_timeline_category",
+                    "value": f"{s['pod_range']} {s['category']} 분류 — 후보: {cand_str}{matched}",
+                    "citation_ids": [],
+                    "source_layer": 2,
+                    "confidence": 1.0,
+                })
+
+        # 인계 체인 — 이전 ShiftHandover의 background 회수
+        if ctx.prior_handover_facts:
+            for item in ctx.prior_handover_facts.get("background_items", []):
+                if not any(i.get("value") == item.get("value")
+                           for i in raw["slots"]["background"]["items"]):
+                    item_copy = dict(item)
+                    item_copy["kind"] = (item_copy.get("kind") or "inherited") + "_inherited"
+                    raw["slots"]["background"]["items"].append(item_copy)
+    except Exception as e:
+        logger.warning("KHNA 통합 모듈 처리 실패 [encounter=%s]: %s", encounter_id, e)
+        raw.setdefault("scores", [])
 
     raw["meta"] = {
         "model": settings_meta["model"],

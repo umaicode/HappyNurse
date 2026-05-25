@@ -1,22 +1,42 @@
-version: "2026.05.01"
+version: "2026.05.24"
+schema_note: |
+  각 룰은 분류 라벨만 발화. 행동 권고는 생성하지 않음 (추론 0.0 원칙).
+  source/evidence_level 필수.
+
 flags:
   - id: bp_crisis
-    label: "고혈압 응급 후보 (BP ≥ 180/120)"
-    source: "JNC 8"
+    label: "고혈압 응급 가능성 (BP ≥180 또는 DBP ≥120)"
+    classification: bp_crisis_candidate
     severity: high
+    source: "JNC 8 (2014 Hypertension Guideline)"
+    sources_korean:
+      - "대한고혈압학회 진료지침 참조"
+    evidence_level: "Guideline-based"
     when: "vitals.bp_sys >= 180 or vitals.bp_dia >= 120"
+    note: "분류 라벨만 발화. 행동은 임상가 판단."
+
   - id: sbp_low
-    label: "수축기 저혈압 (BP_sys < 90)"
-    source: "NEWS2"
+    label: "수축기 저혈압 (BP_sys <90)"
+    classification: hypotension_candidate
     severity: medium
+    source: "Royal College of Physicians. NEWS2. 2017."
+    evidence_level: "Validated tool component"
     when: "vitals.bp_sys < 90"
+
   - id: spo2_low
-    label: "저산소증 후보 (SpO2 < 92)"
-    source: "NEWS2"
+    label: "저산소증 후보 (SpO2 <92)"
+    classification: hypoxemia_candidate
     severity: high
+    source: "Royal College of Physicians. NEWS2. 2017."
+    sources_korean:
+      - "병원간호사회. 인공기도 흡인간호 임상간호실무지침 (참조)"
+    evidence_level: "Validated tool component"
     when: "vitals.spo2 < 92"
+
   - id: temp_high
-    label: "고체온 (Temp ≥ 38.3)"
-    source: "NEWS2"
+    label: "고체온 (Temp ≥38.3)"
+    classification: fever_candidate
     severity: medium
+    source: "Royal College of Physicians. NEWS2. 2017."
+    evidence_level: "Validated tool component"
     when: "vitals.temp >= 38.3"

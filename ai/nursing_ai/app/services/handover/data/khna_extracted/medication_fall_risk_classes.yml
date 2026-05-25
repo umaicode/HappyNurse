@@ -1,0 +1,84 @@
+version: "2026.05.24"
+source: "병원간호사회. 낙상관리 임상간호실무지침. 도구 13: 투약관련 낙상 위험 점수와 평가 도구."
+
+medication_classes:
+  high_risk_3pts:
+    description: 진정·현기증·균형변화·인지손상 유발
+    classes:
+      - id: anticonvulsants
+        name_ko: 항경련제
+        examples: [phenytoin, valproate, carbamazepine, lamotrigine, levetiracetam, gabapentin]
+      - id: benzodiazepines
+        name_ko: 벤조디아제핀계
+        examples: [diazepam, lorazepam, alprazolam, midazolam, clonazepam, triazolam]
+      - id: non_bzd_sedatives
+        name_ko: 비벤조디아제핀 진정수면제
+        examples: [zolpidem, zaleplon, eszopiclone]
+      - id: opioids
+        name_ko: 마약성진통제
+        examples: [morphine, fentanyl, oxycodone, tramadol, codeine, hydromorphone, pethidine]
+
+  moderate_risk_2pts:
+    description: 기립성저혈압·뇌관류손상 유발
+    classes:
+      - id: antihypertensives
+        name_ko: 항고혈압제
+        examples: [amlodipine, losartan, atenolol, hydralazine, valsartan, lisinopril, propranolol, carvedilol]
+      - id: cardiac_drugs
+        name_ko: 심장약
+        examples: [digoxin, amiodarone, diltiazem, verapamil]
+      - id: antiarrhythmics
+        name_ko: 항부정맥제
+        examples: [amiodarone, propafenone, flecainide, sotalol]
+      - id: antidepressants
+        name_ko: 항우울제
+        examples: [amitriptyline, sertraline, fluoxetine, mirtazapine, paroxetine, escitalopram, venlafaxine, duloxetine]
+
+  low_risk_1pt:
+    description: 보행 증가·기립성 저혈압
+    classes:
+      - id: diuretics
+        name_ko: 이뇨제
+        examples: [furosemide, hydrochlorothiazide, spironolactone, torsemide, bumetanide]
+
+high_risk_threshold: 6
+
+high_alert_medications:
+  source: "WHO/ISMP High-Alert Medications + KHNA 안전 카테고리"
+  list:
+    - id: insulin
+      name_ko: 인슐린
+      examples: [insulin, RI, NPH, lantus, novomix, lispro, aspart, glargine]
+      requires_double_check: true
+    - id: heparin
+      name_ko: 헤파린
+      examples: [heparin, UFH]
+      requires_double_check: true
+    - id: warfarin
+      name_ko: 와파린
+      examples: [warfarin, coumadin]
+      requires_inr_monitoring: true
+    - id: lmwh
+      name_ko: 저분자량헤파린
+      examples: [enoxaparin, dalteparin, tinzaparin, clexane]
+      requires_double_check: true
+    - id: concentrated_electrolytes
+      name_ko: 고농도 전해질
+      examples: [KCl, MgSO4, NaHCO3, calcium gluconate]
+      requires_double_check: true
+    - id: chemotherapy
+      name_ko: 항암제
+      examples: [cisplatin, doxorubicin, cyclophosphamide, methotrexate, 5-FU, paclitaxel]
+      requires_double_check: true
+    - id: vasopressors
+      name_ko: 승압제
+      examples: [epinephrine, norepinephrine, dopamine, vasopressin, dobutamine, phenylephrine]
+      requires_double_check: true
+    - id: thrombolytics
+      name_ko: 혈전용해제
+      examples: [tPA, alteplase, urokinase, streptokinase]
+      requires_double_check: true
+    - id: doacs
+      name_ko: 직접경구항응고제
+      examples: [rivaroxaban, dabigatran, apixaban, edoxaban]
+      requires_double_check: true

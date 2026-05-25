@@ -1,0 +1,55 @@
+version: "2026.05.24"
+source_overview: "병원간호사회 다수 지침 + IHI/CDC Bundle Care 표준"
+
+bundles:
+  vap_bundle:
+    name_ko: 인공호흡기 관련 폐렴 예방 번들
+    source:
+      - "병원간호사회. 구강간호 임상간호실무지침(2020 개정)."
+      - "병원간호사회. 인공기도 흡인간호 임상간호실무지침."
+      - "IHI Ventilator Bundle"
+    applies_when: 인공기도_유지
+    items:
+      - {id: hob_elevation, label: "HOB 30-45도 유지", check_per_shift: true}
+      - {id: oral_care_chg, label: "구강간호 CHG q4-8h", check_per_shift: true}
+      - {id: sedation_break, label: "진정 중단 평가 (Daily Sedation Vacation)", check_daily: true}
+      - {id: dvt_prophylaxis, label: "DVT 예방 적용", check_daily: true}
+      - {id: pud_prophylaxis, label: "PUD 예방 약물 적용", check_daily: true}
+      - {id: suction_pressure, label: "흡인 압력 -80~-150 mmHg, 시간 <15초", check_per_action: true}
+
+  clabsi_bundle:
+    name_ko: 중심정맥관 관련 혈류감염 예방 번들
+    source:
+      - "병원간호사회. 중심정맥 주입요법 임상간호실무지침(2023 개정)."
+      - "CDC CLABSI Prevention Guidelines"
+    applies_when: 중심정맥관_유지
+    items:
+      - {id: hand_hygiene, label: "손위생", check_per_action: true}
+      - {id: sterile_technique, label: "삽입 시 무균술", check_at_insertion: true}
+      - {id: chg_dressing, label: "CHG 드레싱 사용", check_per_shift: true}
+      - {id: daily_assessment, label: "카테터 필요성 매일 평가", check_daily: true}
+      - {id: site_inspection, label: "삽입부위 매 시프트 사정", check_per_shift: true}
+
+  cauti_bundle:
+    name_ko: 유치도뇨관 관련 요로감염 예방 번들
+    source:
+      - "병원간호사회. 유치도뇨 간호 임상간호실무지침(2023 개정)."
+      - "CDC CAUTI Prevention Guidelines"
+    applies_when: Foley_유지
+    items:
+      - {id: indication_check, label: "삽입 적응증 확인", check_at_insertion: true}
+      - {id: sterile_insertion, label: "무균 삽입", check_at_insertion: true}
+      - {id: closed_drainage, label: "폐쇄 배뇨 시스템 유지", check_per_shift: true}
+      - {id: daily_removal_review, label: "매일 제거 가능성 평가", check_daily: true}
+      - {id: meatal_care, label: "요도구 청결 유지", check_per_shift: true}
+
+  enteral_nutrition_safety:
+    name_ko: 경장영양 안전 번들
+    source:
+      - "병원간호사회. 경장영양 임상간호실무지침(2019 개정)."
+    applies_when: 경관영양_진행
+    items:
+      - {id: hob_elevation_30, label: "HOB 30-45도 유지 (흡인 예방)", check_per_shift: true}
+      - {id: grv_check, label: "GRV(위잔여량) 확인", check_pre_feeding: true}
+      - {id: tube_position_verify, label: "튜브 위치 확인", check_pre_feeding: true}
+      - {id: oral_care, label: "구강간호 (튜브 환자)", check_per_shift: true}

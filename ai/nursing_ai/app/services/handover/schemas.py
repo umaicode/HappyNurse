@@ -61,13 +61,30 @@ class Meta(BaseModel):
     failures: list[dict] = Field(default_factory=list)
 
 
+class ScoreEntry(BaseModel):
+    """결정론적으로 계산된 검증 임상 스코어 1건.
+
+    출력 형식: 점수 + 분류 라벨 + 출처. 행동 권고는 포함하지 않음 (추론 0.0 원칙).
+    """
+    scale_id: str               # morse / caprini / news2 / qsofa / braden / gcs / cam
+    score: int | float
+    classification: str         # high_risk_for_fall, positive_sepsis_possible 등
+    sources: list[str] = Field(default_factory=list)
+    incomplete: bool = False
+    missing_inputs: list[str] = Field(default_factory=list)
+    details: dict = Field(default_factory=dict)
+    ui_color: str | None = None
+    ui_severity: Literal["stable", "watcher", "unstable"] | None = None
+
+
 class HandoverPayload(BaseModel):
-    schema_version: Literal["2.0"] = "2.0"
+    schema_version: Literal["2.1"] = "2.1"
     header: str
     illness_severity: Literal["stable", "watcher", "unstable"] = "stable"
     slots: Slots
     citations: list[Citation]
     rules_fired: list[RuleFired]
+    scores: list[ScoreEntry] = Field(default_factory=list)
     meta: Meta
 
 
