@@ -81,9 +81,10 @@ HappyNurse는 다음 문제를 해결하고자 합니다.
 환자 팔찌를 태깅하면 환자 정보가 즉시 표시되고, 약물 NFC 태그로 투약 내역을 검증·기록합니다.
 
 <!-- 기능 시연 GIF 영역 -->
-<!-- 기능 시연 GIF 영역 -->
-![NFC 환자 인식 시연](image/환자팔찌.gif)
-![약물 태깅 시연](image/약물태깅.gif)
+<div align="center">
+  <img src="image/환자팔찌.gif" width="300" style="margin: 10px"/>
+  <img src="image/약물태깅.gif" width="300" style="margin: 10px"/>
+</div>
 
 <br/>
 
@@ -91,8 +92,10 @@ HappyNurse는 다음 문제를 해결하고자 합니다.
 음성으로 간호 기록을 녹음하면 STT로 자동 변환되고, AI 교정 사전이 의료 용어 오인식을 보정합니다. 작성된 기록은 웹으로 전송되어 검토 후 확정됩니다.
 
 <!-- 기능 시연 GIF 영역 -->
-![STT 간호일지 작성 시연](/image/간호일지stt.gif)
-![STT 간호일지 작성 시연](/image/워치stt.gif)
+<div align="center">
+  <img src="image/간호일지stt.gif" width="300" style="margin: 10px"/>
+  <img src="image/워치stt.gif" width="300" style="margin: 10px"/>
+</div>
 
 <br/>
 
@@ -100,13 +103,14 @@ HappyNurse는 다음 문제를 해결하고자 합니다.
 근무 중 발생한 V/S 이상, 미완료 업무, 신규 처방 등을 AI가 자동으로 요약하여 교대 인계 카드로 제공합니다. 주의사항과 인수자 체크리스트를 함께 정리합니다.
 
 <!-- 기능 시연 GIF 영역 -->
-![AI 교대 인계 요약 시연](/image/인수인계.png)
-![AI 교대 인계 요약 시연](/image/앱인수인계.gif)
+<div align="center">
+    <img src="image/인수인계.png" style="margin: 10px"/>
+    <img src="image/앱인수인계.gif" width="200" style="margin: 10px"/>
+</div>
 
 <br/>
 
 ### 실시간 알림
-간호 알람과 수액 타이머를 통합 관리합니다. 수액 주입 속도를 입력하면 종료 예정 시각을 자동 계산하고, 잔량 임계치 도달 시 앱·워치로 알림을 보냅니다.
 
 <!-- 기능 시연 GIF 영역 -->
 ![수액 타이머 시연]()
@@ -117,8 +121,10 @@ HappyNurse는 다음 문제를 해결하고자 합니다.
 간호 알람과 수액 타이머를 통합 관리합니다. 수액 주입 속도를 입력하면 종료 예정 시각을 자동 계산하고, 잔량 임계치 도달 시 앱·워치로 알림을 보냅니다.
 
 <!-- 기능 시연 GIF 영역 -->
-![수액 타이머 시연](/image/수액타이머설정.gif)
-![수액 타이머 시연](/image/수액실시간.gif)
+<div align="center">
+  <img src="image/수액타이머설정.gif" width="300" style="margin: 10px"/>
+  <img src="image/수액실시간.gif" width="300" style="margin: 10px"/>
+</div>
 
 <br/>
 
@@ -126,8 +132,10 @@ HappyNurse는 다음 문제를 해결하고자 합니다.
 병동·호수별 환자 리스트를 조회하고, 환자별 간호일지와 의사 오더(투약·수액·처치·검사·영상)를 타임라인으로 확인합니다.
 
 <!-- 기능 시연 GIF 영역 -->
-![환자 정보 조회 시연](/image/간호일지.png)
-![환자 정보 조회 시연](/image/앱간호일지.gif)
+<div align="center">
+  <img src="image/간호일지.png" style="margin: 10px"/>
+  <img src="image/앱간호일지.gif" width="200" style="margin: 10px"/>
+</div>
 
 <br/>
 
@@ -142,7 +150,9 @@ HappyNurse는 다음 문제를 해결하고자 합니다.
 ### 워치 제스처
 
 <!-- 기능 시연 GIF 영역 -->
-![워치 제스처](/image/제스처.gif)
+<div align="center">
+  <img src="image/워치제스처.gif" width="300" style="margin: 10px"/>
+</div>
 
 <br/>
 
