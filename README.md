@@ -290,12 +290,12 @@ HappyNurse는 다음 문제를 해결하고자 합니다.
 | UI          | Jetpack Compose (Material 3)                |
 | 의존성 주입 | Hilt                                        |
 | 비동기      | Kotlin Coroutines                           |
-| 네트워크    | Retrofit, OkHttp (SSE 실시간 스트리밍)      |
+| 네트워크    | Retrofit, OkHttp                            |
 | 직렬화      | Kotlinx Serialization                       |
 | 화면 전환   | Navigation Compose                          |
 | 로컬 저장   | DataStore                                   |
 | 이미지 로딩 | Coil                                        |
-| 워치 연동   | Wear OS Data Layer (play-services-wearable) |
+| 워치 연동   | Wear OS Data Layer                          |
 | 디바이스    | NFC, Firebase Cloud Messaging               |
 
 </details>
@@ -307,7 +307,7 @@ HappyNurse는 다음 문제를 해결하고자 합니다.
 | ---------- | ----------------------------------------------------- |
 | 프레임워크 | Next.js 16, React 19                                  |
 | 언어       | TypeScript 5                                          |
-| 상태 관리  | TanStack Query (서버 상태), Zustand (클라이언트 상태) |
+| 상태 관리  | TanStack Query, Zustand                               |
 | 스타일     | Tailwind CSS 4, shadcn/ui, Radix UI                   |
 | 폼         | React Hook Form                                       |
 | 네트워크   | Axios                                                 |
@@ -324,8 +324,8 @@ HappyNurse는 다음 문제를 해결하고자 합니다.
 | 프레임워크     | Spring Boot 3                  |
 | 언어           | Java 17                        |
 | 데이터 접근    | Spring Data JPA                |
-| 캐시           | Redis (Spring Data Redis)      |
-| 인증/인가      | Spring Security, JWT (jjwt)    |
+| 캐시           | Redis                         |
+| 인증/인가      | Spring Security, JWT            |
 | API 문서       | SpringDoc OpenAPI (Swagger UI) |
 | 푸시           | Firebase Admin SDK (FCM)       |
 | 분산 스케줄 락 | ShedLock                       |
@@ -340,8 +340,7 @@ HappyNurse는 다음 문제를 해결하고자 합니다.
 | --------------- | ------------------------------------------------------------------- |
 | 프레임워크      | FastAPI, Uvicorn (Python 3.12)                                      |
 | 음성 인식 (STT) | Naver CLOVA Speech                                                  |
-| 음성 전처리     | librosa, noisereduce, scipy, pydub (노이즈 캔슬링)                  |
-| 형태소 분석     | Kiwi (kiwipiepy)                                                    |
+| 형태소 분석     | Kiwi                                                              |
 | 의료 용어 교정  | RapidFuzz (퍼지 매칭 기반 용어 사전 매핑)                           |
 | LLM             | Claude Haiku (발화 분류 · 욕설 필터), Claude Sonnet (인수인계 요약) |
 | 스트리밍        | SSE (sse-starlette)                                                 |
