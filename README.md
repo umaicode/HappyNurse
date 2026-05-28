@@ -372,17 +372,6 @@ HappyNurse는 다음 문제를 해결하고자 합니다.
 
 </details>
 
-<details>
-<summary><b>주요 연동 기술</b></summary>
-
-| 구분 | 기술                           |
-| ---- | ------------------------------ |
-| 인식 | NFC (환자 팔찌 / 약물 태그)    |
-| 음성 | STT (Naver CLOVA Speech)       |
-| 알림 | FCM (Firebase Cloud Messaging) |
-
-</details>
-
 <br/>
 
 <a id="6-시스템-아키텍처"></a>
