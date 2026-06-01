@@ -50,7 +50,7 @@
 <h3>6. <a href="#6-시스템-아키텍처">시스템 아키텍처</a></h3>
 <h3>7. <a href="#7-erd">ERD</a></h3>
 <h3>8. <a href="#8-프로젝트-구조">프로젝트 구조</a></h3>
-<h3>9. <a href="#9-산출물">산출물</a></h3>
+<h3>9. <a href="#9-영상-포트폴리오">영상 포트폴리오</a></h3>
 
 <br/>
 
@@ -281,95 +281,159 @@ HappyNurse는 다음 문제를 해결하고자 합니다.
 
 ## 🛠️ 5. 기술 스택
 
-<details>
-<summary><b>Frontend - 앱 / 워치</b></summary>
+<h3 align="center">Frontend - 앱 / 워치</h3>
 
-| 구분        | 기술                                        |
-| ----------- | ------------------------------------------- |
-| 언어        | Kotlin 2.2.20 (compileSdk 35)               |
-| UI          | Jetpack Compose (Material 3)                |
-| 의존성 주입 | Hilt                                        |
-| 비동기      | Kotlin Coroutines                           |
-| 네트워크    | Retrofit, OkHttp                            |
-| 직렬화      | Kotlinx Serialization                       |
-| 화면 전환   | Navigation Compose                          |
-| 로컬 저장   | DataStore                                   |
-| 이미지 로딩 | Coil                                        |
-| 워치 연동   | Wear OS Data Layer                          |
-| 디바이스    | NFC, Firebase Cloud Messaging               |
+<div align="center">
 
-</details>
+![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
+![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
+![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)<br>
+![Hilt](https://img.shields.io/badge/Hilt-2196F3?style=for-the-badge&logo=android&logoColor=white)
+![Retrofit](https://img.shields.io/badge/Retrofit-48B983?style=for-the-badge&logo=square&logoColor=white)
+![Wear OS](https://img.shields.io/badge/Wear%20OS-4285F4?style=for-the-badge&logo=wearos&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
 
-<details>
-<summary><b>Frontend - 웹</b></summary>
+<br>
 
-| 구분       | 기술                                                  |
-| ---------- | ----------------------------------------------------- |
-| 프레임워크 | Next.js 16, React 19                                  |
-| 언어       | TypeScript 5                                          |
-| 상태 관리  | TanStack Query, Zustand                               |
-| 스타일     | Tailwind CSS 4, shadcn/ui, Radix UI                   |
-| 폼         | React Hook Form                                       |
-| 네트워크   | Axios                                                 |
-| 시각화     | Recharts                                              |
-| 기타       | Framer Motion, lucide-react, date-fns, sonner         |
+|     구분     |              기술               |
+| :----------: | :-----------------------------: |
+|     언어     |  Kotlin 2.2.20 (compileSdk 35)  |
+|      UI      |  Jetpack Compose (Material 3)   |
+| 의존성 주입  |              Hilt               |
+|    비동기    |        Kotlin Coroutines        |
+|   네트워크   |        Retrofit, OkHttp         |
+|    직렬화    |      Kotlinx Serialization      |
+|  화면 전환   |       Navigation Compose        |
+|  로컬 저장   |            DataStore            |
+| 이미지 로딩  |              Coil               |
+|  워치 연동   |       Wear OS Data Layer        |
+|   디바이스   |  NFC, Firebase Cloud Messaging  |
 
-</details>
+</div>
 
-<details>
-<summary><b>Backend</b></summary>
+<br/>
 
-| 구분           | 기술                           |
-| -------------- | ------------------------------ |
-| 프레임워크     | Spring Boot 3                  |
-| 언어           | Java 17                        |
-| 데이터 접근    | Spring Data JPA                |
-| 캐시           | Redis                         |
-| 인증/인가      | Spring Security, JWT            |
-| API 문서       | SpringDoc OpenAPI (Swagger UI) |
-| 푸시           | Firebase Admin SDK (FCM)       |
-| 분산 스케줄 락 | ShedLock                       |
-| 모니터링       | Spring Boot Actuator           |
+<h3 align="center">Frontend - 웹</h3>
 
-</details>
+<div align="center">
 
-<details>
-<summary><b>AI</b></summary>
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)<br>
+![TanStack Query](https://img.shields.io/badge/TanStack%20Query-FF4154?style=for-the-badge&logo=reactquery&logoColor=white)
+![Zustand](https://img.shields.io/badge/Zustand-433E38?style=for-the-badge&logo=react&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)<br>
+![Axios](https://img.shields.io/badge/Axios-5A29E4?style=for-the-badge&logo=axios&logoColor=white)
+![Framer Motion](https://img.shields.io/badge/Framer%20Motion-0055FF?style=for-the-badge&logo=framer&logoColor=white)
 
-| 구분            | 기술                                                                |
-| --------------- | ------------------------------------------------------------------- |
-| 프레임워크      | FastAPI, Uvicorn (Python 3.12)                                      |
-| 음성 인식 (STT) | Naver CLOVA Speech                                                  |
-| 형태소 분석     | Kiwi                                                              |
-| 의료 용어 교정  | RapidFuzz (퍼지 매칭 기반 용어 사전 매핑)                           |
-| LLM             | Claude Haiku (발화 분류 · 욕설 필터), Claude Sonnet (인수인계 요약) |
-| 스트리밍        | SSE (sse-starlette)                                                 |
-| DB 연동         | SQLAlchemy, asyncpg / psycopg2                                      |
+<br>
 
-</details>
+|     구분     |                     기술                      |
+| :----------: | :-------------------------------------------: |
+|  프레임워크  |             Next.js 16, React 19              |
+|     언어     |                 TypeScript 5                  |
+|  상태 관리   |            TanStack Query, Zustand            |
+|    스타일    |      Tailwind CSS 4, shadcn/ui, Radix UI      |
+|      폼      |                React Hook Form                |
+|   네트워크   |                     Axios                     |
+|    시각화    |                   Recharts                    |
+|     기타     | Framer Motion, lucide-react, date-fns, sonner |
 
-<details>
-<summary><b>Database & Infrastructure</b></summary>
+</div>
+
+<br/>
+
+<h3 align="center">Backend</h3>
+
+<div align="center">
+
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
+![Java](https://img.shields.io/badge/Java-007396?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Security](https://img.shields.io/badge/Spring%20Security-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white)<br>
+![JPA](https://img.shields.io/badge/Spring%20Data%20JPA-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)<br>
+![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)
+![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
+
+<br>
+
+|      구분      |              기술              |
+| :------------: | :----------------------------: |
+|   프레임워크   |         Spring Boot 3          |
+|      언어      |            Java 17             |
+|  데이터 접근   |        Spring Data JPA         |
+|      캐시      |             Redis              |
+|   인증/인가    |      Spring Security, JWT      |
+|    API 문서    | SpringDoc OpenAPI (Swagger UI) |
+|      푸시      |    Firebase Admin SDK (FCM)    |
+| 분산 스케줄 락 |            ShedLock            |
+|    모니터링    |      Spring Boot Actuator      |
+
+</div>
+
+<br/>
+
+<h3 align="center">AI</h3>
+
+<div align="center">
+
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3670A0?style=for-the-badge&logo=python&logoColor=white)
+![Uvicorn](https://img.shields.io/badge/Uvicorn-499848?style=for-the-badge&logo=gunicorn&logoColor=white)<br>
+![Claude](https://img.shields.io/badge/Claude-D97757?style=for-the-badge&logo=anthropic&logoColor=white)
+![CLOVA](https://img.shields.io/badge/CLOVA%20Speech-03C75A?style=for-the-badge&logo=naver&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white)
+
+<br>
+
+|      구분       |                                 기술                                |
+| :-------------: | :-----------------------------------------------------------------: |
+|   프레임워크    |           FastAPI, Uvicorn (Python 3.12)                            |
+| 음성 인식 (STT) |                         Naver CLOVA Speech                          |
+|   형태소 분석   |                                Kiwi                                 |
+| 의료 용어 교정  |              RapidFuzz (퍼지 매칭 기반 용어 사전 매핑)              |
+|       LLM       | Claude Haiku (발화 분류 · 욕설 필터), Claude Sonnet (인수인계 요약)  |
+|    스트리밍     |                         SSE (sse-starlette)                         |
+|     DB 연동     |                   SQLAlchemy, asyncpg / psycopg2                    |
+
+</div>
+
+<br/>
+
+<h3 align="center">Database & Infrastructure</h3>
+
+<div align="center">
+
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)<br>
+![Jenkins](https://img.shields.io/badge/Jenkins-D24939?style=for-the-badge&logo=jenkins&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)<br>
+![GitLab](https://img.shields.io/badge/GitLab-FC6D26?style=for-the-badge&logo=gitlab&logoColor=white)
+![Mattermost](https://img.shields.io/badge/Mattermost-0058CC?style=for-the-badge&logo=mattermost&logoColor=white)
+
+<br>
 
 **Database**
 
-| 구분  | 기술          |
-| ----- | ------------- |
-| RDBMS | PostgreSQL 17 |
-| 캐시  | Redis         |
+|  구분  |      기술       |
+| :----: | :-------------: |
+| RDBMS  |  PostgreSQL 17  |
+|  캐시  |      Redis      |
 
 **Infrastructure**
 
-| 구분          | 기술                                          |
-| ------------- | --------------------------------------------- |
-| CI/CD         | Jenkins (Build → Deploy → Image Prune)        |
-| 컨테이너      | Docker, Docker Compose                        |
-| 배포 전략     | Blue-Green 무중단 배포 (dev / prod 환경 분리) |
-| 리버스 프록시 | Nginx (upstream 전환)                         |
-| 형상 관리     | GitLab                                        |
-| 알림          | Mattermost (빌드 / 배포 결과 통지)            |
+|      구분      |                      기술                       |
+| :------------: | :---------------------------------------------: |
+|     CI/CD      |     Jenkins (Build → Deploy → Image Prune)      |
+|    컨테이너    |             Docker, Docker Compose              |
+|   배포 전략    |  Blue-Green 무중단 배포 (dev / prod 환경 분리)  |
+| 리버스 프록시  |              Nginx (upstream 전환)              |
+|   형상 관리    |                     GitLab                      |
+|      알림      |       Mattermost (빌드 / 배포 결과 통지)        |
 
-</details>
+</div>
 
 <br/>
 
@@ -497,13 +561,18 @@ frontend/
 
 <br/>
 
-<a id="9-산출물"></a>
+<a id="9-영상-포트폴리오"></a>
 
-## 📦 9. 산출물
+## 🎬 9. 영상 포트폴리오
 
-| 항목            | 링크            |
-| --------------- | --------------- |
-| 기획서          | [Notion](#)     |
-| 와이어프레임    | [Figma](#)      |
-| API 명세서      | [Swagger UI](#) |
-| 시연 영상 (UCC) | [YouTube](#)    |
+<div align="center">
+
+<a href="https://youtu.be/uzQpA21Kzg4">
+  <img src="https://img.youtube.com/vi/uzQpA21Kzg4/maxresdefault.jpg" alt="HappyNurse 영상 포트폴리오" width="700"/>
+</a>
+
+<br/>
+
+▶️ <a href="https://youtu.be/uzQpA21Kzg4"><b>HappyNurse 영상 포트폴리오 보러가기 (YouTube)</b></a>
+
+</div>
