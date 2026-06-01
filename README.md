@@ -391,12 +391,8 @@ HappyNurse는 다음 문제를 해결하고자 합니다.
 
 ## 🗄️ 7. ERD
 
-<!-- ERD 이미지 영역 -->
-<!-- 여기에 ERD 다이어그램 이미지를 넣어주세요 -->
 <div align="center">
-
-![ERD]()
-
+    <img src="./image/erd.png"/>
 </div>
 
 <br/>
