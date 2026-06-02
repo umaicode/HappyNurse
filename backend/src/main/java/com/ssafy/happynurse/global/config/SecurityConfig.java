@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .requestMatchers("/app/auth/login", "/app/auth/refresh").permitAll()
                 .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**",
                     "/api/swagger-ui/**", "/api/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/prometheus").permitAll() // 모니터링: infra-net 내부 Prometheus 스크랩용 (nginx 공개 금지)
                 .requestMatchers("/nfc/patients/**").permitAll()    // 환자 NFC 진입
                 .requestMatchers("/patients/verify").permitAll()    // 환자 본인 확인
                 .requestMatchers("/patients/dev-verify").permitAll()    // 환자 dev 버전 본인 확인

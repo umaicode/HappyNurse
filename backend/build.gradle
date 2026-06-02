@@ -42,6 +42,8 @@ dependencies {
 	implementation 'com.google.firebase:firebase-admin:9.4.3'
 	// Actuator + Micrometer (IV alert 메트릭 노출용)
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	// Prometheus 스크랩 엔드포인트(/actuator/prometheus) 노출용 레지스트리
+	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
 	// ShedLock (다중 인스턴스 폴링 잡 동시 실행 방지)
 	implementation 'net.javacrumbs.shedlock:shedlock-spring:5.16.0'
 	implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.16.0'
