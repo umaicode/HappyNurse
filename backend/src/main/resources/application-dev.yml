@@ -76,3 +76,17 @@ ai:
   base-url: ${AI_BASE_URL:http://localhost:8000}
   classification:
     timeout-ms: 5000
+
+# Actuator / Micrometer — Prometheus 스크랩 노출
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus, metrics
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        iv.alert.dispatch.delay: true
+        iv.alert.polling.duration: true
