@@ -1,4 +1,5 @@
-﻿*.sh text eol=lf
+*.sh text eol=lf
 Jenkinsfile text eol=lf
 *.yml text eol=lf
-*.yaml text eol=lfexec/db_dump/happyNurseDump.sql linguist-generated=true
+*.yaml text eol=lf
+exec/db_dump/happyNurseDump.sql linguist-generated=true
